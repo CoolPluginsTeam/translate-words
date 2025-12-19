@@ -162,14 +162,14 @@ function tww_display_deprecation_notice() {
 		</p>
 		<p>
 			<?php
-			printf(				
-				esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the new Linguator functionality, which offers enhanced features and better performance.', 'translate-words' ),
+			printf(
+				/* translators: %s: plugin name */
+				esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the %s plugin, which offers enhanced features and better performance.', 'translate-words' ),
+				'<strong><u><a href="https://wordpress.org/plugins/loco-translate/" target="_blank">Loco Translate</a></u></strong>'
 			);
 			?>
 		</p>
-		<p>
-			<?php esc_html_e( 'We recommend switching to Linguator as soon as possible to ensure a smooth transition.', 'translate-words' ); ?>
-		</p>
+		
 	</div>
 	<?php
 }
