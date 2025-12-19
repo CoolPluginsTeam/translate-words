@@ -147,6 +147,35 @@ function tww_validate_translations_and_save( $strings ) {
 
 
 /**
+ * Display deprecation notice for Translate Words.
+ *
+ * @return void
+ */
+function tww_display_deprecation_notice() {
+	?>
+	<div class="notice notice-warning is-dismissible" style="padding: 15px; margin: 20px 0;">
+		<h3 style="margin-top: 0;">
+			<?php esc_html_e( '⚠️ Deprecation Notice', 'translate-words' ); ?>
+		</h3>
+		<p>
+			<strong><?php esc_html_e( 'The Translate Words functionality will be deprecated and removed in 6 months.', 'translate-words' ); ?></strong>
+		</p>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: deprecation date */
+				esc_html__( 'This feature will be discontinued on approximately June. Please migrate to the new Linguator functionality, which offers enhanced features and better performance.', 'translate-words' ),
+			);
+			?>
+		</p>
+		<p>
+			<?php esc_html_e( 'We recommend switching to Linguator as soon as possible to ensure a smooth transition.', 'translate-words' ); ?>
+		</p>
+	</div>
+	<?php
+}
+
+/**
  * Display the settings page.
  *
  * We don't need to generate a nonce because we're using settings fields which
@@ -167,6 +196,8 @@ function tww_setting_page() {
 <div class="wrap">
 
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'Translate Words', 'translate-words' ); ?></h1>
+
+	<?php tww_display_deprecation_notice(); ?>
 
 	<form method="POST" action="options.php">
 

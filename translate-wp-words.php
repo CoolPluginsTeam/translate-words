@@ -60,11 +60,47 @@ if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Secu
 
 
 /**
+ * Check if user is a legacy Translate Words user.
+ * 
+ * This function determines if the user had Translate Words functionality before.
+ * New users will not have access to Translate Words, only Linguator.
+ *
+ * @return bool
+ */
+function tww_is_legacy_user() {
+	$legacy_flag = get_option( 'tww_is_legacy_user' );
+	
+	// If flag doesn't exist, check if they have existing translations
+	if ( false === $legacy_flag ) {
+		$existing_translations = get_option( TWW_TRANSLATIONS_LINES );
+		
+		// If they have translations, they're a legacy user
+		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
+			update_option( 'tww_is_legacy_user', 'yes' );
+			return true;
+		}
+		
+		// No translations found, mark as new user (not legacy)
+		update_option( 'tww_is_legacy_user', 'no' );
+		return false;
+	}
+	
+	return 'yes' === $legacy_flag;
+}
+
+/**
  * Initialiaze the whole thing (Translate Words).
+ * 
+ * Only loads for legacy users. New users will only see Linguator functionality.
  *
  * @return void
  */
 function tww_init() {
+
+	// Only initialize Translate Words for legacy users
+	if ( ! tww_is_legacy_user() ) {
+		return;
+	}
 
 	/**
 	 * Do translations.
