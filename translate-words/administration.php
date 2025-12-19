@@ -84,7 +84,28 @@ function tww_admin_enqueue_scripts() {
 		'tww_properties',
 		array(
 			'template' => TWW_NEW_STRING_TEMPLATE,
-		)
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'dismiss_nonce' => wp_create_nonce( 'tww_dismiss_notice' ),
+		)	
+	);
+
+	// Add inline script for notice dismissal
+	wp_add_inline_script(
+		'TWW_TRANSLATIONS_ADMIN',
+		"
+		jQuery(document).ready(function($) {
+			$(document).on('click', '.tww-deprecation-notice .notice-dismiss', function() {
+				$.ajax({
+					url: tww_properties.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'tww_dismiss_deprecation_notice',
+						nonce: tww_properties.dismiss_nonce
+					}
+				});
+			});
+		});
+		"
 	);
 
 }
@@ -152,8 +173,12 @@ function tww_validate_translations_and_save( $strings ) {
  * @return void
  */
 function tww_display_deprecation_notice() {
+	// Check if notice has been dismissed site-wide
+	if ( get_option( 'tww_deprecation_notice_dismissed' ) ) {
+		return;
+	}
 	?>
-	<div class="notice notice-warning is-dismissible" style="padding: 15px; margin: 20px 0;">
+	<div class="notice notice-warning is-dismissible tww-deprecation-notice" data-notice="tww_deprecation" style="padding: 15px; margin: 20px 0;">
 		<h3 style="margin-top: 0;">
 			<?php esc_html_e( '⚠️ Deprecation Notice', 'translate-words' ); ?>
 		</h3>
@@ -173,6 +198,33 @@ function tww_display_deprecation_notice() {
 	</div>
 	<?php
 }
+
+/**
+ * Handle AJAX request to dismiss deprecation notice.
+ *
+ * @return void
+ */
+function tww_dismiss_deprecation_notice() {
+	check_ajax_referer( 'tww_dismiss_notice', 'nonce' );
+	
+	// Check if user has capability to manage options (admin only)
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+	}
+	
+	// Store dismissal with timestamp for tracking purposes
+	$dismissal_data = array(
+		'dismissed' => true,
+		'timestamp' => current_time( 'timestamp' ),
+		'dismissed_by' => get_current_user_id(),
+	);
+	
+	update_option( 'tww_deprecation_notice_dismissed', $dismissal_data );
+	
+	wp_send_json_success( array( 'message' => 'Notice dismissed successfully' ) );
+}
+
+add_action( 'wp_ajax_tww_dismiss_deprecation_notice', 'tww_dismiss_deprecation_notice' );
 
 /**
  * Display the settings page.
