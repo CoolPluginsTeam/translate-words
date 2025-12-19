@@ -106,12 +106,12 @@ function tww_init() {
 	 * Do translations.
 	 * This works on frontend AND admin so that we can translate text everywhere.
 	 */
-	require_once 'includes/translate-words/frontend.php';
+	require_once 'translate-words/frontend.php';
 
 	// Admin screens.
 	if ( is_admin() ) {
 
-		require_once 'includes/translate-words/administration.php';
+		require_once 'translate-words/administration.php';
 
 		add_filter(
 			sprintf(
