@@ -162,9 +162,8 @@ function tww_display_deprecation_notice() {
 		</p>
 		<p>
 			<?php
-			printf(
-				/* translators: %s: deprecation date */
-				esc_html__( 'This feature will be discontinued on approximately June. Please migrate to the new Linguator functionality, which offers enhanced features and better performance.', 'translate-words' ),
+			printf(				
+				esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the new Linguator functionality, which offers enhanced features and better performance.', 'translate-words' ),
 			);
 			?>
 		</p>
