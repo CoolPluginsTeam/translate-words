@@ -168,36 +168,39 @@ function tww_validate_translations_and_save( $strings ) {
 
 
 /**
- * Display deprecation notice for Translate Words.
+ * Display deprecation notice for Translate Words on the settings page.
  *
  * @return void
  */
 function tww_display_deprecation_notice() {
+	// Only show on Translate Words settings page
+	$screen = get_current_screen();
+	if ( ! $screen || 'settings_page_' . TWW_PAGE !== $screen->id ) {
+		return;
+	}
+
 	// Check if notice has been dismissed site-wide
 	if ( get_option( 'tww_deprecation_notice_dismissed' ) ) {
 		return;
 	}
-	?>
-	<div class="notice notice-warning is-dismissible tww-deprecation-notice" data-notice="tww_deprecation" style="padding: 15px; margin: 20px 0;">
-		<h3 style="margin-top: 0;">
-			<?php esc_html_e( '⚠️ Deprecation Notice', 'translate-words' ); ?>
-		</h3>
-		<p>
-			<strong><?php esc_html_e( 'The Translate Words functionality will be deprecated and removed in 6 months.', 'translate-words' ); ?></strong>
-		</p>
-		<p>
-			<?php
-			printf(
-				/* translators: %s: plugin name */
-				esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the %s plugin, which offers enhanced features and better performance.', 'translate-words' ),
-				'<strong><u><a href="https://wordpress.org/plugins/loco-translate/" target="_blank">Loco Translate</a></u></strong>'
-			);
-			?>
-		</p>
-		
-	</div>
-	<?php
+
+	// Build notice message
+	$message = '<h3 style="margin-top: 0;">' . esc_html__( '⚠️ Deprecation Notice', 'translate-words' ) . '</h3>';
+	$message .= '<p><strong>' . esc_html__( 'The Translate Words functionality will be deprecated and removed in 6 months.', 'translate-words' ) . '</strong></p>';
+	$message .= '<p>' . sprintf(
+		/* translators: %s: plugin name with link */
+		esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the %s plugin, which offers enhanced features and better performance.', 'translate-words' ),
+		'<strong><u><a href="' . esc_url( 'https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate/	' ) . '" target="_blank">' . esc_html__( 'Loco Translate', 'translate-words' ) . '</a></u></strong>'
+	) . '</p>';
+
+	// Display notice using WordPress standards
+	printf(
+		'<div class="notice notice-warning is-dismissible tww-deprecation-notice" style="padding: 15px;">%s</div>',
+		wp_kses_post( $message )
+	);
 }
+
+add_action( 'admin_notices', 'tww_display_deprecation_notice' );
 
 /**
  * Handle AJAX request to dismiss deprecation notice.
@@ -247,8 +250,6 @@ function tww_setting_page() {
 <div class="wrap">
 
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'Translate Words', 'translate-words' ); ?></h1>
-
-	<?php tww_display_deprecation_notice(); ?>
 
 	<form method="POST" action="options.php">
 
