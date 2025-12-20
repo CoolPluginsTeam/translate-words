@@ -15,8 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-
-
 use Linguator\Includes\Core\Linguator;
 use Linguator\Install\LMAT_Activate;
 use Linguator\Install\LMAT_Deactivate;
@@ -24,22 +22,28 @@ use Linguator\Install\LMAT_Usable;
 
 
 
-// Linguator constants
-define( 'LINGUATOR_VERSION', '1.0.2' );
-define( 'LMAT_MIN_WP_VERSION', '6.2' );
-define( 'LMAT_MIN_PHP_VERSION', '7.2' );
-define( 'LINGUATOR_FILE', __FILE__ ); 
-define( 'LINGUATOR_DIR', __DIR__ );
-define('LINGUATOR_URL', plugin_dir_url(LINGUATOR_FILE));
-define( 'LINGUATOR_FEEDBACK_API', 'https://feedback.coolplugins.net/' );
-// Translate Words constants
-define( 'TWW_TRANSLATIONS', 'tww_options' );
-define( 'TWW_PAGE', 'tww_settings' );
-define( 'TWW_TRANSLATIONS_LINES', 'tww_options_lines' );
-define( 'TWW_NONCE_KEY', 'tww-save-translations' );
-define( 'TWW_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
-
-
+// Linguator constants - wrapped in checks to prevent redeclaration
+if ( ! defined( 'LINGUATOR_VERSION' ) ) {
+	define( 'LINGUATOR_VERSION', '1.0.2' );
+}
+if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
+	define( 'LMAT_MIN_WP_VERSION', '6.2' );
+}
+if ( ! defined( 'LMAT_MIN_PHP_VERSION' ) ) {
+	define( 'LMAT_MIN_PHP_VERSION', '7.2' );
+}
+if ( ! defined( 'LINGUATOR_FILE' ) ) {
+	define( 'LINGUATOR_FILE', __FILE__ );
+}
+if ( ! defined( 'LINGUATOR_DIR' ) ) {
+	define( 'LINGUATOR_DIR', __DIR__ );
+}
+if ( ! defined( 'LINGUATOR_URL' ) ) {
+	define( 'LINGUATOR_URL', plugin_dir_url( LINGUATOR_FILE ) );
+}
+if ( ! defined( 'LINGUATOR_FEEDBACK_API' ) ) {
+	define( 'LINGUATOR_FEEDBACK_API', 'https://feedback.coolplugins.net/' );
+}
 // Whether we are using Linguator, get the filename of the plugin in use.
 if ( ! defined( 'LINGUATOR_ROOT_FILE' ) ) {
 	define( 'LINGUATOR_ROOT_FILE', __FILE__ );
@@ -50,104 +54,17 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
-define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
+if ( ! defined( 'LINGUATOR' ) ) {
+	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
+}
 
 // Initialize the plugin
 if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 	return;
 }
 
-
-
-/**
- * Check if user is a legacy Translate Words user.
- * 
- * This function determines if the user had Translate Words functionality before.
- * New users will not have access to Translate Words, only Linguator.
- *
- * @return bool
- */
-function tww_is_legacy_user() {
-	$legacy_flag = get_option( 'tww_is_legacy_user' );
-	
-	// If flag doesn't exist, check if they have existing translations
-	if ( false === $legacy_flag ) {
-		$existing_translations = get_option( TWW_TRANSLATIONS_LINES );
-		
-		// If they have translations, they're a legacy user
-		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
-			update_option( 'tww_is_legacy_user', 'yes' );
-			return true;
-		}
-		
-		// No translations found, mark as new user (not legacy)
-		update_option( 'tww_is_legacy_user', 'no' );
-		return false;
-	}
-	
-	return 'yes' === $legacy_flag;
-}
-
-/**
- * Initialiaze the whole thing (Translate Words).
- * 
- * Only loads for legacy users. New users will only see Linguator functionality.
- *
- * @return void
- */
-function tww_init() {
-
-	// Only initialize Translate Words for legacy users
-	if ( ! tww_is_legacy_user() ) {
-		return;
-	}
-
-	/**
-	 * Do translations.
-	 * This works on frontend AND admin so that we can translate text everywhere.
-	 */
-	require_once 'translate-words/frontend.php';
-
-	// Admin screens.
-	if ( is_admin() ) {
-
-		require_once 'translate-words/administration.php';
-
-		add_filter(
-			sprintf(
-				'plugin_action_links_%1$s',
-				plugin_basename( __FILE__ )
-			),
-			'tww_add_plugin_actions'
-		);
-
-	}
-
-}
-
-tww_init();
-
-
-/**
- * Add a link to the settings page to the plugin actions list.
- * Translate Words settings page.
- *
- * @param array $links The current list of links.
- * @return array
- */
-function tww_add_plugin_actions( $links ) {
-
-	$links[] = sprintf(
-		'<a href="%1$s">%2$s</a>',
-		esc_url( get_admin_url( null, 'options-general.php?page=' . TWW_PAGE ) ),
-		esc_html__( 'Manage Translations', 'translate-words' )
-	);
-
-	return $links;
-
-}
-
-
+// Load Translate Words functionality
+require_once __DIR__ . '/translate-words/tww.php';
 
 // Linguator
 // Handle redirect after activation and language switcher visibility
@@ -211,13 +128,17 @@ add_action('admin_init', function() {
 	}
 });
 
-require __DIR__ . '/includes/helpers/constant-functions.php';
+if ( ! function_exists( 'lmat_has_constant' ) ) {
+	require __DIR__ . '/includes/helpers/constant-functions.php';
+}
 if ( ! LMAT_Usable::can_activate() ) {
 	// WP version or php version is too old.
 	return;
 }
 
-define( 'LMAT_ACTIVE', true );
+if ( ! defined( 'LMAT_ACTIVE' ) ) {
+	define( 'LMAT_ACTIVE', true );
+}
 
 if ( LMAT_Deactivate::is_deactivation() ) {
 	// Stopping here if we are going to deactivate the plugin (avoids breaking rewrite rules).
