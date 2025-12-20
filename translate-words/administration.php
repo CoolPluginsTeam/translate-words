@@ -73,7 +73,7 @@ function tww_admin_enqueue_scripts() {
 
 	wp_enqueue_script(
 		'TWW_TRANSLATIONS_ADMIN',
-		TWW_PLUGINS_DIR . 'js/main.js',
+		TWW_PLUGINS_DIR . '/translate-words/js/main.js',
 		array( 'jquery' ),
 		'1.0.1',
 		false
@@ -190,7 +190,7 @@ function tww_display_deprecation_notice() {
 	$message .= '<p>' . sprintf(
 		/* translators: %s: plugin name with link */
 		esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the %s plugin, which offers enhanced features and better performance.', 'translate-words' ),
-		'<strong><u><a href="' . esc_url( 'https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate/	' ) . '" target="_blank">' . esc_html__( 'Loco Translate', 'translate-words' ) . '</a></u></strong>'
+		'<strong><u><a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" target="_blank">' . esc_html__( 'Loco Translate', 'translate-words' ) . '</a></u></strong>'
 	) . '</p>';
 
 	// Display notice using WordPress standards
@@ -338,7 +338,7 @@ function tww_translate_gutenberg_string() {
 	// Enqueue editor scripts.
 	wp_enqueue_script(
 		'TWW_TRANSLATIONS_JS',
-		TWW_PLUGINS_DIR . 'js/gb_i18n.js',
+		TWW_PLUGINS_DIR . '/translate-words/js/gb_i18n.js',
 		array( 'jquery' ),
 		'1.0.0',
 		true
