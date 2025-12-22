@@ -37,6 +37,18 @@ TEMPLATE
  */
 function tww_add_admin_menu() {
 
+	// Check if Loco Translate is active
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	
+	$translations = get_option( TWW_TRANSLATIONS_LINES );
+	
+	// If Loco Translate is active and there's no data, don't show the menu
+	if ( is_plugin_active( 'loco-translate/loco.php' ) && empty( $translations ) ) {
+		return;
+	}
+
 	add_options_page(
 		esc_html__( 'Translate Words', 'translate-words' ),
 		esc_html__( 'Translate Words', 'translate-words' ),
@@ -73,7 +85,7 @@ function tww_admin_enqueue_scripts() {
 
 	wp_enqueue_script(
 		'TWW_TRANSLATIONS_ADMIN',
-		TWW_PLUGINS_DIR . '/translate-words/js/main.js',
+		TWW_PLUGINS_DIR . 'js/main.js',
 		array( 'jquery' ),
 		'1.0.1',
 		false
@@ -179,6 +191,14 @@ function tww_display_deprecation_notice() {
 		return;
 	}
 
+	// Don't show notice if Loco Translate is active
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	if ( is_plugin_active( 'loco-translate/loco.php' ) ) {
+		return;
+	}
+
 	// Check if notice has been dismissed site-wide
 	if ( get_option( 'tww_deprecation_notice_dismissed' ) ) {
 		return;
@@ -240,6 +260,17 @@ add_action( 'wp_ajax_tww_dismiss_deprecation_notice', 'tww_dismiss_deprecation_n
 function tww_setting_page() {
 
 	$translations = get_option( TWW_TRANSLATIONS_LINES );
+
+	// Check if Loco Translate is active
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	
+	// If Loco Translate is active and there's no data, redirect to settings page
+	if ( is_plugin_active( 'loco-translate/loco.php' ) && empty( $translations ) ) {
+		wp_safe_redirect( admin_url( 'options-general.php' ) );
+		exit;
+	}
 
 ?>
 <style>
@@ -338,7 +369,7 @@ function tww_translate_gutenberg_string() {
 	// Enqueue editor scripts.
 	wp_enqueue_script(
 		'TWW_TRANSLATIONS_JS',
-		TWW_PLUGINS_DIR . '/translate-words/js/gb_i18n.js',
+		TWW_PLUGINS_DIR . 'js/gb_i18n.js',
 		array( 'jquery' ),
 		'1.0.0',
 		true
