@@ -5,6 +5,13 @@
  * @package tww
  */
 
+// Mark this file as deprecated
+_deprecated_file( 
+	basename( __FILE__ ), 
+	'1.4.0', 
+	'Linguator functionality (use the Linguator features instead of Translate Words)' 
+);
+
 /**
  * A temporary variable since we don't seem to be able to use function calls in
  * HEREDOC.
