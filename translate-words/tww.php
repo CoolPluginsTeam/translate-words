@@ -12,27 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Check for plugin conflicts before doing anything
-// If the standalone Linguator plugin is active, deactivate it to avoid conflicts
-if ( ! function_exists( 'is_plugin_active' ) ) {
-	include_once ABSPATH . 'wp-admin/includes/plugin.php';
-}
-
-$linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
-if ( function_exists( 'is_plugin_active' ) && is_plugin_active( $linguator_plugin ) ) {
-	// Deactivate the standalone Linguator plugin
-	if ( current_user_can( 'activate_plugins' ) ) {
-		deactivate_plugins( $linguator_plugin );
-		// Add admin notice
-		add_action( 'admin_notices', function() {
-			echo '<div class="notice notice-warning is-dismissible"><p>';
-			echo esc_html__( 'The standalone Linguator plugin has been automatically deactivated because Translate Words now includes Linguator functionality.', 'translate-words' );
-			echo '</p></div>';
-		});
-	}
-	// Stop execution here to prevent constant conflicts
-	return;
-}
 
 // Translate Words constants
 define( 'TWW_TRANSLATIONS', 'tww_options' );
@@ -40,6 +19,26 @@ define( 'TWW_PAGE', 'tww_settings' );
 define( 'TWW_TRANSLATIONS_LINES', 'tww_options_lines' );
 define( 'TWW_NONCE_KEY', 'tww-save-translations' );
 define( 'TWW_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
+
+
+// Check for plugin conflicts - must be done on admin_init to ensure all WP functions are loaded
+add_action( 'admin_init', function() {
+	// If the standalone Linguator plugin is active, deactivate it to avoid conflicts
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+
+	$linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
+	if ( function_exists( 'is_plugin_active' ) && is_plugin_active( $linguator_plugin ) ) {
+		// Deactivate the standalone Linguator plugin
+		if ( current_user_can( 'activate_plugins' ) ) {
+			deactivate_plugins( $linguator_plugin );
+			// Add admin notice using the usable.php function
+			add_action( 'admin_notices', array( 'Linguator\Install\LMAT_Usable', 'linguator_standalone_conflict_notice' ) );
+		}
+	}
+}, 0 ); // Priority 0 to run early
+
 
 /**
  * Check if user is a legacy Translate Words user.
