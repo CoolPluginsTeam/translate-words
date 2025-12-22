@@ -63,6 +63,28 @@ if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Secu
 	return;
 }
 
+// Check for plugin conflicts - must be done on admin_init to ensure all WP functions are loaded
+add_action( 'admin_init', function() {
+	// If the standalone Linguator plugin is active, deactivate it to avoid conflicts
+	if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+
+	$linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
+	if ( function_exists( 'is_plugin_active' ) && is_plugin_active( $linguator_plugin ) ) {
+		// Deactivate the standalone Linguator plugin
+		if ( current_user_can( 'activate_plugins' ) ) {
+			deactivate_plugins( $linguator_plugin );
+			// Add admin notice using the usable.php function
+			add_action( 'admin_notices', function() {
+				if ( class_exists( 'Linguator\Install\LMAT_Usable' ) ) {
+					\Linguator\Install\LMAT_Usable::linguator_standalone_conflict_notice();
+				}
+			} );
+		}
+	}
+}, 0 ); // Priority 0 to run early
+
 // Load Translate Words functionality
 require_once __DIR__ . '/translate-words/tww.php';
 
