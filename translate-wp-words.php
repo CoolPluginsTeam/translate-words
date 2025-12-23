@@ -1,14 +1,16 @@
 <?php
 /**
- * Plugin Name: Translate Words
- * Description: Thanks to this plugin you can translate all the strings of your portal through the admin panel.
- * Version: 1.2.6
- * Author: Ben Gillbanks
- * Author URI: https://www.binarymoon.co.uk/
- * License: GPLv2 or later
- * Text Domain: translate-words
- *
- * @package tww
+ * Plugin Name:       Linguator – Multilingual AI Translation
+ * Plugin URI:        https://linguator.com/
+ * Description:       Create a multilingual WordPress website in minutes with Linguator – Multilingual AI Translation.
+ * Version:           1.3.0
+ * Requires at least: 6.2
+ * Requires PHP:      7.2
+ * Author:            Cool Plugins
+ * Author URI:        https://profiles.wordpress.org/coolplugins/
+ * Text Domain:       linguator-multilingual-ai-translation
+ * License:           GPL2
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +26,7 @@ use Linguator\Install\LMAT_Usable;
 
 // Linguator constants - wrapped in checks to prevent redeclaration
 if ( ! defined( 'LINGUATOR_VERSION' ) ) {
-	define( 'LINGUATOR_VERSION', '1.0.2' );
+	define( 'LINGUATOR_VERSION', '1.3.0' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
 	define( 'LMAT_MIN_WP_VERSION', '6.2' );
