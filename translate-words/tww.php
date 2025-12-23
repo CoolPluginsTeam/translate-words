@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Mark this file as deprecated
 _deprecated_file( 
 	basename( __FILE__ ), 
-	'1.4.0', 
+	'1.3.0', 
 	'Linguator functionality (use the Linguator features instead of Translate Words)' 
 );
 
