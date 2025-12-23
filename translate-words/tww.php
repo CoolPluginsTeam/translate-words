@@ -82,34 +82,7 @@ function tww_init() {
 
 		require_once 'administration.php';
 
-		add_filter(
-			sprintf(
-				'plugin_action_links_%1$s',
-				plugin_basename( LINGUATOR_FILE )
-			),
-			'tww_add_plugin_actions'
-		);
-
 	}
-
-}
-
-/**
- * Add a link to the settings page to the plugin actions list.
- * Translate Words settings page.
- *
- * @param array $links The current list of links.
- * @return array
- */
-function tww_add_plugin_actions( $links ) {
-
-	$links[] = sprintf(
-		'<a href="%1$s">%2$s</a>',
-		esc_url( get_admin_url( null, 'options-general.php?page=' . TWW_PAGE ) ),
-		esc_html__( 'Manage Translations', 'translate-words' )
-	);
-
-	return $links;
 
 }
 
