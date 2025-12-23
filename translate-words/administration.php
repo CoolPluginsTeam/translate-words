@@ -222,7 +222,7 @@ function tww_display_deprecation_notice() {
 	$message .= esc_html__( 'Until then, you can continue using this plugin safely.', 'translate-words' ) . '</p>';
 	$message .= '<p>' . sprintf(
 		esc_html__( 'If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words' ),
-		'<a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" target="_blank"><strong>' . esc_html__( 'Loco Translate', 'translate-words' ) . '</strong></a>'
+		'<a href="' . esc_url( admin_url( 'plugin-install.php?s=loco&tab=search&type=term' ) ) . '" target="_blank"><strong>' . esc_html__( 'Loco Translate', 'translate-words' ) . '</strong></a>'
 	) . '</p>';
 	$message .= '<p style="margin-top: 15px;">';
 	$message .= '<a href="' . esc_url( 'https://linguator.com/documentation/' ) . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">👉 ' . esc_html__( 'Learn About Linguator', 'translate-words' ) . '</a>';
