@@ -212,13 +212,22 @@ function tww_display_deprecation_notice() {
 	}
 
 	// Build notice message
-	$message = '<h3 style="margin-top: 0;">' . esc_html__( '⚠️ Deprecation Notice', 'translate-words' ) . '</h3>';
-	$message .= '<p><strong>' . esc_html__( 'The Translate Words functionality will be deprecated and removed in 6 months.', 'translate-words' ) . '</strong></p>';
+	$message = '<h3 style="margin-top: 0;">' . esc_html__( '⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words' ) . '</h3>';
 	$message .= '<p>' . sprintf(
-		/* translators: %s: plugin name with link */
-		esc_html__( 'This feature will be discontinued on approximately June 2026. Please migrate to the %s plugin, which offers enhanced features and better performance.', 'translate-words' ),
-		'<strong><u><a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" target="_blank">' . esc_html__( 'Loco Translate', 'translate-words' ) . '</a></u></strong>'
+		__( 'We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words' ),
+		'<strong>AI Multilingual</strong>',
+		'<strong>Linguator</strong>'
 	) . '</p>';
+	$message .= '<p><strong>' . esc_html__( 'The current Translate Words functionality will be deprecated and discontinued in approximately June 2026.', 'translate-words' ) . '</strong><br>';
+	$message .= esc_html__( 'Until then, you can continue using this plugin safely.', 'translate-words' ) . '</p>';
+	$message .= '<p>' . sprintf(
+		esc_html__( 'If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words' ),
+		'<a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" target="_blank"><strong>' . esc_html__( 'Loco Translate', 'translate-words' ) . '</strong></a>'
+	) . '</p>';
+	$message .= '<p style="margin-top: 15px;">';
+	$message .= '<a href="' . esc_url( 'https://linguator.com/documentation/' ) . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">👉 ' . esc_html__( 'Learn About Linguator', 'translate-words' ) . '</a>';
+	$message .= '<a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">👉 ' . esc_html__( 'Migration Guide', 'translate-words' ) . '</a>';
+	$message .= '</p>';
 
 	// Display notice using WordPress standards
 	printf(
