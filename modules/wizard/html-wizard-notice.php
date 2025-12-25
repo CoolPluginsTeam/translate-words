@@ -18,15 +18,16 @@
 	);
 	?>
 	<p>
-		<strong>
-		<?php
-		printf(
-			/* translators: %s is the plugin name */
-			esc_html__( 'Welcome to Linguator Multilingual AI Translation', 'linguator-multilingual-ai-translation' ),
-			esc_html( LINGUATOR )
-		);
-		?>
-		</strong>
+	<strong>
+	<?php
+	esc_html_e( 'Welcome to ', 'linguator-multilingual-ai-translation' );
+	?>
+	<a href="https://wordpress.org/plugins/linguator-multilingual-ai-translation/" target="_blank" rel="noopener noreferrer">
+	<?php
+	esc_html_e( 'Linguator Multilingual AI Translation', 'linguator-multilingual-ai-translation' );
+	?>
+	</a>
+	</strong>
 		<?php
 		echo ' &#8211; ';
 		esc_html_e( 'You&lsquo;re almost ready to translate your contents!', 'linguator-multilingual-ai-translation' );
