@@ -7,7 +7,7 @@
  * Requires at least: 6.2
  * Requires PHP:      7.2
  * Author:            Cool Plugins
- * Author URI:        https://profiles.wordpress.org/coolplugins/
+ * Author URI:        https://coolplugins.net/
  * Text Domain:       linguator-multilingual-ai-translation
  * License:           GPL2
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -67,16 +67,23 @@ if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Secu
 
 // Display admin notice when linguator plugin is deactivated
 add_action('admin_notices', function() {
-	$linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
-		if ( is_plugin_active( $linguator_plugin ) ) {
-			deactivate_plugins( $linguator_plugin );
-			?>
-			<div class="notice notice-info is-dismissible">
-				<p><strong><?php esc_html_e( 'Linguator – Multilingual AI Translation', 'Linguator – Multilingual AI Translation' ); ?>:</strong> 
-				<?php esc_html_e( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in Translate Words.', 'Linguator – Multilingual AI Translation' ); ?></p>
-			</div>
-			<?php
-		}
+    $linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
+        if ( is_plugin_active( $linguator_plugin ) ) {
+            deactivate_plugins( $linguator_plugin );
+            ?>
+            <div class="notice notice-info is-dismissible">
+                <p>
+                <?php
+                printf(
+                    /* translators: %s: link to Translate Words plugin */
+                    wp_kses_post( __( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in <a href="%s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    esc_url( 'https://wordpress.org/plugins/translate-words/' )
+                );
+                ?>
+                </p>
+            </div>
+            <?php
+        }
 });
 
 // Handle redirect after activation and language switcher visibility
