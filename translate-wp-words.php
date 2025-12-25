@@ -72,8 +72,8 @@ add_action('admin_notices', function() {
 			deactivate_plugins( $linguator_plugin );
 			?>
 			<div class="notice notice-info is-dismissible">
-				<p><strong><?php esc_html_e( 'Translate Words', 'translate-words' ); ?>:</strong> 
-				<?php esc_html_e( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in Translate Words.', 'translate-words' ); ?></p>
+				<p><strong><?php esc_html_e( 'Linguator – Multilingual AI Translation', 'Linguator – Multilingual AI Translation' ); ?>:</strong> 
+				<?php esc_html_e( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in Translate Words.', 'Linguator – Multilingual AI Translation' ); ?></p>
 			</div>
 			<?php
 		}
