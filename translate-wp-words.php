@@ -76,7 +76,8 @@ add_action('admin_notices', function() {
                 <?php
                 printf(
                     /* translators: %s: link to Translate Words plugin */
-                    wp_kses_post( __( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in <a href="%s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    wp_kses_post( __( '<a href="%1$s" target="_blank">Linguator – Multilingual AI Translation plugin</a> has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    esc_url( 'https://wordpress.org/plugins/linguator-multilingual-ai-translation/' ),
                     esc_url( 'https://wordpress.org/plugins/translate-words/' )
                 );
                 ?>
@@ -92,7 +93,7 @@ add_action('admin_init', function() {
 	if ( defined( 'POLYLANG_VERSION' ) ) {
 		return;
 	}
-	
+
 	// Only check setup flag on plugins page to avoid unnecessary database queries
 	$is_plugins_page = false;
 	if ( isset( $_SERVER['REQUEST_URI'] ) && strpos( $_SERVER['REQUEST_URI'], 'plugins.php' ) !== false ) {

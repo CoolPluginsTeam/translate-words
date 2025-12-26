@@ -1,30 +1,30 @@
 <?php
-/**
- * Admin page content.
- *
- * @package tww
- */
+    /**
+     * Admin page content.
+     *
+     * @package tww
+     */
 
-// Mark this file as deprecated
-_deprecated_file( 
-	basename( __FILE__ ), 
-	'1.3.0', 
-	'Linguator functionality (use the Linguator features instead of Translate Words)' 
-);
+    // Mark this file as deprecated
+    _deprecated_file(
+        basename(__FILE__),
+        '1.3.0',
+        'Linguator functionality (use the Linguator features instead of Translate Words)'
+    );
 
-/**
- * A temporary variable since we don't seem to be able to use function calls in
- * HEREDOC.
- */
-$tww_translation_lines = esc_attr( TWW_TRANSLATIONS_LINES );
+    /**
+     * A temporary variable since we don't seem to be able to use function calls in
+     * HEREDOC.
+     */
+    $tww_translation_lines = esc_attr(TWW_TRANSLATIONS_LINES);
 
-/**
- * Define a template pattern for reuse.
- * This covers the new translation input fields and is used in both PHP and JS.
- */
-define(
-	'TWW_NEW_STRING_TEMPLATE',
-<<<TEMPLATE
+    /**
+     * Define a template pattern for reuse.
+     * This covers the new translation input fields and is used in both PHP and JS.
+     */
+    define(
+        'TWW_NEW_STRING_TEMPLATE',
+        <<<TEMPLATE
 <tr valign="top">
 <td style="white-space: nowrap">
 	<input type="text" style="width:100%;" name="{$tww_translation_lines}[original][]" />
@@ -34,84 +34,131 @@ define(
 <td></td>
 </tr>
 TEMPLATE
-);
+    );
 
+    /**
+     * Add the admin menu.
+     *
+     * @return void
+     */
+    function tww_add_admin_menu()
+    {
 
-/**
- * Add the admin menu.
- *
- * @return void
- */
-function tww_add_admin_menu() {
+        // Check if Loco Translate is active
+        if (! function_exists('is_plugin_active')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
 
-	// Check if Loco Translate is active
-	if ( ! function_exists( 'is_plugin_active' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	
-	$translations = get_option( TWW_TRANSLATIONS_LINES );
-	
-	// If Loco Translate is active and there's no data, don't show the menu
-	if ( is_plugin_active( 'loco-translate/loco.php' ) && empty( $translations ) ) {
-		return;
-	}
+        $translations = get_option(TWW_TRANSLATIONS_LINES);
 
-	add_options_page(
-		esc_html__( 'Translate Words', 'translate-words' ),
-		esc_html__( 'Translate Words', 'translate-words' ),
-		'administrator',
-		TWW_PAGE,
-		'tww_setting_page'
-	);
+        // If Loco Translate is active and there's no data, don't show the menu
+        if (is_plugin_active('loco-translate/loco.php') && empty($translations)) {
+            return;
+        }
 
-}
+        add_options_page(
+            esc_html__('Translate Words', 'translate-words'),
+            esc_html__('Translate Words', 'translate-words'),
+            'administrator',
+            TWW_PAGE,
+            'tww_setting_page'
+        );
 
-add_action( 'admin_menu', 'tww_add_admin_menu' );
+    }
 
+    add_action('admin_menu', 'tww_add_admin_menu');
 
-/**
- * Enqueue Admin Scripts.
- *
- * @return void
- */
-function tww_admin_enqueue_scripts() {
+    /**
+     * Install plugin via AJAX
+     */
+    function tww_install_loco_translate()
+    {
+        if (! current_user_can('install_plugins')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
 
-	global $pagenow;
+        check_ajax_referer('tww_install_loco_translate_nonce');
 
-	if ( 'options-general.php' !== $pagenow ) {
-		return;
-	}
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-	if ( ! isset( $_REQUEST['page'] ) ) {
-		return;
-	}
+        $plugin_slug = sanitize_text_field($_POST['slug']);
 
-	if ( isset( $_REQUEST['page'] ) && 'tww_settings' !== $_REQUEST['page'] ) {
-		return;
-	}
+        // API call correct slug se
+        $api = plugins_api('plugin_information', [
+            'slug'   => $plugin_slug,
+            'fields' => ['sections' => false],
+        ]);
 
-	wp_enqueue_script(
-		'TWW_TRANSLATIONS_ADMIN',
-		TWW_PLUGINS_DIR . 'js/main.js',
-		array( 'jquery' ),
-		'1.0.1',
-		false
-	);
+        if (is_wp_error($api)) {
+            wp_send_json_error(['message' => $api->get_error_message()]);
+        }
 
-	wp_localize_script(
-		'TWW_TRANSLATIONS_ADMIN',
-		'tww_properties',
-		array(
-			'template' => TWW_NEW_STRING_TEMPLATE,
-			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'dismiss_nonce' => wp_create_nonce( 'tww_dismiss_notice' ),
-		)	
-	);
+        $skin     = new WP_Ajax_Upgrader_Skin();
+        $upgrader = new Plugin_Upgrader($skin);
+        $result   = $upgrader->install($api->download_link);
 
-	// Add inline script for notice dismissal
-	wp_add_inline_script(
-		'TWW_TRANSLATIONS_ADMIN',
-		"
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        $install_status = install_plugin_install_status($api);
+        if (current_user_can('activate_plugin', $install_status['file'])) {
+            $activation_result = activate_plugin($install_status['file']);
+            if (is_wp_error($activation_result)) {
+                wp_send_json_error(['message' => $activation_result->get_error_message()]);
+            }
+        }
+
+        wp_send_json_success(['message' => 'Plugin installed and activated']);
+    }
+
+    add_action('wp_ajax_tww_install_loco_translate', 'tww_install_loco_translate');
+    /**
+     * Enqueue Admin Scripts.
+     *
+     * @return void
+     */
+    function tww_admin_enqueue_scripts()
+    {
+
+        global $pagenow;
+
+        if ('options-general.php' !== $pagenow) {
+            return;
+        }
+
+        if (! isset($_REQUEST['page'])) {
+            return;
+        }
+
+        if (isset($_REQUEST['page']) && 'tww_settings' !== $_REQUEST['page']) {
+            return;
+        }
+
+        wp_enqueue_script(
+            'TWW_TRANSLATIONS_ADMIN',
+            TWW_PLUGINS_DIR . 'js/main.js',
+            ['jquery'],
+            '1.0.1',
+            false
+        );
+
+        wp_localize_script(
+            'TWW_TRANSLATIONS_ADMIN',
+            'tww_properties',
+            [
+                'template'      => TWW_NEW_STRING_TEMPLATE,
+                'ajax_url'      => admin_url('admin-ajax.php'),
+                'dismiss_nonce' => wp_create_nonce('tww_dismiss_notice'),
+            ]
+        );
+
+        // Add inline script for notice dismissal
+        wp_add_inline_script(
+            'TWW_TRANSLATIONS_ADMIN',
+            "
 		jQuery(document).ready(function($) {
 			$(document).on('click', '.tww-deprecation-notice .notice-dismiss', function() {
 				$.ajax({
@@ -125,170 +172,183 @@ function tww_admin_enqueue_scripts() {
 			});
 		});
 		"
-	);
+        );
 
-}
+    }
 
-add_action( 'admin_enqueue_scripts', 'tww_admin_enqueue_scripts' );
+    add_action('admin_enqueue_scripts', 'tww_admin_enqueue_scripts');
 
+    /**
+     * Initialize the setting.
+     *
+     * @return void
+     */
+    function tww_settings_init()
+    {
 
-/**
- * Initialize the setting.
- *
- * @return void
- */
-function tww_settings_init() {
+        register_setting(
+            TWW_TRANSLATIONS,
+            TWW_TRANSLATIONS_LINES,
+            [
+                'sanitize_callback' => 'tww_validate_translations_and_save',
+                'type'              => 'array',
+                'default'           => '',
+            ]
+        );
 
-	register_setting(
-		TWW_TRANSLATIONS,
-		TWW_TRANSLATIONS_LINES,
-		array(
-			'sanitize_callback' => 'tww_validate_translations_and_save',
-			'type' => 'array',
-			'default' => '',
-		)
-	);
+    }
 
-}
+    add_action('admin_init', 'tww_settings_init');
 
-add_action( 'admin_init', 'tww_settings_init' );
+    /**
+     * Validate the translations and save the settings.
+     *
+     * @param {array} $strings The translations strings to save.
+     * @return {void}
+     */
+    function tww_validate_translations_and_save($strings)
+    {
 
+        $update_translations = [];
 
-/**
- * Validate the translations and save the settings.
- *
- * @param {array} $strings The translations strings to save.
- * @return {void}
- */
-function tww_validate_translations_and_save( $strings ) {
+        if (
+            ! empty($strings['original']) &&
+            count($strings['original']) > 0
+        ) {
 
-	$update_translations = array();
+            foreach ($strings['original'] as $key => $value) {
 
-	if (
-		! empty( $strings['original'] ) &&
-		count( $strings['original'] ) > 0
-	) {
+                if (! empty($value)) {
+                    $update_translations[] = [
+                        'original'  => $value,
+                        'overwrite' => $strings['overwrite'][$key],
+                    ];
+                }
+            }
 
-		foreach ( $strings['original'] as $key => $value ) {
+        }
 
-			if ( ! empty( $value ) ) {
-				$update_translations[] = array(
-					'original' => $value,
-					'overwrite' => $strings['overwrite'][ $key ],
-				);
-			}
-		}
+        return $update_translations;
 
-	}
+    }
 
-	return $update_translations;
+    /**
+     * Display deprecation notice for Translate Words on the settings page.
+     *
+     * @return void
+     */
+    function tww_display_deprecation_notice()
+    {
+        // Only show on Translate Words settings page
+        $screen = get_current_screen();
+        if ( ! $screen || 'settings_page_' . TWW_PAGE !== $screen->id ) {
+        	return;
+        }
+        // Don't show notice if Loco Translate is active
+        if (! function_exists('is_plugin_active')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        if (is_plugin_active('loco-translate/loco.php')) {
+            return;
+        }
 
-}
+        // Check if notice has been dismissed site-wide
+        if (get_option('tww_deprecation_notice_dismissed')) {
+            return;
+        }
 
+        // Build notice message
+        $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words') . '</h3>';
+        $message .= '<p>' . sprintf(
+            __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words'),
+            '<strong>AI Multilingual</strong>',
+            '<strong>Linguator</strong>'
+        ) . '</p>';
+        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately June 2026.', 'translate-words') . '</strong><br>';
+        $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
+        $message .= '<p>' . sprintf(
+            esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words'),
+            '<a href="#" class="loco-install-plugin"
+                            data-plugin="loco-translate"
+                            data-nonce="' . esc_attr(wp_create_nonce('tww_install_loco_translate_nonce')) . '">
+                             ' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '
+                        </a>'
+        ) . '</p>';
+        $message .= '<p style="margin-top: 15px;">';
+        $message .= '<a href="' . esc_url('https://linguator.com/documentation/') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">👉 ' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
+        $message .= '<a href="' . esc_url('https://wordpress.org/plugins/loco-translate/') . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">👉 ' . esc_html__('Migration Guide', 'translate-words') . '</a>';
+        $message .= '</p>';
 
-/**
- * Display deprecation notice for Translate Words on the settings page.
- *
- * @return void
- */
-function tww_display_deprecation_notice() {
-	// Only show on Translate Words settings page
-	$screen = get_current_screen();
-	if ( ! $screen || 'settings_page_' . TWW_PAGE !== $screen->id ) {
-		return;
-	}
+        // Display notice using WordPress standards
+        printf(
+            '<div class="notice notice-warning is-dismissible tww-deprecation-notice" style="padding: 15px;">%s</div>',
+            wp_kses_post($message)
+        );
 
-	// Don't show notice if Loco Translate is active
-	if ( ! function_exists( 'is_plugin_active' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	if ( is_plugin_active( 'loco-translate/loco.php' ) ) {
-		return;
-	}
+        wp_enqueue_script(
+            'TWW_INSTALL_LOCOTRANSLATE_JS',
+            TWW_PLUGINS_DIR . 'js/install-loco-translate.js',
+            [],
+            '1.0.0',
+            true
+        );
+    }
 
-	// Check if notice has been dismissed site-wide
-	if ( get_option( 'tww_deprecation_notice_dismissed' ) ) {
-		return;
-	}
+    add_action('admin_notices', 'tww_display_deprecation_notice');
 
-	// Build notice message
-	$message = '<h3 style="margin-top: 0;">' . esc_html__( '⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words' ) . '</h3>';
-	$message .= '<p>' . sprintf(
-		__( 'We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words' ),
-		'<strong>AI Multilingual</strong>',
-		'<strong>Linguator</strong>'
-	) . '</p>';
-	$message .= '<p><strong>' . esc_html__( 'The current Translate Words functionality will be deprecated and discontinued in approximately June 2026.', 'translate-words' ) . '</strong><br>';
-	$message .= esc_html__( 'Until then, you can continue using this plugin safely.', 'translate-words' ) . '</p>';
-	$message .= '<p>' . sprintf(
-		esc_html__( 'If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words' ),
-		'<a href="' . esc_url( admin_url( 'plugin-install.php?s=loco&tab=search&type=term' ) ) . '" target="_blank"><strong>' . esc_html__( 'Loco Translate', 'translate-words' ) . '</strong></a>'
-	) . '</p>';
-	$message .= '<p style="margin-top: 15px;">';
-	$message .= '<a href="' . esc_url( 'https://linguator.com/documentation/' ) . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">👉 ' . esc_html__( 'Learn About Linguator', 'translate-words' ) . '</a>';
-	$message .= '<a href="' . esc_url( 'https://wordpress.org/plugins/loco-translate/' ) . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">👉 ' . esc_html__( 'Migration Guide', 'translate-words' ) . '</a>';
-	$message .= '</p>';
+    /**
+     * Handle AJAX request to dismiss deprecation notice.
+     *
+     * @return void
+     */
+    function tww_dismiss_deprecation_notice()
+    {
+        check_ajax_referer('tww_dismiss_notice', 'nonce');
 
-	// Display notice using WordPress standards
-	printf(
-		'<div class="notice notice-warning is-dismissible tww-deprecation-notice" style="padding: 15px;">%s</div>',
-		wp_kses_post( $message )
-	);
-}
+        // Check if user has capability to manage options (admin only)
+        if (! current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions']);
+        }
 
-add_action( 'admin_notices', 'tww_display_deprecation_notice' );
+        // Store dismissal with timestamp for tracking purposes
+        $dismissal_data = [
+            'dismissed'    => true,
+            'timestamp'    => current_time('timestamp'),
+            'dismissed_by' => get_current_user_id(),
+        ];
 
-/**
- * Handle AJAX request to dismiss deprecation notice.
- *
- * @return void
- */
-function tww_dismiss_deprecation_notice() {
-	check_ajax_referer( 'tww_dismiss_notice', 'nonce' );
-	
-	// Check if user has capability to manage options (admin only)
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-	}
-	
-	// Store dismissal with timestamp for tracking purposes
-	$dismissal_data = array(
-		'dismissed' => true,
-		'timestamp' => current_time( 'timestamp' ),
-		'dismissed_by' => get_current_user_id(),
-	);
-	
-	update_option( 'tww_deprecation_notice_dismissed', $dismissal_data );
-	
-	wp_send_json_success( array( 'message' => 'Notice dismissed successfully' ) );
-}
+        update_option('tww_deprecation_notice_dismissed', $dismissal_data);
 
-add_action( 'wp_ajax_tww_dismiss_deprecation_notice', 'tww_dismiss_deprecation_notice' );
+        wp_send_json_success(['message' => 'Notice dismissed successfully']);
+    }
 
-/**
- * Display the settings page.
- *
- * We don't need to generate a nonce because we're using settings fields which
- * does this for us.
- *
- * @return void
- */
-function tww_setting_page() {
+    add_action('wp_ajax_tww_dismiss_deprecation_notice', 'tww_dismiss_deprecation_notice');
 
-	$translations = get_option( TWW_TRANSLATIONS_LINES );
+    /**
+     * Display the settings page.
+     *
+     * We don't need to generate a nonce because we're using settings fields which
+     * does this for us.
+     *
+     * @return void
+     */
+    function tww_setting_page()
+    {
 
-	// Check if Loco Translate is active
-	if ( ! function_exists( 'is_plugin_active' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	
-	// If Loco Translate is active and there's no data, redirect to settings page
-	if ( is_plugin_active( 'loco-translate/loco.php' ) && empty( $translations ) ) {
-		wp_safe_redirect( admin_url( 'options-general.php' ) );
-		exit;
-	}
+        $translations = get_option(TWW_TRANSLATIONS_LINES);
 
-?>
+        // Check if Loco Translate is active
+        if (! function_exists('is_plugin_active')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        // If Loco Translate is active and there's no data, redirect to settings page
+        if (is_plugin_active('loco-translate/loco.php') && empty($translations)) {
+            wp_safe_redirect(admin_url('options-general.php'));
+            exit;
+        }
+
+    ?>
 <style>
 .translation-table {
 	margin-top: 15px;
@@ -296,63 +356,63 @@ function tww_setting_page() {
 </style>
 <div class="wrap">
 
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'Translate Words', 'translate-words' ); ?></h1>
+	<h1 class="wp-heading-inline"><?php esc_html_e('Translate Words', 'translate-words'); ?></h1>
 
 	<form method="POST" action="options.php">
 
 <?php
-	do_settings_sections( TWW_TRANSLATIONS );
-	settings_fields( TWW_TRANSLATIONS );
-?>
+    do_settings_sections(TWW_TRANSLATIONS);
+        settings_fields(TWW_TRANSLATIONS);
+    ?>
 		<table class="translation-table wp-list-table widefat fixed striped">
 			<thead>
 				<tr valign="top">
-					<th scope="column" class="column-current"><?php esc_html_e( 'Current', 'translate-words' ); ?></th>
-					<th scope="column" class="column-new"><?php esc_html_e( 'New', 'translate-words' ); ?></th>
+					<th scope="column" class="column-current"><?php esc_html_e('Current', 'translate-words'); ?></th>
+					<th scope="column" class="column-new"><?php esc_html_e('New', 'translate-words'); ?></th>
 					<th scope="column"></th>
 				</tr>
 			</thead>
 			<tbody id="rowsTranslations">
 <?php
-	if ( ! empty( $translations ) ) {
-		foreach ( $translations as $key => $value ) {
+    if (! empty($translations)) {
+            foreach ($translations as $key => $value) {
 
-			$original = isset( $value['original'] ) ? $value['original'] : '';
-			$overwrite = isset( $value['overwrite'] ) ? $value['overwrite'] : '';
+                $original  = isset($value['original']) ? $value['original'] : '';
+                $overwrite = isset($value['overwrite']) ? $value['overwrite'] : '';
 
-?>
-				<tr valign="top" id="row_id_<?php echo esc_attr( $key ); ?>_translate">
+            ?>
+				<tr valign="top" id="row_id_<?php echo esc_attr($key); ?>_translate">
 					<td style="white-space: nowrap">
-						<input type="text" style="width:100%;" name="<?php echo esc_attr( TWW_TRANSLATIONS_LINES ); ?>[original][]" value="<?php echo esc_textarea( $original ); ?>" />
+						<input type="text" style="width:100%;" name="<?php echo esc_attr(TWW_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_textarea($original); ?>" />
 						&rarr;
 					</td>
 					<td>
-						<input type="text" style="width:100%;" name="<?php echo esc_attr( TWW_TRANSLATIONS_LINES ); ?>[overwrite][]" value="<?php echo esc_textarea( $value['overwrite'] ); ?>" />
+						<input type="text" style="width:100%;" name="<?php echo esc_attr(TWW_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_textarea($value['overwrite']); ?>" />
 					</td>
 					<td class="action">
 						<span class="trash">
 							<a
 								href="#"
 								class="submitdelete submitDeleteTranslation"
-								aria-lable="<?php esc_attr_e( 'Remove this translation', 'translate-words' ); ?>"
-								id="row_id_<?php echo esc_attr( $key ); ?>"><?php esc_html_e( 'Remove', 'translate-words' ); ?></span>
+								aria-lable="<?php esc_attr_e('Remove this translation', 'translate-words'); ?>"
+								id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e('Remove', 'translate-words'); ?></span>
 						</span>
 					</td>
 				</tr>
 <?php
-		}
-	}
+    }
+        }
 
-	echo TWW_NEW_STRING_TEMPLATE;
+        echo TWW_NEW_STRING_TEMPLATE;
 
-?>
+    ?>
 
 			</tbody>
 		</table>
 
 		<p class="submit">
-			<button class="button-secondary" style="margin:5px 0;" id="addTranslation"><?php esc_html_e( 'Add Translation +', 'translate-words' ); ?></button>
-			<input type="submit" class="button-primary" style="margin:5px 0;" value="<?php esc_attr_e( 'Save', 'translate-words' ); ?>" />
+			<button class="button-secondary" style="margin:5px 0;" id="addTranslation"><?php esc_html_e('Add Translation +', 'translate-words'); ?></button>
+			<input type="submit" class="button-primary" style="margin:5px 0;" value="<?php esc_attr_e('Save', 'translate-words'); ?>" />
 		</p>
 
 	</form>
@@ -360,41 +420,37 @@ function tww_setting_page() {
 
 <?php
 
-}
+    }
 
+    /**
+     * Output scripts and variables for translating Gutenberg editor strings.
+     *
+     * @return {void}
+     */
+    function tww_translate_gutenberg_string()
+    {
 
-/**
- * Output scripts and variables for translating Gutenberg editor strings.
- *
- * @return {void}
- */
-function tww_translate_gutenberg_string() {
+        // Output translations as json array.
+        $overrides = get_option(TWW_TRANSLATIONS_LINES);
 
-	// Output translations as json array.
-	$overrides = get_option( TWW_TRANSLATIONS_LINES );
+        if (! is_array($overrides)) {
+            return;
+        }
 
-	if ( ! is_array( $overrides ) ) {
-		return;
-	}
+        printf(
+            '<script>var tww_translations = %s;</script>',
+            wp_json_encode($overrides)
+        );
 
-	printf(
-		'<script>var tww_translations = %s;</script>',
-		wp_json_encode( $overrides )
-	);
+        // Enqueue editor scripts.
+        wp_enqueue_script(
+            'TWW_TRANSLATIONS_JS',
+            TWW_PLUGINS_DIR . 'js/gb_i18n.js',
+            ['jquery'],
+            TWW_VERSION,
+            true
+        );
 
-	// Enqueue editor scripts.
-	wp_enqueue_script(
-		'TWW_TRANSLATIONS_JS',
-		TWW_PLUGINS_DIR . 'js/gb_i18n.js',
-		array( 'jquery' ),
-		'1.0.0',
-		true
-	);
+    }
 
-}
-
-add_filter( 'admin_head', 'tww_translate_gutenberg_string' );
-
-
-
-
+    add_filter('admin_head', 'tww_translate_gutenberg_string');

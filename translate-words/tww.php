@@ -54,7 +54,7 @@ function tww_is_legacy_user() {
 		return false;
 	}
 	
-	return 'yes' === $legacy_flag;
+	return true;
 }
 
 /**
