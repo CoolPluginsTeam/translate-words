@@ -75,8 +75,9 @@ add_action('admin_notices', function() {
                 <p>
                 <?php
                 printf(
-                    /* translators: %s: link to Translate Words plugin */
-                    wp_kses_post( __( 'The Linguator – Multilingual AI Translation plugin has been automatically deactivated because all its functionality is now available in <a href="%s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    /* translators: %1$s: link to Linguator plugin, %2$s: link to Translate Words plugin */
+                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    esc_url( 'https://wordpress.org/plugins/linguator-multilingual-ai-translation/' ),
                     esc_url( 'https://wordpress.org/plugins/translate-words/' )
                 );
                 ?>
