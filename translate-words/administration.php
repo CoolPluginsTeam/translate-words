@@ -181,6 +181,26 @@ function tww_validate_translations_and_save( $strings ) {
 
 	}
 
+	// Check if Loco Translate is active and all data was removed
+	if ( empty( $update_translations ) ) {
+		if ( ! function_exists( 'is_plugin_active' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		
+		// If Loco Translate is active and all data is removed, redirect to Linguator settings
+		if ( is_plugin_active( 'loco-translate/loco.php' ) ) {
+			// Add a filter to change the redirect URL after settings save
+			add_filter( 'wp_redirect', function( $location ) {
+				// Check if this is a redirect from options.php (settings save)
+				if ( strpos( $location, 'settings-updated=true' ) !== false ) {
+					// Redirect to Linguator settings instead
+					return admin_url( 'admin.php?page=lmat_settings' );
+				}
+				return $location;
+			}, 10, 1 );
+		}
+	}
+
 	return $update_translations;
 
 }
