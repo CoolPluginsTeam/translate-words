@@ -1,8 +1,8 @@
 === Linguator AI – Automatic Translation & Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
-Tags: translation, multilingual, language, ai translation 
-Requires at least: 6.2
+Tags: translation, multilingual, languages, ai translation 
+Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
 Stable tag: 2.0.0
@@ -24,7 +24,7 @@ Translate your **posts**, **pages**, **menus**, **categories**, **custom post ty
 
 https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
-[Check Live Demo](https://wordpress.org/plugins/translate-words/?preview=1) | [Learn more](https://linguator.com/?utm_source=lmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
+[Check Live Demo](https://wordpress.org/plugins/linguator-multilingual-ai-translation/?preview=1) | [Learn more](https://linguator.com/?utm_source=lmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
 
 == AI Translation Made Easy for WordPress ==
 **Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
@@ -64,7 +64,7 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 * [Chrome Summarizer API Documentation](https://developer.chrome.com/docs/ai/summarizer-api)
 * [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
 
-[Linguator on GitHub.](https://github.com/CoolPluginsTeam/translate-words) 
+[Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words) 
 
 == Screenshots ==
 1. Linguator Language Switcher Preview.
@@ -96,6 +96,17 @@ Follow these steps to complete the setup:
 That's it! The setup configuration has been successfully completed. You can now start translating your website content and make it fully multilingual.
 
 == Frequently Asked Questions ==
+
+
+= Transition Notice =
+Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
+
+The current Translate Words feature set will remain available until approximately June 2026. After this period, the plugin will fully transition to Linguator.
+
+If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
+
+You are not required to take immediate action. Your website will continue working normally during the transition period. A detailed migration panel is included inside the plugin settings with all guidance and support information.
+
 
 = Which languages are supported? =
 Linguator supports all languages that WordPress supports, including RTL languages.
@@ -135,16 +146,29 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
 * **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
-
 == Changelog ==
+> **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
+> The current functionality will remain available until around **June 2026**.
+> If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
-= 1.3.0 - 23-12-2025
-* **Added:** Update with core multilingual features.
-* Transferred plugin ownership to [Satinder Singh](https://profiles.wordpress.org/satindersingh/) (Co-founder, [Cool Plugins](https://coolplugins.net)).
-* Refreshed plugin icon and banner assets for a modern and consistent visual identity.
-* Implemented several code optimizations to improve stability and maintainability.
-* Renamed plugin to “Linguator – Multilingual AI Translation” for better clarity and branding.
-* Deprecated the previous functionality.
+
+=  Version 2.0.0 (Major Update) | 29/12/2025 =
+
+* Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
+* Introduced: Introduced **LinguatorAI**, a modern AI-based multilingual plugin
+* Added : Added clear notice about **Translate Words feature deprecation** planned around **June 2026**
+* Provided recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
+* Added: **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
+* Added: **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
+* Added: **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking
+* Added: **Inline Translation Mode** to translate content block-by-block with live preview
+* Added: **Page Translation Module** to generate language versions including SEO titles and meta descriptions
+* Added: **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection
+* Added: **Language Switcher Options** – widget, block, Elementor widget, and menu integration
+* Added: **Custom Field Translation Manager** for managing ACF and meta-based translations
+*Improved:* Added migration guidance and helpful links
+*Improved:* Improved stability and minor internal improvements
+*Improved:* General cleanup and maintenance
 
 
 = 1.2.6 - 6th February 2024 =
@@ -164,7 +188,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = 1.2.1 - 22nd May 2022 =
 * Fix issue with new translations not saving properly.
-* Reduce duplication further (and remove the liklihood of this bug from re-appearing).
+* Reduce duplication further (and remove the likelihood of this bug from re-appearing).
 
 = 1.2.0 - 24th January 2022 =
 * Fix bug with the remove button not working. Thanks @capbussat for the suggested fix and others for the reports!
@@ -184,3 +208,11 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = 1.0.0 - 30th April 2021 =
 * First release
+
+== Upgrade Notice ==
+= 2.0.0 =
+Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, Linguator AI. 
+The current Translate Words functionality will be deprecated and discontinued around June 2026.
+
+You can continue using this plugin safely until then. 
+If you prefer to continue using a similar manual string translation workflow, please migrate to the Loco Translate plugin.

@@ -8,7 +8,7 @@
     // Mark this file as deprecated
     _deprecated_file(
         basename(__FILE__),
-        '1.3.0',
+        '2.0.0',
         'Linguator functionality (use the Linguator features instead of Translate Words)'
     );
 
