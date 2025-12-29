@@ -65,6 +65,35 @@ if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Secu
 	return;
 }
 
+
+// Load legacy Translate Words functionality only for legacy users
+add_action( 'init', function() {
+	// Check if user has legacy Translate Words data
+	$legacy_flag = get_option( 'tww_is_legacy_user' );
+	
+	// If flag doesn't exist, check if they have existing translations
+	if ( false === $legacy_flag ) {
+		$existing_translations = get_option( 'tww_options_lines' );
+		
+		// If they have translations, they're a legacy user
+		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
+			update_option( 'tww_is_legacy_user', 'yes' );
+			$legacy_flag = 'yes';
+		} else {
+			// No translations found, mark as new user (not legacy)
+			update_option( 'tww_is_legacy_user', 'no' );
+			$legacy_flag = 'no';
+		}
+	}
+	
+	// Only load Translate Words files for legacy users
+	if ( 'yes' === $legacy_flag ) {
+		require_once __DIR__ . '/translate-words/tww.php';
+	}
+}, 1 );
+
+
+
 // Display admin notice when linguator plugin is deactivated
 add_action('admin_notices', function() {
     $linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
