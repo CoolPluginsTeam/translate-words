@@ -97,24 +97,6 @@ class LMAT_Usable {
 	}
 
 	/**
-	 * Displays a notice when standalone Linguator plugin is deactivated due to Translate Words being active.
-	 *
-	 * @since 1.2.6
-	 * @return void
-	 */
-	public static function linguator_standalone_conflict_notice() {
-		?>
-		<div class="notice notice-warning is-dismissible">
-			<p>
-				<?php 
-				echo esc_html__( 'The standalone Linguator plugin has been automatically deactivated because Translate Words now includes Linguator functionality.', 'translate-words' );
-				?>
-			</p>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Shows a message in the admin area if the WordPress version is too old.
 	 *
 	 * @since 0.0.8

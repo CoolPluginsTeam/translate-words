@@ -4,11 +4,11 @@
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Automatic Translation & Multilingual Sites.
  * Version:           2.0.0
- * Requires at least: 6.2
+ * Requires at least: 6.8
  * Requires PHP:      7.2
  * Author:            Cool Plugins
  * Author URI:        https://coolplugins.net/
- * Text Domain:       Linguator AI – Automatic Translation & Multilingual Sites
+ * Text Domain:       linguator-multilingual-ai-translation
  * License:           GPL2
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -29,7 +29,7 @@ if ( ! defined( 'LINGUATOR_VERSION' ) ) {
 	define( 'LINGUATOR_VERSION', '2.0.0' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
-	define( 'LMAT_MIN_WP_VERSION', '6.2' );
+	define( 'LMAT_MIN_WP_VERSION', '6.8' );
 }
 if ( ! defined( 'LMAT_MIN_PHP_VERSION' ) ) {
 	define( 'LMAT_MIN_PHP_VERSION', '7.2' );
