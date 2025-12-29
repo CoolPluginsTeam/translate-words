@@ -19,7 +19,11 @@ jQuery(document).ready(function ($) {
             _wpnonce: nonce
         }, function (response) {
             if (response.success) {
-                window.location.reload();
+                // Redirect to the URL provided in the response, or plugins page by default
+                let redirectUrl = response.data && response.data.redirect_url 
+                    ? response.data.redirect_url 
+                    : '/wp-admin/plugins.php';
+                window.location.href = redirectUrl;
             } else {
                 alert('Failed to install Loco Translate. Please try again.');
             }

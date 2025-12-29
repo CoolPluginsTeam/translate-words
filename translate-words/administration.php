@@ -111,7 +111,10 @@ TEMPLATE
             }
         }
 
-        wp_send_json_success(['message' => 'Plugin installed and activated']);
+        wp_send_json_success([
+            'message' => 'Plugin installed and activated',
+            'redirect_url' => admin_url('plugins.php')
+        ]);
     }
 
     add_action('wp_ajax_tww_install_loco_translate', 'tww_install_loco_translate');
