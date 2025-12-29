@@ -3,12 +3,12 @@
  * Plugin Name:       Linguator AI – Automatic Translation & Multilingual Sites
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Automatic Translation & Multilingual Sites.
- * Version:           1.3.0
+ * Version:           1.2.0
  * Requires at least: 6.2
  * Requires PHP:      7.2
  * Author:            Cool Plugins
  * Author URI:        https://coolplugins.net/
- * Text Domain:       linguator-multilingual-ai-translation
+ * Text Domain:       Linguator AI – Automatic Translation & Multilingual Sites
  * License:           GPL2
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -105,7 +105,7 @@ add_action('admin_notices', function() {
                 <?php
                 printf(
                     /* translators: %1$s: link to Linguator plugin, %2$s: link to Translate Words plugin */
-                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Translate Words</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Linguator AI – Automatic Translation & Multilingual Sites</a>.', 'linguator-multilingual-ai-translation' ) ),
                     esc_url( 'https://wordpress.org/plugins/linguator-multilingual-ai-translation/' ),
                     esc_url( 'https://wordpress.org/plugins/translate-words/' )
                 );
