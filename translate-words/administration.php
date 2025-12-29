@@ -75,56 +75,6 @@ TEMPLATE
     add_action('admin_menu', 'tww_add_admin_menu');
 
     /**
-     * Install plugin via AJAX
-     */
-    function tww_install_loco_translate()
-    {
-        if (! current_user_can('install_plugins')) {
-            wp_send_json_error(['message' => 'Permission denied']);
-        }
-
-        check_ajax_referer('tww_install_loco_translate_nonce');
-
-        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-        require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-        require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-        $plugin_slug = sanitize_text_field($_POST['slug']);
-
-        // API call correct slug se
-        $api = plugins_api('plugin_information', [
-            'slug'   => $plugin_slug,
-            'fields' => ['sections' => false],
-        ]);
-
-        if (is_wp_error($api)) {
-            wp_send_json_error(['message' => $api->get_error_message()]);
-        }
-
-        $skin     = new WP_Ajax_Upgrader_Skin();
-        $upgrader = new Plugin_Upgrader($skin);
-        $result   = $upgrader->install($api->download_link);
-
-        if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()]);
-        }
-
-        $install_status = install_plugin_install_status($api);
-        if (current_user_can('activate_plugin', $install_status['file'])) {
-            $activation_result = activate_plugin($install_status['file']);
-            if (is_wp_error($activation_result)) {
-                wp_send_json_error(['message' => $activation_result->get_error_message()]);
-            }
-        }
-
-        wp_send_json_success([
-            'message' => 'Plugin installed and activated',
-            'redirect_url' => admin_url('plugins.php')
-        ]);
-    }
-
-    add_action('wp_ajax_tww_install_loco_translate', 'tww_install_loco_translate');
-    /**
      * Enqueue Admin Scripts.
      *
      * @return void
@@ -290,33 +240,20 @@ TEMPLATE
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
         ) . '</p>';
-        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately June 2026.', 'translate-words') . '</strong><br>';
+        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'translate-words') . '</strong><br>';
         $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
         $message .= '<p>' . sprintf(
             esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words'),
-            '<a href="#" class="loco-install-plugin"
-                            data-plugin="loco-translate"
-                            data-nonce="' . esc_attr(wp_create_nonce('tww_install_loco_translate_nonce')) . '">
-                             ' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '
-                        </a>'
+            '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '</a>'
         ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
         $message .= '<a href="' . esc_url('https://linguator.com/documentation/') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
-        $message .= '<a href="' . esc_url('https://wordpress.org/plugins/loco-translate/') . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">' . esc_html__('Migration Guide', 'translate-words') . '</a>';
         $message .= '</p>';
 
         // Display notice using WordPress standards
         printf(
             '<div class="notice notice-warning is-dismissible tww-deprecation-notice" style="padding: 15px;">%s</div>',
             wp_kses_post($message)
-        );
-
-        wp_enqueue_script(
-            'TWW_INSTALL_LOCOTRANSLATE_JS',
-            TWW_PLUGINS_DIR . 'js/install-loco-translate.js',
-            [],
-            '1.0.0',
-            true
         );
     }
 
