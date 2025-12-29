@@ -5,12 +5,18 @@
      * @package tww
      */
 
-    // Mark this file as deprecated
-    _deprecated_file(
-        basename(__FILE__),
-        '2.0.0',
-        'Linguator functionality (use the Linguator features instead of Translate Words)'
-    );
+    // Mark this file as deprecated - only on specific admin pages
+    if ( 
+        is_admin() && 
+        isset( $_GET['page'] ) && 
+        ( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' )
+    ) {
+        _deprecated_file(
+            basename(__FILE__),
+            '2.0.0',
+            'Linguator functionality (use the Linguator features instead of Translate Words)'
+        );
+    }
 
     /**
      * A temporary variable since we don't seem to be able to use function calls in
