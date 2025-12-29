@@ -301,8 +301,8 @@ TEMPLATE
                         </a>'
         ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
-        $message .= '<a href="' . esc_url('https://linguator.com/documentation/') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">👉 ' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
-        $message .= '<a href="' . esc_url('https://wordpress.org/plugins/loco-translate/') . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">👉 ' . esc_html__('Migration Guide', 'translate-words') . '</a>';
+        $message .= '<a href="' . esc_url('https://linguator.com/documentation/') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
+        $message .= '<a href="' . esc_url('https://wordpress.org/plugins/loco-translate/') . '" class="button button-secondary" style="margin-right: 10px;" target="_blank">' . esc_html__('Migration Guide', 'translate-words') . '</a>';
         $message .= '</p>';
 
         // Display notice using WordPress standards

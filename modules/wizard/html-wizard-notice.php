@@ -22,9 +22,9 @@
 	<?php
 	esc_html_e( 'Welcome to ', 'linguator-multilingual-ai-translation' );
 	?>
-	<a href="https://wordpress.org/plugins/linguator-multilingual-ai-translation/" target="_blank" rel="noopener noreferrer">
+	<a href="https://wordpress.org/plugins/translate-words/" target="_blank" rel="noopener noreferrer">
 	<?php
-	esc_html_e( 'Linguator Multilingual AI Translation', 'linguator-multilingual-ai-translation' );
+	esc_html_e( 'Linguator AI – Automatic Translation & Multilingual Sites', 'linguator-multilingual-ai-translation' );
 	?>
 	</a>
 	</strong>
