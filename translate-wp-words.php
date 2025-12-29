@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Linguator – Multilingual AI Translation
+ * Plugin Name:       Linguator AI – Automatic Translation & Multilingual Sites
  * Plugin URI:        https://linguator.com/
- * Description:       Create a multilingual WordPress website in minutes with Linguator – Multilingual AI Translation.
+ * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Automatic Translation & Multilingual Sites.
  * Version:           1.3.0
  * Requires at least: 6.2
  * Requires PHP:      7.2
