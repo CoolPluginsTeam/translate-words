@@ -259,7 +259,7 @@ if(!class_exists('LMAT_Translation_Dashboard')){
             self::ctp_enqueue_assets();
 
             $message = sprintf(
-                '%s! %s <strong>%s</strong> %s <br>%s %s <a href="https://coolplugins.net/?utm_source=lmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=review_notice" target="_blank"><strong>Cool Plugins</strong></a>!<br/>',
+                '%s! %s <strong>%s</strong> %s <br>%s %s <a href="https://coolplugins.net/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=review_notice" target="_blank"><strong>Cool Plugins</strong></a>!<br/>',
                 __('Thanks for using', 'cp-notice') . ' <b>' . $plugin_name . '</b>',
                 __('You\'ve translated', 'cp-notice'),
                 esc_html($total_character_count) . ' ' . __('characters', 'cp-notice'),

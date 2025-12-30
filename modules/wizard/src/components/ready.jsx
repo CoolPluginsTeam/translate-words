@@ -37,11 +37,11 @@ const Ready = () => {
     variant: 'outline'
   },{
     button: __('Video Tutorial', 'linguator-multilingual-ai-translation'),
-    href: "https://linguator.com/docs/video-tutorials/?utm_source=lmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=setup",
+    href: "https://linguator.com/docs/video-tutorials/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=setup",
     variant: 'outline'
   },{
     button: __('Docs', 'linguator-multilingual-ai-translation'),
-    href: "https://linguator.com/docs/?utm_source=lmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=setup",
+    href: "https://linguator.com/docs/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=setup",
     variant: 'outline'
   },{
     button: __('View Pages', 'linguator-multilingual-ai-translation'),
@@ -53,7 +53,7 @@ const Ready = () => {
     variant: 'outline'
   },{
     button: __('FAQs', 'linguator-multilingual-ai-translation'),
-    href: "https://linguator.com/?utm_source=lmat_plugin&utm_medium=inside&utm_campaign=faqs&utm_content=setup#support",
+    href: "https://linguator.com/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=faqs&utm_content=setup#support",
     variant: 'outline'
   }]
 

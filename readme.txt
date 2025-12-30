@@ -24,7 +24,7 @@ Translate your **posts**, **pages**, **menus**, **categories**, **custom post ty
 
 https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
-[Check Live Demo](https://wordpress.org/plugins/linguator-multilingual-ai-translation/?preview=1) | [Learn more](https://linguator.com/?utm_source=lmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
+[Check Live Demo](https://wordpress.org/plugins/linguator-multilingual-ai-translation/?preview=1) | [Learn more](https://linguator.com/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
 
 == AI Translation Made Easy for WordPress ==
 **Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
