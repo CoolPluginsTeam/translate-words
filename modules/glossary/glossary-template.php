@@ -112,10 +112,10 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
 
 <style>
 <?php foreach ($languages as $lang): 
-    $code = esc_attr($lang['code']);
+    $code = $lang['code'];
 ?>
-.lmat-glossary-table.lmat-hide-lang-<?php echo $code; ?> th[data-lang="<?php echo $code; ?>"],
-.lmat-glossary-table.lmat-hide-lang-<?php echo $code; ?> td[data-lang="<?php echo $code; ?>"] {
+.lmat-glossary-table.lmat-hide-lang-<?php echo esc_attr($code); ?> th[data-lang="<?php echo esc_attr($code); ?>"],
+.lmat-glossary-table.lmat-hide-lang-<?php echo esc_attr($code); ?> td[data-lang="<?php echo esc_attr($code); ?>"] {
     display: none !important;
 }
 <?php endforeach; ?>
@@ -208,7 +208,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                         </form>
                         <div id="add-glossary-success" class="lmat-import-success lmat-hidden">
                             <div class="import-success-icon">
-                                <img src="<?php echo plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE); ?>" alt="Success Icon" />
+                                <img src="<?php echo esc_url( plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE) ); ?>" alt="Success Icon" />
                             </div>
                             <div class="lmat-import-success-message">
                                 <?php esc_html_e('Glossary term added successfully!', $text_domain); ?>
@@ -230,7 +230,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                             <label class="lmat-upload-box" id="upload-label">
                                 <input type="file" accept=".csv" id="lmat-csv-upload" hidden>
                                 <div class="lmat-upload-area">
-                                    <img src="<?php echo plugins_url('assets/images/csv.svg', LINGUATOR_ROOT_FILE); ?>" alt="CSV Icon" />
+                                    <img src="<?php echo esc_url( plugins_url('assets/images/csv.svg', LINGUATOR_ROOT_FILE) ); ?>" alt="CSV Icon" />
                                     <span id="file-name-display"><?php esc_html_e( 'Select a CSV file to upload', $text_domain ); ?></span>
                                 </div>
                             </label>
@@ -245,7 +245,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                         <div id="lmat-import-success-ui" class="lmat-hidden">
                             <div id="lmat-import-success" class="lmat-import-success">
                                 <div class="import-success-icon">
-                                    <img src="<?php echo plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE); ?>" alt="Success Icon" />
+                                    <img src="<?php echo esc_url( plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE) ); ?>" alt="Success Icon" />
                                 </div>
                                 <div class="import-success-file">
                                     <span id="importing-file-label"><?php esc_html_e('Importing:', $text_domain); ?></span>
@@ -290,8 +290,8 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                 }
                 printf(
                     '<button class="lmat-alphabet-btn%s" %s data-letter="%s">%s</button>',
-                    $active,
-                    $enabled,
+                    esc_attr($active),
+                    esc_attr($enabled),
                     esc_attr($char),
                     esc_html($char)
                 );
@@ -334,18 +334,18 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                     data-lang="<?php echo esc_attr($lang['code']); ?>">
                                     <?php
                                     echo !empty($lang['flag'])
-                                        ? $lang['flag']
-                                        : '<img src="' . esc_attr($lang['img']) . '" alt="' . esc_attr($lang['alt']) . '" />';
+                                        ? wp_kses_post($lang['flag'])
+                                        : '<img src="' . esc_url($lang['img']) . '" alt="' . esc_attr($lang['alt']) . '" />';
                                     ?>
                                 </th>
                             <?php endforeach; ?>
                             <th class="lmat-actions-cell">
                                 <div class="lmat-action-buttons-header">
                                     <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-left" title="Scroll Left">
-                                        <img src="<?php echo plugins_url('assets/images/arrow-left.svg', LINGUATOR_ROOT_FILE); ?>" />
+                                        <img src="<?php echo esc_url( plugins_url('assets/images/arrow-left.svg', LINGUATOR_ROOT_FILE) ); ?>" />
                                     </button>
                                     <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-right" title="Scroll Right">
-                                        <img src="<?php echo plugins_url('assets/images/arrow-right.svg', LINGUATOR_ROOT_FILE); ?>" />
+                                        <img src="<?php echo esc_url( plugins_url('assets/images/arrow-right.svg', LINGUATOR_ROOT_FILE) ); ?>" />
                                     </button>
                                 </div>
                             </th>
@@ -433,7 +433,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                                     <button type="button" class="lmat-edit-btn-svg" 
                                                             data-term="<?php echo esc_attr(sanitize_text_field($term)); ?>"
                                                             data-source-lang="<?php echo esc_attr(sanitize_key($original_language_code)); ?>">
-                                                        <img src="<?php echo plugins_url('assets/images/file.svg', LINGUATOR_ROOT_FILE); ?>" 
+                                                        <img src="<?php echo esc_url( plugins_url('assets/images/file.svg', LINGUATOR_ROOT_FILE) ); ?>" 
                                                             alt="<?php esc_attr_e('No translation', $text_domain); ?>" />
                                                     </button>
                                                 </span>
