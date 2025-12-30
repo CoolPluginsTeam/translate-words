@@ -3,6 +3,11 @@
  * Run this directly to test the search and replace function.
  * This isn't used as part of the plugin apart from testing.
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 error_reporting( E_ALL );
 
 include_once 'frontend.php';

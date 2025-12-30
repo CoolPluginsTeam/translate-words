@@ -1,5 +1,10 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+
 if(!isset($languages) && !is_array($languages) && empty($languages)){
     $languages = [];
 }
