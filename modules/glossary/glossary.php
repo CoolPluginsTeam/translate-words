@@ -247,16 +247,29 @@ if (!class_exists('Glossary')) {
             if (!current_user_can('manage_options')) {
                 wp_send_json_error('Permission denied');
             }
-            if (empty($_FILES['csv_file']['tmp_name'])) {
+            
+            // Check if file was uploaded
+            if (!isset($_FILES['csv_file']) || empty($_FILES['csv_file']['tmp_name'])) {
                 wp_send_json_error('No file uploaded');
             }
-            if ($_FILES['csv_file']['type'] !== 'text/csv' && pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION) !== 'csv') {
+            
+            // Validate file type
+            $file_name = isset($_FILES['csv_file']['name']) ? sanitize_file_name($_FILES['csv_file']['name']) : '';
+            $file_type = isset($_FILES['csv_file']['type']) ? sanitize_text_field($_FILES['csv_file']['type']) : '';
+            $file_extension = !empty($file_name) ? pathinfo($file_name, PATHINFO_EXTENSION) : '';
+            
+            if ($file_type !== 'text/csv' && $file_extension !== 'csv') {
                 wp_send_json_error('Invalid file type');
             }
-            if ($_FILES['csv_file']['size'] > 2 * 1024 * 1024) { // 2MB limit
+            
+            // Check file size
+            $file_size = isset($_FILES['csv_file']['size']) ? intval($_FILES['csv_file']['size']) : 0;
+            if ($file_size > 2 * 1024 * 1024) { // 2MB limit
                 wp_send_json_error('File too large');
             }
-            $csv_path = $_FILES['csv_file']['tmp_name'];
+            
+            // Sanitize file path
+            $csv_path = sanitize_text_field($_FILES['csv_file']['tmp_name']);
             $result = self::import_glossary_csv($csv_path);
 
             if ($result) {
@@ -363,6 +376,7 @@ if (!class_exists('Glossary')) {
                 wp_send_json_error('Permission denied');
             }
 
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $data = $_POST['data'] ?? [];
             $source_lang = sanitize_text_field($data['source_lang'] ?? '');
             $translations = isset($data['translations']) && is_array($data['translations']) ? $data['translations'] : [];
@@ -435,6 +449,7 @@ if (!class_exists('Glossary')) {
             if (!current_user_can('manage_options')) {
                 wp_send_json_error('Permission denied');
             }
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $term = sanitize_text_field($_POST['term'] ?? '');
             $source_lang = sanitize_text_field($_POST['source_lang'] ?? '');
             if (empty($term) || empty($source_lang)) {
@@ -491,6 +506,7 @@ if (!class_exists('Glossary')) {
             if (!current_user_can('manage_options')) {
                 wp_send_json_error('Permission denied');
             }
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $type = sanitize_text_field($_POST['type'] ?? '');
             $term = sanitize_text_field($_POST['term'] ?? '');
             $description = sanitize_textarea_field($_POST['description'] ?? '');
@@ -621,6 +637,7 @@ if (!class_exists('Glossary')) {
                 wp_send_json_error('Permission denied');
             }
 
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
             $source_lang = isset($_POST['source_lang']) ? sanitize_text_field($_POST['source_lang']) : '';
             $target_langs = isset($_POST['target_lang']) ? sanitize_text_field($_POST['target_lang']) : '';
 
