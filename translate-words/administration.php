@@ -63,8 +63,8 @@ TEMPLATE
         }
 
         add_options_page(
-            esc_html__('Translate Words', 'translate-words'),
-            esc_html__('Translate Words', 'translate-words'),
+            esc_html__('Translate Words', 'linguator-multilingual-ai-translation'),
+            esc_html__('Translate Words', 'linguator-multilingual-ai-translation'),
             'administrator',
             TWW_PAGE,
             'tww_setting_page'
@@ -234,20 +234,20 @@ TEMPLATE
         }
 
         // Build notice message
-        $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words') . '</h3>';
+        $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'linguator-multilingual-ai-translation') . '</h3>';
         $message .= '<p>' . sprintf(
-            __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words'),
+            __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'linguator-multilingual-ai-translation'),
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
         ) . '</p>';
-        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'translate-words') . '</strong><br>';
-        $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
+        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'linguator-multilingual-ai-translation') . '</strong><br>';
+        $message .= esc_html__('Until then, you can continue using this plugin safely.', 'linguator-multilingual-ai-translation') . '</p>';
         $message .= '<p>' . sprintf(
-            esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words'),
+            esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'linguator-multilingual-ai-translation'),
             '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '</a>'
         ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
-        $message .= '<a href="' . esc_url('https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=tw_notice') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
+        $message .= '<a href="' . esc_url('https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=tw_notice') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'linguator-multilingual-ai-translation') . '</a>';
         $message .= '</p>';
 
         // Display notice using WordPress standards
@@ -319,7 +319,7 @@ TEMPLATE
 	</style>
 	<div class="wrap">
 
-		<h1 class="wp-heading-inline"><?php esc_html_e('Translate Words', 'translate-words'); ?></h1>
+		<h1 class="wp-heading-inline"><?php esc_html_e('Translate Words', 'linguator-multilingual-ai-translation'); ?></h1>
 
 		<form method="POST" action="options.php">
 
@@ -330,8 +330,8 @@ TEMPLATE
 		<table class="translation-table wp-list-table widefat fixed striped">
 			<thead>
 				<tr valign="top">
-					<th scope="column" class="column-current"><?php esc_html_e('Current', 'translate-words'); ?></th>
-					<th scope="column" class="column-new"><?php esc_html_e('New', 'translate-words'); ?></th>
+					<th scope="column" class="column-current"><?php esc_html_e('Current', 'linguator-multilingual-ai-translation'); ?></th>
+					<th scope="column" class="column-new"><?php esc_html_e('New', 'linguator-multilingual-ai-translation'); ?></th>
 					<th scope="column"></th>
 				</tr>
 			</thead>
@@ -357,8 +357,8 @@ TEMPLATE
 								<a
 									href="#"
 									class="submitdelete submitDeleteTranslation"
-									aria-lable="<?php esc_attr_e('Remove this translation', 'translate-words'); ?>"
-									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e('Remove', 'translate-words'); ?></span>
+									aria-lable="<?php esc_attr_e('Remove this translation', 'linguator-multilingual-ai-translation'); ?>"
+									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e('Remove', 'linguator-multilingual-ai-translation'); ?></span>
 							</span>
 						</td>
 					</tr>
@@ -374,8 +374,8 @@ TEMPLATE
 			</table>
 
 			<p class="submit">
-				<button class="button-secondary" style="margin:5px 0;" id="addTranslation"><?php esc_html_e('Add Translation +', 'translate-words'); ?></button>
-				<input type="submit" class="button-primary" style="margin:5px 0;" value="<?php esc_attr_e('Save', 'translate-words'); ?>" />
+				<button class="button-secondary" style="margin:5px 0;" id="addTranslation"><?php esc_html_e('Add Translation +', 'linguator-multilingual-ai-translation'); ?></button>
+				<input type="submit" class="button-primary" style="margin:5px 0;" value="<?php esc_attr_e('Save', 'linguator-multilingual-ai-translation'); ?>" />
 			</p>
 
 		</form>
