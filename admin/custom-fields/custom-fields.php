@@ -94,7 +94,7 @@ if(!class_exists('Custom_Fields')) {
                 $s_no                        = 1;
                 ?>
                 <div class="lmat-custom-data-table-wrapper lmat-custom-fields">
-                    <h3><?php echo esc_html__('Custom Fields Translation Settings', 'linguator-multilingual-ai-translation'); ?>
+                    <h3><?php echo __('Custom Fields Translation Settings', 'linguator-multilingual-ai-translation'); ?>
                     <br>
                     <p><?php echo sprintf(esc_html__('Select which custom fields will be translated by %s.', 'linguator-multilingual-ai-translation'), 'Linguator'); ?></p>
                     </h3>
@@ -151,11 +151,11 @@ if(!class_exists('Custom_Fields')) {
                     $value_type=isset($value['type']) && !empty($value['type']) ? $value['type'] : 'string';
                     
                     echo '<tr>';
-                    echo '<td>' . esc_html($s_no++) . '</td>';
-                    echo '<td>' . esc_html($meta_field) . '</td>';
-                    echo '<td>' . esc_html($value_type) . '</td>';
-                    echo '<td>' . esc_html($status) . '</td>';
-                    echo '<td align="center"><input type="checkbox" name="lmat_fields_status" value="' . esc_attr($meta_field) . '" ' . esc_attr($checked) . '></td>';
+                    echo '<td>' . $s_no++ . '</td>';
+                    echo '<td>' . $meta_field . '</td>';
+                    echo '<td>' . $value_type . '</td>';
+                    echo '<td>' . $status . '</td>';
+                    echo '<td align="center"><input type="checkbox" name="lmat_fields_status" value="' . $meta_field . '" ' . $checked . '></td>';
                     echo '</tr>';
                 }
             }
