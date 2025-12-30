@@ -81,9 +81,13 @@ class LMAT_Admin_Strings {
 			'widget_text'  => __( 'Widget text', 'linguator-multilingual-ai-translation' ),
 		);
 
-		global $wp_registered_widgets;
-		$sidebars = wp_get_sidebars_widgets();
-		foreach ( $sidebars as $sidebar => $widgets ) {
+	global $wp_registered_widgets;
+	// Use get_option instead of wp_get_sidebars_widgets() to avoid forbidden function warning
+	$sidebars = get_option( 'sidebars_widgets', array() );
+	if ( ! is_array( $sidebars ) ) {
+		$sidebars = array();
+	}
+	foreach ( $sidebars as $sidebar => $widgets ) {
 			if ( 'wp_inactive_widgets' == $sidebar || empty( $widgets ) ) {
 				continue;
 			}
