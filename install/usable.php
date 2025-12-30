@@ -85,7 +85,7 @@ class LMAT_Usable {
 		?>
 		<div class="notice notice-error">
 			<p>
-				<strong><?php esc_html_e( 'Linguator – Multilingual AI Translation', 'linguator-multilingual-ai-translation' ); ?></strong>
+				<strong><?php esc_html_e( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'linguator-multilingual-ai-translation' ); ?></strong>
 			</p>
 			<p>
 				<?php 

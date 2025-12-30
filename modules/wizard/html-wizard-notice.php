@@ -24,7 +24,7 @@
 	?>
 	<a href="https://wordpress.org/plugins/translate-words/" target="_blank" rel="noopener noreferrer">
 	<?php
-	esc_html_e( 'Linguator AI – Automatic Translation & Multilingual Sites', 'linguator-multilingual-ai-translation' );
+	esc_html_e( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'linguator-multilingual-ai-translation' );
 	?>
 	</a>
 	</strong>

@@ -40,7 +40,7 @@ if (!class_exists('LMAT_cronjob')) {
 
                 'site_id'           => md5($site_id),
                 'plugin_version'    => $plugin_version,
-                'plugin_name'       => 'Linguator – Multilingual AI Translation',
+                'plugin_name'       => 'Linguator AI – Auto Translate & Create Multilingual Sites',
                 'plugin_initial'    => $initial_version,
                 'email'             => $admin_email,
                 'site_url'          => $site_url,

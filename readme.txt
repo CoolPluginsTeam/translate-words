@@ -1,4 +1,4 @@
-=== Linguator AI – Automatic Translation & Multilingual Sites  ===
+=== Linguator AI – Auto Translate & Create Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
 Tags: translation, multilingual, languages, ai translation 
@@ -15,7 +15,7 @@ Translate your WordPress website into multiple languages with AI. Linguator make
 
 https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
-**Linguator AI – Automatic Translation & Multilingual Sites** is an all-in-one multilingual WordPress plugin designed for site owners who want to reach a global audience without **recurring fees**, **external SaaS platforms**, or **complex setups**.
+**Linguator AI – Auto Translate & Create Multilingual Sites** is an all-in-one multilingual WordPress plugin designed for site owners who want to reach a global audience without **recurring fees**, **external SaaS platforms**, or **complex setups**.
 
 Translate your **posts**, **pages**, **menus**, **categories**, **custom post types**, **media**, and **SEO data** using AI, and refine translations manually when needed, all from your WordPress dashboard.
 
@@ -79,7 +79,7 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 3. Search for "Linguator".
 4. Click Install and then Activate the plugin.
 
-That's it! Linguator AI – Automatic Translation & Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
+That's it! Linguator AI – Auto Translate & Create Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
 
 **Language Configuration**
 

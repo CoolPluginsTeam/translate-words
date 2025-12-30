@@ -17,7 +17,7 @@ class LMAT_Admin_Feedback {
 
     private $plugin_url     = LINGUATOR_URL;
 	private $plugin_version = LINGUATOR_VERSION;
-	private $plugin_name    = 'Linguator – Multilingual AI Translation';
+	private $plugin_name    = 'Linguator AI – Auto Translate & Create Multilingual Sites';
 	private $plugin_slug    = 'lmat';
 	protected $options;
     
@@ -115,7 +115,7 @@ class LMAT_Admin_Feedback {
 					<?php endforeach; ?>
 					
 					<div class="cp-feedback-terms">
-					<input class="cp-feedback-terms-input" id="cp-feedback-terms-input" type="checkbox"><label for="cp-feedback-terms-input"><?php echo esc_html__( 'I agree to share anonymous usage data and basic site details (such as server, PHP, and WordPress versions) to support Linguator AI – Automatic Translation & Multilingual Sites improvement efforts. Additionally, I allow Cool Plugins to store all information provided through this form and to respond to my inquiry.', 'linguator-multilingual-ai-translation' ); ?></label>
+					<input class="cp-feedback-terms-input" id="cp-feedback-terms-input" type="checkbox"><label for="cp-feedback-terms-input"><?php echo esc_html__( 'I agree to share anonymous usage data and basic site details (such as server, PHP, and WordPress versions) to support Linguator AI – Auto Translate & Create Multilingual Sites improvement efforts. Additionally, I allow Cool Plugins to store all information provided through this form and to respond to my inquiry.', 'linguator-multilingual-ai-translation' ); ?></label>
 					</div>
 
 					<div class="cp-feedback-button-wrapper">
