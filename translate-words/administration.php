@@ -247,7 +247,7 @@ TEMPLATE
             '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '</a>'
         ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
-        $message .= '<a href="' . esc_url('https://linguator.com/documentation/') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
+        $message .= '<a href="' . esc_url('https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=tw_notice') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
         $message .= '</p>';
 
         // Display notice using WordPress standards
