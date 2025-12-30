@@ -355,7 +355,6 @@ class LMAT_Admin_Menu_Sync {
 			wp_send_json_error( $result );
 			}
 		} catch ( Exception $e ) {
-			error_log( 'Menu Sync Exception: ' . $e->getMessage() );
 			wp_send_json_error( array( 
 				'message' => $e->getMessage(),
 				'error' => 'exception'
@@ -987,7 +986,6 @@ class LMAT_Admin_Menu_Sync {
 		);
 		
 		if ( is_wp_error( $response ) ) {
-			error_log( 'Google Translate Error: ' . $response->get_error_message() );
 			return false;
 		}
 		
@@ -1011,6 +1009,13 @@ class LMAT_Admin_Menu_Sync {
 	private function language_has_content( $lang_slug ) {
 		global $wpdb;
 		
+		// Check cache first
+		$cache_key = 'lmat_lang_has_content_' . $lang_slug;
+		$cached = wp_cache_get( $cache_key, 'linguator' );
+		if ( false !== $cached ) {
+			return (bool) $cached;
+		}
+		
 		// Get all translatable post types (includes custom post types)
 		$post_types = $this->model->post->get_translated_object_types();
 		
@@ -1025,23 +1030,32 @@ class LMAT_Admin_Menu_Sync {
 			return false;
 		}
 		
-		// Use direct SQL query for maximum performance
-		// This avoids WP_Query overhead and is much faster
-		$post_types_placeholder = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
+		// Build placeholders for IN clause - use correct format for wpdb->prepare()
+		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
 		
-		$sql = "SELECT 1 
-				FROM {$wpdb->posts} p 
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-				WHERE tt.taxonomy = 'lmat_language' 
-				AND tt.term_id = %d 
-				AND p.post_status = 'publish' 
-				AND p.post_type IN ($post_types_placeholder)
-				LIMIT 1";
+		// Build the SQL query with placeholders
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare(
+			"SELECT 1 
+			FROM {$wpdb->posts} p 
+			INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+			WHERE tt.taxonomy = 'lmat_language' 
+			AND tt.term_id = %d 
+			AND p.post_status = 'publish' 
+			AND p.post_type IN ($placeholders)
+			LIMIT 1",
+			array_merge( array( $lang_term->term_id ), $post_types )
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		
-		$params = array_merge( array( $lang_term->term_id ), $post_types );
-		$prepared_sql = $wpdb->prepare( $sql, $params );
+		// Execute query
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = (bool) $wpdb->get_var( $sql );
 		
-		return (bool) $wpdb->get_var( $prepared_sql );
+		// Cache the result for 5 minutes
+		wp_cache_set( $cache_key, $result, 'linguator', 300 );
+		
+		return $result;
 	}
 }
