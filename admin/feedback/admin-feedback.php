@@ -18,7 +18,7 @@ class LMAT_Admin_Feedback {
     private $plugin_url     = LINGUATOR_URL;
 	private $plugin_version = LINGUATOR_VERSION;
 	private $plugin_name    = 'Linguator AI – Auto Translate & Create Multilingual Sites';
-	private $plugin_slug    = 'lmat';
+	private $plugin_slug    = 'twlmat';
 	protected $options;
     
     /*

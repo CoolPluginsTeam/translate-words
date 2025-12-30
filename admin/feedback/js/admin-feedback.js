@@ -1,7 +1,7 @@
 (function($){
     $(document).ready(function(){
         let plugin_name = 'translate-words';
-		let plugin_slug = 'lmat';
+		let plugin_slug = 'twlmat';
         
         $target = $('#the-list').find('[data-slug="'+plugin_name+'"] span.deactivate a');
         var plugin_deactivate_link = $target.attr('href');
