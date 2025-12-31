@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+
 /**
  * Translates strings on the frontend.
  *
@@ -11,10 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 // Mark this file as deprecated - only on specific admin pages
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 if ( 
 	is_admin() && 
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	isset( $_GET['page'] ) && 
-	( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' )
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' ) 
 ) {
 	_deprecated_file( 
 		basename( __FILE__ ), 

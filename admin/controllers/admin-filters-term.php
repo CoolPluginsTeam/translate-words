@@ -344,13 +344,14 @@ class LMAT_Admin_Filters_Term {
 	protected function save_language( $term_id, $taxonomy ) {
 		$term_id = (int) $term_id;
 
-		/*
-		 * Category metabox.
-		 */
-		if ( isset( $_POST['term_lang_choice'], $_REQUEST[ '_ajax_nonce-add-' . $taxonomy ] ) && wp_verify_nonce( $_REQUEST[ '_ajax_nonce-add-' . $taxonomy ], 'add-' . $taxonomy ) ) {
-			$this->maybe_set_language( $term_id, sanitize_key( $_POST['term_lang_choice'] ) );
-			return;
-		}
+	/*
+	 * Category metabox.
+	 */
+	$nonce_key = '_ajax_nonce-add-' . $taxonomy;
+	if ( isset( $_POST['term_lang_choice'], $_REQUEST[ $nonce_key ] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST[ $nonce_key ] ) ), 'add-' . $taxonomy ) ) {
+		$this->maybe_set_language( $term_id, sanitize_key( $_POST['term_lang_choice'] ) );
+		return;
+	}
 
 		/*
 		 * Edit tags or tags metabox.
@@ -361,10 +362,10 @@ class LMAT_Admin_Filters_Term {
 			return;
 		}
 
-		/*
-		 *  *Post* bulk edit, in case a new term is created.
-		 */
-		if ( isset( $_GET['bulk_edit'], $_GET['inline_lang_choice'], $_REQUEST['_wpnonce'] ) && wp_verify_nonce( $_REQUEST['_wpnonce'], 'bulk-posts' ) ) {
+	/*
+	 *  *Post* bulk edit, in case a new term is created.
+	 */
+	if ( isset( $_GET['bulk_edit'], $_GET['inline_lang_choice'], $_REQUEST['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-posts' ) ) {
 			/*
 			 * Bulk edit does not modify the language, so we possibly create a tag in several languages.
 			 */
@@ -405,17 +406,18 @@ class LMAT_Admin_Filters_Term {
 			return;
 		}
 
-		/*
-		 * Quick edit.
-		 */
-		if ( isset( $_POST['inline_lang_choice'], $_REQUEST['_inline_edit'] ) ) {
-			if ( ! wp_verify_nonce( $_REQUEST['_inline_edit'], 'inlineeditnonce' ) && ! wp_verify_nonce( $_REQUEST['_inline_edit'], 'taxinlineeditnonce' ) ) { // Post quick edit or tag quick edit?
-				return;
-			}
-
-			$this->maybe_set_language( $term_id, sanitize_key( $_POST['inline_lang_choice'] ) );
+	/*
+	 * Quick edit.
+	 */
+	if ( isset( $_POST['inline_lang_choice'], $_REQUEST['_inline_edit'] ) ) {
+		$inline_edit_nonce = sanitize_text_field( wp_unslash( $_REQUEST['_inline_edit'] ) );
+		if ( ! wp_verify_nonce( $inline_edit_nonce, 'inlineeditnonce' ) && ! wp_verify_nonce( $inline_edit_nonce, 'taxinlineeditnonce' ) ) { // Post quick edit or tag quick edit?
 			return;
 		}
+
+		$this->maybe_set_language( $term_id, sanitize_key( $_POST['inline_lang_choice'] ) );
+		return;
+	}
 
 		/*
 		 * Edit post.

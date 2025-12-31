@@ -8,6 +8,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+
+// phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting
 error_reporting( E_ALL );
 
 include_once 'frontend.php';
@@ -33,16 +37,20 @@ function do_test( $translated_string, $search, $replace, $expected ) {
 
 	$actual = tww_search_and_replace( $translated_string, [$search], [$replace, 'test'] );
 
-	echo "String: $translated_string, Search: $search, Replace with: $replace, Expected: $expected<br>";
-	echo "Result: $actual<br>";
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo 'String: ' . htmlspecialchars( $translated_string, ENT_QUOTES, 'UTF-8' ) . ', Search: ' . htmlspecialchars( $search, ENT_QUOTES, 'UTF-8' ) . ', Replace with: ' . htmlspecialchars( $replace, ENT_QUOTES, 'UTF-8' ) . ', Expected: ' . htmlspecialchars( $expected, ENT_QUOTES, 'UTF-8' ) . '<br>';
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo 'Result: ' . htmlspecialchars( $actual, ENT_QUOTES, 'UTF-8' ) . '<br>';
 
 	if ( $actual !== $expected ) {
-		echo "<span style='color: red'>Test failed: $actual !== $expected</span>\n";
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo "<span style='color: red'>Test failed: " . htmlspecialchars( $actual, ENT_QUOTES, 'UTF-8' ) . ' !== ' . htmlspecialchars( $expected, ENT_QUOTES, 'UTF-8' ) . "</span>\n";
 	} else {
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo "<span style='color: green'>Test passed</span>\n";
 	}
 
-	echo "<br><br>";
+	echo '<br><br>';
 
 }
 

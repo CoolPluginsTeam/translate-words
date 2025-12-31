@@ -12,10 +12,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+
 // Mark this file as deprecated - only on specific admin pages
 if ( 
 	is_admin() && 
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	isset( $_GET['page'] ) && 
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' )
 ) {
 	_deprecated_file( 

@@ -70,7 +70,9 @@ class LMAT_WPSEO {
 			add_filter( 'lmat_post_metas_to_export', array( $this, 'export_post_metas' ) );
 
 			// Yoast SEO adds the columns hooks only for the 'inline-save' action. We need them for 'lmat_update_post_rows' too.
-			if ( wp_doing_ajax() && isset( $_POST['action'] ) && 'lmat_update_post_rows' === $_POST['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing
+			if ( wp_doing_ajax() && isset( $_POST['action'] ) && 'lmat_update_post_rows' === $_POST['action'] ) {
+				 // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 				$GLOBALS['wpseo_meta_columns'] = new WPSEO_Meta_Columns();
 			}
 		}
@@ -83,6 +85,7 @@ class LMAT_WPSEO {
 	 */
 	public function wpseo_translate_options() {
 		if ( method_exists( 'WPSEO_Options', 'clear_cache' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound
 			WPSEO_Options::clear_cache();
 		}
 
@@ -125,6 +128,7 @@ class LMAT_WPSEO {
 	 */
 	public function wpseo_home_url( $url, $path ) {
 		if ( empty( $path ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 			$path = ltrim( (string) wp_parse_url( lmat_get_requested_url(), PHP_URL_PATH ), '/' );
 		}
 
@@ -144,6 +148,7 @@ class LMAT_WPSEO {
 	 */
 	protected function wpseo_get_active_languages() {
 		$languages = LMAT()->model->get_languages_list();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 		if ( wp_list_filter( $languages, array( 'active' => false ) ) ) {
 			return wp_list_pluck( wp_list_filter( $languages, array( 'active' => false ), 'NOT' ), 'slug' );
 		}
@@ -247,6 +252,7 @@ class LMAT_WPSEO {
 		if ( isset( $wpseo_sitemaps ) ) {
 			$active_languages = $this->wpseo_get_active_languages();
 			if ( ! empty( $active_languages ) && ! in_array( lmat_current_language(), $active_languages ) ) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 				remove_action( 'pre_get_posts', array( $wpseo_sitemaps, 'redirect' ), 1 );
 			}
 		}
@@ -264,6 +270,7 @@ class LMAT_WPSEO {
 
 		// Add the post post type archives in all languages to the sitemap
 		// Add the homepages for all languages to the sitemap when the front page displays posts
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 		if ( $type && lmat_is_translated_post_type( $type ) && ( 'post' !== $type || ! get_option( 'page_on_front' ) ) ) {
 			add_filter( "wpseo_sitemap_{$type}_content", array( $this, 'add_post_type_archive' ) );
 		}
@@ -300,7 +307,9 @@ class LMAT_WPSEO {
 	 * @return string
 	 */
 	public function add_post_type_archive( $str ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 		$post_type     = substr( substr( current_filter(), 14 ), 0, -8 );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 		$post_type_obj = get_post_type_object( $post_type );
 		$languages     = wp_list_filter( LMAT()->model->get_languages_list(), array( 'active' => false ), 'NOT' );
 
@@ -317,6 +326,7 @@ class LMAT_WPSEO {
 			// Exclude cases where a post type archive is attached to a page (ex: WooCommerce).
 			$slug = ( true === $post_type_obj->has_archive ) ? $post_type_obj->rewrite['slug'] : $post_type_obj->has_archive;
 
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
 			if ( ! wpcom_vip_get_page_by_path( $slug ) ) {
 				// The post type archive in the current language is already added by WPSEO.
 				$languages = wp_list_filter( $languages, array( 'slug' => lmat_current_language() ), 'NOT' );

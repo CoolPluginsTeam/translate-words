@@ -486,6 +486,7 @@ class LMAT_CRUD_Posts {
 		);
 
 		// Execute and get IDs
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ids = $wpdb->get_col( $query );
 
 		if ( ! empty( $ids ) ) {

@@ -7,6 +7,12 @@
 
 namespace Linguator\Install;
 
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+
 /**
  * This class checks if the Linguator plugin can be used.
  * It makes sure the server is running the required PHP version and WordPress version for the plugin,
@@ -58,6 +64,7 @@ class LMAT_Usable {
 	 */
 	public static function php_version_notice() {
 		// Load translations for plugin text.
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
 		load_plugin_textdomain( 'linguator-multilingual-ai-translation' );
 
 		printf(
@@ -106,6 +113,7 @@ class LMAT_Usable {
 		global $wp_version;
 
 		// Load translations for plugin text.
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
 		load_plugin_textdomain( 'linguator-multilingual-ai-translation' );
 
 		printf(

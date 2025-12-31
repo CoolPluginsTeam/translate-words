@@ -60,6 +60,7 @@ class LMAT_Admin_Filters extends LMAT_Filters {
 			$description = empty( $_POST[ 'description_' . $lang->slug ] ) ? '' : sanitize_textarea_field( trim( wp_unslash( $_POST[ 'description_' . $lang->slug ] ) ) );
 
 			/** This filter is documented in wp-includes/user.php */
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			$description = apply_filters( 'pre_user_description', $description ); // Applies WP default filter wp_filter_kses
 			update_user_meta( $user_id, $meta, $description );
 		}

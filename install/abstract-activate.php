@@ -7,6 +7,11 @@
 
 namespace Linguator\Install;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+
 /**
  * This abstract class helps you manage plugin activation steps.
  * It works with both regular WordPress sites and Multisite networks.

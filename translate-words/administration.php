@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+
     /**
      * Admin page content.
      *
@@ -10,10 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
      */
 
     // Mark this file as deprecated - only on specific admin pages
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is only checking page parameter for deprecation notice, not processing form data.
     if ( 
         is_admin() && 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         isset( $_GET['page'] ) && 
-        ( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' )
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        ( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' ) 
     ) {
         _deprecated_file(
             basename(__FILE__),
@@ -34,6 +40,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      */
     define(
         'TWW_NEW_STRING_TEMPLATE',
+        // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- Heredoc is used here for template readability and is a safe, standard PHP feature.
         <<<TEMPLATE
 <tr valign="top">
 <td style="white-space: nowrap">
@@ -92,10 +99,12 @@ TEMPLATE
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking page parameter to conditionally load scripts, not processing form data.
         if (! isset($_REQUEST['page'])) {
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking page parameter to conditionally load scripts, not processing form data.
         if (isset($_REQUEST['page']) && 'tww_settings' !== $_REQUEST['page']) {
             return;
         }
@@ -240,6 +249,7 @@ TEMPLATE
         // Build notice message
         $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'linguator-multilingual-ai-translation') . '</h3>';
         $message .= '<p>' . sprintf(
+            // phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment
             __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'linguator-multilingual-ai-translation'),
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
@@ -247,6 +257,7 @@ TEMPLATE
         $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'linguator-multilingual-ai-translation') . '</strong><br>';
         $message .= esc_html__('Until then, you can continue using this plugin safely.', 'linguator-multilingual-ai-translation') . '</p>';
         $message .= '<p>' . sprintf(
+            // phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment
             esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'linguator-multilingual-ai-translation'),
             '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'linguator-multilingual-ai-translation') . '</a>'
         ) . '</p>';
@@ -370,6 +381,7 @@ TEMPLATE
 		}
 			}
 
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template constant contains safe HTML structure with pre-defined input fields
 			echo TWW_NEW_STRING_TEMPLATE;
 
 		?>

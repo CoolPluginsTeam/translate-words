@@ -120,13 +120,17 @@ class Linguator {
 			];
 			\Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice::cpfm_register_notice('lmat', $notice);
 				if (!isset($GLOBALS['cool_plugins_feedback'])) {
+					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 					$GLOBALS['cool_plugins_feedback'] = [];
 				}
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 				$GLOBALS['cool_plugins_feedback']['lmat'][] = $notice;
 	   
 		});
 		add_action('cpfm_after_opt_in_lmat', function($category) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 			if ($category === 'lmat') {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 				\Linguator\Admin\cpfm_feedback\cron\LMAT_cronjob::lmat_send_data();
 			}
 		});

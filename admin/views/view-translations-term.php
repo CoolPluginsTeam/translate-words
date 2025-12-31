@@ -7,6 +7,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use WP_Term;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 /**
  * Displays the translations fields for terms
  *

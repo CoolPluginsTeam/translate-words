@@ -79,6 +79,7 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 
 			// Check if Polylang data exists in database (works even if plugin is deactivated)
 			// Check for 'language' taxonomy terms directly in database
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$polylang_languages_count = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",

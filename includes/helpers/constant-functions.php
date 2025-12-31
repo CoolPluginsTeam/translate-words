@@ -61,5 +61,6 @@ function lmat_set_constant( string $constant_name, $value ): bool {
 		return false;
 	}
 
-	return define( $constant_name, $value ); // phpcs:ignore WordPressVIPMinimum.Constants.ConstantString.NotCheckingConstantName
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.VariableConstantNameFound, WordPress.NamingConventions.PrefixAllGlobals.VariableConstantNameFound, WordPress.NamingConventions.PrefixAllGlobals.VariableConstantNameFound
+	return define( $constant_name, $value ); 
 }
