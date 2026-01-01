@@ -134,7 +134,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			?>
 		<div class="lmat-custom-data-table-wrapper">
 			<h3><?php echo esc_html__('Supported Blocks Translation Settings', 'linguator-multilingual-ai-translation'); ?>
-			<br>
+			<br><p>
 			<?php 
 				// translators: %s: Linguator.
 				printf( esc_html__( 'Manage Gutenberg blocks to make them translation-ready with %s.', 'linguator-multilingual-ai-translation' ), 'Linguator' ); 
