@@ -154,7 +154,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = Version 2.0.0 (Major Update) | 3rd January 2026 =
 * Translate Words is now under new ownership by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and is actively maintained.
 * Introduced **LinguatorAI**, a modern AI-based multilingual plugin.
-* Added a clear notice about **Translate Words feature deprecation** planned around **31st December 2026**.
+* Added **Translate Words feature deprecation** Notice.
 * Recommended **Loco Translate** for users who prefer a manual string translation workflow.
 * Added **AI-powered automatic translation engine** with support for Google Translate and Local AI.
 * Added **real-time translation support** for Gutenberg, Elementor, and Classic Editor.
@@ -212,6 +212,5 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 == Upgrade Notice ==
 = 2.0.0 =
 Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, **Linguator AI**.
-The current Translate Words functionality will be deprecated around **31st December 2026**.
-You can continue using this plugin safely until then.
+The current Translate Words functionality will be deprecated around **31st December 2026**. You can continue using this plugin safely until then.
 If you prefer a manual string-based translation workflow, please migrate to **Loco Translate**.
