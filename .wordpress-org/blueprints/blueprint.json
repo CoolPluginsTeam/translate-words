@@ -21,7 +21,7 @@
       "step": "installPlugin",
       "pluginData": {
         "resource": "wordpress.org/plugins",
-        "slug": "linguator-multilingual-ai-translation"
+        "slug": "translate-words"
       },
       "options": {
         "activate": true
