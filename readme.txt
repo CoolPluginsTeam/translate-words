@@ -155,20 +155,19 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 =  Version 2.0.0 (Major Update) | 3rd January 2026 =
 
 * Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
-* Introduced: Introduced **LinguatorAI**, a modern AI-based multilingual plugin
-* Added : Added clear notice about **Translate Words feature deprecation** planned around **31st December 2026**
-* Provided recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
-* Added: **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
-* Added: **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
-* Added: **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking
-* Added: **Inline Translation Mode** to translate content block-by-block with live preview
-* Added: **Page Translation Module** to generate language versions including SEO titles and meta descriptions
-* Added: **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection
-* Added: **Language Switcher Options** – widget, block, Elementor widget, and menu integration
-* Added: **Custom Field Translation Manager** for managing ACF and meta-based translations
-*Improved:* Added migration guidance and helpful links
-*Improved:* Improved stability and minor internal improvements
-*Improved:* General cleanup and maintenance
+* Introduced: **LinguatorAI**, a modern AI-based multilingual plugin.
+* Added : **Translate Words feature deprecation** Notice.
+* Provided recommended alternative **Loco Translate** for users who want to continue manual string translation workflow.
+* Added: **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI).
+* Added: **Real-time translation support** for Gutenberg, Elementor, and Classic Editor.
+* Added: **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking.
+* Added: **Inline Translation Mode** to translate content block-by-block with live preview.
+* Added: **Page Translation Module** to generate language versions including SEO titles and meta descriptions.
+* Added: **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection.
+* Added: **Language Switcher Options** – widget, block, Elementor widget, and menu integration.
+* Added: **Custom Field Translation Manager** for managing ACF and meta-based translations.
+*Improved:* Stability and minor internal improvements.
+*Improved:* General cleanup and maintenance.
 
 
 = 1.2.6 - 6th February 2024 =
@@ -212,7 +211,5 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 == Upgrade Notice ==
 = 2.0.0 =
 Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, Linguator AI. 
-The current Translate Words functionality will be deprecated and discontinued around 31st December 2026.
-
-You can continue using this plugin safely until then. 
+The current Translate Words functionality will be deprecated and discontinued around 31st December 2026. You can continue using this plugin safely until then. 
 If you prefer to continue using a similar manual string translation workflow, please migrate to the Loco Translate plugin.
