@@ -225,7 +225,7 @@ class LMAT_Admin_Feedback {
 			$admin_email       = sanitize_email( get_option( 'admin_email' ) );
 			$site_url          = esc_url( site_url() );
 			$install_date 		= get_option('lmat_install_date');
-			$unique_key     	= '53';  // Ensure this key is unique per plugin to prevent collisions when site URL and install date are the same across plugins
+			$unique_key     	= '153';  // Ensure this key is unique per plugin to prevent collisions when site URL and install date are the same across plugins
             $site_id        	= $site_url . '-' . $install_date . '-' . $unique_key;
 			$feedback_url      = LINGUATOR_FEEDBACK_API .'wp-json/coolplugins-feedback/v1/feedback';
 			$response          = wp_remote_post(
