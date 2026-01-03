@@ -151,7 +151,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
-= Version 2.0.0 (Major Update) | 3rd January 2026 =
+= Version 2.0.0 (Major Update) | 3 January 2026 =
 * Translate Words is now under new ownership by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and is actively maintained.
 * Introduced **LinguatorAI**, a modern AI-based multilingual plugin.
 * Added **Translate Words feature deprecation** Notice.
