@@ -101,7 +101,7 @@ That's it! The setup configuration has been successfully completed. You can now 
 = Transition Notice =
 Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
 
-The current Translate Words feature set will remain available until approximately June 2026. After this period, the plugin will fully transition to Linguator.
+The current Translate Words feature set will remain available until approximately 31st December 2026. After this period, the plugin will fully transition to Linguator.
 
 If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
 
@@ -148,7 +148,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 == Changelog ==
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
-> The current functionality will remain available until around **June 2026**.
+> The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
 
@@ -156,7 +156,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 * Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
 * Introduced: Introduced **LinguatorAI**, a modern AI-based multilingual plugin
-* Added : Added clear notice about **Translate Words feature deprecation** planned around **June 2026**
+* Added : Added clear notice about **Translate Words feature deprecation** planned around **31st December 2026**
 * Provided recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
 * Added: **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
 * Added: **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
@@ -212,7 +212,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 == Upgrade Notice ==
 = 2.0.0 =
 Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, Linguator AI. 
-The current Translate Words functionality will be deprecated and discontinued around June 2026.
+The current Translate Words functionality will be deprecated and discontinued around 31st December 2026.
 
 You can continue using this plugin safely until then. 
 If you prefer to continue using a similar manual string translation workflow, please migrate to the Loco Translate plugin.
