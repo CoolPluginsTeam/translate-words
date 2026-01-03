@@ -27,13 +27,13 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 [Check Live Demo](https://wordpress.org/plugins/linguator-multilingual-ai-translation/?preview=1) | [Learn more](https://linguator.com/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
 
 == AI Translation Made Easy for WordPress ==
-**Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
+* **Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
 
-**Built for maximum compatibility:** Linguator is built for maximum compatibility across the WordPress ecosystem. It works seamlessly with popular editors such as **Elementor**, **Gutenberg**, and the **Classic Editor**. Whether you’re translating **WooCommerce product pages**, **custom post types**, or **Elementor landing pages**. 
+* **Built for maximum compatibility:** Linguator is built for maximum compatibility across the WordPress ecosystem. It works seamlessly with popular editors such as **Elementor**, **Gutenberg**, and the **Classic Editor**. Whether you’re translating **WooCommerce product pages**, **custom post types**, or **Elementor landing pages**. 
 
-**Multilingual SEO:** The plugin follows WordPress and Google best practices. Each language version of your content contains, **language-specific URLs** with **SEO-friendly permalink structures**. Metadata can be translated helping search engines properly index your site in multiple languages and improve your global visibility.
+* **Multilingual SEO:** The plugin follows WordPress and Google best practices. Each language version of your content contains, **language-specific URLs** with **SEO-friendly permalink structures**. Metadata can be translated helping search engines properly index your site in multiple languages and improve your global visibility.
 
-**Translation Quality:** Linguator allows you to generate fast **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, translate **specific blocks** or **widgets inline**, and use **glossary support** to maintain consistent terminology across your site. 
+* **Translation Quality:** Linguator allows you to generate fast **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, translate **specific blocks** or **widgets inline**, and use **glossary support** to maintain consistent terminology across your site. 
 
 ### Multilingual & AI Translation Features
 
