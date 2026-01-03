@@ -151,68 +151,67 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
+= Version 2.0.0 (Major Update) | 3rd January 2026 =
+* Translate Words is now under new ownership by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and is actively maintained.
+* Introduced **LinguatorAI**, a modern AI-based multilingual plugin.
+* Added a clear notice about **Translate Words feature deprecation** planned around **31st December 2026**.
+* Recommended **Loco Translate** for users who prefer a manual string translation workflow.
+* Added **AI-powered automatic translation engine** with support for Google Translate and Local AI.
+* Added **real-time translation support** for Gutenberg, Elementor, and Classic Editor.
+* Added **Bulk Translation Tool** for posts, pages, and taxonomies with progress tracking.
+* Added **Inline Translation Mode** to translate content block-by-block with live preview.
+* Added **Page Translation Module** including SEO titles and meta descriptions.
+* Added **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection.
+* Added **Language Switcher Options** – widget, block, Elementor widget, and menu integration.
+* Added **Custom Field Translation Manager** for ACF and meta-based fields.
+* Improved migration guidance and helpful links.
+* Improved stability and minor internal improvements.
+* General cleanup and maintenance.
 
-=  Version 2.0.0 (Major Update) | 3rd January 2026 =
+= Version 2.5 | 14 July 2025 =
+* Removed licensing and trademark violations.
 
-* Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
-* Introduced: Introduced **LinguatorAI**, a modern AI-based multilingual plugin
-* Added : Added clear notice about **Translate Words feature deprecation** planned around **31st December 2026**
-* Provided recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
-* Added: **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
-* Added: **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
-* Added: **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking
-* Added: **Inline Translation Mode** to translate content block-by-block with live preview
-* Added: **Page Translation Module** to generate language versions including SEO titles and meta descriptions
-* Added: **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection
-* Added: **Language Switcher Options** – widget, block, Elementor widget, and menu integration
-* Added: **Custom Field Translation Manager** for managing ACF and meta-based translations
-*Improved:* Added migration guidance and helpful links
-*Improved:* Improved stability and minor internal improvements
-*Improved:* General cleanup and maintenance
+= Version 1.2.6 | 6 February 2024 =
+* Improved the previous fix. It did not pick up translations where words or phrases contained punctuation.
 
+= Version 1.2.5 | 30 January 2024 =
+* Tweaked replacements to only replace whole words and not parts of words.
 
-= 1.2.6 - 6th February 2024 =
-* Improve the previous fix. It didn't pick up on translations where words/ phrases contained punctuation.
+= Version 1.2.4 | 4 March 2023 =
+* Fixed PHP 8.2 compatibility issue.
 
-= 1.2.5 - 30th January 2024 =
-* Tweak replacements to only replace whole words and not the middle of words.
+= Version 1.2.3 | 1 January 2023 =
+* Fixed undefined array key notice in the admin area.
 
-= 1.2.4 - 4th March 2023 =
-* Fix PHP 8.2 error.
+= Version 1.2.2 | 12 July 2022 =
+* Applied case-sensitive replacements first, followed by case-insensitive ones.
 
-= 1.2.3 - 1st January 2023 =
-* Fix undefined array key error in admin.
+= Version 1.2.1 | 22 May 2022 =
+* Fixed an issue where new translations were not saving properly.
+* Reduced duplication to prevent the issue from recurring.
 
-= 1.2.2 - 12th July 2022 =
-* Do case sensitive replacements first, then case insensitive ones.
+= Version 1.2.0 | 24 January 2022 =
+* Fixed the remove button issue.
 
-= 1.2.1 - 22nd May 2022 =
-* Fix issue with new translations not saving properly.
-* Reduce duplication further (and remove the likelihood of this bug from re-appearing).
+= Version 1.1.1 | 23 November 2021 =
+* Escaped JavaScript output.
 
-= 1.2.0 - 24th January 2022 =
-* Fix bug with the remove button not working. Thanks @capbussat for the suggested fix and others for the reports!
+= Version 1.1 | 23 November 2021 =
+* Added support for translating Gutenberg editor strings using JavaScript localization.
 
-= 1.1.1 - 23rd November 2021 =
-* Escape js output.
+= Version 1.0.2 | 3 May 2021 =
+* Updated register_setting to use updated properties.
+* Fixed translation string replacement.
 
-= 1.1 - 23rd November 2021 =
-* Add support for translating Gutenberg editor strings that use the new(ish) JavaScript localisation.
+= Version 1.0.1 | 30 April 2021 =
+* Simplified string replacement logic for better performance.
 
-= 1.0.2 - 3rd May 2021 =
-* Update register_setting to use updated properties.
-* Fix translation string replacement.
-
-= 1.0.1 - 30th April 2021 =
-* Simplify code for string replacement. Now uses pure PHP functions rather than loops and multiple str_replace. Shorter code and hopefully a little faster.
-
-= 1.0.0 - 30th April 2021 =
-* First release
+= Version 1.0.0 | 30 April 2021 =
+* Initial release.
 
 == Upgrade Notice ==
 = 2.0.0 =
-Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, Linguator AI. 
-The current Translate Words functionality will be deprecated and discontinued around 31st December 2026.
-
-You can continue using this plugin safely until then. 
-If you prefer to continue using a similar manual string translation workflow, please migrate to the Loco Translate plugin.
+Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, **Linguator AI**.
+The current Translate Words functionality will be deprecated around **31st December 2026**.
+You can continue using this plugin safely until then.
+If you prefer a manual string-based translation workflow, please migrate to **Loco Translate**.
