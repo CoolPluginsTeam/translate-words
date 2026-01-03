@@ -97,7 +97,6 @@ That's it! The setup configuration has been successfully completed. You can now 
 
 == Frequently Asked Questions ==
 
-
 = Transition Notice =
 Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
 
@@ -106,7 +105,6 @@ The current Translate Words feature set will remain available until approximatel
 If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
 
 You are not required to take immediate action. Your website will continue working normally during the transition period. A detailed migration panel is included inside the plugin settings with all guidance and support information.
-
 
 = Which languages are supported? =
 Linguator supports all languages that WordPress supports, including RTL languages.
@@ -168,9 +166,6 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Improved stability and minor internal improvements.
 * General cleanup and maintenance.
 
-= Version 2.5 | 14 July 2025 =
-* Removed licensing and trademark violations.
-
 = Version 1.2.6 | 6 February 2024 =
 * Improved the previous fix. It did not pick up translations where words or phrases contained punctuation.
 
@@ -178,7 +173,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Tweaked replacements to only replace whole words and not parts of words.
 
 = Version 1.2.4 | 4 March 2023 =
-* Fixed PHP 8.2 compatibility issue.
+* Fixed PHP 8.2 error.
 
 = Version 1.2.3 | 1 January 2023 =
 * Fixed undefined array key notice in the admin area.
@@ -191,7 +186,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Reduced duplication to prevent the issue from recurring.
 
 = Version 1.2.0 | 24 January 2022 =
-* Fixed the remove button issue.
+* Fix bug with the remove button not working. Thanks @capbussat for the suggested fix and others for the reports!
 
 = Version 1.1.1 | 23 November 2021 =
 * Escaped JavaScript output.
