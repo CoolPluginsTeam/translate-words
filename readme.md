@@ -58,28 +58,28 @@ Linguator allows you to generate fast **AI-powered translations** while still gi
 
 ### Core Features
 
-* 🤖 **AI-Powered Automatic Translation:**  
+* **AI-Powered Automatic Translation:**  
   Save hours of manual work!. Linguator uses powerful AI translation engines to automatically translate your posts and pages into multiple languages — giving you high-quality, natural translations in one click.
 
-* ⚙️ **Manual + Automatic Translation Control:**  
+* **Manual + Automatic Translation Control:**  
   Translate your content automatically using AI, or fine-tune it manually for complete accuracy — Linguator gives you both options for full flexibility.
 
-* 🎨 **Elementor Page Translation:**  
+* **Elementor Page Translation:**  
   Translate entire Elementor pages, including all sections, widgets, and content, without losing styles or design.
 
-* 📝 **Gutenberg Block Compatibility:**  
+* **Gutenberg Block Compatibility:**  
   Automatically translate content within Gutenberg blocks, including core blocks and popular third-party blocks like Spectra, Kadence, Stackable, Otter, and Essential.
 
-* 📦 **Bulk Translation:**  
+* **Bulk Translation:**  
   Instantly translate multiple posts, pages, or products at once with a single click, saving time and effort.
 
-* ✏️ **Inline Translation:**  
+* **Inline Translation:**  
   Translate specific widgets or blocks of content directly within the editor, without translating the entire page, using advanced AI-powered translation tools.
 
-* 🖼️ **Media and Menu Translation Management:**  
+* **Media and Menu Translation Management:**  
   Translate image titles, captions, alt text, and descriptions to match each language. Create separate navigation menus per language and let visitors switch between them.
 
-* 🌐 **Language Switcher:**  
+* **Language Switcher:**  
   Add a language switcher to your site with multiple display options, including Classic, Block-based, and Elementor widget styles, to easily switch languages.
 
 ---
@@ -96,21 +96,10 @@ With [**580+ five-star reviews**](https://wordpress.org/plugins/automatic-transl
 
 This plugin offers AI translation services via Chrome's built-in AI APIs. Learn more about Chrome AI using the links below.
 
-* 📚 [Chrome Built-in AI APIs Documentation](https://developer.chrome.com/docs/ai/built-in-apis)
-* 📝 [Chrome Summarizer API Documentation](https://developer.chrome.com/docs/ai/summarizer-api)
-* 🔧 [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
+* [Chrome Built-in AI APIs Documentation](https://developer.chrome.com/docs/ai/built-in-apis)
+* [Chrome Summarizer API Documentation](https://developer.chrome.com/docs/ai/summarizer-api)
+* [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
 
-💻 [Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words)
-
----
-
-## 📸 Screenshots
-
-1. 🖼️ Linguator Language Switcher Preview.
-2. 📄 Bulk Pages/Post Translation Preview.
-3. 📝 Gutenberg Page Translation Preview.
-4. 🎨 Elementor Page Translation Preview.
-5. 🗂️ Menu and language configuration.
 
 ---
 
@@ -118,10 +107,10 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 
 ### Quick Installation Steps
 
-1. 🔐 Log in to your WordPress dashboard.
-2. 🔌 Navigate to the Plugins section.
-3. 🔍 Search for "Linguator".
-4. ⚡ Click Install and then Activate the plugin.
+1. Log in to your WordPress dashboard.
+2. Navigate to the Plugins section.
+3. Search for "Linguator".
+4. Click Install and then Activate the plugin.
 
 **That's it!** Linguator AI – Auto Translate & Create Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
 
@@ -133,12 +122,12 @@ When you first activate Linguator, a simple Setup Wizard will guide you through 
 
 Follow these steps to complete the setup:
 
-1. 🌍 Choose the main language for your website. This will be the fallback language shown when a visitor's preferred language isn't available.
-2. 📋 Select additional languages you want to support from the list of available languages.
-3. 🔗 Decide how different language versions will appear in your URLs (e.g., subdirectories like /fr/ or query parameters like ?lang=fr).
-4. 🖼️ Turn on this option to automatically translate media details such as title, alt text, caption, and description for each selected language.
-5. 🤖 Choose your preferred translation source — Google Translate or Chrome's built-in AI translator — to handle your translations.
-6. 🌐 Choose how and where the language switcher will appear on your website so visitors can easily switch between languages.
+1. Choose the main language for your website. This will be the fallback language shown when a visitor's preferred language isn't available.
+2. Select additional languages you want to support from the list of available languages.
+3. Decide how different language versions will appear in your URLs (e.g., subdirectories like /fr/ or query parameters like ?lang=fr).
+4. Turn on this option to automatically translate media details such as title, alt text, caption, and description for each selected language.
+5. Choose your preferred translation source — Google Translate or Chrome's built-in AI translator — to handle your translations.
+6. Choose how and where the language switcher will appear on your website so visitors can easily switch between languages.
 
 **That's it!** The setup configuration has been successfully completed. You can now start translating your website content and make it fully multilingual.
 
@@ -162,35 +151,35 @@ If you want to continue using a manual string translation workflow, we recommend
 
 Linguator supports all languages that WordPress supports, including RTL languages.
 
-### 🎨 Is it compatible with all WordPress themes?
+###  Is it compatible with all WordPress themes?
 
 Yes, Linguator is designed to work with any properly coded WordPress theme.
 
-### 🔧 Does it work with Elementor and Gutenberg?
+###  Does it work with Elementor and Gutenberg?
 
 Yes, the Linguator plugin fully supports the translation of page editors like Gutenberg and Elementor. You can translate your content directly within these editors.
 
-### 🗂️ Can I create different menus for each language?
+###  Can I create different menus for each language?
 
 Yes. You can create and manage separate navigation menus for each language and let visitors switch between them.
 
-### 🌐 Where can I place the Language Switcher on my site?
+###  Where can I place the Language Switcher on my site?
 
 You can place it in menus, sidebars, headers, footers, or any widget-ready area. If you use Elementor, you can add it directly to your page or template using the Elementor widget.
 
-### 🖼️ Can I translate media, such as images and videos?
+###  Can I translate media, such as images and videos?
 
 Yes. Linguator allows you to translate media metadata, including image titles, alt text, captions, and descriptions, ensuring your content is fully localized.
 
-### 🌍 Can it detect the visitor's browser language?
+###  Can it detect the visitor's browser language?
 
 Yes. Linguator includes an option to automatically detect the visitor's browser language and display the site in that language.
 
-### 📊 How many languages can I add with Linguator?
+###  How many languages can I add with Linguator?
 
 There is no limit. You can add as many languages as you want to your website using Linguator.
 
-### 🔒 How can I report security bugs?
+###  How can I report security bugs?
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team help validate, triage, and handle any security vulnerabilities. [Report a security vulnerability](https://patchstack.com/database/wordpress/plugin/translate-words/vdp).
 
@@ -198,15 +187,15 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ## 💡 Why Use Linguator?
 
-* ✅ **Simple and Familiar Interface** – Built with WordPress standards in mind, Linguator feels natural and easy to use, even for beginners.
-* 🤖 **AI Power Without Extra Cost** – Leverage AI translation features for free — no need to pay for costly external AI credits.
-* 💰 **No Monthly Fees or SaaS Dependency** – Linguator runs fully inside WordPress — once installed, it's yours! No external API or subscription required.
-* 🎨 **Fully Compatible with Elementor & Gutenberg** – Translate visually designed pages effortlessly without breaking layouts.
-* ⚡ **Save Time with AI-Powered Translation** – Instantly translate your posts, pages, and menus using advanced AI translation technology.
-* 🌍 **Reach a Global Audience** – Translate your content into multiple languages and expand your website's reach worldwide.
-* 🤝 **Build Trust with Localized Content** – Speak to visitors in their own language to increase engagement and conversions.
-* 🎯 **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
-* ⚡ **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn't slow down your pages or website loading time.
+* **Simple and Familiar Interface** – Built with WordPress standards in mind, Linguator feels natural and easy to use, even for beginners.
+* **AI Power Without Extra Cost** – Leverage AI translation features for free — no need to pay for costly external AI credits.
+* **No Monthly Fees or SaaS Dependency** – Linguator runs fully inside WordPress — once installed, it's yours! No external API or subscription required.
+* **Fully Compatible with Elementor & Gutenberg** – Translate visually designed pages effortlessly without breaking layouts.
+* **Save Time with AI-Powered Translation** – Instantly translate your posts, pages, and menus using advanced AI translation technology.
+* **Reach a Global Audience** – Translate your content into multiple languages and expand your website's reach worldwide.
+* **Build Trust with Localized Content** – Speak to visitors in their own language to increase engagement and conversions.
+* **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
+* **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn't slow down your pages or website loading time.
 
 ---
 
@@ -218,75 +207,75 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ---
 
-### 🎉 Version 2.0.0 (Major Update) | 3rd January 2026
+###  Version 2.0.0 (Major Update) | 3rd January 2026
 
-* 🔄 Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
-* 🚀 **Introduced:** Introduced **LinguatorAI**, a modern AI-based multilingual plugin
-* ⚠️ **Added:** Added clear notice about **Translate Words feature deprecation** planned around **31st December 2026**
-* 📦 **Provided:** Recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
-* 🤖 **Added:** **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
-* ⚡ **Added:** **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
-* 📦 **Added:** **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking
-* ✏️ **Added:** **Inline Translation Mode** to translate content block-by-block with live preview
-* 📄 **Added:** **Page Translation Module** to generate language versions including SEO titles and meta descriptions
-* 🌍 **Added:** **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection
-* 🌐 **Added:** **Language Switcher Options** – widget, block, Elementor widget, and menu integration
-* 🔧 **Added:** **Custom Field Translation Manager** for managing ACF and meta-based translations
-* ✨ **Improved:** Added migration guidance and helpful links
-* 🔧 **Improved:** Improved stability and minor internal improvements
-* 🧹 **Improved:** General cleanup and maintenance
+* Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
+* **Introduced:** Introduced **LinguatorAI**, a modern AI-based multilingual plugin
+* **Added:** Added clear notice about **Translate Words feature deprecation** planned around **31st December 2026**
+* **Provided:** Recommended alternative **Loco Translate** for users who want to continue manual string translation workflow
+* **Added:** **AI-powered automatic translation engine** with support for multiple providers (Google & Local AI)
+* **Added:** **Real-time translation support** for Gutenberg, Elementor, and Classic Editor
+* **Added:** **Bulk Translation Tool** for translating multiple posts/pages/taxonomies with progress tracking
+* **Added:** **Inline Translation Mode** to translate content block-by-block with live preview
+* **Added:** **Page Translation Module** to generate language versions including SEO titles and meta descriptions
+* **Added:** **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection
+* **Added:** **Language Switcher Options** – widget, block, Elementor widget, and menu integration
+* **Added:** **Custom Field Translation Manager** for managing ACF and meta-based translations
+* **Improved:** Added migration guidance and helpful links
+* **Improved:** Improved stability and minor internal improvements
+* **Improved:** General cleanup and maintenance
 
 ---
 
-### 📝 Version 1.2.6 - 6th February 2024
+###  Version 1.2.6 - 6th February 2024
 
-* 🔧 Improve the previous fix. It didn't pick up on translations where words/ phrases contained punctuation.
+* Improve the previous fix. It didn't pick up on translations where words/ phrases contained punctuation.
 
-### 📝 Version 1.2.5 - 30th January 2024
+###  Version 1.2.5 - 30th January 2024
 
-* 🔧 Tweak replacements to only replace whole words and not the middle of words.
+* Tweak replacements to only replace whole words and not the middle of words.
 
-### 📝 Version 1.2.4 - 4th March 2023
+###  Version 1.2.4 - 4th March 2023
 
-* 🐛 Fix PHP 8.2 error.
+* Fix PHP 8.2 error.
 
-### 📝 Version 1.2.3 - 1st January 2023
+###  Version 1.2.3 - 1st January 2023
 
-* 🐛 Fix undefined array key error in admin.
+* Fix undefined array key error in admin.
 
-### 📝 Version 1.2.2 - 12th July 2022
+###  Version 1.2.2 - 12th July 2022
 
-* 🔧 Do case sensitive replacements first, then case insensitive ones.
+* Do case sensitive replacements first, then case insensitive ones.
 
-### 📝 Version 1.2.1 - 22nd May 2022
+###  Version 1.2.1 - 22nd May 2022
 
-* 🐛 Fix issue with new translations not saving properly.
-* 🧹 Reduce duplication further (and remove the likelihood of this bug from re-appearing).
+* Fix issue with new translations not saving properly.
+* Reduce duplication further (and remove the likelihood of this bug from re-appearing).
 
-### 📝 Version 1.2.0 - 24th January 2022
+###  Version 1.2.0 - 24th January 2022
 
-* 🐛 Fix bug with the remove button not working. Thanks @capbussat for the suggested fix and others for the reports!
+* Fix bug with the remove button not working. Thanks @capbussat for the suggested fix and others for the reports!
 
-### 📝 Version 1.1.1 - 23rd November 2021
+###  Version 1.1.1 - 23rd November 2021
 
-* 🔒 Escape js output.
+* Escape js output.
 
-### 📝 Version 1.1 - 23rd November 2021
+###  Version 1.1 - 23rd November 2021
 
-* ✨ Add support for translating Gutenberg editor strings that use the new(ish) JavaScript localisation.
+* Add support for translating Gutenberg editor strings that use the new(ish) JavaScript localisation.
 
-### 📝 Version 1.0.2 - 3rd May 2021
+###  Version 1.0.2 - 3rd May 2021
 
-* 🔧 Update register_setting to use updated properties.
-* 🐛 Fix translation string replacement.
+* Update register_setting to use updated properties.
+* Fix translation string replacement.
 
-### 📝 Version 1.0.1 - 30th April 2021
+###  Version 1.0.1 - 30th April 2021
 
-* ⚡ Simplify code for string replacement. Now uses pure PHP functions rather than loops and multiple str_replace. Shorter code and hopefully a little faster.
+* Simplify code for string replacement. Now uses pure PHP functions rather than loops and multiple str_replace. Shorter code and hopefully a little faster.
 
-### 🎉 Version 1.0.0 - 30th April 2021
+###  Version 1.0.0 - 30th April 2021
 
-* 🚀 First release
+* First release
 
 ---
 
