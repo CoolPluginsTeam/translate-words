@@ -152,7 +152,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
 
-=  Version 2.0.0 (Major Update) | 29/12/2025 =
+=  Version 2.0.0 (Major Update) | 3rd January 2026 =
 
 * Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
 * Introduced: Introduced **LinguatorAI**, a modern AI-based multilingual plugin
