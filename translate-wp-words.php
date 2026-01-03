@@ -68,6 +68,15 @@ if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Secu
 
 // Load legacy Translate Words functionality only for legacy users
 add_action( 'init', function() {
+
+	if(!get_option('linguator_install_date')){
+		add_option('linguator_install_date', gmdate('Y-m-d h:i:s'));
+	}
+
+	if(!get_option('linguator_initial_version')){
+		add_option('linguator_initial_version', LINGUATOR_VERSION);
+	}
+
 	// Check if user has legacy Translate Words data
 	$legacy_flag = get_option( 'tww_is_legacy_user' );
 	
