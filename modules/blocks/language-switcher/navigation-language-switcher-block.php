@@ -1,5 +1,7 @@
 <?php
 
+namespace Linguator\Modules\Blocks;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -7,8 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * @package Linguator
  */
-
-namespace Linguator\Modules\Blocks;
 
 /**
  * Language switcher block for navigation.
