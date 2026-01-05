@@ -207,6 +207,9 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ---
 
+### Version 2.0.1 | 5 January 2026
+* Fixed undefined array key issue.
+
 ###  Version 2.0.0 (Major Update) | 3rd January 2026
 
 * Translate Words is now under new ownership [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and actively maintained.
