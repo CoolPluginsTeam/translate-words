@@ -77,8 +77,13 @@ add_action( 'init', function() {
 		add_option('linguator_initial_version', LINGUATOR_VERSION);
 	}
 
+
 	// Check if user has legacy Translate Words data
 	$legacy_flag = get_option( 'tww_is_legacy_user' );
+
+	if($legacy_flag==='yes' && get_option('linguator_initial_version')>'1.2.6'){
+		update_option('linguator_initial_version', '1.2.6');
+	}
 	
 	// If flag doesn't exist, check if they have existing translations
 	if ( false === $legacy_flag ) {

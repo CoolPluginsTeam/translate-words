@@ -31,13 +31,7 @@ if (!class_exists('LMAT_cronjob')) {
             $install_date   = get_option('linguator_install_date');
             $uni_id         = '153';
             $site_id        = $site_url . '-' . $install_date . '-' . $uni_id;
-            $legacy_flag = get_option( 'tww_is_legacy_user' );
-            if($legacy_flag==='yes'){
-                $initial_version = '1.2.6';
-                update_option('linguator_initial_version', $initial_version);
-            }else{
-                $initial_version = get_option('linguator_initial_version');
-            }
+            $initial_version = get_option('linguator_initial_version');
             $initial_version = is_string($initial_version) ? sanitize_text_field($initial_version) : 'N/A';
             $plugin_version = defined('LINGUATOR_VERSION') ? LINGUATOR_VERSION : 'N/A';
             $admin_email    = sanitize_email(get_option('admin_email') ?: 'N/A');
