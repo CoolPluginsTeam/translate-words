@@ -3,7 +3,7 @@
  * Plugin Name:       Linguator AI – Auto Translate & Create Multilingual Sites
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Auto Translate & Create Multilingual Sites.
- * Version:           2.0.2
+ * Version:           2.0.3
  * Requires at least: 6.8
  * Requires PHP:      7.2
  * Author:            Cool Plugins
@@ -26,7 +26,7 @@ use Linguator\Install\LMAT_Usable;
 
 // Linguator constants - wrapped in checks to prevent redeclaration
 if ( ! defined( 'LINGUATOR_VERSION' ) ) {
-	define( 'LINGUATOR_VERSION', '2.0.2' );
+	define( 'LINGUATOR_VERSION', '2.0.3' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
 	define( 'LMAT_MIN_WP_VERSION', '6.8' );
