@@ -235,7 +235,7 @@ class LMAT_Admin_Feedback {
 					'body'    => array(
 						'server_info' => serialize($this->cpfm_get_user_info()['server_info']), 
 						'extra_details' => serialize($this->cpfm_get_user_info()['extra_details']),
-						'plugin_initial'  => sanitize_text_field($this->plugin_version),
+						'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
 						'plugin_version' => sanitize_text_field($this->plugin_version),
 						'plugin_name'    => sanitize_text_field($this->plugin_name),
 						'reason'         => sanitize_text_field($deativation_reason),
