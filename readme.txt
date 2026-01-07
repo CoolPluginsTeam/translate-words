@@ -149,6 +149,10 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
+= Version 2.0.2 | 7 January 2026 =
+* Fixed Wrong initial version bug.
+* Fixed a JSON error occurring during the initial plugin setup.
+
 = Version 2.0.1 | 5 January 2026 =
 * Fixed undefined array key issue.
 

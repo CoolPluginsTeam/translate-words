@@ -207,6 +207,11 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ---
 
+### Version 2.0.2 | 7 January 2026
+* Fixed Wrong initial version bug.
+* Fixed a JSON error occurring during the initial plugin setup.
+
+
 ### Version 2.0.1 | 5 January 2026
 * Fixed undefined array key issue.
 
