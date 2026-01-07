@@ -693,6 +693,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 	 * 
 	 * This prevents "invalid JSON response" errors when REST API endpoints aren't registered yet.
 	 * We check if a flush flag exists, and if so, flush once and remove the flag.
+	 * Also checks for recent installations that might not have the flag set.
 	 *
 	 * @return void
 	 */
@@ -700,11 +701,30 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		// Check if we need to flush rewrite rules (set during activation for new installs)
 		$needs_flush = get_option( 'lmat_needs_rewrite_flush' );
 		
+		// For installations activated before the fix, check if this is a recent install
+		// and if rewrite rules have never been flushed manually
+		if ( ! $needs_flush ) {
+			$install_date = get_option( 'lmat_install_date' );
+			$rules_flushed = get_option( 'lmat_rewrite_rules_flushed' );
+			
+			// If installed recently (within 7 days) and rules never flushed, do it now
+			if ( $install_date && ! $rules_flushed ) {
+				$install_timestamp = strtotime( $install_date );
+				$days_since_install = ( time() - $install_timestamp ) / DAY_IN_SECONDS;
+				
+				if ( $days_since_install <= 7 ) {
+					$needs_flush = true;
+				}
+			}
+		}
+		
 		if ( $needs_flush ) {
 			// Flush rewrite rules to ensure REST API endpoints are accessible
 			flush_rewrite_rules();
 			// Remove the flag so we don't flush on every page load
 			delete_option( 'lmat_needs_rewrite_flush' );
+			// Mark that we've flushed the rules
+			update_option( 'lmat_rewrite_rules_flushed', 'yes' );
 		}
 	}
 
