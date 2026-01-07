@@ -335,6 +335,10 @@ class LMAT_Wizard
 	public function enqueue_scripts()
 	{
 		if (Linguator::is_wizard()) {
+			// Ensure rewrite rules are flushed if REST API might not be working
+			// This fixes "invalid JSON response" errors on fresh installations
+			$this->maybe_flush_rewrite_rules();
+			
 			// Enqueue React-based settings for settings tabs
 			$asset_file = plugin_dir_path(LINGUATOR_ROOT_FILE) . 'admin/assets/frontend/setup/setup.asset.php';
 			$asset = require $asset_file;
@@ -466,6 +470,27 @@ class LMAT_Wizard
 	public function get_suffix()
 	{
 		return defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
+	}
+
+	/**
+	 * Check if rewrite rules need to be flushed and flush them if needed
+	 * 
+	 * This prevents "invalid JSON response" errors when REST API endpoints aren't registered yet.
+	 * We check if a flush flag exists, and if so, flush once and remove the flag.
+	 *
+	 * @return void
+	 */
+	private function maybe_flush_rewrite_rules()
+	{
+		// Check if we need to flush rewrite rules (set during activation for new installs)
+		$needs_flush = get_option('lmat_needs_rewrite_flush');
+		
+		if ($needs_flush) {
+			// Flush rewrite rules to ensure REST API endpoints are accessible
+			flush_rewrite_rules();
+			// Remove the flag so we don't flush on every page load
+			delete_option('lmat_needs_rewrite_flush');
+		}
 	}
 
 

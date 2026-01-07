@@ -571,6 +571,10 @@ class LMAT_Settings extends LMAT_Admin_Base {
 	public function admin_enqueue_scripts() {
 		parent::admin_enqueue_scripts();
 
+		// Ensure rewrite rules are flushed if REST API might not be working
+		// This fixes "invalid JSON response" errors on fresh installations
+		$this->maybe_flush_rewrite_rules();
+
 		// Check if this is a settings tab (not lang, strings, or wizard which has its own handling)
 		$is_settings_tab = ! in_array( $this->active_tab, array( 'lang', 'strings', 'wizard' ), true );
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -682,6 +686,26 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		}
 
 		$this->loco_page_assets();
+	}
+
+	/**
+	 * Check if rewrite rules need to be flushed and flush them if needed
+	 * 
+	 * This prevents "invalid JSON response" errors when REST API endpoints aren't registered yet.
+	 * We check if a flush flag exists, and if so, flush once and remove the flag.
+	 *
+	 * @return void
+	 */
+	private function maybe_flush_rewrite_rules() {
+		// Check if we need to flush rewrite rules (set during activation for new installs)
+		$needs_flush = get_option( 'lmat_needs_rewrite_flush' );
+		
+		if ( $needs_flush ) {
+			// Flush rewrite rules to ensure REST API endpoints are accessible
+			flush_rewrite_rules();
+			// Remove the flag so we don't flush on every page load
+			delete_option( 'lmat_needs_rewrite_flush' );
+		}
 	}
 
 	function lmat_format_time_taken($time_taken) {

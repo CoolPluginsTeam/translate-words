@@ -61,6 +61,9 @@ class LMAT_Activate extends LMAT_Abstract_Activate {
 			update_option('lmat_install_date', gmdate('Y-m-d h:i:s'));
 			// Set flag for redirection
 			update_option('lmat_needs_setup', 'yes');
+			// Set flag to ensure rewrite rules are flushed on first admin page load
+			// This is a safety net in case flush_rewrite_rules() during activation doesn't work
+			update_option('lmat_needs_rewrite_flush', 'yes');
 			
 			// Mark new installations as non-legacy users (won't see Translate Words)
 			// Only set if not already set to avoid overriding existing user status
