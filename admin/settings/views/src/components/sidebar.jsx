@@ -78,7 +78,7 @@ const Sidebar = () => {
           }
           <Container className='bg-white flex flex-col gap-4 p-6 shadow-sm rounded-lg'>
             <div>
-              <h2><a className="no-underline text-black" target="_blank" href="https://wordpress.org/support/plugin/linguator-multilingual-ai-translation/reviews/#new-post">{__('Rate Us ⭐⭐⭐⭐⭐', 'linguator-multilingual-ai-translation')}</a></h2>
+              <h2><a className="no-underline text-black" target="_blank" href="https://wordpress.org/support/plugin/translate-words/reviews/#new-post">{__('Rate Us ⭐⭐⭐⭐⭐', 'linguator-multilingual-ai-translation')}</a></h2>
               <p>{__("We'd love your feedback! Hope this addon made auto-translations easier for you.", 'linguator-multilingual-ai-translation')}</p>
               <a target="_blank" href="https://wordpress.org/support/plugin/translate-words/reviews/#new-post">{__('Submit a Review →', 'linguator-multilingual-ai-translation')}</a>
             </div>
