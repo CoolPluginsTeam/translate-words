@@ -48,7 +48,8 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 		add_filter( 'theme_mod_nav_menu_locations', array( $this, 'theme_mod_nav_menu_locations' ), 20 );
 
 		// Integration in the WP menu interface
-		add_action( 'admin_init', array( $this, 'admin_init' ) ); // after Linguator upgrade
+		add_action( 'admin_init', array( $this, 'admin_init' ) ); // after Linguator upgrade.
+		add_action( 'load-nav-menus.php', array( $this, 'add_meta_box_to_nav_menus' ) );
 	}
 
 	/**
@@ -74,15 +75,20 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 		add_action( 'admin_init', array( $this, 'maybe_update_selected_menu_on_init' ), 10 );
 		add_filter( 'wp_redirect', array( $this, 'preserve_lang_param_on_redirect' ), 10, 2 );
 		
-		// FIXME is it possible to choose the order ( after theme locations in WP3.5 and older ) ?
-		// FIXME not displayed if Linguator is activated before the first time the user goes to nav menus http://core.trac.wordpress.org/ticket/16828
-		// New Code (with load-nav-menus.php)
-		// Original: "Hey WordPress, add this box to the Menus screen!" (Shouted on every page load).
-		// New Code: "Wait... are we on the Menus screen? Yes? Okay, now add this box." (Polite and efficient).
-		add_action( 'load-nav-menus.php', function () {
-			add_meta_box( 'lmat_lang_switch_box', __( 'Language switcher', 'linguator-multilingual-ai-translation' ), array( $this, 'lang_switch' ), 'nav-menus', 'side', 'high' );
-		} );
+	
+		
 		$this->create_nav_menu_locations();
+	}
+
+	/**
+	 * Add the language switcher metabox to the nav menus screen.
+	 *
+	 *  
+	 *
+	 * @return void
+	 */
+	public function add_meta_box_to_nav_menus() {
+		add_meta_box( 'lmat_lang_switch_box', __( 'Language switcher', 'linguator-multilingual-ai-translation' ), array( $this, 'lang_switch' ), 'nav-menus', 'side', 'high' );
 	}
 
 	/**
