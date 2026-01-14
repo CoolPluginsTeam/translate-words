@@ -88,11 +88,11 @@ class LMAT_Admin_Strings {
 		$sidebars = array();
 	}
 	foreach ( $sidebars as $sidebar => $widgets ) {
-			if ( 'wp_inactive_widgets' == $sidebar || empty( $widgets ) ) {
-				continue;
-			}
-
-			foreach ( $widgets as $widget ) {
+		if ( 'wp_inactive_widgets' == $sidebar || empty( $widgets ) || ! is_array( $widgets ) ) {
+			continue;
+		}
+		
+		foreach ( $widgets as $widget ) {
 				// Nothing can be done if the widget is created using pre WP2.8 API. There is no object, so we can't access it to get the widget options.
 				if ( ! isset( $wp_registered_widgets[ $widget ]['callback'][0] ) || ! $wp_registered_widgets[ $widget ]['callback'][0] instanceof WP_Widget ) {
 					continue;

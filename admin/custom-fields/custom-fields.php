@@ -383,7 +383,7 @@ if(!class_exists('Custom_Fields')) {
 
 				WP_Filesystem();
 
-				$local_path = LINGUATOR_DIR_PATH . 'modules/page-translation/block-translation-rules/default-allow-metafields.json';
+				$local_path = LINGUATOR_DIR . '/modules/page-translation/block-translation-rules/default-allow-metafields.json';
 				if($wp_filesystem->exists($local_path) && $wp_filesystem->is_readable( $local_path )){
 					$found=true;
 					$default_allowed_fields = $wp_filesystem->get_contents( $local_path );
