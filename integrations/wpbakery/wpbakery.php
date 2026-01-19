@@ -417,7 +417,50 @@ class LMAT_WPBakery {
 			return $content;
 		}
 
-		$translatable_attributes = [ 'title', 'text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 'btn_title' ];
+		// Comprehensive list of translatable attributes across all WPBakery elements
+		$translatable_attributes = [ 
+			// Basic text attributes
+			'title', 'text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 
+			// Subtitle and descriptions
+			'subtitle', 'description', 'excerpt', 
+			// Labels and captions
+			'label', 'caption', 'placeholder',
+			// Button attributes
+			'btn_title', 'btn_title_hover', 'button_text', 'link_text', 'read_more_text', 'add_button',
+			// Tab and accordion titles
+			'tab_title', 'accordion_title', 'toggle_title',
+			// Testimonial attributes
+			'author', 'company', 'quote',
+			// FAQ attributes
+			'question', 'answer',
+			// Message and alert content
+			'message', 'message_text',
+			// Counter and progress bar
+			'counter_title', 'units', 'bar_title',
+			// Icon box
+			'icon_title', 'icon_description',
+			// Call to action
+			'cta_title', 'cta_text', 'cta_button_text',
+			// Separator
+			'separator_title',
+			// Google Maps
+			'marker_title', 'marker_description',
+			// Posts/Blog
+			'posts_title', 'grid_title',
+			// Video
+			'video_title', 'video_description',
+			// Pricing table
+			'price', 'price_label', 'package_name', 'feature',
+			// Tour section
+			'tour_title',
+			// Gallery
+			'gallery_title',
+			// Single image
+			'img_caption', 'img_title',
+			// Content elements
+			'content', 'value'
+		];
+		
 		$protected_attributes = [ 'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id', 'taxonomy', 'term_id', 'el_id' ];
 		$skip_attributes = [ 'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color', 'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container', 'google_fonts', 'css_animation', 'el_class' ];
 
@@ -506,9 +549,84 @@ class LMAT_WPBakery {
 	 * @return string Content with shortcode content exposed.
 	 */
 	private static function expose_shortcode_content( $content ) {
-		// Match vc_column_text and similar shortcodes that contain HTML/text content
+		// List of all WPBakery shortcodes that contain translatable inner content
+		$content_shortcodes = [
+			// Basic content elements
+			'vc_column_text', 'vc_custom_heading', 'vc_text_separator',
+			// Tabs and accordions
+			'vc_tab', 'vc_accordion_tab', 'vc_tta_section',
+			// Toggle and message boxes
+			'vc_toggle', 'vc_message', 'vc_alert',
+			// Call to action
+			'vc_cta', 'vc_cta_button', 'vc_cta_button2',
+			// Testimonials and quotes
+			'vc_testimonial', 'vc_blockquote',
+			// Icon and feature boxes
+			'vc_icon_box', 'vc_box', 'vc_feature_box',
+			// Buttons (some have inner content)
+			'vc_button', 'vc_button2',
+			// Lists
+			'vc_list_item',
+			// FAQ
+			'vc_faq',
+			// Pricing table
+			'vc_pricing_table', 'vc_pricing_feature',
+			// Content containers
+			'vc_row_inner', 'vc_column_inner',
+			// Video with description
+			'vc_video',
+			// Separator with text
+			'vc_text_separator',
+			// Raw HTML/JS
+			'vc_raw_html', 'vc_raw_js',
+			// Widget sidebar
+			'vc_widget_sidebar',
+			// Posts elements
+			'vc_posts_grid', 'vc_carousel',
+			// Pie chart
+			'vc_pie',
+			// Round chart
+			'vc_round_chart',
+			// Line chart
+			'vc_line_chart',
+			// Google maps (marker content)
+			'vc_googlemaps',
+			// Flickr
+			'vc_flickr',
+			// Pinterest
+			'vc_pinterest',
+			// Twitter
+			'vc_tweetmeme',
+			// Facebook
+			'vc_facebook',
+			// Google+
+			'vc_googleplus',
+			// Separator
+			'vc_separator',
+			// Empty space (might have custom content)
+			'vc_empty_space',
+			// Progress bar
+			'vc_progress_bar',
+			// Single image (caption)
+			'vc_single_image',
+			// Gallery
+			'vc_gallery',
+			// Media grid
+			'vc_media_grid',
+			// Masonry grid
+			'vc_masonry_grid',
+			// Masonry media grid
+			'vc_masonry_media_grid',
+			// Basic grid
+			'vc_basic_grid'
+		];
+		
+		// Create regex pattern from shortcode list
+		$shortcodes_pattern = implode( '|', array_map( 'preg_quote', $content_shortcodes ) );
+		
+		// Match all shortcodes with inner content
 		$content = preg_replace_callback(
-			'/\[(vc_column_text|vc_custom_heading)([^\]]*)\](.*?)\[\/\1\]/s',
+			'/\[(' . $shortcodes_pattern . ')([^\]]*)\](.*?)\[\/\1\]/s',
 			function( $matches ) {
 				$shortcode_name = $matches[1];
 				$attributes = $matches[2];
@@ -519,10 +637,19 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
-				// Skip if content contains nested shortcodes or already has lmat_val tags
-				if ( strpos( $inner_content, '[vc_' ) !== false || 
-				     strpos( $inner_content, '[lmat_val' ) !== false ||
+				// Skip if already has lmat_val tags or tokens
+				if ( strpos( $inner_content, '[lmat_val' ) !== false ||
 				     strpos( $inner_content, '___LMAT_' ) !== false ) {
+					return $matches[0];
+				}
+				
+				// For nested shortcodes, we need to be careful
+				// Check if this content has nested vc_ shortcodes
+				$has_nested_shortcodes = preg_match( '/\[vc_/', $inner_content );
+				
+				if ( $has_nested_shortcodes ) {
+					// For container shortcodes (tabs, accordions), process them separately
+					// Don't wrap the entire content, let nested processing handle it
 					return $matches[0];
 				}
 				
