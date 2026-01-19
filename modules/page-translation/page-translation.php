@@ -149,7 +149,12 @@ class LMAT_Page_Translation {
 							update_post_meta( $post->ID, '_lmat_parent_post_id', $post_id );
 						}
 
-						echo '<button class="button button-primary" id="lmat-page-translation-button" name="lmat_page_translation_meta_box_translate">' . esc_html__( 'Translate Page', 'linguator-multilingual-ai-translation' ) . '</button>';
+						$post_type_object = get_post_type_object( $post->post_type );
+						$post_type_label = $post_type_object ? $post_type_object->labels->singular_name : __( 'Content', 'linguator-multilingual-ai-translation' );
+						// translators: %s: post type singular name
+						$button_text = sprintf( __( 'Translate %s', 'linguator-multilingual-ai-translation' ), $post_type_label );
+						
+						echo '<button class="button button-primary" id="lmat-page-translation-button" name="lmat_page_translation_meta_box_translate">' . esc_html( $button_text ) . '</button>';
 					}
 				}
 			}
@@ -180,17 +185,23 @@ class LMAT_Page_Translation {
 			if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['provider'] ) ) {
 				$providers = LMAT()->options['ai_translation_configuration']['provider'];
 
-				foreach ( $providers as $provider => $value ) {
-					if ( $value ) {
-						$providers_config_class = '';
-						break;
-					}
+			foreach ( $providers as $provider => $value ) {
+				if ( $value ) {
+					$providers_config_class = '';
+					break;
 				}
 			}
+		}
 
-			?>
-			<input type="button" class="button button-primary<?php echo esc_attr( $providers_config_class ); ?>" name="lmat_page_translation_meta_box_translate" id="lmat-page-translation-button" value="<?php echo esc_attr__( 'Translate Page', 'linguator-multilingual-ai-translation' ); ?>" readonly/><br><br>
-			<?php // translators: %1$s: parent post language, %2$s: target language ?>
+		global $post;
+		$post_type_object = get_post_type_object( $post->post_type );
+		$post_type_label = $post_type_object ? $post_type_object->labels->singular_name : __( 'Content', 'linguator-multilingual-ai-translation' );
+		// translators: %s: post type singular name
+		$button_text = sprintf( __( 'Translate %s', 'linguator-multilingual-ai-translation' ), $post_type_label );
+
+		?>
+		<input type="button" class="button button-primary<?php echo esc_attr( $providers_config_class ); ?>" name="lmat_page_translation_meta_box_translate" id="lmat-page-translation-button" value="<?php echo esc_attr( $button_text ); ?>" readonly/><br><br>
+		<?php // translators: %1$s: parent post language, %2$s: target language ?>
 			<p style="margin-bottom: .5rem;"><?php echo esc_html( sprintf( __( 'Translate or duplicate content from %1$s to %2$s', 'linguator-multilingual-ai-translation' ), $parent_post_language, $target_language ) ); ?></p>
 			<?php
 		}
@@ -284,6 +295,8 @@ class LMAT_Page_Translation {
 				}
 
 				$editor = '';
+				$editor_type = 'classic'; // Default to classic
+				
 				if ( 'builder' === get_post_meta( $from_post_id, '_elementor_edit_mode', true ) && defined( 'ELEMENTOR_VERSION' ) ) {
 					$source_lang_name = lmat_get_post_language( $from_post_id, 'slug' );
 					$this->enqueue_elementor_confirm_box_assets( $from_post_id, $lang, $source_lang_name, 'classic' );
@@ -295,6 +308,12 @@ class LMAT_Page_Translation {
 
 				if ( in_array( $editor, array( 'Elementor', 'Divi' ), true ) ) {
 					return;
+				}
+				
+				// Check if this is a WPBakery post
+				$wpb_status = get_post_meta( $from_post_id, '_wpb_vc_js_status', true );
+				if ( 'true' === $wpb_status || true === $wpb_status ) {
+					$editor_type = 'wpbakery';
 				}
 
 				$languages = LMAT()->model->get_languages_list();
@@ -322,7 +341,7 @@ class LMAT_Page_Translation {
 						$data['blockCommentTag'] = 'true';
 					}
 
-					$this->enqueue_automatic_translate_assets( lmat_get_post_language( $from_post_id, 'slug' ), $lang, 'classic', $data );
+					$this->enqueue_automatic_translate_assets( lmat_get_post_language( $from_post_id, 'slug' ), $lang, $editor_type, $data );
 				}
 			}
 		}
@@ -426,7 +445,7 @@ class LMAT_Page_Translation {
 		if ( ! isset( LMAT()->options['sync'] ) || ( isset( LMAT()->options['sync'] ) && ! in_array( 'post_meta', LMAT()->options['sync'] ) ) ) {
 			$extra_data['postMetaSync'] = 'false';
 
-			if ( in_array( $editor_type, array( 'classic', 'gutenberg' ) ) ) {
+			if ( in_array( $editor_type, array( 'classic', 'gutenberg','wpbakery' ) ) ) {
 				$extra_data['update_post_meta_fields'] = 'lmat_update_post_meta_fields';
 				$extra_data['post_meta_fields_key']    = wp_create_nonce( 'lmat_update_post_meta_fields' );
 			}
