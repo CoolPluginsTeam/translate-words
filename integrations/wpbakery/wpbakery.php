@@ -499,11 +499,14 @@ class LMAT_WPBakery {
 								return $attr_matches[0];
 							}
 							
+							// Clean data-start and data-end attributes before exposing for translation
+							$cleaned_attr_val = self::clean_data_attributes( $attr_val );
+							
 							// Generate a unique token for this attribute
 							$token = '___LMAT_' . md5( $attr_name . $attr_val . mt_rand() ) . '___';
 							
-							// Create the value tag with the ID
-							$append_content .= ' [lmat_val id="' . $token . '"]' . $attr_val . '[/lmat_val]';
+							// Create the value tag with the ID using cleaned value
+							$append_content .= ' [lmat_val id="' . $token . '"]' . $cleaned_attr_val . '[/lmat_val]';
 							
 							// Replace the attribute value with the token
 							return $attr_name . '=' . $attr_quote . $token . $attr_quote;
@@ -538,6 +541,124 @@ class LMAT_WPBakery {
 		return $content;
 	}
 	
+	/**
+	 * Clean HTML content by removing data-start and data-end attributes.
+	 * 
+	 * These attributes are added by the translation system as position markers
+	 * and should not be included in the translatable content.
+	 * 
+	 * @since 1.0.8
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $html HTML content with data attributes.
+	 * @return string Cleaned HTML content.
+	 */
+	private static function clean_data_attributes( $html ) {
+		// Remove data-start and data-end attributes from all HTML tags
+		$html = preg_replace( '/\s+data-start="[^"]*"/', '', $html );
+		$html = preg_replace( '/\s+data-end="[^"]*"/', '', $html );
+		
+		return $html;
+	}
+
+	/**
+	 * Extract translatable text nodes from HTML content.
+	 * 
+	 * This function parses HTML and replaces text content with tokens,
+	 * then creates lmat_val tags with only the text (no HTML tags).
+	 * This makes the translation modal cleaner and easier to use.
+	 * 
+	 * @since 1.0.8
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $html HTML content.
+	 * @param string $shortcode_name The shortcode name (for token generation).
+	 * @return string HTML with text replaced by tokens + lmat_val tags with text only.
+	 */
+	private static function extract_translatable_text_nodes( $html, $shortcode_name ) {
+		// Clean data attributes first
+		$html = self::clean_data_attributes( $html );
+		
+		// Array to store lmat_val tags
+		$lmat_tags = array();
+		
+		// Replace text nodes with tokens
+		// This regex matches text outside of HTML tags
+		// We need to be careful to preserve HTML structure
+		$processed_html = preg_replace_callback(
+			'/>([^<]+)</s',
+			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+				$text = $matches[1];
+				
+				// Skip if only whitespace
+				if ( empty( trim( $text ) ) ) {
+					return $matches[0];
+				}
+				
+				// Generate unique token
+				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				
+				// Store the lmat_val tag with only the text content
+				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				
+				// Replace text with token in HTML
+				return '>' . $token . '<';
+			},
+			$html
+		);
+		
+		// Handle text at the beginning (before any tag)
+		$processed_html = preg_replace_callback(
+			'/^([^<]+)/s',
+			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+				$text = $matches[1];
+				
+				// Skip if only whitespace
+				if ( empty( trim( $text ) ) ) {
+					return $matches[0];
+				}
+				
+				// Generate unique token
+				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				
+				// Store the lmat_val tag with only the text content
+				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				
+				// Replace text with token
+				return $token;
+			},
+			$processed_html
+		);
+		
+		// Handle text at the end (after last tag)
+		$processed_html = preg_replace_callback(
+			'/>([^<]+)$/s',
+			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+				$text = $matches[1];
+				
+				// Skip if only whitespace
+				if ( empty( trim( $text ) ) ) {
+					return $matches[0];
+				}
+				
+				// Generate unique token
+				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				
+				// Store the lmat_val tag with only the text content
+				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				
+				// Replace text with token
+				return '>' . $token;
+			},
+			$processed_html
+		);
+		
+		// Return the processed HTML followed by all lmat_val tags
+		return $processed_html . ' ' . implode( ' ', $lmat_tags );
+	}
+
 	/**
 	 * Expose content between shortcode tags for translation.
 	 * 
@@ -653,19 +774,26 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
-				// Strip HTML tags to check if there's actual text content
-				$text_content = strip_tags( $inner_content );
-				if ( empty( trim( $text_content ) ) ) {
-					return $matches[0];
-				}
-				
-				// Generate a unique token for this content
+			// Strip HTML tags to check if there's actual text content
+			$text_content = strip_tags( $inner_content );
+			if ( empty( trim( $text_content ) ) ) {
+				return $matches[0];
+			}
+			
+			// Check if content contains HTML tags
+			$has_html = preg_match( '/<[^>]+>/', $inner_content );
+			
+			if ( $has_html ) {
+				// Extract text nodes from HTML and create separate lmat_val tags
+				$processed_content = self::extract_translatable_text_nodes( $inner_content, $shortcode_name );
+				return '[' . $shortcode_name . $attributes . ']' . $processed_content . '[/' . $shortcode_name . ']';
+			} else {
+				// Simple text content without HTML - wrap as before
+				$cleaned_content = self::clean_data_attributes( $inner_content );
 				$token = '___LMAT_' . md5( $shortcode_name . $inner_content . mt_rand() ) . '___';
-				
-				// Wrap in lmat_val tag
-				$wrapped_content = '[lmat_val id="' . $token . '"]' . $inner_content . '[/lmat_val]';
-				
+				$wrapped_content = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
 				return '[' . $shortcode_name . $attributes . ']' . $wrapped_content . '[/' . $shortcode_name . ']';
+			}
 			},
 			$content
 		);
