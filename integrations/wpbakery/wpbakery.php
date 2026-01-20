@@ -461,13 +461,19 @@ class LMAT_WPBakery {
 			'content', 'value'
 		];
 		
+		// Attributes that contain JSON data with translatable nested properties
+		// Format: attribute_name => array of json keys to translate
+		$json_attributes = [
+			'values' => [ 'label', 'title', 'text' ], // For vc_progress_bar, pie charts, etc.
+		];
+		
 		$protected_attributes = [ 'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id', 'taxonomy', 'term_id', 'el_id' ];
 		$skip_attributes = [ 'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color', 'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container', 'google_fonts', 'css_animation', 'el_class' ];
 
 		// Match shortcodes and their attributes 
 		$content = preg_replace_callback(
 			'/(\[vc_[\w-]+)([^\]]*)(\])/s',
-			function( $matches ) use ( $translatable_attributes, $protected_attributes, $skip_attributes ) {
+			function( $matches ) use ( $translatable_attributes, $json_attributes, $protected_attributes, $skip_attributes ) {
 				$tag_start = $matches[1];
 				$attributes_str = $matches[2];
 				$tag_end = $matches[3];
@@ -476,7 +482,7 @@ class LMAT_WPBakery {
 				// Find attributes in the string - using /s modifier to handle multiline values
 				$attributes_str = preg_replace_callback(
 					'/([\w-]+)=(["\'])((?:(?!\2).)*)\2/s',
-					function( $attr_matches ) use ( $translatable_attributes, $protected_attributes, $skip_attributes, &$append_content ) {
+					function( $attr_matches ) use ( $translatable_attributes, $json_attributes, $protected_attributes, $skip_attributes, &$append_content ) {
 						$attr_name = $attr_matches[1];
 						$attr_quote = $attr_matches[2];
 						$attr_val = $attr_matches[3];
@@ -484,6 +490,15 @@ class LMAT_WPBakery {
 						// Skip attributes that should never be translated (colors, CSS, etc.)
 						if ( in_array( $attr_name, $skip_attributes, true ) ) {
 							return $attr_matches[0];
+						}
+
+						// Handle JSON-encoded attributes (e.g., values in vc_progress_bar)
+						if ( isset( $json_attributes[ $attr_name ] ) && ! empty( $attr_val ) ) {
+							$processed_json = self::process_json_attribute( $attr_val, $json_attributes[ $attr_name ], $append_content );
+							if ( $processed_json !== $attr_val ) {
+								// JSON was processed and tokens were added to append_content
+								return $attr_name . '=' . $attr_quote . $processed_json . $attr_quote;
+							}
 						}
 
 						if ( in_array( $attr_name, $translatable_attributes, true ) && ! empty( $attr_val ) ) {
@@ -539,6 +554,70 @@ class LMAT_WPBakery {
 		$content = self::expose_shortcode_content( $content );
 
 		return $content;
+	}
+	
+	/**
+	 * Process JSON-encoded attribute values to extract translatable content.
+	 * 
+	 * Some WPBakery shortcodes (like vc_progress_bar) store data as URL-encoded JSON
+	 * with translatable properties inside (e.g., "label", "title"). This function
+	 * decodes the JSON, extracts translatable properties, wraps them in tokens,
+	 * and creates lmat_val tags.
+	 * 
+	 * @since 1.0.9
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $json_string The URL-encoded JSON string.
+	 * @param array  $translatable_keys Array of JSON keys that should be translated.
+	 * @param string &$append_content Reference to append_content string to add lmat_val tags.
+	 * @return string Processed JSON string with tokens replacing translatable values.
+	 */
+	private static function process_json_attribute( $json_string, $translatable_keys, &$append_content ) {
+		// Skip if already tokenized
+		if ( strpos( $json_string, '___LMAT_' ) !== false ) {
+			return $json_string;
+		}
+		
+		// Decode URL encoding
+		$decoded = rawurldecode( $json_string );
+		
+		// Try to decode JSON
+		$data = json_decode( $decoded, true );
+		
+		// If not valid JSON, return original
+		if ( ! is_array( $data ) ) {
+			return $json_string;
+		}
+		
+		// Process each item in the array/object
+		$modified = false;
+		array_walk_recursive(
+			$data,
+			function( &$value, $key ) use ( $translatable_keys, &$append_content, &$modified ) {
+				// Only process if the key is in our translatable list and value is a non-empty string
+				if ( in_array( $key, $translatable_keys, true ) && is_string( $value ) && ! empty( trim( $value ) ) ) {
+					// Generate unique token
+					$token = '___LMAT_' . md5( $key . $value . mt_rand() ) . '___';
+					
+					// Create lmat_val tag
+					$append_content .= ' [lmat_val id="' . $token . '"]' . esc_attr( $value ) . '[/lmat_val]';
+					
+					// Replace value with token
+					$value = $token;
+					$modified = true;
+				}
+			}
+		);
+		
+		// If we modified the data, re-encode it
+		if ( $modified ) {
+			// Encode back to JSON and then URL encode
+			$new_json = json_encode( $data );
+			return rawurlencode( $new_json );
+		}
+		
+		return $json_string;
 	}
 	
 	/**
@@ -758,19 +837,27 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
-				// Skip if already has lmat_val tags or tokens
-				if ( strpos( $inner_content, '[lmat_val' ) !== false ||
-				     strpos( $inner_content, '___LMAT_' ) !== false ) {
-					return $matches[0];
-				}
-				
 				// For nested shortcodes, we need to be careful
 				// Check if this content has nested vc_ shortcodes
 				$has_nested_shortcodes = preg_match( '/\[vc_/', $inner_content );
 				
 				if ( $has_nested_shortcodes ) {
-					// For container shortcodes (tabs, accordions), process them separately
-					// Don't wrap the entire content, let nested processing handle it
+					// For container shortcodes (tabs, accordions), recursively process nested content
+					// This ensures content inside nested shortcodes is also extracted
+					$processed_inner = self::expose_shortcode_content( $inner_content );
+					
+					// If the inner content was modified (has tokens or lmat_val tags), use the processed version
+					if ( $processed_inner !== $inner_content ) {
+						return '[' . $shortcode_name . $attributes . ']' . $processed_inner . '[/' . $shortcode_name . ']';
+					}
+					
+					// Otherwise return original
+					return $matches[0];
+				}
+				
+				// Skip if already has lmat_val tags or tokens (but only for non-nested content)
+				if ( strpos( $inner_content, '[lmat_val' ) !== false ||
+				     strpos( $inner_content, '___LMAT_' ) !== false ) {
 					return $matches[0];
 				}
 				
@@ -825,6 +912,9 @@ class LMAT_WPBakery {
 		// These are ID-based attributes that should never be translated
 		$content = self::restore_protected_attributes( $content );
 		
+		// Create a map of tokens to their translated values
+		$token_map = array();
+		
 		// Find all translated values and their IDs
 		// Regex explanation:
 		// \[lmat_val : Start tag
@@ -845,6 +935,9 @@ class LMAT_WPBakery {
 				// Decode entities in translation (e.g. &quot; -> ", &lt; -> <)
 				$translated_value = html_entity_decode( $translated_value, ENT_QUOTES | ENT_HTML5 );
 				
+				// Store in map
+				$token_map[ $token ] = $translated_value;
+				
 				// Check if this token exists elsewhere in the content (as an attribute value)
 				$token_exists_separately = strpos( str_replace( $full_match, '', $content ), $token ) !== false;
 				
@@ -863,6 +956,12 @@ class LMAT_WPBakery {
 				}
 			}
 		}
+		
+		// Restore JSON attributes (e.g., values in vc_progress_bar)
+		// These have tokens embedded inside URL-encoded JSON
+		if ( ! empty( $token_map ) ) {
+			$content = self::restore_json_attributes( $content, $token_map );
+		}
 
 		// Cleanup any remaining lmat_val tags globally
 		$content = self::remove_remaining_lmat_tags( $content );
@@ -870,6 +969,67 @@ class LMAT_WPBakery {
 		// Remove page translation placeholders that might have been left in the content
 		$content = self::remove_page_translation_placeholders( $content );
 
+		return $content;
+	}
+	
+	/**
+	 * Restore JSON-encoded attributes with translated values.
+	 * 
+	 * Searches for URL-encoded JSON strings in shortcode attributes and replaces
+	 * tokens with their translated values.
+	 * 
+	 * @since 1.0.9
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $content Post content.
+	 * @param array  $token_map Map of tokens to translated values.
+	 * @return string Content with JSON attributes restored.
+	 */
+	private static function restore_json_attributes( $content, $token_map ) {
+		// Match attributes that contain URL-encoded data with tokens
+		// Pattern: attribute="...___LMAT_..._..."
+		$content = preg_replace_callback(
+			'/([\w-]+)=(["\'])([^"\']*___LMAT_[a-f0-9]{32}___[^"\']*)\2/',
+			function( $matches ) use ( $token_map ) {
+				$attr_name = $matches[1];
+				$attr_quote = $matches[2];
+				$attr_val = $matches[3];
+				
+				// Try to decode as URL-encoded JSON
+				$decoded = rawurldecode( $attr_val );
+				$data = json_decode( $decoded, true );
+				
+				// If not valid JSON, try simple token replacement
+				if ( ! is_array( $data ) ) {
+					// Replace any tokens in the value
+					foreach ( $token_map as $token => $translated ) {
+						if ( strpos( $attr_val, $token ) !== false ) {
+							$attr_val = str_replace( $token, esc_attr( $translated ), $attr_val );
+						}
+					}
+					return $attr_name . '=' . $attr_quote . $attr_val . $attr_quote;
+				}
+				
+				// Walk through the JSON and replace tokens with translations
+				array_walk_recursive(
+					$data,
+					function( &$value ) use ( $token_map ) {
+						if ( is_string( $value ) && isset( $token_map[ $value ] ) ) {
+							$value = $token_map[ $value ];
+						}
+					}
+				);
+				
+				// Re-encode to JSON and URL-encode
+				$new_json = json_encode( $data );
+				$new_val = rawurlencode( $new_json );
+				
+				return $attr_name . '=' . $attr_quote . $new_val . $attr_quote;
+			},
+			$content
+		);
+		
 		return $content;
 	}
 	
