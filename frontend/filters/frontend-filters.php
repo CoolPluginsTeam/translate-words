@@ -34,7 +34,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 
 		// Filters the WordPress locale
 		add_filter( 'locale', array( $this, 'get_locale' ) );
-
+		
 		// Filter sticky posts by current language
 		add_filter( 'option_sticky_posts', array( $this, 'option_sticky_posts' ) );
 
@@ -98,33 +98,47 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 		if ( defined( 'REST_REQUEST' ) || empty( $this->curlang ) || empty( $posts ) ) {
 			return $posts;
 		}
-
+		
 		$_posts = wp_cache_get( 'sticky_posts', 'options' ); // This option is usually cached in 'all_options' by WP.
 		$tt_id  = $this->curlang->get_tax_prop( 'lmat_language', 'term_taxonomy_id' );
-
+		
 		if ( ! empty( $_posts ) && is_array( $_posts ) && ! empty( $_posts[ $tt_id ] ) && is_array( $_posts[ $tt_id ] ) ) {
 			return $_posts[ $tt_id ];
 		}
-
+		
 		$languages = array();
 		foreach ( $this->model->get_languages_list() as $language ) {
 			$languages[] = $language->get_tax_prop( 'lmat_language', 'term_taxonomy_id' );
 		}
-
-		$relations = array();
-		foreach ( $posts as $post_id ) {
-			$post_languages = wp_get_object_terms( $post_id, 'lmat_language', array( 'fields' => 'tt_ids' ) );
-			if ( ! is_wp_error( $post_languages ) ) {
-				foreach ( $post_languages as $tt_id ) {
-					if ( in_array( $tt_id, $languages, true ) ) {
-						$relations[] = (object) array(
-							'object_id' => $post_id,
-							'term_taxonomy_id' => $tt_id,
-						);
-					}
-				}
-			}
+		
+		if($posts && count($posts) > 0){
+			$posts=array_map(function($post){
+				return (int) $post;
+			}, $posts);
+		}else{
+			$posts=array();
 		}
+
+		if($languages && count($languages) > 0){
+			$languages=array_map(function($language){
+				return sanitize_text_field($language);
+			}, $languages);
+		}else{
+			$languages=array();
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.NoCaching -- use this query instead of wp_get_object_terms to avoid server load by wp_get_object_terms for each post with long list of languages & large number of posts.
+		$relations = $wpdb->get_results(
+			$wpdb->prepare(
+				sprintf(
+					"SELECT object_id, term_taxonomy_id FROM %s WHERE object_id IN (%s) AND term_taxonomy_id IN (%s)",
+					esc_sql(sanitize_text_field($wpdb->term_relationships)),
+					implode( ',', array_fill( 0, count( $posts ), '%d' ) ),
+					implode( ',', array_fill( 0, count( $languages ), '%d' ) )
+				),
+				array_merge( $posts, $languages )
+			)
+		);
 
 		$_posts = array_fill_keys( $languages, array() ); // Init with empty arrays.
 
@@ -133,6 +147,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 		}
 
 		wp_cache_add( 'sticky_posts', $_posts, 'options' );
+
 		return $_posts[ $tt_id ];
 	}
 
