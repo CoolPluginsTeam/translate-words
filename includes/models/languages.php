@@ -1060,48 +1060,123 @@ class Languages {
 
 		// Delete relationships.
 		if ( ! empty( $dr ) ) {
-			foreach ( $dr['id'] as $object_id ) {
-				foreach ( $dr['tt'] as $term_taxonomy_id ) {
-					$term = get_term_by( 'term_taxonomy_id', $term_taxonomy_id );
-					if ( $term ) {
-						$r = wp_remove_object_terms( $object_id, $term->term_id, $term->taxonomy );
-						if ( false === $r ) {
-							$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'linguator-multilingual-ai-translation' ) );
-						}
-					}
-				}
+			
+			if(isset($dr['id'])){
+				$dr['id'] = array_map('intval', $dr['id']);
+			}
+			if(isset($dr['tt'])){
+				$dr['tt'] = array_map('intval', $dr['tt']);
+			}
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_remove_object_terms() overhead when processing
+			// many terms across multiple languages.
+			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					sprintf(
+						"DELETE FROM {$wpdb->term_relationships} WHERE object_id IN (%s) AND term_taxonomy_id IN (%s)",
+						implode( ',', array_fill( 0, count( $dr['id'] ), '%d' ) ),
+						implode( ',', array_fill( 0, count( $dr['tt'] ), '%d' ) )
+					),
+					array_merge( $dr['id'], $dr['tt'] )
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'linguator-multilingual-ai-translation' ) );
 			}
 		}
 
 		// Delete terms.
 		if ( ! empty( $dt ) ) {
-			foreach ( $dt['t'] as $term_id ) {
-				$term = get_term( $term_id );
-				if ( $term && ! is_wp_error( $term ) ) {
-					$r = wp_delete_term( $term_id, $term->taxonomy );
-					if ( false === $r ) {
-						$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'linguator-multilingual-ai-translation' ) );
-					}
-				}
+
+			if(isset($dt['t'])){
+				$dt['t'] = array_map('intval', $dt['t']);
+			}
+
+			if(isset($dt['tt'])){
+				$dt['tt'] = array_map('intval', $dt['tt']);
+			}
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_delete_term() overhead when processing
+			// many terms across multiple languages.
+			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					sprintf(
+						"DELETE FROM {$wpdb->terms} WHERE term_id IN (%s)",
+						implode( ',', array_fill( 0, count( $dt['t'] ), '%d' ) )
+					),
+					$dt['t']
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'linguator-multilingual-ai-translation' ) );
+			}
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_delete_term() overhead when processing
+			// many terms across multiple languages.
+			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					sprintf(
+						"DELETE FROM {$wpdb->term_taxonomy} WHERE term_taxonomy_id IN (%s)",
+						implode( ',', array_fill( 0, count( $dt['tt'] ), '%d' ) )
+					),
+					$dt['tt']
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_delete_term_taxonomy', __( 'Could not delete the term taxonomy.', 'linguator-multilingual-ai-translation' ) );
 			}
 		}
 
 		// Update terms.
 		if ( ! empty( $ut ) ) {
-			foreach ( $ut['case'] as $case_data ) {
-				$term_id = $case_data[0];
-				$description = $case_data[1];
-				$term = get_term( $term_id );
-				if ( $term && ! is_wp_error( $term ) ) {
-					$r = wp_update_term( $term_id, $term->taxonomy, array( 'description' => $description ) );
-					if ( is_wp_error( $r ) ) {
-						$errors->add(
-							'lmat_update_term',
-							/* translators: %s is a taxonomy name */
-							sprintf( __( 'Could not update secondary language term for taxonomy %s.', 'linguator-multilingual-ai-translation' ), $term->taxonomy )
-						);
+
+			if(isset($ut['case'])){
+				$ut['case'] = array_map(function($case){
+					$updated_case = array();
+					if(isset($case[0])){
+						$updated_case[0] = intval($case[0]);
 					}
-				}
+					if(isset($case[1])){
+						$updated_case[1] = sanitize_text_field($case[1]);
+					}
+					return $updated_case;
+				}, $ut['case']);
+			}
+
+			if(isset($ut['in'])){
+				$ut['in'] = array_map('intval', $ut['in']);
+			}
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_update_term() overhead when processing
+			// many terms across multiple languages.
+			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					sprintf(
+						"UPDATE {$wpdb->term_taxonomy} SET description = ( CASE term_id %s END ) WHERE term_id IN (%s)",
+						implode( ' ', array_fill( 0, count( $ut['case'] ), 'WHEN %d THEN %s' ) ),
+						implode( ',', array_fill( 0, count( $ut['in'] ), '%d' ) )
+					),
+					array_merge( array_merge( ...$ut['case'] ), $ut['in'] )
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_update_term_taxonomy', __( 'Could not update the term taxonomy.', 'linguator-multilingual-ai-translation' ) );
 			}
 		}
 
