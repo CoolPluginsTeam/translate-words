@@ -112,21 +112,17 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 		}
 		
 		if($posts && count($posts) > 0){
-			$posts=array_map(function($post){
-				return (int) $post;
-			}, $posts);
+			$posts=array_map('intval', $posts);
 		}else{
-			$posts=array();
+			return $posts;
 		}
 
 		if($languages && count($languages) > 0){
-			$languages=array_map(function($language){
-				return sanitize_text_field($language);
-			}, $languages);
+			$languages=array_map('intval', $languages);
 		}else{
-			$languages=array();
+			return $posts;
 		}
-
+		
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.NoCaching -- use this query instead of wp_get_object_terms to avoid server load by wp_get_object_terms for each post with long list of languages & large number of posts.
 		$relations = $wpdb->get_results(
 			$wpdb->prepare(
@@ -147,7 +143,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 		}
 
 		wp_cache_add( 'sticky_posts', $_posts, 'options' );
-
+		
 		return $_posts[ $tt_id ];
 	}
 
