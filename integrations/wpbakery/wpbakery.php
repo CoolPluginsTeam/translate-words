@@ -205,10 +205,12 @@ class LMAT_WPBakery {
 		}
 		
 		// Check if we have from_post parameter
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
 		if ( ! isset( $_GET['from_post'] ) ) {
 			return $content;
 		}
 		
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
 		$from_post_id = absint( $_GET['from_post'] );
 		if ( ! $from_post_id ) {
 			return $content;
@@ -323,7 +325,9 @@ class LMAT_WPBakery {
 		}
 		
 		// Check if we're creating a translation from a WPBakery post
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
 		if ( isset( $_GET['from_post'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
 			$from_post_id = absint( $_GET['from_post'] );
 			if ( $from_post_id ) {
 				$wpb_status = get_post_meta( $from_post_id, '_wpb_vc_js_status', true );
@@ -520,7 +524,7 @@ class LMAT_WPBakery {
 							$cleaned_attr_val = self::clean_data_attributes( $attr_val );
 							
 							// Generate a unique token for this attribute
-							$token = '___LMAT_' . md5( $attr_name . $attr_val . mt_rand() ) . '___';
+							$token = '___LMAT_' . md5( $attr_name . $attr_val . wp_rand() ) . '___';
 							
 							// Create the value tag with the ID using cleaned value
 							$append_content .= ' [lmat_val id="' . $token . '"]' . $cleaned_attr_val . '[/lmat_val]';
@@ -600,7 +604,7 @@ class LMAT_WPBakery {
 				// Only process if the key is in our translatable list and value is a non-empty string
 				if ( in_array( $key, $translatable_keys, true ) && is_string( $value ) && ! empty( trim( $value ) ) ) {
 					// Generate unique token
-					$token = '___LMAT_' . md5( $key . $value . mt_rand() ) . '___';
+					$token = '___LMAT_' . md5( $key . $value . wp_rand() ) . '___';
 					
 					// Create lmat_val tag
 					$append_content .= ' [lmat_val id="' . $token . '"]' . esc_attr( $value ) . '[/lmat_val]';
@@ -696,7 +700,7 @@ class LMAT_WPBakery {
 				}
 				
 				// Generate unique token
-				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				$token = '___LMAT_' . md5( $shortcode_name . $text . wp_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
 				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
@@ -724,7 +728,7 @@ class LMAT_WPBakery {
 				}
 				
 				// Generate unique token
-				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				$token = '___LMAT_' . md5( $shortcode_name . $text . wp_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
 				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
@@ -752,7 +756,7 @@ class LMAT_WPBakery {
 				}
 				
 				// Generate unique token
-				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
+				$token = '___LMAT_' . md5( $shortcode_name . $text . wp_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
 				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
@@ -894,7 +898,7 @@ class LMAT_WPBakery {
 				// Strip HTML to check if there's untokenized text content
 				// Remove existing lmat_val tags to check remaining content
 				$content_without_tokens = preg_replace( '/\[lmat_val[^\]]*\].*?\[\/lmat_val\]/s', '', $inner_content );
-				$text_content = strip_tags( $content_without_tokens );
+				$text_content = wp_strip_all_tags( $content_without_tokens );
 				
 				// If there's actual text content (not just whitespace), process it
 				if ( ! empty( trim( $text_content ) ) ) {
@@ -928,7 +932,7 @@ class LMAT_WPBakery {
 			if ( ! empty( $remaining_text ) ) {
 				// There's text content that needs to be tokenized
 				$cleaned_content = self::clean_data_attributes( $remaining_text );
-				$token = '___LMAT_' . md5( $shortcode_name . $remaining_text . mt_rand() ) . '___';
+				$token = '___LMAT_' . md5( $shortcode_name . $remaining_text . wp_rand() ) . '___';
 				$new_lmat_tag = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
 				
 				// Combine: shortcode with token, then all lmat_val tags
@@ -941,14 +945,14 @@ class LMAT_WPBakery {
 		}
 		
 		// No existing tokens - check if there's text content
-		$text_content = strip_tags( $inner_content );
+		$text_content = wp_strip_all_tags( $inner_content );
 		if ( empty( trim( $text_content ) ) ) {
 			return $matches[0];
 		}
 		
 		// Simple text content without HTML - wrap as before
 		$cleaned_content = self::clean_data_attributes( $inner_content );
-		$token = '___LMAT_' . md5( $shortcode_name . $inner_content . mt_rand() ) . '___';
+		$token = '___LMAT_' . md5( $shortcode_name . $inner_content . wp_rand() ) . '___';
 		$wrapped_content = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
 		return '[' . $shortcode_name . $attributes . ']' . $wrapped_content . '[/' . $shortcode_name . ']';
 			},
