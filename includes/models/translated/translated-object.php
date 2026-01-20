@@ -574,36 +574,59 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 
 		// Insert terms using WordPress functions.
 		if ( ! empty( $terms ) ) {
-			foreach ( $terms as $term_data ) {
-				$slug = $term_data[0];
-				$name = $term_data[1];
-				
-				// Check if term already exists
-				$existing_term = get_term_by( 'slug', $slug, $this->tax_translations );
-				if ( ! $existing_term ) {
-					wp_insert_term( $name, $this->tax_translations, array( 'slug' => $slug ) );
+
+			$terms = array_map(function($term){
+				$updated_term = array();
+				if(isset($term[0])){
+					$updated_term[0] = sanitize_text_field($term[0]);
 				}
+				if(isset($term[1])){
+					$updated_term[1] = sanitize_text_field($term[1]);
+				}
+				return $updated_term;
+			}, $terms);
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_insert_term() overhead when processing
+			// many terms across multiple languages.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+					sprintf(
+						"INSERT INTO {$wpdb->terms} ( slug, name ) VALUES %s",
+						implode( ',', array_fill( 0, count( $terms ), '( %s, %s )' ) )
+					),
+					array_merge( ...$terms )
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_insert_terms', __( 'Could not insert the terms.', 'linguator-multilingual-ai-translation' ) );
+			}
+		}
+		
+		if(!empty($slugs)){
+			$slugs = array_map('sanitize_text_field', $slugs);
+
+			// @since 2.0.6
+			// Performance fix: Avoid get_terms() overhead when processing
+			// many slugs across multiple languages.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$terms = $wpdb->get_results(
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+					sprintf(
+						"SELECT term_id, slug FROM {$wpdb->terms} WHERE slug IN (%s)",
+						implode( ',', array_fill( 0, count( $slugs ), '%s' ) )
+					),
+					$slugs
+				)
+			);
+
+			if(is_wp_error($terms)){
+				$errors->add( 'lmat_get_terms_by_slugs', __( 'Could not get the terms by slugs.', 'linguator-multilingual-ai-translation' ) );
 			}
 		}
 
-		// Get all terms with their term_id using WordPress function.
-		$terms_by_slug = get_terms( array(
-			'taxonomy'   => $this->tax_translations,
-			'slug'       => $slugs,
-			'hide_empty' => false,
-			'fields'     => 'all',
-		) );
-		
-		// Convert to expected format
-		$terms = array();
-		if ( ! is_wp_error( $terms_by_slug ) ) {
-			foreach ( $terms_by_slug as $term ) {
-				$terms[] = (object) array(
-					'term_id' => $term->term_id,
-					'slug'    => $term->slug,
-				);
-			}
-		}
 
 		$term_ids = array();
 		$tts      = array();
@@ -614,24 +637,44 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			$tts[]      = array( $term->term_id, $this->tax_translations, $description[ $term->slug ], $count[ $term->slug ] );
 		}
 
-		// Update term taxonomy using WordPress functions.
+		// Insert term_taxonomy.
 		if ( ! empty( $tts ) ) {
-			foreach ( $tts as $tt_data ) {
-				$term_id = $tt_data[0];
-				$taxonomy = $tt_data[1];
-				$description = $tt_data[2];
-				$count = $tt_data[3];
-				
-				// Update the term with description and count
-				wp_update_term( $term_id, $taxonomy, array(
-					'description' => $description,
-				) );
-				
-				// Update term count if needed
-				wp_update_term_count_now( array( $term_id ), $taxonomy );
+			$tts = array_map(function($tt){
+				$updated_tt = array();
+				if(isset($tt[0])){
+					$updated_tt[0] = intval($tt[0]);
+				}
+				if(isset($tt[1])){
+					$updated_tt[1] = sanitize_text_field($tt[1]);
+				}
+				if(isset($tt[2])){
+					$updated_tt[2] = sanitize_text_field($tt[2]);
+				}
+				if(isset($tt[3])){
+					$updated_tt[3] = intval($tt[3]);
+				}
+				return $updated_tt;
+			}, $tts);
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_update_term() && wp_update_term_count_now() overhead when processing
+			// many term taxonomies & term count across multiple languages.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+					sprintf(
+						"INSERT INTO {$wpdb->term_taxonomy} ( term_id, taxonomy, description, count ) VALUES %s",
+						implode( ',', array_fill( 0, count( $tts ), '( %d, %s, %s, %d )' ) )
+					),
+					array_merge( ...$tts )
+				)
+			);
+
+			if(is_wp_error($wpdb->query)){
+				$errors->add( 'lmat_insert_term_taxonomies', __( 'Could not insert the term taxonomies.', 'linguator-multilingual-ai-translation' ) );
 			}
 		}
-
+		
 		// Get all terms with term_taxonomy_id.
 		$terms = get_terms( array( 'taxonomy' => $this->tax_translations, 'hide_empty' => false ) );
 		$trs   = array();
@@ -650,35 +693,33 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			}
 		}
 
-		// Insert term relationships using WordPress functions.
+		// Insert term_relationships.
 		if ( ! empty( $trs ) ) {
-			// Group relationships by object_id for efficient processing
-			$relationships_by_object = array();
-			foreach ( $trs as $tr_data ) {
-				$object_id = $tr_data[0];
-				$term_taxonomy_id = $tr_data[1];
-				
-				if ( ! isset( $relationships_by_object[ $object_id ] ) ) {
-					$relationships_by_object[ $object_id ] = array();
+
+			$trs = array_map(function($tr){
+				$updated_tr = array();
+				if(isset($tr[0])){
+					$updated_tr[0] = intval($tr[0]);
 				}
-				$relationships_by_object[ $object_id ][] = $term_taxonomy_id;
-			}
-			
-			// Set object terms for each object
-			foreach ( $relationships_by_object as $object_id => $term_taxonomy_ids ) {
-				// Convert term_taxonomy_ids to term_ids
-				$term_ids = array();
-				foreach ( $term_taxonomy_ids as $tt_id ) {
-					$term = get_term_by( 'term_taxonomy_id', $tt_id, $this->tax_translations );
-					if ( $term ) {
-						$term_ids[] = $term->term_id;
-					}
+				if(isset($tr[1])){
+					$updated_tr[1] = intval($tr[1]);
 				}
-				
-				if ( ! empty( $term_ids ) ) {
-					wp_set_object_terms( $object_id, $term_ids, $this->tax_translations, true );
-				}
-			}
+				return $updated_tr;
+			}, $trs);
+
+			// @since 2.0.6
+			// Performance fix: Avoid wp_set_object_terms() overhead when processing
+			// many term relationships across multiple languages.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query(
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+					sprintf(
+						"INSERT INTO {$wpdb->term_relationships} ( object_id, term_taxonomy_id ) VALUES %s",
+						implode( ',', array_fill( 0, count( $trs ), '( %d, %d )' ) )
+					),
+					array_merge( ...$trs )
+				)
+			);
 		}
 
 		clean_term_cache( $term_ids, $this->tax_translations );
