@@ -420,7 +420,7 @@ class LMAT_WPBakery {
 		// Comprehensive list of translatable attributes across all WPBakery elements
 		$translatable_attributes = [ 
 			// Basic text attributes
-			'title', 'text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 
+			'title', 'text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 'subheading', 'currency', 'period',
 			// Subtitle and descriptions
 			'subtitle', 'description', 'excerpt', 
 			// Labels and captions
@@ -457,6 +457,8 @@ class LMAT_WPBakery {
 			'gallery_title',
 			// Single image
 			'img_caption', 'img_title',
+			// Hover box
+			'primary_title', 'hover_title',
 			// Content elements
 			'content', 'value'
 		];
@@ -657,18 +659,30 @@ class LMAT_WPBakery {
 	 * @return string HTML with text replaced by tokens + lmat_val tags with text only.
 	 */
 	private static function extract_translatable_text_nodes( $html, $shortcode_name ) {
-		// Clean data attributes first
-		$html = self::clean_data_attributes( $html );
+		// Separate existing lmat_val tags from HTML content
+		$existing_lmat_tags = array();
+		$html_without_lmat = preg_replace_callback(
+			'/\[lmat_val[^\]]*\].*?\[\/lmat_val\]/s',
+			function( $matches ) use ( &$existing_lmat_tags ) {
+				$existing_lmat_tags[] = $matches[0];
+				// Return a placeholder that won't interfere with HTML processing
+				return '';
+			},
+			$html
+		);
 		
-		// Array to store lmat_val tags
-		$lmat_tags = array();
+		// Clean data attributes first
+		$html_without_lmat = self::clean_data_attributes( $html_without_lmat );
+		
+		// Array to store new lmat_val tags
+		$new_lmat_tags = array();
 		
 		// Replace text nodes with tokens
 		// This regex matches text outside of HTML tags
 		// We need to be careful to preserve HTML structure
 		$processed_html = preg_replace_callback(
 			'/>([^<]+)</s',
-			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+			function( $matches ) use ( $shortcode_name, &$new_lmat_tags ) {
 				$text = $matches[1];
 				
 				// Skip if only whitespace
@@ -676,22 +690,27 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
+				// Skip if this is already a token
+				if ( strpos( $text, '___LMAT_' ) !== false ) {
+					return $matches[0];
+				}
+				
 				// Generate unique token
 				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
-				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
 				
 				// Replace text with token in HTML
 				return '>' . $token . '<';
 			},
-			$html
+			$html_without_lmat
 		);
 		
 		// Handle text at the beginning (before any tag)
 		$processed_html = preg_replace_callback(
-			'/^([^<]+)/s',
-			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+			'/^([^<\[]+)/s',
+			function( $matches ) use ( $shortcode_name, &$new_lmat_tags ) {
 				$text = $matches[1];
 				
 				// Skip if only whitespace
@@ -699,11 +718,16 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
+				// Skip if this is already a token
+				if ( strpos( $text, '___LMAT_' ) !== false ) {
+					return $matches[0];
+				}
+				
 				// Generate unique token
 				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
-				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
 				
 				// Replace text with token
 				return $token;
@@ -714,7 +738,7 @@ class LMAT_WPBakery {
 		// Handle text at the end (after last tag)
 		$processed_html = preg_replace_callback(
 			'/>([^<]+)$/s',
-			function( $matches ) use ( $shortcode_name, &$lmat_tags ) {
+			function( $matches ) use ( $shortcode_name, &$new_lmat_tags ) {
 				$text = $matches[1];
 				
 				// Skip if only whitespace
@@ -722,11 +746,16 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
+				// Skip if this is already a token
+				if ( strpos( $text, '___LMAT_' ) !== false ) {
+					return $matches[0];
+				}
+				
 				// Generate unique token
 				$token = '___LMAT_' . md5( $shortcode_name . $text . mt_rand() ) . '___';
 				
 				// Store the lmat_val tag with only the text content
-				$lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
+				$new_lmat_tags[] = '[lmat_val id="' . $token . '"]' . trim( $text ) . '[/lmat_val]';
 				
 				// Replace text with token
 				return '>' . $token;
@@ -734,8 +763,11 @@ class LMAT_WPBakery {
 			$processed_html
 		);
 		
+		// Combine all lmat_val tags (existing + new)
+		$all_lmat_tags = array_merge( $existing_lmat_tags, $new_lmat_tags );
+		
 		// Return the processed HTML followed by all lmat_val tags
-		return $processed_html . ' ' . implode( ' ', $lmat_tags );
+		return $processed_html . ' ' . implode( ' ', $all_lmat_tags );
 	}
 
 	/**
@@ -762,7 +794,7 @@ class LMAT_WPBakery {
 			// Testimonials and quotes
 			'vc_testimonial', 'vc_blockquote',
 			// Icon and feature boxes
-			'vc_icon_box', 'vc_box', 'vc_feature_box',
+			'vc_icon_box', 'vc_box', 'vc_feature_box', 'vc_hoverbox',
 			// Buttons (some have inner content)
 			'vc_button', 'vc_button2',
 			// Lists
@@ -855,32 +887,70 @@ class LMAT_WPBakery {
 					return $matches[0];
 				}
 				
-				// Skip if already has lmat_val tags or tokens (but only for non-nested content)
-				if ( strpos( $inner_content, '[lmat_val' ) !== false ||
-				     strpos( $inner_content, '___LMAT_' ) !== false ) {
-					return $matches[0];
-				}
-				
-			// Strip HTML tags to check if there's actual text content
-			$text_content = strip_tags( $inner_content );
-			if ( empty( trim( $text_content ) ) ) {
-				return $matches[0];
-			}
-			
 			// Check if content contains HTML tags
 			$has_html = preg_match( '/<[^>]+>/', $inner_content );
 			
 			if ( $has_html ) {
-				// Extract text nodes from HTML and create separate lmat_val tags
-				$processed_content = self::extract_translatable_text_nodes( $inner_content, $shortcode_name );
-				return '[' . $shortcode_name . $attributes . ']' . $processed_content . '[/' . $shortcode_name . ']';
-			} else {
-				// Simple text content without HTML - wrap as before
-				$cleaned_content = self::clean_data_attributes( $inner_content );
-				$token = '___LMAT_' . md5( $shortcode_name . $inner_content . mt_rand() ) . '___';
-				$wrapped_content = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
-				return '[' . $shortcode_name . $attributes . ']' . $wrapped_content . '[/' . $shortcode_name . ']';
+				// Strip HTML to check if there's untokenized text content
+				// Remove existing lmat_val tags to check remaining content
+				$content_without_tokens = preg_replace( '/\[lmat_val[^\]]*\].*?\[\/lmat_val\]/s', '', $inner_content );
+				$text_content = strip_tags( $content_without_tokens );
+				
+				// If there's actual text content (not just whitespace), process it
+				if ( ! empty( trim( $text_content ) ) ) {
+					// Extract text nodes from HTML and create separate lmat_val tags
+					$processed_content = self::extract_translatable_text_nodes( $inner_content, $shortcode_name );
+					return '[' . $shortcode_name . $attributes . ']' . $processed_content . '[/' . $shortcode_name . ']';
+				}
+				
+				// No new text to process, return as is
+				return $matches[0];
 			}
+			
+		// Check if content has existing lmat_val tags (from attribute processing)
+		$has_existing_tokens = strpos( $inner_content, '[lmat_val' ) !== false;
+		
+		if ( $has_existing_tokens ) {
+			// Extract and separate existing lmat_val tags from the actual content
+			$existing_lmat_tags = array();
+			$content_without_lmat = preg_replace_callback(
+				'/\[lmat_val[^\]]*\].*?\[\/lmat_val\]/s',
+				function( $matches ) use ( &$existing_lmat_tags ) {
+					$existing_lmat_tags[] = $matches[0];
+					return ''; // Remove from content
+				},
+				$inner_content
+			);
+			
+			// Check if there's any actual text content remaining
+			$remaining_text = trim( $content_without_lmat );
+			
+			if ( ! empty( $remaining_text ) ) {
+				// There's text content that needs to be tokenized
+				$cleaned_content = self::clean_data_attributes( $remaining_text );
+				$token = '___LMAT_' . md5( $shortcode_name . $remaining_text . mt_rand() ) . '___';
+				$new_lmat_tag = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
+				
+				// Combine: shortcode with token, then all lmat_val tags
+				$all_lmat_tags = implode( ' ', $existing_lmat_tags ) . ' ' . $new_lmat_tag;
+				return '[' . $shortcode_name . $attributes . ']' . $token . ' ' . $all_lmat_tags . '[/' . $shortcode_name . ']';
+			}
+			
+			// Only existing tokens, no new content to process
+			return $matches[0];
+		}
+		
+		// No existing tokens - check if there's text content
+		$text_content = strip_tags( $inner_content );
+		if ( empty( trim( $text_content ) ) ) {
+			return $matches[0];
+		}
+		
+		// Simple text content without HTML - wrap as before
+		$cleaned_content = self::clean_data_attributes( $inner_content );
+		$token = '___LMAT_' . md5( $shortcode_name . $inner_content . mt_rand() ) . '___';
+		$wrapped_content = '[lmat_val id="' . $token . '"]' . $cleaned_content . '[/lmat_val]';
+		return '[' . $shortcode_name . $attributes . ']' . $wrapped_content . '[/' . $shortcode_name . ']';
 			},
 			$content
 		);
