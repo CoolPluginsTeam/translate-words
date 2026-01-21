@@ -303,13 +303,28 @@ class Languages extends Abstract_Controller {
 			return rest_ensure_response( $response );
 		}
 
-		$posts = get_posts( array(
+		// Build query args - optimized to filter by language at database level
+		$query_args = array(
 			'post_type'        => 'page',
 			'post_status'      => array( 'publish' ),
 			'posts_per_page'   => -1,
 			'suppress_filters' => false,
-		) );
+		);
 
+		// Add language filter using tax_query (database-level filtering)
+		if ( $filter_language ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Necessary for language filtering in multilingual functionality
+			$query_args['tax_query'] = array(
+				array(
+					'taxonomy'         => $this->model->post->get_tax_language(),
+					'terms'            => $filter_language->get_tax_prop( $this->model->post->get_tax_language(), 'term_id' ),
+					'field'            => 'term_id',
+					'include_children' => false,
+				),
+			);
+		}
+
+		$posts = get_posts( $query_args );
 		// Optimize: Bulk fetch languages and translations for all posts at once
 		$post_ids = wp_list_pluck( $posts, 'ID' );
 		
@@ -355,10 +370,6 @@ class Languages extends Abstract_Controller {
 				$language = $this->model->languages->get( $language_terms[ $post->ID ]->term_id );
 			}
 
-			// Filter by language if specified
-			if ( $filter_language && ( ! $language || $language->slug !== $filter_language->slug ) ) {
-				continue; // Skip posts not in the requested language
-			}
 
 			// Get translations from bulk-fetched data
 			$translations = isset( $all_translations[ $post->ID ] ) ? (array) $all_translations[ $post->ID ] : array();
