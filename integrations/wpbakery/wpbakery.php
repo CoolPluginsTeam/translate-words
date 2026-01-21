@@ -815,6 +815,8 @@ class LMAT_WPBakery {
 			'vc_text_separator',
 			// Raw HTML/JS
 			'vc_raw_html', 'vc_raw_js',
+			// Gutenberg integration
+			'vc_gutenberg',
 			// Widget sidebar
 			'vc_widget_sidebar',
 			// Posts elements

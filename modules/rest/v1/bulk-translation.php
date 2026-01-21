@@ -294,19 +294,31 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						continue;
 					}
 
-				$elementor_enabled = get_post_meta( $postId, '_elementor_edit_mode', true );
-				$wpbakery_enabled = get_post_meta( $postId, '_wpb_vc_js_status', true );
-				if ( ! $post_data ) {
-					continue;
-				}
+			$elementor_enabled = get_post_meta( $postId, '_elementor_edit_mode', true );
+			$wpbakery_enabled = get_post_meta( $postId, '_wpb_vc_js_status', true );
+			if ( ! $post_data ) {
+				continue;
+			}
 
-				if ( $slug_translation_option === 'slug_translate' ) {
-					$posts_translate[ $postId ]['post_name'] = urldecode( get_post_field( 'post_name', $postId ) );
-				}
+			if ( $slug_translation_option === 'slug_translate' ) {
+				$posts_translate[ $postId ]['post_name'] = urldecode( get_post_field( 'post_name', $postId ) );
+			}
 
-				$posts_translate[ $postId ]['title']       = $post_data->post_title;
+			$posts_translate[ $postId ]['title']       = $post_data->post_title;
+			
+			// Check for WPBakery first - if enabled, treat as classic even if has_blocks() returns true
+			// This prevents vc_gutenberg element from incorrectly setting editor type to 'block'
+			$is_wpbakery_page = ( 'true' === $wpbakery_enabled || true === $wpbakery_enabled );
+			
+			if ( $is_wpbakery_page ) {
+				// For WPBakery pages, always use raw content and set editor to 'classic'
+				$posts_translate[ $postId ]['content']     = $post_data->post_content;
+				$posts_translate[ $postId ]['editor_type'] = 'classic';
+			} else {
+				// For non-WPBakery pages, check for Gutenberg blocks
 				$posts_translate[ $postId ]['content']     = has_blocks( $post_data->post_content ) ? parse_blocks( $post_data->post_content ) : $post_data->post_content;
 				$posts_translate[ $postId ]['editor_type'] = has_blocks( $post_data->post_content ) ? 'block' : 'classic';
+			}
 
 					if ( isset( $post_data->post_excerpt ) && ! empty( $post_data->post_excerpt ) ) {
 						$posts_translate[ $postId ]['excerpt'] = $post_data->post_excerpt;
@@ -344,17 +356,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					}
 				}
 
-				// Handle WPBakery content - apply transformations for translation
-				if ( ( 'true' === $wpbakery_enabled || true === $wpbakery_enabled ) && $posts_translate[ $postId ]['editor_type'] === 'classic' ) {
-					// Apply WPBakery content filters to prepare for translation
-					// This decodes base64-encoded attributes and exposes translatable content
-					$wpbakery_content = $posts_translate[ $postId ]['content'];
-					
-					// Apply the lmat_post_content_for_translation filter that WPBakery hooks into
-					$wpbakery_content = apply_filters( 'lmat_post_content_for_translation', $wpbakery_content, $postId );
-					
-					$posts_translate[ $postId ]['content'] = $wpbakery_content;
-				}
+			// Handle WPBakery content - apply transformations for translation
+			if ( $is_wpbakery_page ) {
+				// Apply WPBakery content filters to prepare for translation
+				// This decodes base64-encoded attributes and exposes translatable content
+				$wpbakery_content = $posts_translate[ $postId ]['content'];
+				
+				// Apply the lmat_post_content_for_translation filter that WPBakery hooks into
+				$wpbakery_content = apply_filters( 'lmat_post_content_for_translation', $wpbakery_content, $postId );
+				
+				$posts_translate[ $postId ]['content'] = $wpbakery_content;
+			}
 
 				if ( $posts_translate[ $postId ]['editor_type'] === 'block' && ! $gutenberg_block ) {
 					$gutenberg_block = true;
