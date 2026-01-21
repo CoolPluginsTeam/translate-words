@@ -420,6 +420,9 @@ class WPML_Migration {
 
 		$icl_translations_table = $wpdb->prefix . 'icl_translations';
 
+		// ========== OPTIMIZE: Cache language objects to avoid repeated lookups ==========
+		$language_cache = array();
+
 		// Migrate post language assignments
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$posts_with_language = $wpdb->get_results(
@@ -431,21 +434,48 @@ class WPML_Migration {
 		// phpcs:enable
 
 		if ( ! empty( $posts_with_language ) ) {
+			// ========== OPTIMIZE: Bulk fetch existing post language assignments ==========
+			$post_ids = array_map( function( $item ) {
+				return (int) $item->element_id;
+			}, $posts_with_language );
+			
+			$existing_post_languages = $this->get_existing_post_language_assignments( $post_ids );
+
+			// ========== OPTIMIZE: Prepare language term IDs for bulk operations ==========
+			$bulk_assignments = array();
+
 			foreach ( $posts_with_language as $post_data ) {
 				$post_id = (int) $post_data->element_id;
 				$lang_code = $post_data->language_code;
 
-				// Check if this language exists in Linguator
-				$lmat_lang = $this->model->languages->get( $lang_code );
+				// Skip if post already has a language assigned
+				if ( isset( $existing_post_languages[ $post_id ] ) ) {
+					continue;
+				}
+
+				// Check if this language exists in Linguator (with caching)
+				if ( ! isset( $language_cache[ $lang_code ] ) ) {
+					$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
+				}
+
+				$lmat_lang = $language_cache[ $lang_code ];
 				if ( $lmat_lang ) {
-					// Check if post already has a language assigned in Linguator
-					$existing_lang = $this->model->post->get_language( $post_id );
-					if ( ! $existing_lang ) {
-						// Set the language for this post
-						$this->model->post->set_language( $post_id, $lmat_lang );
-						$results['posts_assigned']++;
+					$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_language', 'term_id' );
+					if ( $lang_term_id ) {
+						$bulk_assignments[] = array(
+							'object_id' => $post_id,
+							'term_taxonomy_id' => $lang_term_id,
+						);
 					}
 				}
+			}
+
+			// ========== BULK INSERT post language assignments ==========
+			if ( ! empty( $bulk_assignments ) ) {
+				$results['posts_assigned'] = $this->bulk_insert_term_relationships( $bulk_assignments );
+				
+				// Invalidate cache after bulk insert
+				wp_cache_delete( 'last_changed', 'posts' );
 			}
 		}
 
@@ -464,21 +494,48 @@ class WPML_Migration {
 		// phpcs:enable
 
 		if ( ! empty( $terms_with_language ) ) {
+			// ========== OPTIMIZE: Bulk fetch existing term language assignments ==========
+			$term_ids = array_map( function( $item ) {
+				return (int) $item->term_id;
+			}, $terms_with_language );
+			
+			$existing_term_languages = $this->get_existing_term_language_assignments( $term_ids );
+
+			// ========== OPTIMIZE: Prepare term language assignments for bulk operations ==========
+			$bulk_term_assignments = array();
+
 			foreach ( $terms_with_language as $term_data ) {
 				$term_id = (int) $term_data->term_id;
 				$lang_code = $term_data->language_code;
 
-				// Check if this language exists in Linguator
-				$lmat_lang = $this->model->languages->get( $lang_code );
+				// Skip if term already has a language assigned
+				if ( isset( $existing_term_languages[ $term_id ] ) ) {
+					continue;
+				}
+
+				// Check if this language exists in Linguator (with caching)
+				if ( ! isset( $language_cache[ $lang_code ] ) ) {
+					$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
+				}
+
+				$lmat_lang = $language_cache[ $lang_code ];
 				if ( $lmat_lang ) {
-					// Check if term already has a language assigned in Linguator
-					$existing_lang = $this->model->term->get_language( $term_id );
-					if ( ! $existing_lang ) {
-						// Set the language for this term
-						$this->model->term->set_language( $term_id, $lmat_lang );
-						$results['terms_assigned']++;
+					$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_id' );
+					if ( $lang_term_id ) {
+						$bulk_term_assignments[] = array(
+							'object_id' => $term_id,
+							'term_taxonomy_id' => $lang_term_id,
+						);
 					}
 				}
+			}
+
+			// ========== BULK INSERT term language assignments ==========
+			if ( ! empty( $bulk_term_assignments ) ) {
+				$results['terms_assigned'] = $this->bulk_insert_term_relationships( $bulk_term_assignments );
+				
+				// Invalidate cache after bulk insert
+				wp_cache_delete( 'last_changed', 'terms' );
 			}
 		}
 
@@ -501,6 +558,9 @@ class WPML_Migration {
 		);
 
 		$icl_translations_table = $wpdb->prefix . 'icl_translations';
+
+		// ========== OPTIMIZE: Cache language objects to avoid repeated lookups ==========
+		$language_cache = array();
 
 		// Migrate post translations
 		// Group by trid to get translation groups
@@ -526,8 +586,12 @@ class WPML_Migration {
 					list( $lang_code, $post_id ) = explode( ':', $part, 2 );
 					$post_id = (int) $post_id;
 
-					// Check if this language exists in Linguator
-					$lmat_lang = $this->model->languages->get( $lang_code );
+					// ========== OPTIMIZE: Use cached language lookup ==========
+					if ( ! isset( $language_cache[ $lang_code ] ) ) {
+						$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
+					}
+
+					$lmat_lang = $language_cache[ $lang_code ];
 					if ( $lmat_lang ) {
 						$lmat_translations[ $lang_code ] = $post_id;
 					}
@@ -561,6 +625,64 @@ class WPML_Migration {
 		// phpcs:enable
 
 		if ( ! empty( $term_translation_groups ) ) {
+			// ========== OPTIMIZE: Pre-process all term-language pairs and bulk fetch existing assignments ==========
+			$all_term_language_pairs = array();
+			$all_term_ids = array();
+
+			// First pass: collect all term IDs and their expected languages
+			foreach ( $term_translation_groups as $group ) {
+				$translations_parts = explode( '|', $group->translations );
+				
+				foreach ( $translations_parts as $part ) {
+					list( $lang_code, $term_id ) = explode( ':', $part, 2 );
+					$term_id = (int) $term_id;
+					
+					// Cache language lookup
+					if ( ! isset( $language_cache[ $lang_code ] ) ) {
+						$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
+					}
+					
+					if ( $language_cache[ $lang_code ] ) {
+						$all_term_ids[] = $term_id;
+						$all_term_language_pairs[ $term_id ] = $lang_code;
+					}
+				}
+			}
+
+			// ========== OPTIMIZE: Bulk fetch existing term language assignments ==========
+			$existing_term_languages = array();
+			if ( ! empty( $all_term_ids ) ) {
+				$existing_term_languages = $this->get_existing_term_language_assignments( array_unique( $all_term_ids ) );
+			}
+
+			// ========== OPTIMIZE: Prepare bulk term language assignments for terms that need them ==========
+			$bulk_term_language_assignments = array();
+
+			foreach ( $all_term_language_pairs as $term_id => $expected_lang_code ) {
+				$current_lang = isset( $existing_term_languages[ $term_id ] ) ? $existing_term_languages[ $term_id ] : null;
+				
+				// Only assign language if missing or incorrect
+				if ( ! $current_lang || $current_lang !== $expected_lang_code ) {
+					$lmat_lang = $language_cache[ $expected_lang_code ];
+					if ( $lmat_lang ) {
+						$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_id' );
+						if ( $lang_term_id ) {
+							$bulk_term_language_assignments[] = array(
+								'object_id' => $term_id,
+								'term_taxonomy_id' => $lang_term_id,
+							);
+						}
+					}
+				}
+			}
+
+			// ========== BULK INSERT: Assign all term languages at once ==========
+			if ( ! empty( $bulk_term_language_assignments ) ) {
+				$this->bulk_insert_term_relationships( $bulk_term_language_assignments );
+				wp_cache_delete( 'last_changed', 'terms' );
+			}
+
+			// ========== Second pass: Create translation groups (now that all languages are assigned) ==========
 			foreach ( $term_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
 				$translations_parts = explode( '|', $group->translations );
@@ -570,16 +692,9 @@ class WPML_Migration {
 					list( $lang_code, $term_id ) = explode( ':', $part, 2 );
 					$term_id = (int) $term_id;
 
-					// Check if this language exists in Linguator
-					$lmat_lang = $this->model->languages->get( $lang_code );
+					// Use cached language (already fetched in first pass)
+					$lmat_lang = isset( $language_cache[ $lang_code ] ) ? $language_cache[ $lang_code ] : null;
 					if ( $lmat_lang ) {
-						// Ensure the term has the CORRECT language assigned before saving translations
-						$existing_lang = $this->model->term->get_language( $term_id );
-						if ( ! $existing_lang || $existing_lang->slug !== $lang_code ) {
-							// Assign the correct language to this term
-							$this->model->term->set_language( $term_id, $lmat_lang );
-						}
-
 						$lmat_translations[ $lang_code ] = $term_id;
 					}
 				}
@@ -588,20 +703,8 @@ class WPML_Migration {
 					// Get the first term ID to create translation group
 					$first_term_id = reset( $lmat_translations );
 
-					// Verify the first term has a language
-					$first_lang = $this->model->term->get_language( $first_term_id );
-					if ( ! $first_lang ) {
-						// Get the language slug from the translations array
-						$first_lang_slug = array_search( $first_term_id, $lmat_translations );
-						if ( $first_lang_slug ) {
-							$first_lang_obj = $this->model->languages->get( $first_lang_slug );
-							if ( $first_lang_obj ) {
-								$this->model->term->set_language( $first_term_id, $first_lang_obj );
-							}
-						}
-					}
-
 					// Save translations for the first term
+					// Note: Languages are now guaranteed to be assigned via bulk operation above
 					$saved_translations = $this->model->term->save_translations( $first_term_id, $lmat_translations );
 
 					if ( ! empty( $saved_translations ) ) {
@@ -1042,6 +1145,142 @@ class WPML_Migration {
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Bulk fetch existing post language assignments
+	 *
+	 * @param array $post_ids Array of post IDs to check.
+	 * @return array Associative array with post_id => language_slug.
+	 */
+	private function get_existing_post_language_assignments( $post_ids ) {
+		global $wpdb;
+
+		if ( empty( $post_ids ) ) {
+			return array();
+		}
+
+		$post_ids_string = implode( ',', array_map( 'absint', $post_ids ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$results = $wpdb->get_results(
+			"SELECT tr.object_id, t.slug as lang_slug
+			FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+			WHERE tt.taxonomy = 'lmat_language'
+			AND tr.object_id IN ({$post_ids_string})"
+		);
+		// phpcs:enable
+
+		$existing = array();
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$existing[ $row->object_id ] = $row->lang_slug;
+			}
+		}
+
+		return $existing;
+	}
+
+	/**
+	 * Bulk fetch existing term language assignments
+	 *
+	 * @param array $term_ids Array of term IDs to check.
+	 * @return array Associative array with term_id => language_slug.
+	 */
+	private function get_existing_term_language_assignments( $term_ids ) {
+		global $wpdb;
+
+		if ( empty( $term_ids ) ) {
+			return array();
+		}
+
+		$term_ids_string = implode( ',', array_map( 'absint', $term_ids ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$results = $wpdb->get_results(
+			"SELECT tr.object_id, t.slug as lang_slug
+			FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+			WHERE tt.taxonomy = 'lmat_term_language'
+			AND tr.object_id IN ({$term_ids_string})"
+		);
+		// phpcs:enable
+
+		$existing = array();
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$existing[ $row->object_id ] = $row->lang_slug;
+			}
+		}
+
+		return $existing;
+	}
+
+	/**
+	 * Bulk insert term relationships for language assignments
+	 *
+	 * @param array $assignments Array of assignments with 'object_id' and 'term_taxonomy_id'.
+	 * @return int Number of rows inserted.
+	 */
+	private function bulk_insert_term_relationships( $assignments ) {
+		global $wpdb;
+
+		if ( empty( $assignments ) ) {
+			return 0;
+		}
+
+		// Build VALUES clause for bulk insert
+		$values = array();
+		foreach ( $assignments as $assignment ) {
+			$values[] = $wpdb->prepare(
+				'(%d, %d, %d)',
+				$assignment['object_id'],
+				$assignment['term_taxonomy_id'],
+				0 // term_order
+			);
+		}
+
+		$values_string = implode( ', ', $values );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$inserted = $wpdb->query(
+			"INSERT IGNORE INTO {$wpdb->term_relationships} 
+			(object_id, term_taxonomy_id, term_order) 
+			VALUES {$values_string}"
+		);
+		// phpcs:enable
+
+		// Update term counts for the affected taxonomies
+		if ( $inserted > 0 ) {
+			$term_taxonomy_ids = array_unique( array_column( $assignments, 'term_taxonomy_id' ) );
+			foreach ( $term_taxonomy_ids as $term_taxonomy_id ) {
+				// Get the count of objects for this term
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$count = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d",
+						$term_taxonomy_id
+					)
+				);
+				// phpcs:enable
+
+				// Update the count
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$wpdb->update(
+					$wpdb->term_taxonomy,
+					array( 'count' => $count ),
+					array( 'term_taxonomy_id' => $term_taxonomy_id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+				// phpcs:enable
+			}
+		}
+
+		return $inserted ? $inserted : 0;
 	}
 }
 
