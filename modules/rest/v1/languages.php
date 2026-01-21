@@ -13,6 +13,7 @@ use Linguator\Includes\Other\LMAT_Language;
 use Linguator\Includes\Other\LMAT_Model;
 use Linguator\Modules\REST\Abstract_Controller;
 use Linguator\Includes\Models\Translatable\LMAT_Translatable_Objects;
+use ReflectionClass;
 use stdClass;
 use WP_Error;
 use WP_REST_Request;
@@ -99,6 +100,13 @@ class Languages extends Abstract_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_all_pages_data' ),
 				'permission_callback' => array( $this, 'get_all_post_data_permissions_check' ),
+				'args'                => array(
+					'lang' => array(
+						'description' => __( 'Language slug to filter pages by.', 'linguator-multilingual-ai-translation' ),
+						'type'        => 'string',
+						'required'    => false,
+					),
+				),
 			)
 			);
 
@@ -276,6 +284,19 @@ class Languages extends Abstract_Controller {
 	public function get_all_pages_data( $request ) {
 		$response = array();
 
+		// Get language filter from request
+		$lang_slug = $request->get_param( 'lang' );
+		$filter_language = null;
+		
+		if ( ! empty( $lang_slug ) ) {
+			$filter_language = $this->model->languages->get( $lang_slug );
+			if ( ! $filter_language ) {
+				return rest_ensure_response( array(
+					'error' => 'Invalid language slug provided.',
+				) );
+			}
+		}
+
 		// Get post types managed by Linguator
 		$post_types = array( 'page' );
 		if ( empty( $post_types ) ) {
@@ -289,28 +310,72 @@ class Languages extends Abstract_Controller {
 			'suppress_filters' => false,
 		) );
 
+		// Optimize: Bulk fetch languages and translations for all posts at once
+		$post_ids = wp_list_pluck( $posts, 'ID' );
+		
+		if ( empty( $post_ids ) ) {
+			return rest_ensure_response( $response );
+		}
+
+		// Bulk fetch all languages (single query)
+		$language_terms = array();
+		if ( method_exists( $this->model->post, 'get_object_terms' ) ) {
+			// Use reflection to call protected method for bulk language fetching
+			$reflection = new ReflectionClass( $this->model->post );
+			$method = $reflection->getMethod( 'get_object_terms' );
+			$method->setAccessible( true );
+			$language_terms = $method->invoke( $this->model->post, $post_ids, $this->model->post->get_tax_language() );
+		}
+
+		// Bulk fetch all translations (single query)
+		$all_translations = array();
+		if ( method_exists( $this->model->post, 'get_raw_objects_translations' ) ) {
+			$reflection = new ReflectionClass( $this->model->post );
+			$method = $reflection->getMethod( 'get_raw_objects_translations' );
+			$method->setAccessible( true );
+			$raw_translations = $method->invoke( $this->model->post, $post_ids );
+			
+			// Validate translations for each post
+			foreach ( $raw_translations as $post_id => $translations ) {
+				if ( method_exists( $this->model->post, 'validate_translations' ) ) {
+					$validate_method = $reflection->getMethod( 'validate_translations' );
+					$validate_method->setAccessible( true );
+					$all_translations[ $post_id ] = $validate_method->invoke( $this->model->post, $translations, $post_id, 'display' );
+				} else {
+					$all_translations[ $post_id ] = $translations;
+				}
+			}
+		}
+
+		// Now build response using pre-fetched data
 		foreach ( $posts as $post ) {
-			$language = $this->model->post->get_language( $post->ID );
-			// Translations mapping: language slug/locale => post ID
-			$translations = (array) $this->model->post->get_translations( $post->ID );
+			// Get language from bulk-fetched data
+			$language = false;
+			if ( isset( $language_terms[ $post->ID ] ) && ! empty( $language_terms[ $post->ID ] ) ) {
+				$language = $this->model->languages->get( $language_terms[ $post->ID ]->term_id );
+			}
+
+			// Filter by language if specified
+			if ( $filter_language && ( ! $language || $language->slug !== $filter_language->slug ) ) {
+				continue; // Skip posts not in the requested language
+			}
+
+			// Get translations from bulk-fetched data
+			$translations = isset( $all_translations[ $post->ID ] ) ? (array) $all_translations[ $post->ID ] : array();
+			
 			$linked_ids = array();
 			foreach ( $translations as $lang_key => $tr_post_id ) {
 				if ( $tr_post_id && (int) $tr_post_id !== (int) $post->ID ) {
 					$linked_ids[ $lang_key ] = (int) $tr_post_id;
 				}
 			}
+
+			// Only send fields that frontend actually uses
 			$response[] = array(
-				'ID'       => $post->ID,
-				'title'    => $post->post_title,
-				'slug'     => $post->post_name,
-				'type'     => $post->post_type,
-				'status'   => $post->post_status,
-				'date'     => $post->post_date,
-				'modified' => $post->post_modified,
-				'language' => $language ? $language->to_array() : null,
-				'translations' => $translations,
+				'ID'        => $post->ID,
+				'title'     => $post->post_title,
+				'slug'      => $post->post_name,
 				'is_linked' => ! empty( $linked_ids ),
-				'linked_ids' => $linked_ids,
 			);
 		}
 
