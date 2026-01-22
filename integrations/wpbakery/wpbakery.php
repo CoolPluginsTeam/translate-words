@@ -1130,12 +1130,19 @@ class LMAT_WPBakery {
 	private static function restore_protected_attributes( $content ) {
 		// Pattern: ___LMAT_PROTECTED_{base64}___
 		// Find all protected tokens and decode them
+		// Base64 strings can contain A-Z, a-z, 0-9, +, /, and = (for padding)
+		// Handle both complete tokens (___LMAT_PROTECTED_...___) and potentially truncated ones
 		$content = preg_replace_callback(
-			'/___LMAT_PROTECTED_([A-Za-z0-9+\/=]+)___/',
+			'/___LMAT_PROTECTED_([A-Za-z0-9+\/=]+)(?:___|__|$)/',
 			function( $matches ) {
 				$encoded_value = $matches[1];
 				// Decode the base64 value
-				$original_value = base64_decode( $encoded_value );
+				$original_value = base64_decode( $encoded_value, true );
+				// If decoding fails, return empty string to remove the broken token
+				// This prevents broken tokens from appearing in the content
+				if ( false === $original_value || empty( $original_value ) ) {
+					return '';
+				}
 				return $original_value;
 			},
 			$content
@@ -1168,9 +1175,14 @@ class LMAT_WPBakery {
 		// First, clean up any page translation placeholders
 		$data['post_content'] = self::remove_page_translation_placeholders( $data['post_content'] );
 		
-		// Second, restore exposed attributes
-		if ( false !== strpos( $data['post_content'], '[lmat_val' ) ) {
+		// Second, restore exposed attributes (this also restores protected attributes)
+		if ( false !== strpos( $data['post_content'], '[lmat_val' ) || false !== strpos( $data['post_content'], '___LMAT' ) ) {
 			$data['post_content'] = self::restore_translatable_attributes( $data['post_content'] );
+		}
+		
+		// Also restore protected attributes separately in case they exist without lmat_val tags
+		if ( false !== strpos( $data['post_content'], '___LMAT_PROTECTED_' ) ) {
+			$data['post_content'] = self::restore_protected_attributes( $data['post_content'] );
 		}
 		
 		// Remove any standalone LMAT tokens that weren't properly replaced
@@ -1374,6 +1386,11 @@ class LMAT_WPBakery {
 		
 		// Remove any remaining lmat_val tags
 		$content = self::remove_remaining_lmat_tags( $content );
+		
+		// Restore any protected attributes that might still be tokenized
+		if ( false !== strpos( $content, '___LMAT_PROTECTED_' ) ) {
+			$content = self::restore_protected_attributes( $content );
+		}
 		
 		// Remove standalone LMAT tokens that weren't properly replaced
 		$content = self::remove_standalone_lmat_tokens( $content );

@@ -22,6 +22,37 @@ const updateWPBakeryContent = async ({source, lang, translatedContent, servicePr
     }
 
     /**
+     * Restore protected attributes that were tokenized to prevent translation.
+     * Protected attributes are ID-based values that should never be translated.
+     * 
+     * @param {string} content - Content with protected tokens
+     * @returns {string} Content with protected attributes restored
+     */
+    const restoreProtectedAttributes = (content) => {
+        if (!content || !content.includes('___LMAT_PROTECTED_')) {
+            return content;
+        }
+
+        // Pattern: ___LMAT_PROTECTED_{base64}___
+        // Base64 strings can contain A-Z, a-z, 0-9, +, /, and = (for padding)
+        // Handle both complete tokens (___LMAT_PROTECTED_...___) and potentially truncated ones
+        const protectedRegex = /___LMAT_PROTECTED_([A-Za-z0-9+\/=]+)(?:___|__|$)/g;
+        
+        return content.replace(protectedRegex, (match, encodedValue) => {
+            try {
+                // Decode the base64 value
+                // In browser, we use atob() for base64 decoding
+                const decoded = atob(encodedValue);
+                return decoded || '';
+            } catch (e) {
+                // If decoding fails, return empty string to remove the broken token
+                console.warn('Failed to decode protected attribute:', encodedValue);
+                return '';
+            }
+        });
+    };
+
+    /**
      * Process WPBakery content with [lmat_val] tags.
      * Replaces tokens with their translations and removes lmat_val wrappers.
      */
@@ -90,6 +121,9 @@ const updateWPBakeryContent = async ({source, lang, translatedContent, servicePr
 
         // Remove any remaining [lmat_val] tags (cleanup for Pattern 1)
         translatedContent = translatedContent.replace(/\s*\[lmat_val[^\]]*?\].*?\[\/lmat_val\]/gis, '');
+
+        // Restore protected attributes (like image IDs) that were tokenized
+        translatedContent = restoreProtectedAttributes(translatedContent);
 
         return translatedContent;
     };
