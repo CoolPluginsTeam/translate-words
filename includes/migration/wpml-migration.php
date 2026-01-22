@@ -1256,25 +1256,26 @@ class WPML_Migration {
 		// Update term counts for the affected taxonomies
 		if ( $inserted > 0 ) {
 			$term_taxonomy_ids = array_unique( array_column( $assignments, 'term_taxonomy_id' ) );
-			foreach ( $term_taxonomy_ids as $term_taxonomy_id ) {
-				// Get the count of objects for this term
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-				$count = $wpdb->get_var(
+			
+			if ( ! empty( $term_taxonomy_ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $term_taxonomy_ids ), '%d' ) );
+				
+				// Update all counts in a single query using JOIN with subquery
+				// Uses LEFT JOIN to handle terms with 0 relationships (sets count to 0)
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->query(
 					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d",
-						$term_taxonomy_id
+						"UPDATE {$wpdb->term_taxonomy} tt
+						LEFT JOIN (
+							SELECT term_taxonomy_id, COUNT(*) as count 
+							FROM {$wpdb->term_relationships} 
+							WHERE term_taxonomy_id IN ({$placeholders})
+							GROUP BY term_taxonomy_id
+						) tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
+						SET tt.count = COALESCE(tr.count, 0)
+						WHERE tt.term_taxonomy_id IN ({$placeholders})",
+						...array_merge( $term_taxonomy_ids, $term_taxonomy_ids )
 					)
-				);
-				// phpcs:enable
-
-				// Update the count
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-				$wpdb->update(
-					$wpdb->term_taxonomy,
-					array( 'count' => $count ),
-					array( 'term_taxonomy_id' => $term_taxonomy_id ),
-					array( '%d' ),
-					array( '%d' )
 				);
 				// phpcs:enable
 			}
