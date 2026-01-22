@@ -1042,6 +1042,10 @@ class LMAT_WPBakery {
 		// Cleanup any remaining lmat_val tags globally
 		$content = self::remove_remaining_lmat_tags( $content );
 		
+		// Remove standalone LMAT tokens that weren't properly replaced
+		// This must happen after removing lmat_val tags, as tokens inside those tags are handled separately
+		$content = self::remove_standalone_lmat_tokens( $content );
+		
 		// Remove page translation placeholders that might have been left in the content
 		$content = self::remove_page_translation_placeholders( $content );
 
@@ -1168,6 +1172,9 @@ class LMAT_WPBakery {
 		if ( false !== strpos( $data['post_content'], '[lmat_val' ) ) {
 			$data['post_content'] = self::restore_translatable_attributes( $data['post_content'] );
 		}
+		
+		// Remove any standalone LMAT tokens that weren't properly replaced
+		$data['post_content'] = self::remove_standalone_lmat_tokens( $data['post_content'] );
 
 		// Check if this contains WPBakery shortcodes
 		if ( false === strpos( $data['post_content'], '[vc_' ) ) {
@@ -1245,6 +1252,31 @@ class LMAT_WPBakery {
 			// Supports newlines inside the tag or content
 			// Remove the entire tag and its content (it's already been translated in the token)
 			$content = preg_replace( '/\s*\[lmat_val[^\]]*\].*?\[\/lmat_val\]/s', '', $content );
+		}
+		return $content;
+	}
+	
+	/**
+	 * Remove standalone LMAT tokens from content.
+	 *
+	 * These tokens (___LMAT_{hash}___) are placeholders used during translation
+	 * and should be removed if they weren't properly replaced with translated content.
+	 *
+	 * @since 1.0.10
+	 * @access public
+	 * @static
+	 *
+	 * @param string $content Post content.
+	 * @return string Content with standalone LMAT tokens removed.
+	 */
+	public static function remove_standalone_lmat_tokens( $content ) {
+		// Pattern to match standalone LMAT tokens: ___LMAT_{32-char-hex-hash}___
+		// These tokens should have been replaced during translation, but if they weren't,
+		// we need to remove them to prevent them from appearing in the final content
+		if ( false !== strpos( $content, '___LMAT_' ) ) {
+			// Remove standalone LMAT tokens (not inside [lmat_val] tags)
+			// This regex matches tokens that are not part of [lmat_val] tags
+			$content = preg_replace( '/___LMAT_[a-f0-9]{32}___/i', '', $content );
 		}
 		return $content;
 	}
@@ -1336,12 +1368,15 @@ class LMAT_WPBakery {
 	 */
 	public static function cleanup_content_on_frontend( $content ) {
 		// Check if content has any placeholders before processing
-		if ( false === strpos( $content, '#lmat_page_translation' ) && false === strpos( $content, '[lmat_val' ) ) {
+		if ( false === strpos( $content, '#lmat_page_translation' ) && false === strpos( $content, '[lmat_val' ) && false === strpos( $content, '___LMAT_' ) ) {
 			return $content;
 		}
 		
 		// Remove any remaining lmat_val tags
 		$content = self::remove_remaining_lmat_tags( $content );
+		
+		// Remove standalone LMAT tokens that weren't properly replaced
+		$content = self::remove_standalone_lmat_tokens( $content );
 		
 		// Remove page translation placeholders
 		$content = self::remove_page_translation_placeholders( $content );
