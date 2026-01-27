@@ -409,6 +409,9 @@ class LMAT_WPBakery {
 	/**
 	 * Expose specific WPBakery attributes as content for translation.
 	 * 
+	 * Uses WPBakery's API to dynamically detect translatable attributes,
+	 * 
+	 * 
 	 * @since 1.0.5
 	 * @access public
 	 * @static
@@ -421,50 +424,20 @@ class LMAT_WPBakery {
 			return $content;
 		}
 
-		// Comprehensive list of translatable attributes across all WPBakery elements
-		$translatable_attributes = [ 
-			// Basic text attributes
-			'title', 'text', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 'subheading', 'currency', 'period',
-			// Subtitle and descriptions
-			'subtitle', 'description', 'excerpt', 
-			// Labels and captions
-			'label', 'caption', 'placeholder',
-			// Button attributes
-			'btn_title', 'btn_title_hover', 'button_text', 'link_text', 'read_more_text', 'add_button',
-			// Tab and accordion titles
-			'tab_title', 'accordion_title', 'toggle_title',
-			// Testimonial attributes
-			'author', 'company', 'quote',
-			// FAQ attributes
-			'question', 'answer',
-			// Message and alert content
-			'message', 'message_text',
-			// Counter and progress bar
-			'counter_title', 'units', 'bar_title',
-			// Icon box
-			'icon_title', 'icon_description',
-			// Call to action
-			'cta_title', 'cta_text', 'cta_button_text',
-			// Separator
-			'separator_title',
-			// Google Maps
-			'marker_title', 'marker_description',
-			// Posts/Blog
-			'posts_title', 'grid_title',
-			// Video
-			'video_title', 'video_description',
-			// Pricing table
-			'price', 'price_label', 'package_name', 'feature',
-			// Tour section
-			'tour_title',
-			// Gallery
-			'gallery_title',
-			// Single image
-			'img_caption', 'img_title',
-			// Hover box
-			'primary_title', 'hover_title',
-			// Content elements
-			'content', 'value'
+		// Text-based parameter types that should be translated
+		$translatable_param_types = [
+			'textfield',
+			'textarea',
+			'textarea_html',
+			'textarea_raw_html',
+			'textarea_safe',
+			'textfield_html',
+		];
+		
+		// Parameter types that might contain translatable content but need special handling
+		$json_param_types = [
+			'param_group',
+			'textarea_raw_html',
 		];
 		
 		// Attributes that contain JSON data with translatable nested properties
@@ -473,22 +446,60 @@ class LMAT_WPBakery {
 			'values' => [ 'label', 'title', 'text' ], // For vc_progress_bar, pie charts, etc.
 		];
 		
-		$protected_attributes = [ 'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id', 'taxonomy', 'term_id', 'el_id' ];
-		$skip_attributes = [ 'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color', 'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container', 'google_fonts', 'css_animation', 'el_class' ];
+		// Attributes that should never be translated (colors, CSS, IDs, etc.)
+		$skip_attributes = [
+			'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color',
+			'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container',
+			'google_fonts', 'css_animation', 'el_class', 'el_id', 'css_id', 'css_class',
+			'url', 'link', 'href', 'src', 'source', 'background_image', 'bg_image',
+			'icon', 'icon_type', 'icon_fontawesome', 'icon_openiconic', 'icon_typicons',
+			'icon_entypo', 'icon_linecons', 'icon_monosocial', 'icon_material',
+		];
+		
+		// Attributes that contain IDs or references that should be protected
+		$protected_attributes = [
+			'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id',
+			'taxonomy', 'term_id', 'el_id', 'attachment_id', 'media_id', 'page_id',
+		];
 
 		// Match shortcodes and their attributes 
 		$content = preg_replace_callback(
-			'/(\[vc_[\w-]+)([^\]]*)(\])/s',
-			function( $matches ) use ( $translatable_attributes, $json_attributes, $protected_attributes, $skip_attributes ) {
+			'/(\[(vc_[\w-]+))([^\]]*)(\])/s',
+			function( $matches ) use ( $translatable_param_types, $json_param_types, $json_attributes, $protected_attributes, $skip_attributes ) {
 				$tag_start = $matches[1];
-				$attributes_str = $matches[2];
-				$tag_end = $matches[3];
+				$shortcode_tag = $matches[2]; // Full shortcode tag (e.g., vc_column_text)
+				$attributes_str = $matches[3];
+				$tag_end = $matches[4];
 				$append_content = '';
+
+				// Get shortcode definition from WPBakery API
+				$shortcode_def = self::get_wpbakery_shortcode_definition( $shortcode_tag );
+				$dynamic_translatable_attrs = [];
+				
+				if ( $shortcode_def && ! empty( $shortcode_def['params'] ) ) {
+					// Extract translatable attributes from WPBakery API
+					foreach ( $shortcode_def['params'] as $param ) {
+						if ( ! empty( $param['param_name'] ) && ! empty( $param['type'] ) ) {
+							$param_name = $param['param_name'];
+							$param_type = $param['type'];
+							
+							// Check if this parameter type is translatable
+							if ( in_array( $param_type, $translatable_param_types, true ) ) {
+								$dynamic_translatable_attrs[] = $param_name;
+							}
+							
+							// Check for JSON-based parameters
+							if ( in_array( $param_type, $json_param_types, true ) && isset( $json_attributes[ $param_name ] ) ) {
+								// Already handled in $json_attributes
+							}
+						}
+					}
+				}
 
 				// Find attributes in the string - using /s modifier to handle multiline values
 				$attributes_str = preg_replace_callback(
 					'/([\w-]+)=(["\'])((?:(?!\2).)*)\2/s',
-					function( $attr_matches ) use ( $translatable_attributes, $json_attributes, $protected_attributes, $skip_attributes, &$append_content ) {
+					function( $attr_matches ) use ( $dynamic_translatable_attrs, $json_attributes, $protected_attributes, $skip_attributes, &$append_content ) {
 						$attr_name = $attr_matches[1];
 						$attr_quote = $attr_matches[2];
 						$attr_val = $attr_matches[3];
@@ -507,7 +518,18 @@ class LMAT_WPBakery {
 							}
 						}
 
-						if ( in_array( $attr_name, $translatable_attributes, true ) && ! empty( $attr_val ) ) {
+						// Check if attribute is translatable (from WPBakery API or heuristics)
+						$is_translatable = false;
+						
+						if ( in_array( $attr_name, $dynamic_translatable_attrs, true ) ) {
+							// Found in WPBakery API definition
+							$is_translatable = true;
+						} else {
+							// Fallback: Use heuristics to detect translatable attributes
+							$is_translatable = self::is_attribute_translatable_by_heuristics( $attr_name, $attr_val );
+						}
+
+						if ( $is_translatable && ! empty( $attr_val ) ) {
 							// Skip if already tokenized
 							if ( strpos( $attr_val, '___LMAT_' ) === 0 ) {
 								return $attr_matches[0];
@@ -560,6 +582,81 @@ class LMAT_WPBakery {
 		$content = self::expose_shortcode_content( $content );
 
 		return $content;
+	}
+	
+	/**
+	 * Get WPBakery shortcode definition using WPBakery API.
+	 * 
+	 * @since 1.0.10
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $shortcode_tag The shortcode tag (e.g., 'vc_column_text').
+	 * @return array|null Shortcode definition array or null if not found.
+	 */
+	private static function get_wpbakery_shortcode_definition( $shortcode_tag ) {
+		// Check if WPBakery API is available
+		if ( ! class_exists( 'WPBMap' ) || ! method_exists( 'WPBMap', 'getShortCode' ) ) {
+			return null;
+		}
+		
+		try {
+			$shortcode_def = \WPBMap::getShortCode( $shortcode_tag );
+			return $shortcode_def ? $shortcode_def : null;
+		} catch ( \Exception $e ) {
+			// WPBakery API might throw exceptions, return null on error
+			return null;
+		}
+	}
+	
+	/**
+	 * Determine if an attribute is translatable using heuristics.
+	 * 
+	 * This is a fallback method when WPBakery API is not available or
+	 * doesn't have the shortcode definition. Uses naming patterns and
+	 * value analysis to detect translatable content.
+	 * 
+	 * @since 1.0.10
+	 * @access private
+	 * @static
+	 * 
+	 * @param string $attr_name Attribute name.
+	 * @param string $attr_val Attribute value.
+	 * @return bool True if attribute appears to be translatable.
+	 */
+	private static function is_attribute_translatable_by_heuristics( $attr_name, $attr_val ) {
+		// Skip if value is empty or too short
+		if ( empty( $attr_val ) || strlen( trim( $attr_val ) ) < 2 ) {
+			return false;
+		}
+		
+		// Skip if value looks like an ID, URL, or technical value
+		if ( preg_match( '/^(https?:\/\/|#|@|\d+$|vc_|wp-|data-)/i', $attr_val ) ) {
+			return false;
+		}
+		
+		// Skip if value is only numbers, special characters, or single character
+		if ( preg_match( '/^[\d\s\-_\.]+$/', $attr_val ) || strlen( trim( $attr_val ) ) === 1 ) {
+			return false;
+		}
+		
+		// Common translatable attribute name patterns
+		$translatable_patterns = [
+			'/^(title|text|heading|subtitle|description|excerpt|label|caption|placeholder|content|value|message|quote|author|company|question|answer|button|link|name|name_plural)$/i',
+			'/_(title|text|heading|subtitle|description|label|caption|content|value|message|quote|author|company|question|answer|button|link|name)$/i',
+			'/^(h[1-6]|btn_|cta_|icon_|counter_|bar_|separator_|marker_|posts_|grid_|video_|price|gallery_|img_|tour_|primary_|hover_)/i',
+		];
+		
+		foreach ( $translatable_patterns as $pattern ) {
+			if ( preg_match( $pattern, $attr_name ) ) {
+				// Additional check: value should contain letters (not just numbers/symbols)
+				if ( preg_match( '/[a-zA-Z]/', $attr_val ) ) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -785,86 +882,9 @@ class LMAT_WPBakery {
 	 * @return string Content with shortcode content exposed.
 	 */
 	private static function expose_shortcode_content( $content ) {
-		// List of all WPBakery shortcodes that contain translatable inner content
-		$content_shortcodes = [
-			// Basic content elements
-			'vc_column_text', 'vc_custom_heading', 'vc_text_separator',
-			// Tabs and accordions
-			'vc_tab', 'vc_accordion_tab', 'vc_tta_section',
-			// Toggle and message boxes
-			'vc_toggle', 'vc_message', 'vc_alert',
-			// Call to action
-			'vc_cta', 'vc_cta_button', 'vc_cta_button2',
-			// Testimonials and quotes
-			'vc_testimonial', 'vc_blockquote',
-			// Icon and feature boxes
-			'vc_icon_box', 'vc_box', 'vc_feature_box', 'vc_hoverbox',
-			// Buttons (some have inner content)
-			'vc_button', 'vc_button2',
-			// Lists
-			'vc_list_item',
-			// FAQ
-			'vc_faq',
-			// Pricing table
-			'vc_pricing_table', 'vc_pricing_feature',
-			// Content containers
-			'vc_row_inner', 'vc_column_inner',
-			// Video with description
-			'vc_video',
-			// Separator with text
-			'vc_text_separator',
-			// Raw HTML/JS
-			'vc_raw_html', 'vc_raw_js',
-			// Gutenberg integration
-			'vc_gutenberg',
-			// Widget sidebar
-			'vc_widget_sidebar',
-			// Posts elements
-			'vc_posts_grid', 'vc_carousel',
-			// Pie chart
-			'vc_pie',
-			// Round chart
-			'vc_round_chart',
-			// Line chart
-			'vc_line_chart',
-			// Google maps (marker content)
-			'vc_googlemaps',
-			// Flickr
-			'vc_flickr',
-			// Pinterest
-			'vc_pinterest',
-			// Twitter
-			'vc_tweetmeme',
-			// Facebook
-			'vc_facebook',
-			// Google+
-			'vc_googleplus',
-			// Separator
-			'vc_separator',
-			// Empty space (might have custom content)
-			'vc_empty_space',
-			// Progress bar
-			'vc_progress_bar',
-			// Single image (caption)
-			'vc_single_image',
-			// Gallery
-			'vc_gallery',
-			// Media grid
-			'vc_media_grid',
-			// Masonry grid
-			'vc_masonry_grid',
-			// Masonry media grid
-			'vc_masonry_media_grid',
-			// Basic grid
-			'vc_basic_grid'
-		];
-		
-		// Create regex pattern from shortcode list
-		$shortcodes_pattern = implode( '|', array_map( 'preg_quote', $content_shortcodes ) );
-		
-		// Match all shortcodes with inner content
+		// Match all WPBakery shortcodes with inner content dynamically (any [vc_*]...[/vc_*] pair)
 		$content = preg_replace_callback(
-			'/\[(' . $shortcodes_pattern . ')([^\]]*)\](.*?)\[\/\1\]/s',
+			'/\[(vc_[\w-]+)([^\]]*)\](.*?)\[\/\1\]/s',
 			function( $matches ) {
 				$shortcode_name = $matches[1];
 				$attributes = $matches[2];
