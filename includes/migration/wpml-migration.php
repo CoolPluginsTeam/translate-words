@@ -577,6 +577,9 @@ class WPML_Migration {
 		// phpcs:enable
 
 		if ( ! empty( $post_translation_groups ) ) {
+			// Collect all translation groups and create them in bulk to reduce DB calls.
+			$post_translation_sets = array();
+
 			foreach ( $post_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
 				$translations_parts = explode( '|', $group->translations );
@@ -598,13 +601,14 @@ class WPML_Migration {
 				}
 
 				if ( count( $lmat_translations ) > 1 ) {
-					// Get the first post ID to create translation group
-					$first_post_id = reset( $lmat_translations );
-
-					// Save translations for the first post
-					$this->model->post->save_translations( $first_post_id, $lmat_translations );
-					$results['post_translations']++;
+					$post_translation_sets[] = $lmat_translations;
 				}
+			}
+
+			if ( ! empty( $post_translation_sets ) ) {
+				// Bulk-create all post translation groups using the optimized helper.
+				$this->model->post->set_translation_in_mass( $post_translation_sets );
+				$results['post_translations'] = count( $post_translation_sets );
 			}
 		}
 
@@ -682,7 +686,9 @@ class WPML_Migration {
 				wp_cache_delete( 'last_changed', 'terms' );
 			}
 
-			// ========== Second pass: Create translation groups (now that all languages are assigned) ==========
+			// ========== Second pass: Collect translation groups (now that all languages are assigned) ==========
+			$term_translation_sets = array();
+
 			foreach ( $term_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
 				$translations_parts = explode( '|', $group->translations );
@@ -700,24 +706,14 @@ class WPML_Migration {
 				}
 
 				if ( count( $lmat_translations ) > 1 ) {
-					// Get the first term ID to create translation group
-					$first_term_id = reset( $lmat_translations );
-
-					// Save translations for the first term
-					// Note: Languages are now guaranteed to be assigned via bulk operation above
-					$saved_translations = $this->model->term->save_translations( $first_term_id, $lmat_translations );
-
-					if ( ! empty( $saved_translations ) ) {
-						$results['term_translations']++;
-					} else {
-						$results['errors'][] = sprintf(
-							/* translators: %d: Term ID */
-							__( 'Failed to save translations for term ID %d', 'linguator-multilingual-ai-translation' ),
-							$first_term_id
-						);
-						$results['success'] = false;
-					}
+					$term_translation_sets[] = $lmat_translations;
 				}
+			}
+
+			if ( ! empty( $term_translation_sets ) ) {
+				// Bulk-create all term translation groups using the optimized helper.
+				$this->model->term->set_translation_in_mass( $term_translation_sets );
+				$results['term_translations'] = count( $term_translation_sets );
 			}
 		}
 
