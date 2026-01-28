@@ -42,8 +42,6 @@ class Polylang_Migration {
 	 */
 	private $lmat_languages_lists;
 
-	private $initial_migration=true;
-
 	/**
 	 * Constructor
 	 *
@@ -320,9 +318,7 @@ class Polylang_Migration {
 			return $results;
 		}
 
-		$this->initial_migration=true;
-
-				// -----------------------------
+		// -----------------------------
 		// 1. Build Polylang → LMAT language map
 		// -----------------------------
 		$lang_map = [];
@@ -1718,8 +1714,6 @@ class Polylang_Migration {
 		
 		if ( $migrate_languages ) {
 			$this->set_lmat_taxonomy_id();
-
-			$this->initial_migration=!(isset($this->lmat_languages_lists) && count($this->lmat_languages_lists) > 0);
 
 			$lang_results = $this->migrate_languages();
 			$results['languages'] = $lang_results;
