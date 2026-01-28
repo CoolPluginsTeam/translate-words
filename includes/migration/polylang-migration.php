@@ -320,86 +320,34 @@ class Polylang_Migration {
 			return $results;
 		}
 
-		$this->migration_post_language_assignment($results);
+		$this->initial_migration=true;
 
-		die();
-		// Migrate term language assignments
-		// In Polylang, terms are assigned to the 'language' taxonomy via term_relationships
-		// The object_id in term_relationships is the term_taxonomy_id of the term being assigned
-		// The term_taxonomy_id in term_relationships is the term_taxonomy_id of the language term
-		// Note: We need to get terms that are NOT in translation groups separately
-		// Terms in translation groups will get their language from migrate_translations()
-		
-		// First, get all terms that are in translation groups (they'll be handled in migrate_translations)
-		$terms_in_translations = array();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$term_translation_terms = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT tt.description 
-				FROM {$wpdb->term_taxonomy} tt
-				WHERE tt.taxonomy = %s",
-				'term_translations'
-			)
-		);
-		
-		if ( ! empty( $term_translation_terms ) ) {
-			foreach ( $term_translation_terms as $trans_term ) {
-				$translations = maybe_unserialize( $trans_term->description );
-				if ( is_array( $translations ) ) {
-					$terms_in_translations = array_merge( $terms_in_translations, array_values( $translations ) );
-				}
+				// -----------------------------
+		// 1. Build Polylang → LMAT language map
+		// -----------------------------
+		$lang_map = [];
+	
+		foreach ( $this->lmat_languages_lists as $slug => $data ) {
+			$slug  = sanitize_key( $slug );
+			$lmat_language = absint( $data['lmat_language'] );
+			$lmat_term_language = absint( $data['lmat_term_language'] );
+			
+			if ( $slug && $lmat_language && $lmat_term_language ) {
+				$lang_map[ $slug ] = array( 'lmat_language' => $lmat_language, 'lmat_term_language' => $lmat_term_language );
 			}
 		}
-
-		$terms_in_translations = array_map( 'intval', $terms_in_translations );
-		
-		// Now get terms that have languages assigned but are NOT in translation groups
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$term_languages = $wpdb->get_results(
-			$wpdb->prepare(
-					"SELECT DISTINCT tt.term_id, lang_t.slug as lang_slug, tt.taxonomy
-					FROM {$wpdb->term_taxonomy} tt
-					INNER JOIN {$wpdb->term_relationships} tr ON tt.term_taxonomy_id = tr.object_id
-					INNER JOIN {$wpdb->term_taxonomy} lang_tt ON tr.term_taxonomy_id = lang_tt.term_taxonomy_id
-					INNER JOIN {$wpdb->terms} lang_t ON lang_tt.term_id = lang_t.term_id
-					WHERE lang_tt.taxonomy = %s
-					AND tt.taxonomy NOT IN (%s, %s, %s)",
-					'language',
-					'language',
-					'post_translations',
-					'term_translations'
-			)
-		);
-
-
-		if ( ! empty( $term_languages ) ) {
-			foreach ( $term_languages as $term_data ) {
-				$term_id = (int) $term_data->term_id;
-				$lang_slug = $term_data->lang_slug;
-				
-				// Skip terms that are in translation groups (they'll be handled in migrate_translations)
-				if ( in_array( $term_id, $terms_in_translations, true ) ) {
-					continue;
-				}
-				
-				// Check if this language exists in Linguator
-				$lmat_lang = $this->model->languages->get( $lang_slug );
-				if ( $lmat_lang ) {
-					// Check if term already has a language assigned in Linguator
-					$existing_lang = $this->model->term->get_language( $term_id );
-					if ( ! $existing_lang ) {
-						// Set the language for this term
-						// $this->model->term->set_language( $term_id, $lmat_lang );
-						$results['terms_assigned']++;
-					}
-				}
-			}
+	
+		if ( empty( $lang_map ) ) {
+			return $results;
 		}
+
+		$this->migration_post_language_assignment($results, $lang_map);
+		$this->migration_term_language_assignment($results, $lang_map);
 
 		return $results;
 	}
 
-	public function migration_post_language_assignment( &$results ) {
+	public function migration_post_language_assignment( &$results, $lang_map ) {
 		global $wpdb;
 	
 		if ( ! isset( $results['errors'] ) ) {
@@ -410,24 +358,6 @@ class Polylang_Migration {
 		}
 		if ( ! isset( $results['success'] ) ) {
 			$results['success'] = true;
-		}
-	
-		// -----------------------------
-		// 1. Build Polylang → LMAT language map
-		// -----------------------------
-		$lang_map = [];
-	
-		foreach ( $this->lmat_languages_lists as $slug => $tt_id ) {
-			$slug  = sanitize_key( $slug );
-			$tt_id = absint( $tt_id );
-	
-			if ( $slug && $tt_id ) {
-				$lang_map[ $slug ] = $tt_id;
-			}
-		}
-	
-		if ( empty( $lang_map ) ) {
-			return $results;
 		}
 	
 		// -----------------------------
@@ -475,15 +405,41 @@ class Polylang_Migration {
 			$post_id = absint( $row->ID );
 			$slug    = sanitize_key( $row->slug );
 	
-			if ( ! $post_id || ! isset( $lang_map[ $slug ] ) ) {
+			if ( ! $post_id || ! isset( $lang_map[ $slug ]['lmat_language'] ) ) {
 				continue;
 			}
 	
-			$new_relations[]     = [ $post_id, absint( $lang_map[ $slug ] ) ];
+			$new_relations[]     = [ $post_id, absint( $lang_map[ $slug ]['lmat_language'] ) ];
 			$inserted_post_ids[] = $post_id;
 		}
 	
 		if ( empty( $new_relations ) ) {
+			return $results;
+		}
+
+		// Delete old relations
+		$delete_old_relations_ids = implode( ',', array_fill( 0, count( $inserted_post_ids ), '%d' ) );
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+				DELETE tr
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt
+					ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				WHERE tt.taxonomy = %s
+				AND tr.object_id IN ( {$delete_old_relations_ids} )
+				",
+				array_merge(
+					[ 'lmat_language' ],
+					$inserted_post_ids
+				)
+			)
+		);
+		
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
 			return $results;
 		}
 	
@@ -614,7 +570,6 @@ class Polylang_Migration {
 		$term_relationships_derived_args = [];
 
 		foreach ( $terms as $term ) {
-			var_dump($term['slug']);
 			$slug        = sanitize_text_field( $term['slug'] );
 			$name = sanitize_text_field( $term['name'] );
 			$description = maybe_serialize( $term['filter_description'] );
@@ -719,196 +674,327 @@ class Polylang_Migration {
 	}
 	
 
-	public function migration_term_language_assignment(){
-		$existing_posts=$wpdb->get_results(
+	public function migration_term_language_assignment(&$results, $lang_map){
+		global $wpdb;
+		
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$pll_translation_terms = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT DISTINCT p.ID, tr.term_taxonomy_id as lang_slug
-				FROM {$wpdb->posts} p
-				INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+				"SELECT tr.object_id as taxonomy_id, tt.term_taxonomy_id as term_taxonomy_id, tt.description as description, t.term_id as term_id, t.slug as slug
+				FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
 				INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-				WHERE tt.taxonomy = %s
-				AND p.post_status != 'auto-draft'",
-				'lmat_language'
-			), ARRAY_A
-		);
-
-
-		$exclude_post_ids=array();
-		$existing_post_ids=array();
-		$inserted_post_ids=array();
-
-		foreach($existing_posts as $existing_post){
-			if(isset($existing_post['ID']) && !empty($existing_post['ID'])){
-				$exclude_post_id=intval($existing_post['ID']);
-				$existing_post_ids[$exclude_post_id]=intval($existing_post['lang_slug']);
-			}
-		}
-		
-		$post_not_include_check='';
-
-		if(!$this->initial_migration){
-			$exclude_post_ids=array_keys($existing_post_ids);
-			$post_not_include_check=sprintf(" AND p.ID NOT IN (%s)",implode(',',array_fill(0, count($exclude_post_ids), '%d')));
-		}else{
-			$exclude_post_ids=array();
-		}
-		
-		// Migrate post language assignments
-		// Get all posts that have a language assigned in Polylang
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$posts_with_language = $wpdb->get_results(
-			$wpdb->prepare(
-				sprintf(
-					"SELECT DISTINCT p.ID, t.slug as lang_slug
-					FROM {$wpdb->posts} p
-					INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-					INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-					INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-					WHERE tt.taxonomy = '%s'
-					AND p.post_status != 'auto-draft'%s",
-					'language',
-					$post_not_include_check
-				),
-				$exclude_post_ids
+				WHERE tt.taxonomy = %s",
+				'term_translations'
 			)
 		);
 
-		if(!empty($posts_with_language)) {
-			$new_posts=array();
-			$old_posts_relation=array();
+				// -----------------------------
+		// 2. Fetch posts with Polylang language (exclude already migrated)
+		// -----------------------------
+		$pll_translation_terms = $wpdb->get_results(
+			$wpdb->prepare(
+				"
+				SELECT DISTINCT ct.term_id as term_id, pt.slug
+				FROM {$wpdb->terms} ct
+				INNER JOIN {$wpdb->term_relationships} tr ON ct.term_id = tr.object_id
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} pt ON tt.term_id = pt.term_id
+				LEFT JOIN {$wpdb->term_relationships} lmat_tr ON ct.term_id = lmat_tr.object_id
+				LEFT JOIN {$wpdb->term_taxonomy} lmat_tt
+					ON lmat_tr.term_taxonomy_id = lmat_tt.term_taxonomy_id
+					AND lmat_tt.taxonomy = %s
+				WHERE tt.taxonomy = %s
+				AND lmat_tt.term_taxonomy_id IS NULL",
+				'lmat_term_language',
+				'term_language',
+			)
+		);
 
 
-			foreach($posts_with_language as $post_data) {
-
-				if(!$post_data->ID || empty($post_data->ID)) {
-					continue;
-				}
-
-				$un_tr_post_id=intval($post_data->ID);
-
-				if(in_array($un_tr_post_id, $exclude_post_ids)){
-					continue;
-				}
-
-				if(!isset($this->lmat_languages_lists[$post_data->lang_slug])) {
-					continue;
-				}
-
-				$taxonomy_id=(int) $this->lmat_languages_lists[$post_data->lang_slug];
-
-				if($taxonomy_id && $un_tr_post_id) {
-					if(in_array($un_tr_post_id, array_keys($existing_post_ids))){
-						$old_posts_relation[]=array((int) $un_tr_post_id, (int) $existing_post_ids[$un_tr_post_id]);
-					}
-					$inserted_post_ids[]=(int) $un_tr_post_id;
-					$new_posts[]=array((int) $un_tr_post_id, (int) $taxonomy_id);
-				}
-			}
-
-			if ( ! empty( $old_posts_relation ) ) {
-				$delete_taxonomy_query = $wpdb->prepare(
-					sprintf(
-						"DELETE FROM {$wpdb->term_relationships} WHERE (object_id, term_taxonomy_id) IN (%s)",
-						implode( ',', array_fill( 0, count( $old_posts_relation ), '(%d, %d)' ) )
-					),
-					array_merge( ...$old_posts_relation )
-				);
-			
-				$wpdb->query( $delete_taxonomy_query );
-				
-				// Check for errors
-				if ( $wpdb->last_error ) {
-					$results['errors'][] = sprintf( 
-						__( 'Failed to delete old relations: %s' ), 
-						$wpdb->last_error 
-					);
-				}
-			}
-
-
-			if(!empty($new_posts) && count($new_posts) > 0) {
-				$insert_taxonomy_query=$wpdb->prepare(
-					sprintf(
-						"INSERT INTO {$wpdb->term_relationships} ( object_id, term_taxonomy_id, term_order ) VALUES %s ON DUPLICATE KEY UPDATE term_taxonomy_id = VALUES(term_taxonomy_id)",
-						implode( ',', array_fill( 0, count( $new_posts ), '( %d, %d, 0 )' ) ),
-					),
-					array_merge( ...$new_posts )
-				);
-
-				$wpdb->query($insert_taxonomy_query);
-
-				if($wpdb->last_error) {
-					$results['errors'][] = sprintf(
-						__( 'Failed to migrate post language assignments: %s', 'linguator-multilingual-ai-translation' ),
-						$wpdb->last_error
-					);
-					$results['success'] = false;
-				}
-
-				if(!$wpdb->last_error){
-					$term_translations_descs=$wpdb->get_results(
-						$wpdb->prepare(
-							sprintf(
-								"SELECT DISTINCT p.ID, tt.description
-								FROM {$wpdb->posts} p
-								INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-								INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-								WHERE tt.taxonomy = '%s'
-								AND p.ID IN (%s)",
-								'term_translations',
-								implode( ',', array_fill(0, count( $inserted_post_ids ), '%d') ),		
-							),
-							$inserted_post_ids
-						)
-					);
-
-					var_dump($wpdb->prepare(
-						sprintf(
-							"SELECT DISTINCT p.ID, tt.description
-							FROM {$wpdb->posts} p
-							INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-							INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-							WHERE tt.taxonomy = '%s'
-							AND p.ID IN (%s)",
-							'term_translations',
-							implode( ',', array_fill(0, count( $inserted_post_ids ), '%d') ),		
-						),
-						$inserted_post_ids
-					));
-					die();
-
-					if(!empty($term_translations_descs)){
-						$lmat_term_desc=array();
-
-						foreach($term_translations_descs as $term_translation_descs){
-							if(isset($term_translation_descs->ID, $term_translation_descs->description) && !empty($term_translation_descs->ID) && !empty($term_translation_descs->description)){
-								$lmat_term_id=intval($term_translation_descs->ID);
-								$lmat_term_descs=maybe_unserialize( $term_translation_descs->description );
-								$filter_description=array();
-
-								if(is_array($lmat_term_descs)){
-									foreach($lmat_term_descs as $key => $value){
-										$lmat_term_desc_lang=sanitize_text_field($key);
-										$lmat_term_desc_id=intval($value);
-
-										$filter_description[$lmat_term_desc_lang]=$lmat_term_desc_id;
-									}
-								}
-
-								if(!empty($filter_description)){
-									$lmat_term_desc[$lmat_term_id]=serialize($filter_description);
-								}
-							}
-						}
-
-						var_dump($lmat_term_desc);
-					}
-				}
-
-				$results['posts_assigned']+=count($new_posts);
-			}
+		if(empty($pll_translation_terms)) {
+			return $results;
 		}
+
+		// -----------------------------
+		// 3. Prepare bulk insert data
+		// -----------------------------
+		$new_relations     = [];
+		$inserted_term_ids = [];
+
+		foreach ( $pll_translation_terms as $row ) {
+			$term_id = absint( $row->term_id );
+			$slug    = str_replace('pll_', '', sanitize_text_field($row->slug) );
+	
+			if ( ! $term_id || ! isset( $lang_map[ $slug ]['lmat_term_language'] ) ) {
+				continue;
+			}
+	
+			$new_relations[]     = [ $term_id, absint( $lang_map[ $slug ]['lmat_term_language'] ) ];
+			$inserted_term_ids[] = $term_id;
+		}
+	
+		if ( empty( $new_relations ) ) {
+			return $results;
+		}
+
+
+		// Delete old relations
+		$delete_old_relations_ids = implode( ',', array_fill( 0, count( $inserted_term_ids ), '%d' ) );
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+				DELETE tr
+				FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$wpdb->term_taxonomy} tt
+					ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				WHERE tt.taxonomy = %s
+				AND tr.object_id IN ( {$delete_old_relations_ids} )
+				",
+				array_merge(
+					[ 'lmat_term_language' ],
+					$inserted_term_ids
+				)
+			)
+		);
+
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+
+		// -----------------------------
+		// 4. Bulk INSERT (ON DUPLICATE)
+		// -----------------------------
+		$placeholders = implode( ',', array_fill( 0, count( $new_relations ), '( %d, %d, 0 )' ) );
+	
+		$insert_sql = $wpdb->prepare(
+			"INSERT INTO {$wpdb->term_relationships}
+			 ( object_id, term_taxonomy_id, term_order )
+			 VALUES {$placeholders}
+			 ON DUPLICATE KEY UPDATE
+			 term_taxonomy_id = VALUES(term_taxonomy_id)",
+			array_merge( ...$new_relations )
+		);
+	
+		$wpdb->query( $insert_sql );
+	
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+	
+		$results['posts_assigned'] += count( $new_relations );
+	
+		// -----------------------------
+		// 5. Fetch Polylang post_translations
+		// -----------------------------
+		$id_placeholders = implode( ',', array_fill( 0, count( $inserted_term_ids ), '%d' ) );
+	
+		$pll_descs = $wpdb->get_results(
+			$wpdb->prepare(
+				"
+				SELECT t.term_id as ID, tt.description
+				FROM {$wpdb->terms} t
+				INNER JOIN {$wpdb->term_relationships} tr ON t.term_id = tr.object_id
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				WHERE tt.taxonomy = %s
+				AND t.term_id IN ( {$id_placeholders} )
+				",
+				array_merge( [ 'term_translations' ], $inserted_term_ids )
+			)
+		);
+	
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+	
+		if ( empty( $pll_descs ) ) {
+			return $results;
+		}
+	
+		// -----------------------------
+		// 6. Fetch existing LMAT post translations
+		// -----------------------------
+		$existing = $wpdb->get_col(
+			$wpdb->prepare(
+				"
+				SELECT DISTINCT t.term_id as ID
+				FROM {$wpdb->terms} t
+				INNER JOIN {$wpdb->term_relationships} tr ON t.term_id = tr.object_id
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				WHERE tt.taxonomy = %s
+				AND t.term_id IN ( {$id_placeholders} )
+				",
+				array_merge( [ 'lmat_term_translations' ], $inserted_term_ids )
+			)
+		);
+
+	
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+	
+		$existing = array_map( 'absint', (array) $existing );
+	
+		// -----------------------------
+		// 7. Prepare terms
+		// -----------------------------
+		$terms = [];
+	
+		foreach ( $pll_descs as $row ) {
+			$term_id = absint( $row->ID );
+	
+			if ( in_array( $term_id, $existing, true ) ) {
+				continue;
+			}
+	
+			$data = maybe_unserialize( $row->description );
+			if ( ! is_array( $data ) ) {
+				continue;
+			}
+
+			$pll_term_desc=maybe_unserialize($row->description);
+			$filter_description=array();
+
+			if(is_array($pll_term_desc)){
+				foreach($pll_term_desc as $key => $value){
+					$filter_description[sanitize_text_field($key)]=intval($value);
+				}
+			}
+	
+			$key = uniqid( 'lmat_' );
+			$terms[ $key ] = [
+				'name' => $key,
+				'slug' => $key,
+				'term_id' => $term_id,
+				'filter_description' => $filter_description,
+			];
+		}
+	
+		if ( empty( $terms ) ) {
+			return $results;
+		}
+	
+		// -----------------------------
+		// 8. Insert terms safely
+		// -----------------------------
+		$term_values = [];
+		$term_taxonomy_derived_sql  = [];
+		$term_taxonomy_derived_args = [];
+		$term_relationships_derived_sql = [];
+		$term_relationships_derived_args = [];
+
+		foreach ( $terms as $term ) {
+			$slug        = sanitize_text_field( $term['slug'] );
+			$name = sanitize_text_field( $term['name'] );
+			$description = maybe_serialize( $term['filter_description'] );
+			$count       = is_array( $term['filter_description'] )
+				? count( $term['filter_description'] )
+				: 0;
+				
+			$term_values[] = $wpdb->prepare( '( %s, %s, 0 )', $name, $slug );
+
+			$term_taxonomy_derived_sql[] = 'SELECT %s AS slug, %s AS description, %d AS term_count';
+			$term_relationships_derived_sql[] = 'SELECT %s AS slug, %d AS term_id, %s AS search_val';
+
+			$term_taxonomy_derived_args[] = $slug;
+			$term_taxonomy_derived_args[] = $description;
+			$term_taxonomy_derived_args[] = $count;
+
+			$term_relationships_derived_args[] = $slug;
+			$term_relationships_derived_args[] = absint( $term['term_id'] );
+			$term_relationships_derived_args[] = '%i:' . absint( $term['term_id'] ) . ';%';
+		}
+	
+		$wpdb->query(
+			"INSERT IGNORE INTO {$wpdb->terms} ( name, slug, term_group ) VALUES " . implode( ',', $term_values )
+		);
+	
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+		}
+
+		/**
+		 * Insert terms into term_taxonomy
+		 */
+		$wpdb->query(
+		$wpdb->prepare(
+			"
+			INSERT IGNORE INTO {$wpdb->term_taxonomy}
+				( term_id, taxonomy, description, parent, count )
+			SELECT
+				t.term_id,
+				%s,
+				d.description,
+				0,
+				d.term_count
+			FROM {$wpdb->terms} t
+			INNER JOIN (
+				" . implode( ' UNION ALL ', $term_taxonomy_derived_sql ) . "
+			) d ON d.slug = t.slug
+			WHERE t.name = t.slug
+			",
+			array_merge(
+				[ 'lmat_term_translations' ],
+				$term_taxonomy_derived_args
+			)
+			)
+		);
+
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+
+		/**
+		 * Insert terms into term_relationships
+		 */
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+				INSERT INTO {$wpdb->term_relationships}
+					( object_id, term_taxonomy_id, term_order )
+				SELECT
+					d.term_id,
+					tt.term_taxonomy_id,
+					0
+				FROM {$wpdb->term_taxonomy} tt
+				INNER JOIN {$wpdb->terms} t
+					ON tt.term_id = t.term_id
+				INNER JOIN (
+					" . implode( ' UNION ALL ', $term_relationships_derived_sql ) . "
+				) d
+					ON d.slug = t.slug
+					AND tt.description LIKE d.search_val
+				WHERE tt.taxonomy = %s
+				ON DUPLICATE KEY UPDATE
+					term_taxonomy_id = VALUES(term_taxonomy_id)
+				",
+				array_merge(
+					$term_relationships_derived_args,
+					[ 'lmat_term_translations' ]
+				)
+			)
+		);
+		
+		if ( $wpdb->last_error ) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+			$results['success']  = false;
+			return $results;
+		}
+			
+		return $results;
+		
 	}
 
 	/**
@@ -1103,6 +1189,7 @@ class Polylang_Migration {
 
 		foreach($lmat_languages as $lmat_language) {
 			$taxonomy_id = $lmat_language->get_tax_prop('lmat_language','term_taxonomy_id');
+			$term_id = $lmat_language->get_tax_prop('lmat_term_language','term_taxonomy_id');
 
 			$lang_slug = $lmat_language->slug;
 			$taxonomy_id = (int) $taxonomy_id;
@@ -1111,7 +1198,7 @@ class Polylang_Migration {
 				continue;	
 			}
 
-			$this->lmat_languages_lists[$lang_slug] = (int) $taxonomy_id;
+			$this->lmat_languages_lists[$lang_slug] = array( 'lmat_language' => (int) $taxonomy_id, 'lmat_term_language' => (int) $term_id );
 		}
 	}
 
