@@ -340,6 +340,8 @@ class Polylang_Migration {
 		$this->migration_post_language_assignment($results, $lang_map);
 		$this->migration_term_language_assignment($results, $lang_map);
 
+		$this->update_term_counts($results, $lang_map);
+
 		return $results;
 	}
 
@@ -991,6 +993,71 @@ class Polylang_Migration {
 			
 		return $results;
 		
+	}
+
+	private function update_term_counts($results, $lang_map){
+		global $wpdb;
+
+		$post_types = array_unique(
+			array_merge(
+				(array) $this->model->options->get('post_types'),
+				['post', 'page', 'elementor_library']
+			)
+		);
+		
+		$term_taxonomy_ids = array_map(
+			'intval',
+			array_column( $lang_map, 'lmat_language' )
+		);
+
+		$post_type_placeholders = implode(
+			',',
+			array_fill( 0, count( $post_types ), '%s' )
+		);
+		
+		$ttid_placeholders = implode(
+			',',
+			array_fill( 0, count( $term_taxonomy_ids ), '%d' )
+		);
+		
+		$update_counts = " UPDATE {$wpdb->term_taxonomy} tt
+		LEFT JOIN (
+			SELECT
+				tr.term_taxonomy_id,
+				COUNT(DISTINCT p.ID) AS total
+			FROM {$wpdb->term_relationships} tr
+			INNER JOIN {$wpdb->posts} p
+				ON p.ID = tr.object_id
+			WHERE
+				p.post_status = 'publish'
+				AND p.post_type IN ($post_type_placeholders)
+				AND tr.term_taxonomy_id IN ($ttid_placeholders)
+			GROUP BY tr.term_taxonomy_id
+		) rel ON tt.term_taxonomy_id = rel.term_taxonomy_id
+		SET tt.count = COALESCE( rel.total, 0 )
+		WHERE
+			tt.taxonomy = %s
+			AND tt.term_taxonomy_id IN ($ttid_placeholders)
+			AND tt.count <> COALESCE( rel.total, 0 )
+		";
+
+		$params = array_merge(
+			$post_types,                // for post_type IN (...)
+			$term_taxonomy_ids,          // for subquery IN (...)
+			['lmat_language'],           // taxonomy
+			$term_taxonomy_ids           // for outer WHERE IN (...)
+		);
+
+		$wpdb->query(
+			$wpdb->prepare( $update_counts, $params )
+		);
+		
+
+		if($wpdb->last_error) {
+			$results['errors'][] = esc_html( $wpdb->last_error );
+		}
+
+		$this->model->clean_languages_cache();
 	}
 
 	/**
