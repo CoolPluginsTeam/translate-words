@@ -460,11 +460,11 @@ class WPML_Migration {
 
 				$lmat_lang = $language_cache[ $lang_code ];
 				if ( $lmat_lang ) {
-					$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_language', 'term_id' );
-					if ( $lang_term_id ) {
+					$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_language', 'term_taxonomy_id' );
+					if ( $lang_tt_id ) {
 						$bulk_assignments[] = array(
 							'object_id' => $post_id,
-							'term_taxonomy_id' => $lang_term_id,
+							'term_taxonomy_id' => $lang_tt_id,
 						);
 					}
 				}
@@ -520,11 +520,11 @@ class WPML_Migration {
 
 				$lmat_lang = $language_cache[ $lang_code ];
 				if ( $lmat_lang ) {
-					$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_id' );
-					if ( $lang_term_id ) {
+					$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
+					if ( $lang_tt_id ) {
 						$bulk_term_assignments[] = array(
 							'object_id' => $term_id,
-							'term_taxonomy_id' => $lang_term_id,
+							'term_taxonomy_id' => $lang_tt_id,
 						);
 					}
 				}
@@ -669,11 +669,11 @@ class WPML_Migration {
 				if ( ! $current_lang || $current_lang !== $expected_lang_code ) {
 					$lmat_lang = $language_cache[ $expected_lang_code ];
 					if ( $lmat_lang ) {
-						$lang_term_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_id' );
-						if ( $lang_term_id ) {
+						$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
+						if ( $lang_tt_id ) {
 							$bulk_term_language_assignments[] = array(
 								'object_id' => $term_id,
-								'term_taxonomy_id' => $lang_term_id,
+								'term_taxonomy_id' => $lang_tt_id,
 							);
 						}
 					}
