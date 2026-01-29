@@ -333,7 +333,7 @@ class WPML_Migration {
 					)
 				);
 				
-				if ( ! is_wp_error( $update_result ) ) {
+				if ( ! is_wp_error( $update_result ) || ( is_wp_error( $update_result ) && ! $update_result->has_errors() ) ) {
 					$results['migrated']++;
 				} else {
 					$error_messages = $update_result->get_error_messages();
@@ -935,7 +935,7 @@ class WPML_Migration {
 
 		// Get all WPML languages
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpml_languages = $wpdb->get_results(
+		$wpml_languages = $wpdb->get_col(
 			"SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1"
 		);
 
@@ -946,14 +946,19 @@ class WPML_Migration {
 		// Get all strings with their translations
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$strings_data = $wpdb->get_results(
-			"SELECT s.id, s.name, s.value as original, s.context,
-				st.language, st.value as translation, st.status
-			FROM {$icl_strings_table} s
-			LEFT JOIN {$icl_string_translations_table} st ON s.id = st.string_id
-			WHERE st.value IS NOT NULL AND st.value != '' AND st.status = 10
-			ORDER BY s.id, st.language"
+			$wpdb->prepare(
+				sprintf(
+					"SELECT s.id, s.name, s.value as original, s.context,
+					st.language, st.value as translation, st.status
+					FROM {$icl_strings_table} s
+					LEFT JOIN {$icl_string_translations_table} st ON s.id = st.string_id
+					WHERE st.value IS NOT NULL AND st.value != '' AND st.status = 10 AND st.language IN (%s)
+					ORDER BY s.id, st.language"
+					, implode( ',', array_fill( 0, count( $wpml_languages ), '%s' ) )
+				),
+				$wpml_languages
+			)
 		);
-		// phpcs:enable
 
 		if ( empty( $strings_data ) ) {
 			return $results;
@@ -1057,7 +1062,7 @@ class WPML_Migration {
 			if ( class_exists( '\Linguator\Includes\Helpers\LMAT_Cache' ) ) {
 				$cache = new \Linguator\Includes\Helpers\LMAT_Cache();
 				foreach ( $wpml_languages as $wpml_lang ) {
-					$lmat_lang = $this->model->languages->get( $wpml_lang->code );
+					$lmat_lang = $this->model->languages->get( $wpml_lang );
 					if ( $lmat_lang ) {
 						$cache->clean( $lmat_lang->slug );
 					}
