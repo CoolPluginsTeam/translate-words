@@ -163,9 +163,12 @@ class WPML_Migration {
 		}
 
 		// Count active languages
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpml_languages_count = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$icl_languages_table} WHERE active = 1"
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$icl_languages_table} WHERE active = %d",
+				1
+			)
 		);
 		// phpcs:enable
 
@@ -178,33 +181,44 @@ class WPML_Migration {
 		}
 
 		// Count post translations (grouped by trid)
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$post_translations_count = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT trid) 
-			FROM {$icl_translations_table} 
-			WHERE element_type LIKE 'post_%' 
-			AND trid IS NOT NULL 
-			AND trid > 0"
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT trid) 
+				FROM {$icl_translations_table} 
+				WHERE element_type LIKE %s 
+				AND trid IS NOT NULL 
+				AND trid > %d",
+				'post_%',
+				0
+			)
 		);
 		// phpcs:enable
 
 		// Count term translations (grouped by trid)
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$term_translations_count = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT trid) 
-			FROM {$icl_translations_table} 
-			WHERE element_type LIKE 'tax_%' 
-			AND trid IS NOT NULL 
-			AND trid > 0"
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT trid) 
+				FROM {$icl_translations_table} 
+				WHERE element_type LIKE %s 
+				AND trid IS NOT NULL 
+				AND trid > %d",
+				'tax_%',
+				0
+			)
 		);
 		// phpcs:enable
 
 		// Count posts with language assignments
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$posts_count = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT element_id) 
-			FROM {$icl_translations_table} 
-			WHERE element_type LIKE 'post_%'"
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT element_id) 
+				FROM {$icl_translations_table} 
+				WHERE element_type LIKE %s",
+				'post_%'
+			)
 		);
 		// phpcs:enable
 
@@ -214,9 +228,12 @@ class WPML_Migration {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$strings_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $icl_strings_table ) ) === $icl_strings_table;
 		if ( $strings_table_exists ) {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$strings_count = (int) $wpdb->get_var(
-				"SELECT COUNT(*) FROM {$icl_strings_table} WHERE value IS NOT NULL AND value != ''"
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$icl_strings_table} WHERE value IS NOT NULL AND value != %s",
+					''
+				)
 			);
 			// phpcs:enable
 		}
@@ -250,9 +267,12 @@ class WPML_Migration {
 		$icl_flags_table = $wpdb->prefix . 'icl_flags';
 
 		// Get active WPML languages
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpml_languages = $wpdb->get_results(
-			"SELECT * FROM {$icl_languages_table} WHERE active = 1 ORDER BY id ASC"
+			$wpdb->prepare(
+				"SELECT * FROM {$icl_languages_table} WHERE active = %d ORDER BY id ASC",
+				1
+			)
 		);
 		// phpcs:enable
 
@@ -424,12 +444,15 @@ class WPML_Migration {
 		$language_cache = array();
 
 		// Migrate post language assignments
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$posts_with_language = $wpdb->get_results(
-			"SELECT DISTINCT element_id, language_code 
-			FROM {$icl_translations_table} 
-			WHERE element_type LIKE 'post_%' 
-			AND element_id IS NOT NULL"
+			$wpdb->prepare(
+				"SELECT DISTINCT element_id, language_code 
+				FROM {$icl_translations_table} 
+				WHERE element_type LIKE %s 
+				AND element_id IS NOT NULL",
+				'post_%'
+			)
 		);
 		// phpcs:enable
 
@@ -482,14 +505,17 @@ class WPML_Migration {
 		// Migrate term language assignments
 		// In WPML, terms are stored with element_type like 'tax_category', 'tax_post_tag', etc.
 		// The element_id is the term_taxonomy_id, not the term_id
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$terms_with_language = $wpdb->get_results(
-			"SELECT DISTINCT t.term_id, icl.language_code
-			FROM {$icl_translations_table} icl
-			INNER JOIN {$wpdb->term_taxonomy} tt ON icl.element_id = tt.term_taxonomy_id
-			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-			WHERE icl.element_type LIKE 'tax_%'
-			AND icl.element_id IS NOT NULL"
+			$wpdb->prepare(
+				"SELECT DISTINCT t.term_id, icl.language_code
+				FROM {$icl_translations_table} icl
+				INNER JOIN {$wpdb->term_taxonomy} tt ON icl.element_id = tt.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+				WHERE icl.element_type LIKE %s
+				AND icl.element_id IS NOT NULL",
+				'tax_%'
+			)
 		);
 		// phpcs:enable
 
@@ -564,15 +590,20 @@ class WPML_Migration {
 
 		// Migrate post translations
 		// Group by trid to get translation groups
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$post_translation_groups = $wpdb->get_results(
-			"SELECT trid, GROUP_CONCAT(CONCAT(language_code, ':', element_id) SEPARATOR '|') as translations
-			FROM {$icl_translations_table}
-			WHERE element_type LIKE 'post_%'
-			AND trid IS NOT NULL
-			AND trid > 0
-			GROUP BY trid
-			HAVING COUNT(*) > 1"
+			$wpdb->prepare(
+				"SELECT trid, GROUP_CONCAT(CONCAT(language_code, ':', element_id) SEPARATOR '|') as translations
+				FROM {$icl_translations_table}
+				WHERE element_type LIKE %s
+				AND trid IS NOT NULL
+				AND trid > %d
+				GROUP BY trid
+				HAVING COUNT(*) > %d",
+				'post_%',
+				0,
+				1
+			)
 		);
 		// phpcs:enable
 
@@ -614,17 +645,22 @@ class WPML_Migration {
 
 		// Migrate term translations
 		// Group by trid to get translation groups
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$term_translation_groups = $wpdb->get_results(
-			"SELECT trid, GROUP_CONCAT(CONCAT(icl.language_code, ':', t.term_id) SEPARATOR '|') as translations
-			FROM {$icl_translations_table} icl
-			INNER JOIN {$wpdb->term_taxonomy} tt ON icl.element_id = tt.term_taxonomy_id
-			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-			WHERE icl.element_type LIKE 'tax_%'
-			AND icl.trid IS NOT NULL
-			AND icl.trid > 0
-			GROUP BY icl.trid
-			HAVING COUNT(*) > 1"
+			$wpdb->prepare(
+				"SELECT trid, GROUP_CONCAT(CONCAT(icl.language_code, ':', t.term_id) SEPARATOR '|') as translations
+				FROM {$icl_translations_table} icl
+				INNER JOIN {$wpdb->term_taxonomy} tt ON icl.element_id = tt.term_taxonomy_id
+				INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+				WHERE icl.element_type LIKE %s
+				AND icl.trid IS NOT NULL
+				AND icl.trid > %d
+				GROUP BY icl.trid
+				HAVING COUNT(*) > %d",
+				'tax_%',
+				0,
+				1
+			)
 		);
 		// phpcs:enable
 
@@ -936,7 +972,10 @@ class WPML_Migration {
 		// Get all WPML languages
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpml_languages = $wpdb->get_col(
-			"SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1"
+			$wpdb->prepare(
+				"SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = %d",
+				1
+			)
 		);
 
 		if ( empty( $wpml_languages ) ) {
@@ -1161,16 +1200,31 @@ class WPML_Migration {
 			return array();
 		}
 
-		$post_ids_string = implode( ',', array_map( 'absint', $post_ids ) );
+		// Sanitize post IDs
+		$post_ids = array_map( 'absint', $post_ids );
+		$post_ids = array_filter( $post_ids );
+		
+		if ( empty( $post_ids ) ) {
+			return array();
+		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$results = $wpdb->get_results(
-			"SELECT tr.object_id, t.slug as lang_slug
+		// Create placeholders for IN clause
+		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
+
+		// Build query with placeholders
+		$query = "SELECT tr.object_id, t.slug as lang_slug
 			FROM {$wpdb->term_relationships} tr
 			INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
 			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-			WHERE tt.taxonomy = 'lmat_language'
-			AND tr.object_id IN ({$post_ids_string})"
+			WHERE tt.taxonomy = %s
+			AND tr.object_id IN ({$placeholders})";
+
+		// Prepare arguments: taxonomy name first, then post IDs
+		$prepare_args = array_merge( array( 'lmat_language' ), $post_ids );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $query ), $prepare_args ) )
 		);
 		// phpcs:enable
 
@@ -1197,16 +1251,31 @@ class WPML_Migration {
 			return array();
 		}
 
-		$term_ids_string = implode( ',', array_map( 'absint', $term_ids ) );
+		// Sanitize term IDs
+		$term_ids = array_map( 'absint', $term_ids );
+		$term_ids = array_filter( $term_ids );
+		
+		if ( empty( $term_ids ) ) {
+			return array();
+		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$results = $wpdb->get_results(
-			"SELECT tr.object_id, t.slug as lang_slug
+		// Create placeholders for IN clause
+		$placeholders = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
+
+		// Build query with placeholders
+		$query = "SELECT tr.object_id, t.slug as lang_slug
 			FROM {$wpdb->term_relationships} tr
 			INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
 			INNER JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-			WHERE tt.taxonomy = 'lmat_term_language'
-			AND tr.object_id IN ({$term_ids_string})"
+			WHERE tt.taxonomy = %s
+			AND tr.object_id IN ({$placeholders})";
+
+		// Prepare arguments: taxonomy name first, then term IDs
+		$prepare_args = array_merge( array( 'lmat_term_language' ), $term_ids );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $query ), $prepare_args ) )
 		);
 		// phpcs:enable
 
