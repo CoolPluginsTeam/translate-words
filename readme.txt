@@ -149,7 +149,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
-= Version 2.0.6 | 23 January 2026 =
+= Version 2.0.6 | 30 January 2026 =
 * Added translation for WPBakery Page Builder plugin.
 
 = Version 2.0.5 | 14 January 2026 =

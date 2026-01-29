@@ -207,7 +207,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ---
 
-### Version 2.0.6 | 23 January 2026 =
+### Version 2.0.6 | 30 January 2026 =
 * Added translation for WPBakery Page Builder plugin.
 
 ### Version 2.0.5 | 14 January 2026 =
