@@ -304,7 +304,7 @@ class Polylang_Migration {
 	 *
 	 * @return array Migration result.
 	 */
-	public function migrate_language_assignments() {
+	public function migrate_language_assignments(&$term_count_update_languages) {
 		global $wpdb;
 		
 		$results = array(
@@ -340,7 +340,7 @@ class Polylang_Migration {
 		$this->migration_post_language_assignment($results, $lang_map);
 		$this->migration_term_language_assignment($results, $lang_map);
 
-		$this->update_term_counts($results, $lang_map);
+		$term_count_update_languages=$lang_map;
 
 		return $results;
 	}
@@ -995,7 +995,7 @@ class Polylang_Migration {
 		
 	}
 
-	private function update_term_counts($results, $lang_map){
+	private function update_term_counts(&$results, $lang_map){
 		global $wpdb;
 
 		$post_types = array_unique(
@@ -1004,6 +1004,12 @@ class Polylang_Migration {
 				['post', 'page', 'elementor_library']
 			)
 		);
+
+		$media_support = $this->model->options->get('media_support');
+
+		if($media_support) {
+			$post_types[] = 'attachment';
+		}
 		
 		$term_taxonomy_ids = array_map(
 			'intval',
@@ -1020,7 +1026,7 @@ class Polylang_Migration {
 			array_fill( 0, count( $term_taxonomy_ids ), '%d' )
 		);
 		
-		$update_counts = " UPDATE {$wpdb->term_taxonomy} tt
+		$update_counts = "UPDATE {$wpdb->term_taxonomy} tt
 		LEFT JOIN (
 			SELECT
 				tr.term_taxonomy_id,
@@ -1028,8 +1034,13 @@ class Polylang_Migration {
 			FROM {$wpdb->term_relationships} tr
 			INNER JOIN {$wpdb->posts} p
 				ON p.ID = tr.object_id
+			LEFT JOIN {$wpdb->posts} pp
+				ON p.post_parent = pp.ID
 			WHERE
-				p.post_status = 'publish'
+				(
+					p.post_status = 'publish'
+					OR (p.post_type = 'attachment' AND p.post_status = 'inherit' AND pp.post_status = 'publish' AND pp.post_type IN ($post_type_placeholders))
+				)
 				AND p.post_type IN ($post_type_placeholders)
 				AND tr.term_taxonomy_id IN ($ttid_placeholders)
 			GROUP BY tr.term_taxonomy_id
@@ -1042,6 +1053,7 @@ class Polylang_Migration {
 		";
 
 		$params = array_merge(
+			$post_types,                // for pp.post_type IN (...)
 			$post_types,                // for post_type IN (...)
 			$term_taxonomy_ids,          // for subquery IN (...)
 			['lmat_language'],           // taxonomy
@@ -1778,6 +1790,8 @@ class Polylang_Migration {
 			'menu_switchers' => array(),
 			'errors' => array(),
 		);
+
+		$term_count_update_languages=false;
 		
 		if ( $migrate_languages ) {
 			$this->set_lmat_taxonomy_id();
@@ -1797,21 +1811,12 @@ class Polylang_Migration {
 		// Always migrate language assignments after languages are migrated
 		// This ensures posts/pages/terms have their correct language assigned
 		if ( $migrate_languages && $results['success'] ) {
-			$assignments_results = $this->migrate_language_assignments();
+			$assignments_results = $this->migrate_language_assignments($term_count_update_languages);
 			$results['language_assignments'] = $assignments_results;
 			if ( ! $assignments_results['success'] ) {
 				$results['success'] = false;
 			}
 			$results['errors'] = array_merge( $results['errors'], $assignments_results['errors'] );
-		}
-
-		if ( $migrate_translations && $results['success'] ) {
-			$trans_results = $this->migrate_translations();
-			$results['translations'] = $trans_results;
-			if ( ! $trans_results['success'] ) {
-				$results['success'] = false;
-			}
-			$results['errors'] = array_merge( $results['errors'], $trans_results['errors'] );
 		}
 
 		if ( $migrate_settings && $results['success'] ) {
@@ -1845,6 +1850,10 @@ class Polylang_Migration {
 		if ( $results['success'] ) {
 			$this->model->languages->clean_cache();
 			delete_option( 'rewrite_rules' );
+		}
+
+		if($term_count_update_languages && is_array($term_count_update_languages) && count($term_count_update_languages) > 0) {
+			$this->update_term_counts($results, $term_count_update_languages);
 		}
 
 		return $results;
