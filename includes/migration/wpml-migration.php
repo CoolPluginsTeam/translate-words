@@ -1330,24 +1330,117 @@ class WPML_Migration {
 			if ( ! empty( $term_taxonomy_ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $term_taxonomy_ids ), '%d' ) );
 				
-				// Update all counts in a single query using JOIN with subquery
-				// Uses LEFT JOIN to handle terms with 0 relationships (sets count to 0)
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->query(
+				// Get taxonomy names to determine if we're counting posts or terms
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$taxonomies = $wpdb->get_results(
 					$wpdb->prepare(
-						"UPDATE {$wpdb->term_taxonomy} tt
-						LEFT JOIN (
-							SELECT term_taxonomy_id, COUNT(*) as count 
-							FROM {$wpdb->term_relationships} 
-							WHERE term_taxonomy_id IN ({$placeholders})
-							GROUP BY term_taxonomy_id
-						) tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
-						SET tt.count = COALESCE(tr.count, 0)
-						WHERE tt.term_taxonomy_id IN ({$placeholders})",
-						...array_merge( $term_taxonomy_ids, $term_taxonomy_ids )
+						"SELECT DISTINCT term_taxonomy_id, taxonomy 
+						FROM {$wpdb->term_taxonomy} 
+						WHERE term_taxonomy_id IN ({$placeholders})",
+						$term_taxonomy_ids
 					)
 				);
 				// phpcs:enable
+				
+				// Separate post language taxonomies from term language taxonomies
+				$post_lang_tt_ids = array();
+				$term_lang_tt_ids = array();
+				
+				foreach ( $taxonomies as $tax ) {
+					if ( 'lmat_language' === $tax->taxonomy ) {
+						$post_lang_tt_ids[] = (int) $tax->term_taxonomy_id;
+					} elseif ( 'lmat_term_language' === $tax->taxonomy ) {
+						$term_lang_tt_ids[] = (int) $tax->term_taxonomy_id;
+					}
+				}
+				
+				// Update counts for post language taxonomies (exclude trashed posts)
+				if ( ! empty( $post_lang_tt_ids ) ) {
+					$post_placeholders = implode( ',', array_fill( 0, count( $post_lang_tt_ids ), '%d' ) );
+					
+					// Get all distinct post types that actually have language assignments
+					// This ensures we count all custom post types, not just configured ones
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+					$post_types = $wpdb->get_col(
+						$wpdb->prepare(
+							"SELECT DISTINCT p.post_type
+							FROM {$wpdb->term_relationships} tr
+							INNER JOIN {$wpdb->posts} p
+								ON p.ID = tr.object_id
+							WHERE tr.term_taxonomy_id IN ({$post_placeholders})
+							AND p.post_type != 'revision'
+							AND p.post_type != 'nav_menu_item'",
+							$post_lang_tt_ids
+						)
+					);
+					// phpcs:enable
+					
+					// Ensure we have at least post and page
+					if ( empty( $post_types ) ) {
+						$post_types = array( 'post', 'page' );
+					} else {
+						$post_types = array_unique( array_merge( $post_types, array( 'post', 'page' ) ) );
+					}
+					
+					$post_type_placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
+					
+					// Update counts excluding trashed posts and only counting published posts
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$wpdb->query(
+						$wpdb->prepare(
+							"UPDATE {$wpdb->term_taxonomy} tt
+							LEFT JOIN (
+								SELECT
+									tr.term_taxonomy_id,
+									COUNT(DISTINCT p.ID) AS count
+								FROM {$wpdb->term_relationships} tr
+								INNER JOIN {$wpdb->posts} p
+									ON p.ID = tr.object_id
+								LEFT JOIN {$wpdb->posts} pp
+									ON p.post_parent = pp.ID
+								WHERE
+									(
+										p.post_status = 'publish'
+										OR (p.post_type = 'attachment' AND p.post_status = 'inherit' AND pp.post_status = 'publish' AND pp.post_type IN ({$post_type_placeholders}))
+									)
+									AND p.post_type IN ({$post_type_placeholders})
+									AND tr.term_taxonomy_id IN ({$post_placeholders})
+								GROUP BY tr.term_taxonomy_id
+							) rel ON tt.term_taxonomy_id = rel.term_taxonomy_id
+							SET tt.count = COALESCE(rel.count, 0)
+							WHERE tt.term_taxonomy_id IN ({$post_placeholders})",
+							array_merge(
+								$post_types,           // for pp.post_type IN (...)
+								$post_types,           // for post_type IN (...)
+								$post_lang_tt_ids,     // for subquery IN (...)
+								$post_lang_tt_ids      // for outer WHERE IN (...)
+							)
+						)
+					);
+					// phpcs:enable
+				}
+				
+				// Update counts for term language taxonomies (count all relationships)
+				if ( ! empty( $term_lang_tt_ids ) ) {
+					$term_placeholders = implode( ',', array_fill( 0, count( $term_lang_tt_ids ), '%d' ) );
+					
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$wpdb->query(
+						$wpdb->prepare(
+							"UPDATE {$wpdb->term_taxonomy} tt
+							LEFT JOIN (
+								SELECT term_taxonomy_id, COUNT(*) as count 
+								FROM {$wpdb->term_relationships} 
+								WHERE term_taxonomy_id IN ({$term_placeholders})
+								GROUP BY term_taxonomy_id
+							) tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
+							SET tt.count = COALESCE(tr.count, 0)
+							WHERE tt.term_taxonomy_id IN ({$term_placeholders})",
+							...array_merge( $term_lang_tt_ids, $term_lang_tt_ids )
+						)
+					);
+					// phpcs:enable
+				}
 			}
 		}
 
