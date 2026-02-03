@@ -1659,14 +1659,14 @@ class Polylang_Migration {
 		}
 		$results['errors'] = array_merge( $results['errors'], $menu_switchers_results['errors'] );
 
+		if($term_count_update_languages && is_array($term_count_update_languages) && count($term_count_update_languages) > 0) {
+			$this->update_term_counts($results, $term_count_update_languages);
+		}
+
 		// Clear caches after migration
 		if ( $results['success'] ) {
 			$this->model->languages->clean_cache();
 			delete_option( 'rewrite_rules' );
-		}
-
-		if($term_count_update_languages && is_array($term_count_update_languages) && count($term_count_update_languages) > 0) {
-			$this->update_term_counts($results, $term_count_update_languages);
 		}
 
 		return $results;

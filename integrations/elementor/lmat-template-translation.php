@@ -46,7 +46,9 @@ class LMAT_Template_Translation {
         }
 
         // Auto-assign existing Elementor templates to default language after Linguator is ready
-        add_action('lmat_init', [$this, 'lmat_assign_templates_to_default_language']);
+        add_action('lmat_init', function() {
+            add_action('init', [$this, 'lmat_assign_templates_to_default_language']);
+        });
 	}
 
     /**
