@@ -209,7 +209,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 ### Version 2.0.6 | 3 February 2026 =
 * Added translation for WPBakery Page Builder plugin.
-* Code Improvemnets.
+* Code optimization.
 
 ### Version 2.0.5 | 14 January 2026 =
 * Fixed Undefined constant error.
