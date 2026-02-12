@@ -64,7 +64,9 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 * [Chrome Summarizer API Documentation](https://developer.chrome.com/docs/ai/summarizer-api)
 * [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
 
-[Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words) 
+[Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words)
+
+**Use of 3rd Party Services:** This plugin connects to the Cool Plugins API to display information about related plugins inside the dashboard. It also offers optional usage tracking and optional feedback submission on deactivation. Data is sent only after explicit user consent. No hidden tracking is performed, and no frontend visitor or site user data is collected. For more details, please review our [Data Usage Policy](https://my.coolplugins.net/terms/usage-tracking/), [TOS](https://my.coolplugins.net/terms/), and [Privacy Policy](https://my.coolplugins.net/terms/privacy-policy/).
 
 == Screenshots ==
 1. Linguator Language Switcher Preview.
