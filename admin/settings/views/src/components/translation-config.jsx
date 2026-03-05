@@ -48,48 +48,48 @@ const ChromeLocalAINotice = () => {
     let heading = '';
 
     if (showBrowserNotice) {
-        heading = __('⚠️ Important Notice: Browser Compatibility', 'linguator-multilingual-ai-translation');
+        heading = __('⚠️ Important Notice: Browser Compatibility', 'translate-words');
         message = `<ul className="list-disc ml-5 mt-2"><li>
-                ${sprintf(__('The %sTranslator API%s, which uses Chrome Local AI Models, is designed exclusively for use with the %sChrome browser%s.', 'linguator-multilingual-ai-translation'), '<strong>', '</strong>', '<strong>', '</strong>')}
+                ${sprintf(__('The %sTranslator API%s, which uses Chrome Local AI Models, is designed exclusively for use with the %sChrome browser%s.', 'translate-words'), '<strong>', '</strong>', '<strong>', '</strong>')}
               </li>
               <li>
-                ${sprintf(__('If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.', 'linguator-multilingual-ai-translation'))}
+                ${sprintf(__('If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.', 'translate-words'))}
               </li>
               <li>
-                ${sprintf(__('Learn more in the %sofficial documentation%s.', 'linguator-multilingual-ai-translation'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank" rel="noreferrer" class="underline text-blue-600">', '</a>')}
+                ${sprintf(__('Learn more in the %sofficial documentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank" rel="noreferrer" class="underline text-blue-600">', '</a>')}
               </li>
       </ul>`;
     } else if (showSecureNotice) {
-        heading = __('⚠️ Important Notice: Secure Connection Required', 'linguator-multilingual-ai-translation');
+        heading = __('⚠️ Important Notice: Secure Connection Required', 'translate-words');
         message = `<ul className="list-disc ml-5 mt-2">
               <li>
-                ${sprintf(__('The %sTranslator API%s requires a secure (HTTPS) connection to function properly.', 'linguator-multilingual-ai-translation'), '<strong>', '</strong>')}
+                ${sprintf(__('The %sTranslator API%s requires a secure (HTTPS) connection to function properly.', 'translate-words'), '<strong>', '</strong>')}
               </li>
               <li>
-                ${__('If you are on an insecure connection (HTTP), the API will not work.', 'linguator-multilingual-ai-translation')}
+                ${__('If you are on an insecure connection (HTTP), the API will not work.', 'translate-words')}
               </li>
             </ul>
-            <p className="mt-2">${__('👉 How to Fix This:', 'linguator-multilingual-ai-translation')}</p>
+            <p className="mt-2">${__('👉 How to Fix This:', 'translate-words')}</p>
             <ol className="list-decimal ml-5 mt-2">
-              <li>${sprintf(__('Switch to a secure connection by using %s.', 'linguator-multilingual-ai-translation'), '<strong><code>https://</code></strong>')}
+              <li>${sprintf(__('Switch to a secure connection by using %s.', 'translate-words'), '<strong><code>https://</code></strong>')}
               </li>
               <li>
-                ${sprintf(__('Alternatively, add this URL to Chrome’s list of insecure origins treated as secure: %s.', 'linguator-multilingual-ai-translation'), '<strong><code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></strong>')}
+                ${sprintf(__('Alternatively, add this URL to Chrome’s list of insecure origins treated as secure: %s.', 'translate-words'), '<strong><code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></strong>')}
                 <br />
-                ${__('Copy the URL and then open a new window and paste this URL to access the settings.', 'linguator-multilingual-ai-translation')}
+                ${__('Copy the URL and then open a new window and paste this URL to access the settings.', 'translate-words')}
               </li>
             </ol>`;
     } else if (showApiNotice) {
-        heading = __('⚠️ Important Notice: API Availability', 'linguator-multilingual-ai-translation');
+        heading = __('⚠️ Important Notice: API Availability', 'translate-words');
         message = `<ol>
-                    <li>${sprintf(__('Open this URL in a new Chrome tab: %s. Copy this URL and then open a new window and paste this URL to access the settings.', 'linguator-multilingual-ai-translation'), '<strong><code>chrome://flags/#translation-api</code></strong>')}</li>
-                    <li>${sprintf(__('Ensure that the %sExperimental translation API%s option is set to <strong>Enabled</strong>.', 'linguator-multilingual-ai-translation'), '<strong>', '</strong>')}</li>
-                    <li>${sprintf(__('After change the setting, Click on the %sRelaunch%s button to apply the changes.', 'linguator-multilingual-ai-translation'), '<strong>', '</strong>')}</li>
-                    <li>${__('The Translator AI modal should now be enabled and ready for use.', 'linguator-multilingual-ai-translation')}</li>
+                    <li>${sprintf(__('Open this URL in a new Chrome tab: %s. Copy this URL and then open a new window and paste this URL to access the settings.', 'translate-words'), '<strong><code>chrome://flags/#translation-api</code></strong>')}</li>
+                    <li>${sprintf(__('Ensure that the %sExperimental translation API%s option is set to <strong>Enabled</strong>.', 'translate-words'), '<strong>', '</strong>')}</li>
+                    <li>${sprintf(__('After change the setting, Click on the %sRelaunch%s button to apply the changes.', 'translate-words'), '<strong>', '</strong>')}</li>
+                    <li>${__('The Translator AI modal should now be enabled and ready for use.', 'translate-words')}</li>
                 </ol>
-                <p>${sprintf(__('For more information, please refer to the %sdocumentation%s.', 'linguator-multilingual-ai-translation'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">', '</a>')}</p>   
-                <p>${__('If the issue persists, please ensure that your browser is up to date and restart your browser.', 'linguator-multilingual-ai-translation')}</p>
-                <p>${sprintf(__('If you continue to experience issues after following the above steps, please %sopen a support ticket%s with our team. We are here to help you resolve any problems and ensure a smooth translation experience.', 'linguator-multilingual-ai-translation'), '<a href="https://my.coolplugins.net/account/support-tickets/" target="_blank" rel="noopener">', '</a>')}</p>`;
+                <p>${sprintf(__('For more information, please refer to the %sdocumentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">', '</a>')}</p>   
+                <p>${__('If the issue persists, please ensure that your browser is up to date and restart your browser.', 'translate-words')}</p>
+                <p>${sprintf(__('If you continue to experience issues after following the above steps, please %sopen a support ticket%s with our team. We are here to help you resolve any problems and ensure a smooth translation experience.', 'translate-words'), '<a href="https://my.coolplugins.net/account/support-tickets/" target="_blank" rel="noopener">', '</a>')}</p>`;
     }
 
     return (
@@ -196,48 +196,48 @@ const TranslationConfig = ({ data, setData }) => {
                     if (error?.message) {
                         throw new Error(error.message);
                     }
-                    throw new Error(__("Something went wrong", 'linguator-multilingual-ai-translation'));
+                    throw new Error(__("Something went wrong", 'translate-words'));
                 });
 
             toast.promise(response, {
-                loading: __('Saving Settings', 'linguator-multilingual-ai-translation'),
-                success: __('Settings Saved', 'linguator-multilingual-ai-translation'),
+                loading: __('Saving Settings', 'translate-words'),
+                success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message
             })
             setHandleButtonDisabled(true)
 
         } catch (error) {
             // Handle domain validation errors
-            if (error.message.includes(__("Linguator was unable to access", "linguator-multilingual-ai-translation"))) {
+            if (error.message.includes(__("Linguator was unable to access", "translate-words"))) {
                 toast.error(error.message);
             } else {
-                toast.error(error.message || __("Something went wrong", "linguator-multilingual-ai-translation"));
+                toast.error(error.message || __("Something went wrong", "translate-words"));
             }
         }
     }
 
     const postStatusOptions = [
         {
-            heading: __('Published', 'linguator-multilingual-ai-translation'),
+            heading: __('Published', 'translate-words'),
             value: 'publish'
         },
         {
-            heading: __('Draft', 'linguator-multilingual-ai-translation'),
+            heading: __('Draft', 'translate-words'),
             value: 'draft'
         }
     ]
 
     const slugTranslationOptions = [
         {
-            heading: __('Use Translated Title', 'linguator-multilingual-ai-translation'),
+            heading: __('Use Translated Title', 'translate-words'),
             value: 'title_translate'
         },
         {
-            heading: __('Translate Original Slug', 'linguator-multilingual-ai-translation'),
+            heading: __('Translate Original Slug', 'translate-words'),
             value: 'slug_translate'
         },
         {
-            heading: __('Keep Original Slug', 'linguator-multilingual-ai-translation'),
+            heading: __('Keep Original Slug', 'translate-words'),
             value: 'slug_keep'
         }
     ]
@@ -246,7 +246,7 @@ const TranslationConfig = ({ data, setData }) => {
         <Container className='bg-white p-10 rounded-lg' cols="1" containerType='grid'>
             <Container className='flex items-center'>
                 <Container.Item className='flex w-full justify-between px-4 gap-6'>
-                    <h1 className='font-bold'>{__('Translation Settings', 'linguator-multilingual-ai-translation')}</h1>
+                    <h1 className='font-bold'>{__('Translation Settings', 'translate-words')}</h1>
                     <Button
                         disabled={handleButtonDisabled}
                         className=""
@@ -257,7 +257,7 @@ const TranslationConfig = ({ data, setData }) => {
                         onClick={SaveSettings}
                         variant="primary"
                     >
-                        {__('Save Settings', 'linguator-multilingual-ai-translation')}
+                        {__('Save Settings', 'translate-words')}
                     </Button>
                 </Container.Item>
             </Container>
@@ -265,10 +265,10 @@ const TranslationConfig = ({ data, setData }) => {
             <Container.Item className='p-6 rounded-lg' style={{ border: "1px solid #e5e7eb" }}>
                 <Label size='md' className='font-bold flex items-center gap-2'>
                     <Languages className="flex-shrink-0 size-5 text-icon-secondary" />
-                    {__('Service Provider', 'linguator-multilingual-ai-translation')}
+                    {__('Service Provider', 'translate-words')}
                 </Label>
                 <Label variant='help'>
-                    {__('Select at least one translation service provider below. You can enable multiple providers and choose the one that best fits your needs.', 'linguator-multilingual-ai-translation')}
+                    {__('Select at least one translation service provider below. You can enable multiple providers and choose the one that best fits your needs.', 'translate-words')}
                 </Label>
                 <div className='flex flex-col gap-2' style={{ marginTop: "20px" }}>
                     <div style={{ backgroundColor: "#fbfbfb" }}>
@@ -276,10 +276,10 @@ const TranslationConfig = ({ data, setData }) => {
                             <Container.Item>
                                 <h3 className='flex items-center gap-2'>
                                     <GoogleIcon className='w-5 h-5' />
-                                    {__('Google Machine Translation', 'linguator-multilingual-ai-translation')}
+                                    {__('Google Machine Translation', 'translate-words')}
                                 </h3>
                                 <p>
-                                    {__('Google Machine Translation uses the Google Translate API to translate text.', 'linguator-multilingual-ai-translation')}
+                                    {__('Google Machine Translation uses the Google Translate API to translate text.', 'translate-words')}
                                 </p>
                             </Container.Item>
                             <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
@@ -300,10 +300,10 @@ const TranslationConfig = ({ data, setData }) => {
                             <Container.Item >
                                 <h3 className='flex items-center gap-2'>
                                     <ChromeIcon className="w-5 h-5" />
-                                    {__('Chrome Local AI Translation', 'linguator-multilingual-ai-translation')}
+                                    {__('Chrome Local AI Translation', 'translate-words')}
                                 </h3>
                                 <p>
-                                    {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'linguator-multilingual-ai-translation')}
+                                    {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
                                 </p>
                             </Container.Item>
                             <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
@@ -326,10 +326,10 @@ const TranslationConfig = ({ data, setData }) => {
             <Container.Item>
                 <Label size='md' className='font-bold flex items-center gap-2'>
                     <RiDraftLine className="flex-shrink-0 size-5 text-icon-secondary" />
-                    {__('Bulk Translation – Default Post and Page Status', 'linguator-multilingual-ai-translation')}
+                    {__('Bulk Translation – Default Post and Page Status', 'translate-words')}
                 </Label>
                 <Label variant='help'>
-                    {__('This is the default post and page status for bulk translation.', 'linguator-multilingual-ai-translation')}
+                    {__('This is the default post and page status for bulk translation.', 'translate-words')}
                 </Label>
                 <div style={{ marginTop: "20px" }}>
                     <RadioButton.Group>
@@ -356,9 +356,9 @@ const TranslationConfig = ({ data, setData }) => {
             <Container.Item>
                 <Label size='md' className='font-bold flex items-center gap-2'>
                     <Link className="flex-shrink-0 size-5 text-icon-secondary" />
-                    {__('Slug Translation Settings', 'linguator-multilingual-ai-translation')}
+                    {__('Slug Translation Settings', 'translate-words')}
                 </Label>
-                <Label variant='help'>{__('Choose how post slugs (URLs) are generated when content is translated.', 'linguator-multilingual-ai-translation')}</Label>
+                <Label variant='help'>{__('Choose how post slugs (URLs) are generated when content is translated.', 'translate-words')}</Label>
                 <div style={{ marginTop: "20px" }}>
                     <RadioButton.Group>
                         {slugTranslationOptions.map((slugOption, index) => (
@@ -393,7 +393,7 @@ const TranslationConfig = ({ data, setData }) => {
                         onClick={SaveSettings}
                         variant="primary"
                     >
-                        {__('Save Settings', 'linguator-multilingual-ai-translation')}
+                        {__('Save Settings', 'translate-words')}
                     </Button>
 
                 </Container.Item>

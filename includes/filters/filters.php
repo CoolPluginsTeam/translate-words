@@ -402,7 +402,7 @@ class LMAT_Filters {
 	 */
 	public function register_personal_data_exporter( $exporters ) {
 		$exporters[] = array(
-			'exporter_friendly_name' => __( 'Translated user descriptions', 'linguator-multilingual-ai-translation' ),
+			'exporter_friendly_name' => __( 'Translated user descriptions', 'translate-words' ),
 			'callback'               => array( $this, 'user_data_exporter' ),
 		);
 		return $exporters;
@@ -426,7 +426,7 @@ class LMAT_Filters {
 				if ( ! $lang->is_default && $value = get_user_meta( $user->ID, 'description_' . $lang->slug, true ) ) {
 					$user_data_to_export[] = array(
 						/* translators: %s is a language native name */
-						'name'  => sprintf( __( 'User description - %s', 'linguator-multilingual-ai-translation' ), $lang->name ),
+						'name'  => sprintf( __( 'User description - %s', 'translate-words' ), $lang->name ),
 						'value' => $value,
 					);
 				}
@@ -435,7 +435,7 @@ class LMAT_Filters {
 			if ( ! empty( $user_data_to_export ) ) {
 				$data_to_export[] = array(
 					'group_id'    => 'user',
-					'group_label' => __( 'User', 'linguator-multilingual-ai-translation' ),
+					'group_label' => __( 'User', 'translate-words' ),
 					'item_id'     => "user-{$user->ID}",
 					'data'        => $user_data_to_export,
 				);

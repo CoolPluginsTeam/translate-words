@@ -229,7 +229,7 @@ class Polylang_Migration {
 
 		if ( empty( $polylang_languages ) ) {
 			$results['success'] = false;
-			$results['errors'][] = __( 'No Polylang languages found.', 'linguator-multilingual-ai-translation' );
+			$results['errors'][] = __( 'No Polylang languages found.', 'translate-words' );
 			return $results;
 		}
 
@@ -274,7 +274,7 @@ class Polylang_Migration {
 			if ( is_wp_error( $result ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language name */
-					__( 'Failed to migrate language: %s', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language: %s', 'translate-words' ),
 					$pll_lang->name
 				);
 				$results['success'] = false;
@@ -1207,7 +1207,7 @@ class Polylang_Migration {
 			if ( ! $this->options->has( $lmat_key ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Setting key */
-					__( 'Setting %s is not registered in Linguator', 'linguator-multilingual-ai-translation' ),
+					__( 'Setting %s is not registered in Linguator', 'translate-words' ),
 					$lmat_key
 				);
 				$results['success'] = false;
@@ -1223,7 +1223,7 @@ class Polylang_Migration {
 				$error_message = ! empty( $error_messages ) ? implode( ', ', $error_messages ) : '';
 				$results['errors'][] = sprintf(
 					/* translators: %1$s: Setting key, %2$s: Error message */
-					__( 'Failed to migrate setting: %1$s%2$s', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate setting: %1$s%2$s', 'translate-words' ),
 					$lmat_key,
 					$error_message ? ' (' . $error_message . ')' : ''
 				);
@@ -1335,7 +1335,7 @@ class Polylang_Migration {
 			if ( ! $lmat_lang ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language slug */
-					__( 'Linguator language not found for Polylang language: %s', 'linguator-multilingual-ai-translation' ),
+					__( 'Linguator language not found for Polylang language: %s', 'translate-words' ),
 					$pll_lang->slug
 				);
 				$results['success'] = false;
@@ -1403,7 +1403,7 @@ class Polylang_Migration {
 				} else {
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language slug, %2$d: Stored count, %3$d: Expected count */
-						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'translate-words' ),
 						$lmat_lang->slug,
 						$stored_count,
 						$expected_count
@@ -1413,7 +1413,7 @@ class Polylang_Migration {
 			} else {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language slug */
-					__( 'Failed to save strings for language: %s (no strings stored)', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to save strings for language: %s (no strings stored)', 'translate-words' ),
 					$lmat_lang->slug
 				);
 				$results['success'] = false;
@@ -1509,7 +1509,7 @@ class Polylang_Migration {
 			if ( $current_url !== '#lmat_switcher' ) {
 				$results['errors'][] = sprintf(
 					/* translators: %d: Menu item ID */
-					__( 'Failed to update URL for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to update URL for menu item ID %d', 'translate-words' ),
 					$menu_item_id
 				);
 				$results['success'] = false;
@@ -1528,7 +1528,7 @@ class Polylang_Migration {
 				if ( empty( $stored_meta ) || ! is_array( $stored_meta ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to migrate options for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to migrate options for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;
@@ -1551,7 +1551,7 @@ class Polylang_Migration {
 				if ( empty( $stored_default ) || ! is_array( $stored_default ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to set default options for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to set default options for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;
@@ -1562,14 +1562,14 @@ class Polylang_Migration {
 			// Update menu item title to Linguator's default if needed
 			$menu_item_title = get_post_meta( $menu_item_id, '_menu_item_title', true );
 			if ( empty( $menu_item_title ) ) {
-				update_post_meta( $menu_item_id, '_menu_item_title', __( 'Languages', 'linguator-multilingual-ai-translation' ) );
+				update_post_meta( $menu_item_id, '_menu_item_title', __( 'Languages', 'translate-words' ) );
 
 				// verify title set
 				$stored_title = get_post_meta( $menu_item_id, '_menu_item_title', true );
 				if ( empty( $stored_title ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to set menu item title for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to set menu item title for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;

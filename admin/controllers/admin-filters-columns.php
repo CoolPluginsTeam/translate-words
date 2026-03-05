@@ -179,11 +179,11 @@ class LMAT_Admin_Filters_Columns {
 					$flag = $this->get_flag_html( $language );
 					$class = 'lmat_column_flag';
 					/* translators: accessibility text, %s is a native language name */
-					$s = sprintf( __( 'Edit this item in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+					$s = sprintf( __( 'Edit this item in %s', 'translate-words' ), $language->name );
 				} else {
 					$class = esc_attr( 'lmat_icon_edit translation_' . $id );
 					/* translators: accessibility text, %s is a native language name */
-					$s = sprintf( __( 'Edit the translation in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+					$s = sprintf( __( 'Edit the translation in %s', 'translate-words' ), $language->name );
 				}
 
 				$post = get_post( $id );
@@ -202,7 +202,7 @@ class LMAT_Admin_Filters_Columns {
 				printf(
 					'<span class="lmat_column_flag" style=""><span class="screen-reader-text">%1$s</span>%2$s</span>',
 					/* translators: accessibility text, %s is a native language name */
-					esc_html( sprintf( __( 'This item is in %s', 'linguator-multilingual-ai-translation' ), $language->name ) ),
+					esc_html( sprintf( __( 'This item is in %s', 'translate-words' ), $language->name ) ),
 					$this->get_flag_html( $language ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				);
 			}
@@ -226,7 +226,7 @@ class LMAT_Admin_Filters_Columns {
 
 			$elements = $this->model->languages->filter( 'translator' )->get_list();
 			if ( current_filter() == 'bulk_edit_custom_box' ) {
-				array_unshift( $elements, (object) array( 'slug' => -1, 'name' => __( '&mdash; No Change &mdash;', 'linguator-multilingual-ai-translation' ) ) );
+				array_unshift( $elements, (object) array( 'slug' => -1, 'name' => __( '&mdash; No Change &mdash;', 'translate-words' ) ) );
 			}
 
 			$dropdown = new LMAT_Walker_Dropdown();
@@ -240,7 +240,7 @@ class LMAT_Admin_Filters_Columns {
 						</label>
 					</div>
 				</fieldset>',
-				esc_html__( 'Language', 'linguator-multilingual-ai-translation' ),
+				esc_html__( 'Language', 'translate-words' ),
 				wp_kses( $dropdown->walk( $elements, -1, array( 'name' => 'inline_lang_choice', 'id' => '' ) ), array(
 					'select' => array( 'name' => true, 'id' => true, 'class' => true ),
 					'option' => array( 'value' => true, 'selected' => true )
@@ -322,11 +322,11 @@ class LMAT_Admin_Filters_Columns {
 					$flag = $this->get_flag_html( $language );
 					$class = 'lmat_column_flag';
 					/* translators: accessibility text, %s is a native language name */
-					$s = sprintf( __( 'Edit this item in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+					$s = sprintf( __( 'Edit this item in %s', 'translate-words' ), $language->name );
 				} else {
 					$class = esc_attr( 'lmat_icon_edit translation_' . $id );
 					/* translators: accessibility text, %s is a native language name */
-					$s = sprintf( __( 'Edit the translation in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+					$s = sprintf( __( 'Edit the translation in %s', 'translate-words' ), $language->name );
 				}
 				$out .= sprintf(
 					'<a class="%1$s" title="%2$s" href="%3$s"><span class="screen-reader-text">%4$s</span>%5$s</a>',
@@ -340,7 +340,7 @@ class LMAT_Admin_Filters_Columns {
 				$out .= sprintf(
 					'<span class="lmat_column_flag"><span class="screen-reader-text">%1$s</span>%2$s</span>',
 					/* translators: accessibility text, %s is a native language name */
-					esc_html( sprintf( __( 'This item is in %s', 'linguator-multilingual-ai-translation' ), $language->name ) ),
+					esc_html( sprintf( __( 'This item is in %s', 'translate-words' ), $language->name ) ),
 					$this->get_flag_html( $language )
 				);
 			}

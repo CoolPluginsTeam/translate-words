@@ -507,7 +507,7 @@ class LMAT_Translated_Post extends LMAT_Translated_Object implements LMAT_Transl
 	 * @return string
 	 */
 	public function get_rest_description(): string {
-		return __( 'Language taxonomy properties for post types.', 'linguator-multilingual-ai-translation' );
+		return __( 'Language taxonomy properties for post types.', 'translate-words' );
 	}
 
 	/**
@@ -584,12 +584,12 @@ class LMAT_Translated_Post extends LMAT_Translated_Object implements LMAT_Transl
 		if ( ! empty( $postarr['lang'] ) ) {
 			$post = get_post( $postarr['ID'] );
 			if ( ! $post instanceof WP_Post ) {
-				return new WP_Error( 'invalid_post', __( 'Invalid post ID.', 'linguator-multilingual-ai-translation' ) );
+				return new WP_Error( 'invalid_post', __( 'Invalid post ID.', 'translate-words' ) );
 			}
 
 			$language = $this->languages->get( $postarr['lang'] );
 			if ( ! $language instanceof LMAT_Language ) {
-				return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'linguator-multilingual-ai-translation' ) );
+				return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'translate-words' ) );
 			}
 
 			$this->set_language( $postarr['ID'], $language );

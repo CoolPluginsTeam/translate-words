@@ -613,7 +613,7 @@ const StringPopUpBody = (props) => {
                 return (
                     <img
                         src={imgFolder + 'plus.png'}
-                        alt={__("Add translation", "automatic-translations-for-polylang-pro")}
+                        alt={__("Add translation", "translate-words")}
                         className="lmat-page-translation-add-translation-icon"
                     />
                 );
@@ -628,9 +628,9 @@ const StringPopUpBody = (props) => {
                     {StringModalBodyNotice && <div className="lmat-page-translation-body-notice-wrapper"><StringModalBodyNotice /></div>}
                     {props.translatePendingStatus && (
                         <div className="lmat_page_translation_translate_progress" key={props.modalRender}>
-                            {__("Automatic translation is in progress....", 'automatic-translations-for-polylang-pro')}<br />
-                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'automatic-translations-for-polylang-pro')}<br /><br />
-                            {__("Please do not leave this window or browser tab while translation is in progress...", 'automatic-translations-for-polylang-pro')}
+                            {__("Automatic translation is in progress....", 'translate-words')}<br />
+                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'translate-words')}<br /><br />
+                            {__("Please do not leave this window or browser tab while translation is in progress...", 'translate-words')}
                         </div>
                     )}
                     <div className={`translator-widget ${service}`} style={{ display: 'flex' }}>
@@ -645,9 +645,9 @@ const StringPopUpBody = (props) => {
                         <table className="scrolldown" id="stringTemplate" ref={tableRef}>
                             <thead>
                                 <tr>
-                                    <th className="notranslate">{__("S.No", 'linguator-multilingual-ai-translation')}</th>
-                                    <th className="notranslate">{__("Source Text", 'linguator-multilingual-ai-translation')}</th>
-                                    <th className="notranslate">{__("Translation", 'linguator-multilingual-ai-translation')}</th>
+                                    <th className="notranslate">{__("S.No", 'translate-words')}</th>
+                                    <th className="notranslate">{__("Source Text", 'translate-words')}</th>
+                                    <th className="notranslate">{__("Translation", 'translate-words')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -722,7 +722,7 @@ const StringPopUpBody = (props) => {
                     </div>
                 </> :
                 props.postDataFetchStatus ?
-                    <p>{__('No strings are available for translation', 'linguator-multilingual-ai-translation')}</p> :
+                    <p>{__('No strings are available for translation', 'translate-words')}</p> :
 
                     <div className="lmat-page-translation-skeleton-loader-wrapper">
                         <div className="translate-widget">
@@ -732,9 +732,9 @@ const StringPopUpBody = (props) => {
                         <table>
                             <thead>
                                 <tr>
-                                    <th className="notranslate">{__("S.No", 'linguator-multilingual-ai-translation')}</th>
-                                    <th className="notranslate">{__("Source Text", 'linguator-multilingual-ai-translation')}</th>
-                                    <th className="notranslate">{__("Translation", 'linguator-multilingual-ai-translation')}</th>
+                                    <th className="notranslate">{__("S.No", 'translate-words')}</th>
+                                    <th className="notranslate">{__("Source Text", 'translate-words')}</th>
+                                    <th className="notranslate">{__("Translation", 'translate-words')}</th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -116,31 +116,31 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			}
 
 		$tabs = array(
-			'general'     => array( 'title' => __( 'General Settings', 'linguator-multilingual-ai-translation' ) ),
-			'lang'   => array( 'title' => __( 'Manage Languages', 'linguator-multilingual-ai-translation' ), 'redirect' => true, 'redirect_url' => 'lmat' ),
-			'translation' => array( 'title' => __( 'AI Translation', 'linguator-multilingual-ai-translation' ) ),
-			'switcher'    => array( 'title' => __( 'Language Switcher', 'linguator-multilingual-ai-translation' ) ),
-			'supported-blocks' => array( 'title' => __( 'Supported Blocks', 'linguator-multilingual-ai-translation' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=supported-blocks' ),
-			'custom-fields' => array( 'title' => __( 'Custom Fields', 'linguator-multilingual-ai-translation' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=custom-fields' ),
+			'general'     => array( 'title' => __( 'General Settings', 'translate-words' ) ),
+			'lang'   => array( 'title' => __( 'Manage Languages', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat' ),
+			'translation' => array( 'title' => __( 'AI Translation', 'translate-words' ) ),
+			'switcher'    => array( 'title' => __( 'Language Switcher', 'translate-words' ) ),
+			'supported-blocks' => array( 'title' => __( 'Supported Blocks', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=supported-blocks' ),
+			'custom-fields' => array( 'title' => __( 'Custom Fields', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=custom-fields' ),
 		);
 
 		// Only show Advanced Settings tab if migration hasn't been completed AND Polylang data exists
 		$migration_completed = get_option( 'lmat_migration_completed', false );
 		if ( ! $migration_completed ) {
-			$tabs['advanced-settings'] = array( 'title' => __( 'Advanced Settings', 'linguator-multilingual-ai-translation' ) );
+			$tabs['advanced-settings'] = array( 'title' => __( 'Advanced Settings', 'translate-words' ) );
 		}
 
         $languages = $this->model->get_languages_list();
         
         // Only show Glossary tab if languages exist
         if(!empty($languages)){
-            $tabs['glossary'] = array( 'title' => __( 'Glossary', 'linguator-multilingual-ai-translation' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=glossary' );
+            $tabs['glossary'] = array( 'title' => __( 'Glossary', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=glossary' );
         }
         
         $static_strings_visibility = $this->model->options->get( 'static_strings_visibility' );
         if(!empty($languages) && $static_strings_visibility){
             $tabs['strings']     = array(
-				'title'        => __( 'Static Strings', 'linguator-multilingual-ai-translation' ),
+				'title'        => __( 'Static Strings', 'translate-words' ),
 				'redirect'     => true,
 				'redirect_url' => 'lmat_settings&tab=strings',
 			);
@@ -189,9 +189,9 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			}
 			echo '</div>';
 			echo '<div class="lmat-settings-header-actions">';
-			echo '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Documentation', 'linguator-multilingual-ai-translation' ) . '</a>';
-			echo '<a href="https://linguator.com/docs/video-tutorials/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Video Tutorial', 'linguator-multilingual-ai-translation' ) . '</a>';
-			echo '<a href="https://my.coolplugins.net/account/support-tickets/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=support&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Support', 'linguator-multilingual-ai-translation' ) . '</a>';
+			echo '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Documentation', 'translate-words' ) . '</a>';
+			echo '<a href="https://linguator.com/docs/video-tutorials/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Video Tutorial', 'translate-words' ) . '</a>';
+			echo '<a href="https://my.coolplugins.net/account/support-tickets/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=support&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Support', 'translate-words' ) . '</a>';
 			echo '</div>';
 			echo '</div>';
 			echo '</div>';

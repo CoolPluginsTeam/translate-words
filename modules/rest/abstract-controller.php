@@ -64,7 +64,7 @@ abstract class Abstract_Controller extends WP_REST_Controller {
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
 			return new WP_Error(
 				'rest_invalid_nonce',
-				__( 'Security check failed. Please refresh the page and try again.', 'linguator-multilingual-ai-translation' ),
+				__( 'Security check failed. Please refresh the page and try again.', 'translate-words' ),
 				array( 'status' => 403 )
 			);
 		}

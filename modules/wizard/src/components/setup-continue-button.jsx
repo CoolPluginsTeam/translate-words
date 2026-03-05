@@ -30,7 +30,7 @@ export const SetupBackButton = ({handleClick}) => {
                 onClick={handleClick}
                 variant="primary"
             >
-                {__('Back', 'linguator-multilingual-ai-translation')}
+                {__('Back', 'translate-words')}
             </Button>
         </>
     )

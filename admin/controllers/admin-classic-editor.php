@@ -84,7 +84,7 @@ class LMAT_Admin_Classic_Editor {
 		if ( $this->model->is_translated_post_type( $post_type ) ) {
 			add_meta_box(
 				'ml_box',
-				__( 'Languages', 'linguator-multilingual-ai-translation' ),
+				__( 'Languages', 'translate-words' ),
 				array( $this, 'post_language' ),
 				$post_type,
 				'side',
@@ -136,7 +136,7 @@ class LMAT_Admin_Classic_Editor {
 			'<p><strong>%1$s</strong></p>
 			<label class="screen-reader-text" for="%2$s">%1$s</label>
 			<div id="select-%3$s-language">%4$s</div>',
-			esc_html__( 'Language', 'linguator-multilingual-ai-translation' ),
+			esc_html__( 'Language', 'translate-words' ),
 			esc_attr( $id ),
 			( 'attachment' === $post_type ? 'media' : 'post' ),
 			wp_kses(
@@ -284,7 +284,7 @@ class LMAT_Admin_Classic_Editor {
 					'exclude_tree'     => $post->ID,
 					'selected'         => $post->post_parent,
 					'name'             => 'parent_id',
-					'show_option_none' => __( '(no parent)', 'linguator-multilingual-ai-translation' ),
+					'show_option_none' => __( '(no parent)', 'translate-words' ),
 					'sort_column'      => 'menu_order, post_title',
 					'echo'             => 0,
 				);
@@ -404,9 +404,9 @@ class LMAT_Admin_Classic_Editor {
 			<div class="lmat-notice notice notice-warning">
 				<p>
 					<?php
-					esc_html_e( 'Some taxonomies or metadata may be synchronized with existing translations that you are not allowed to modify.', 'linguator-multilingual-ai-translation' );
+					esc_html_e( 'Some taxonomies or metadata may be synchronized with existing translations that you are not allowed to modify.', 'translate-words' );
 					echo ' ';
-					esc_html_e( 'If you attempt to modify them anyway, your changes will not be saved.', 'linguator-multilingual-ai-translation' );
+					esc_html_e( 'If you attempt to modify them anyway, your changes will not be saved.', 'translate-words' );
 					?>
 				</p>
 			</div>

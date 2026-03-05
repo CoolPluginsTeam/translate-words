@@ -314,7 +314,7 @@ class LMAT_Translated_Term extends LMAT_Translated_Object implements LMAT_Transl
 	 * @return string
 	 */
 	public function get_rest_description(): string {
-		return __( 'Language taxonomy properties for terms.', 'linguator-multilingual-ai-translation' );
+		return __( 'Language taxonomy properties for terms.', 'translate-words' );
 	}
 
 	/**
@@ -411,7 +411,7 @@ class LMAT_Translated_Term extends LMAT_Translated_Object implements LMAT_Transl
 	public function update( int $term_id, array $args = array() ) {
 		$term = get_term( $term_id );
 		if ( ! $term instanceof WP_Term ) {
-			return new WP_Error( 'invalid_term', __( 'Empty Term.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'invalid_term', __( 'Empty Term.', 'translate-words' ) );
 		}
 
 		/** @var LMAT_Language $language */
@@ -419,7 +419,7 @@ class LMAT_Translated_Term extends LMAT_Translated_Object implements LMAT_Transl
 		if ( ! empty( $args['lang'] ) ) {
 			$language = $this->languages->get( $args['lang'] );
 			if ( ! $language instanceof LMAT_Language ) {
-				return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'linguator-multilingual-ai-translation' ) );
+				return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'translate-words' ) );
 			}
 
 			$this->set_language( $term_id, $language );

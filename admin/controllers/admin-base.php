@@ -161,7 +161,7 @@ abstract class LMAT_Admin_Base extends LMAT_Base {
 				 * Ex: a user with `manage_translations` will still be able to access the Translations page, even if the
 				 * main menu has `manage_options`.
 				 */
-				add_menu_page( $title, __( 'Linguator', 'linguator-multilingual-ai-translation' ), $capa, $parent, '__return_null', 'dashicons-translation' );
+				add_menu_page( $title, __( 'Linguator', 'translate-words' ), $capa, $parent, '__return_null', 'dashicons-translation' );
 				$admin_page_hooks[ $parent ] = self::SCREEN_PREFIX; // avoid the localization of the hook name.
 			}
 
@@ -594,7 +594,7 @@ abstract class LMAT_Admin_Base extends LMAT_Base {
 	public function admin_bar_menu( $wp_admin_bar ) {
 		$all_item = (object) array(
 			'slug' => 'all',
-			'name' => __( 'Show all languages', 'linguator-multilingual-ai-translation' ),
+			'name' => __( 'Show all languages', 'translate-words' ),
 			'flag' => '<span class="ab-icon"></span>',
 		);
 
@@ -603,7 +603,7 @@ abstract class LMAT_Admin_Base extends LMAT_Base {
 		$title = sprintf(
 			'<span class="ab-label"%1$s><span class="screen-reader-text">%2$s</span>%3$s</span>',
 			$selected instanceof LMAT_Language ? sprintf( ' lang="%s"', esc_attr( $selected->get_locale( 'display' ) ) ) : '',
-			__( 'Filters content by language', 'linguator-multilingual-ai-translation' ),
+			__( 'Filters content by language', 'translate-words' ),
 			esc_html( $selected->name )
 		);
 
@@ -632,7 +632,7 @@ abstract class LMAT_Admin_Base extends LMAT_Base {
 				'title' => $selected->flag . $title,
 				'href'  => esc_url( add_query_arg( 'lang', $selected->slug, remove_query_arg( 'paged' ) ) ),
 				'meta'  => array(
-					'title' => __( 'Filters content by language', 'linguator-multilingual-ai-translation' ),
+					'title' => __( 'Filters content by language', 'translate-words' ),
 					'class' => 'all' === $selected->slug ? '' : 'lmat-filtered-languages',
 				),
 			)
@@ -737,12 +737,12 @@ abstract class LMAT_Admin_Base extends LMAT_Base {
 	 */
 	protected function get_menu_items(): array {
 		$tabs = array(
-			'lang' => __( 'Manage Languages', 'linguator-multilingual-ai-translation' ),
+			'lang' => __( 'Manage Languages', 'translate-words' ),
 		);
 
-		$tabs['settings'] = __( 'Settings', 'linguator-multilingual-ai-translation' );
+		$tabs['settings'] = __( 'Settings', 'translate-words' );
 
-		$tabs['settings&tab=general&loco=true'] = __( 'Theme & plugins localization', 'linguator-multilingual-ai-translation' );
+		$tabs['settings&tab=general&loco=true'] = __( 'Theme & plugins localization', 'translate-words' );
 
 		/**
 		 * Filter the list of sub-menu items in Linguator settings.

@@ -104,7 +104,7 @@ const SettingModal = (props) => {
             if (localAiTranslatorSupport !== true && typeof localAiTranslatorSupport === 'object') {
                 setChromeAiBtnDisabled(true);
 
-                errors.localAiTranslator = { message: localAiTranslatorSupport, Title: __("Chrome AI Translator", 'linguator-multilingual-ai-translation') };
+                errors.localAiTranslator = { message: localAiTranslatorSupport, Title: __("Chrome AI Translator", 'translate-words') };
 
                 setServiceModalErrors(prev => ({ ...prev, localAiTranslator: errors.localAiTranslator }));
             }
@@ -116,10 +116,10 @@ const SettingModal = (props) => {
 
 
                     message: "<p style={{ fontSize: '1rem', color: '#ff4646' }}>" + sprintf(
-                        __("Google Translate does not support the target language: %s.", 'linguator-multilingual-ai-translation'),
+                        __("Google Translate does not support the target language: %s.", 'translate-words'),
                         "<strong>" + targetLangName + "</strong>"
                     ) + "</p>",
-                    Title: __("Google Translate", 'linguator-multilingual-ai-translation')
+                    Title: __("Google Translate", 'translate-words')
                 };
 
                 setServiceModalErrors(prev => ({
@@ -157,13 +157,13 @@ const SettingModal = (props) => {
         if (providers.length < 1) {
             let providerConfigMsg = sprintf(__(
                 '%sYou have not enabled any translation provider. Please enable at least one service provider to use automatic translation. Go to the %sTranslation Settings%s to configure a translation provider.%s',
-                'linguator-multilingual-ai-translation'
+                'translate-words'
             ),
                 '<p>',
                 `<strong><a href='${lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation' target='_blank' rel='noopener noreferrer'>`,
                 '</a></strong>',
                 '</p>');
-            setServiceModalErrors((prev) => ({ ...prev, providerNotConfigured: { message: providerConfigMsg, Title: __("Translation Provider Not Configured", 'linguator-multilingual-ai-translation') } }));
+            setServiceModalErrors((prev) => ({ ...prev, providerNotConfigured: { message: providerConfigMsg, Title: __("Translation Provider Not Configured", 'translate-words') } }));
             return;
         }
         if (settingVisibility) {

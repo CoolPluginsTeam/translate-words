@@ -278,7 +278,7 @@ class WPML_Migration {
 
 		if ( empty( $wpml_languages ) ) {
 			$results['success'] = false;
-			$results['errors'][] = __( 'No WPML languages found.', 'linguator-multilingual-ai-translation' );
+			$results['errors'][] = __( 'No WPML languages found.', 'translate-words' );
 			return $results;
 		}
 
@@ -315,7 +315,7 @@ class WPML_Migration {
 			if ( empty( $wpml_lang->english_name ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language code */
-					__( 'Failed to migrate language with code %s: missing language name', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language with code %s: missing language name', 'translate-words' ),
 					$wpml_lang->code
 				);
 				$results['success'] = false;
@@ -325,7 +325,7 @@ class WPML_Migration {
 			if ( empty( $wpml_lang->code ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language name */
-					__( 'Failed to migrate language %s: missing language code', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language %s: missing language code', 'translate-words' ),
 					$wpml_lang->english_name
 				);
 				$results['success'] = false;
@@ -335,7 +335,7 @@ class WPML_Migration {
 			if ( empty( $wpml_lang->default_locale ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %1$s: Language name, %2$s: Language code */
-					__( 'Failed to migrate language %1$s (%2$s): missing locale', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language %1$s (%2$s): missing locale', 'translate-words' ),
 					$wpml_lang->english_name,
 					$wpml_lang->code
 				);
@@ -360,7 +360,7 @@ class WPML_Migration {
 					$error_message = ! empty( $error_messages ) ? ' (' . implode( ', ', $error_messages ) . ')' : '';
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language name, %2$s: Error details */
-						__( 'Failed to update flag for language: %1$s%2$s', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to update flag for language: %1$s%2$s', 'translate-words' ),
 						$wpml_lang->english_name,
 						$error_message
 					);
@@ -398,7 +398,7 @@ class WPML_Migration {
 				
 				$results['errors'][] = sprintf(
 					/* translators: %1$s: Language name, %2$s: Error details */
-					__( 'Failed to migrate language: %1$s%2$s', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language: %1$s%2$s', 'translate-words' ),
 					$wpml_lang->english_name,
 					$error_message
 				);
@@ -1023,7 +1023,7 @@ class WPML_Migration {
 			if ( ! $lmat_lang ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language code */
-					__( 'Linguator language not found for WPML language: %s', 'linguator-multilingual-ai-translation' ),
+					__( 'Linguator language not found for WPML language: %s', 'translate-words' ),
 					$lang_code
 				);
 				$results['success'] = false;
@@ -1079,7 +1079,7 @@ class WPML_Migration {
 				} else {
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language code, %2$d: Stored count, %3$d: Expected count */
-						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'translate-words' ),
 						$lmat_lang->slug,
 						$stored_count,
 						$expected_count
@@ -1089,7 +1089,7 @@ class WPML_Migration {
 			} else {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language code */
-					__( 'Failed to save strings for language: %s (no strings stored)', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to save strings for language: %s (no strings stored)', 'translate-words' ),
 					$lmat_lang->slug
 				);
 				$results['success'] = false;

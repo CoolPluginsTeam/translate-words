@@ -247,7 +247,7 @@ class LMAT_Template_Translation {
         $document->start_controls_section(
             'lmat_language_panel_controls',
             [
-                'label' => esc_html__('Translations', 'linguator-multilingual-ai-translation'),
+                'label' => esc_html__('Translations', 'translate-words'),
                 'tab'   => \Elementor\Controls_Manager::TAB_SETTINGS,
             ]
         );
@@ -307,7 +307,7 @@ class LMAT_Template_Translation {
                             $flag_html,
                             sprintf(
                                 /* translators: %s: Language name */
-                                __('Add translation — %s', 'linguator-multilingual-ai-translation'),
+                                __('Add translation — %s', 'translate-words'),
                                 esc_html($lang->name)
                             )
                         ),

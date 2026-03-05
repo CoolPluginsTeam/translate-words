@@ -42,12 +42,12 @@ var withInspectorControls = (0,external_wp_compose_namespaceObject.createHigherO
       setAttributes = props.setAttributes;
     var lmatLang = attributes.lmatLang;
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(BlockEdit, props), /*#__PURE__*/React.createElement(external_wp_blockEditor_namespaceObject.InspectorControls, null, /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.PanelBody, {
-      title: (0,external_wp_i18n_namespaceObject.__)('Language', 'linguator-multilingual-ai-translation')
+      title: (0,external_wp_i18n_namespaceObject.__)('Language', 'translate-words')
     }, /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.SelectControl, {
-      label: (0,external_wp_i18n_namespaceObject.__)('Display in language', 'linguator-multilingual-ai-translation'),
+      label: (0,external_wp_i18n_namespaceObject.__)('Display in language', 'translate-words'),
       value: lmatLang,
       options: [{
-        label: (0,external_wp_i18n_namespaceObject.__)('Any', 'linguator-multilingual-ai-translation'),
+        label: (0,external_wp_i18n_namespaceObject.__)('Any', 'translate-words'),
         value: ''
       },
       // Real options should be injected server-side/localized; placeholder values here.

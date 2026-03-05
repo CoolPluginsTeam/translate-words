@@ -149,29 +149,29 @@ class LMAT_Settings_Module {
 		$this->action_links = array(
 			'configure'   => sprintf(
 				'<a title="%s" href="%s">%s</a>',
-				esc_attr__( 'Configure this module', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Configure this module', 'translate-words' ),
 				'#',
-				esc_html__( 'Settings', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'Settings', 'translate-words' )
 			),
 			'deactivate'  => sprintf(
 				'<a title="%s" href="%s">%s</a>',
-				esc_attr__( 'Deactivate this module', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Deactivate this module', 'translate-words' ),
 				esc_url( wp_nonce_url( '?page=lmat&tab=modules&lmat_action=deactivate&noheader=true&module=' . $this->module, 'lmat_deactivate' ) ),
-				esc_html__( 'Deactivate', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'Deactivate', 'translate-words' )
 			),
 			'activate'    => sprintf(
 				'<a title="%s" href="%s">%s</a>',
-				esc_attr__( 'Activate this module', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Activate this module', 'translate-words' ),
 				esc_url( wp_nonce_url( '?page=lmat&tab=modules&lmat_action=activate&noheader=true&module=' . $this->module, 'lmat_activate' ) ),
-				esc_html__( 'Activate', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'Activate', 'translate-words' )
 			),
-			'activated'   => esc_html__( 'Activated', 'linguator-multilingual-ai-translation' ),
-			'deactivated' => esc_html__( 'Deactivated', 'linguator-multilingual-ai-translation' ),
+			'activated'   => esc_html__( 'Activated', 'translate-words' ),
+			'deactivated' => esc_html__( 'Deactivated', 'translate-words' ),
 		);
 
 		$this->buttons = array(
-			'cancel' => sprintf( '<button type="button" class="button button-secondary cancel">%s</button>', esc_html__( 'Cancel', 'linguator-multilingual-ai-translation' ) ),
-			'save'   => sprintf( '<button type="button" class="button button-primary save">%s</button>', esc_html__( 'Save Changes', 'linguator-multilingual-ai-translation' ) ),
+			'cancel' => sprintf( '<button type="button" class="button button-secondary cancel">%s</button>', esc_html__( 'Cancel', 'translate-words' ) ),
+			'save'   => sprintf( '<button type="button" class="button button-primary save">%s</button>', esc_html__( 'Save Changes', 'translate-words' ) ),
 		);
 
 		// Ajax action to save options.
@@ -289,7 +289,7 @@ class LMAT_Settings_Module {
 
 			if ( ! $errors->has_errors() ) {
 				// Send update message
-				lmat_add_notice( new WP_Error( 'settings_updated', __( 'Settings saved.', 'linguator-multilingual-ai-translation' ), 'success' ) );
+				lmat_add_notice( new WP_Error( 'settings_updated', __( 'Settings saved.', 'translate-words' ), 'success' ) );
 				$notice_html = $this->render_settings_errors_html( 'linguator' );
 				$x = new WP_Ajax_Response( array( 'what' => 'success', 'data' => $notice_html ) );
 				$x->send();

@@ -130,33 +130,33 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
     <div class="lmat-glossary-container">
         <?php wp_nonce_field('lmat_glossary_nonce', 'lmat_glossary_nonce'); ?>
         <header class="lmat-header">
-            <h1><?php esc_html_e('Glossary', 'linguator-multilingual-ai-translation'); ?></h1>
-            <p><?php esc_html_e('Define how you want to translate – or not translate – important words and phrases.', 'linguator-multilingual-ai-translation'); ?></p>
+            <h1><?php esc_html_e('Glossary', 'translate-words'); ?></h1>
+            <p><?php esc_html_e('Define how you want to translate – or not translate – important words and phrases.', 'translate-words'); ?></p>
             <ul>
-                <li><?php esc_html_e('Specific translations you want to use;', 'linguator-multilingual-ai-translation'); ?></li>
-                <li><?php esc_html_e('Terms you want to exclude from being translated;', 'linguator-multilingual-ai-translation'); ?></li>
-                <li><?php esc_html_e('Additional context for each term.', 'linguator-multilingual-ai-translation'); ?></li>
+                <li><?php esc_html_e('Specific translations you want to use;', 'translate-words'); ?></li>
+                <li><?php esc_html_e('Terms you want to exclude from being translated;', 'translate-words'); ?></li>
+                <li><?php esc_html_e('Additional context for each term.', 'translate-words'); ?></li>
             </ul>
-            <a href="<?php echo esc_url( 'https://linguator.com/docs/add-glossary-feature-linguator/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=glossary_management_free' ); ?>" target="_blank"><?php esc_html_e('Learn more about adding and managing glossary terms.', 'linguator-multilingual-ai-translation'); ?></a>
+            <a href="<?php echo esc_url( 'https://linguator.com/docs/add-glossary-feature-linguator/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=glossary_management_free' ); ?>" target="_blank"><?php esc_html_e('Learn more about adding and managing glossary terms.', 'translate-words'); ?></a>
         </header>
 
         <div class="lmat-controls">
-            <input type="text" class="lmat-search" placeholder="<?php esc_attr_e('Search', 'linguator-multilingual-ai-translation'); ?>" />
+            <input type="text" class="lmat-search" placeholder="<?php esc_attr_e('Search', 'translate-words'); ?>" />
 
             <select class="lmat-glossary-type" name="glossary_type">
-                <option value=""><?php esc_html_e('Glossary Type', 'linguator-multilingual-ai-translation'); ?></option>
-                <option value="name"><?php esc_html_e('Name', 'linguator-multilingual-ai-translation'); ?></option>
-                <option value="general"><?php esc_html_e('General', 'linguator-multilingual-ai-translation'); ?></option>
+                <option value=""><?php esc_html_e('Glossary Type', 'translate-words'); ?></option>
+                <option value="name"><?php esc_html_e('Name', 'translate-words'); ?></option>
+                <option value="general"><?php esc_html_e('General', 'translate-words'); ?></option>
             </select>
 
             <button class="lmat-add-btn button button-primary">
-                <?php esc_html_e('Add glossary entry', 'linguator-multilingual-ai-translation'); ?>
+                <?php esc_html_e('Add glossary entry', 'translate-words'); ?>
             </button>
             <button class="lmat-import-btn button button-primary">
-                <?php esc_html_e('Import glossary', 'linguator-multilingual-ai-translation'); ?>
+                <?php esc_html_e('Import glossary', 'translate-words'); ?>
             </button>
             <button class="lmat-export-btn button button-primary">
-                <?php esc_html_e('Export glossary', 'linguator-multilingual-ai-translation'); ?>
+                <?php esc_html_e('Export glossary', 'translate-words'); ?>
             </button>
 
             <!-- Modal -->
@@ -164,19 +164,19 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                 <div class="lmat-glossary-modal-content-wrapper">
                     <button type="button" class="lmat-modal-close-btn" aria-label="Close">&times;</button>
                     <div class="lmat-glossary-modal-content">
-                        <h2><?php esc_html_e('Add New Glossary Term', 'linguator-multilingual-ai-translation'); ?></h2>
+                        <h2><?php esc_html_e('Add New Glossary Term', 'translate-words'); ?></h2>
                         <form id="lmat-add-glossary-form">
-                            <label for="lmat-add-term"><?php esc_html_e('Term', 'linguator-multilingual-ai-translation'); ?></label>
-                            <textarea id="lmat-add-term" name="term" class="lmat-add-term" required placeholder="<?php esc_attr_e('Enter the term to be translated', 'linguator-multilingual-ai-translation'); ?>"></textarea>
+                            <label for="lmat-add-term"><?php esc_html_e('Term', 'translate-words'); ?></label>
+                            <textarea id="lmat-add-term" name="term" class="lmat-add-term" required placeholder="<?php esc_attr_e('Enter the term to be translated', 'translate-words'); ?>"></textarea>
                             <div class="lmat-translation-error"></div>
 
-                            <label for="lmat-add-desc"><?php esc_html_e('Description', 'linguator-multilingual-ai-translation'); ?></label>
-                            <textarea id="lmat-add-desc" name="description" class="lmat-add-desc" rows="3" placeholder="<?php esc_attr_e('Add a description to provide context for translators', 'linguator-multilingual-ai-translation'); ?>"></textarea>
+                            <label for="lmat-add-desc"><?php esc_html_e('Description', 'translate-words'); ?></label>
+                            <textarea id="lmat-add-desc" name="description" class="lmat-add-desc" rows="3" placeholder="<?php esc_attr_e('Add a description to provide context for translators', 'translate-words'); ?>"></textarea>
                             <div class="lmat-translation-error"></div>
 
-                            <label for="lmat-add-source-lang"><?php esc_html_e('Original Language', 'linguator-multilingual-ai-translation'); ?></label>
+                            <label for="lmat-add-source-lang"><?php esc_html_e('Original Language', 'translate-words'); ?></label>
                             <select id="lmat-add-source-lang" name="source_lang" class="lmat-add-source-lang" required>
-                                <option value=""><?php esc_html_e('Select language', 'linguator-multilingual-ai-translation'); ?></option>
+                                <option value=""><?php esc_html_e('Select language', 'translate-words'); ?></option>
                                 <?php foreach ($languages as $lang): ?>
                                     <option value="<?php echo esc_attr($lang['code']); ?>">
                                         <?php echo esc_html($lang['alt']); ?>
@@ -184,10 +184,10 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                 <?php endforeach; ?>
                             </select>
 
-                            <label for="lmat-add-type"><?php esc_html_e('Type', 'linguator-multilingual-ai-translation'); ?></label>
+                            <label for="lmat-add-type"><?php esc_html_e('Type', 'translate-words'); ?></label>
                             <select id="lmat-add-type" name="type" class="lmat-add-type" required>
-                                <option value="general"><?php esc_html_e('General', 'linguator-multilingual-ai-translation'); ?></option>
-                                <option value="name"><?php esc_html_e('Name', 'linguator-multilingual-ai-translation'); ?></option>
+                                <option value="general"><?php esc_html_e('General', 'translate-words'); ?></option>
+                                <option value="name"><?php esc_html_e('Name', 'translate-words'); ?></option>
                             </select>
                             <div class="lmat-add-translations lmat-translations-grid">
                                 <?php foreach ($languages as $lang): ?>
@@ -198,17 +198,17 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                                     <img src="<?php echo esc_attr($lang['img']); ?>" alt="<?php echo esc_attr($lang['alt']); ?>" class="lmat-lang-flag">
                                                 <?php endif; ?>
                                                 <span class="lmat-lang-name"><?php echo esc_html($lang['alt']); ?></span>
-                                                <span class="lmat-lang-translation-label"><?php esc_html_e('Translation', 'linguator-multilingual-ai-translation'); ?></span>
+                                                <span class="lmat-lang-translation-label"><?php esc_html_e('Translation', 'translate-words'); ?></span>
                                             </div>
-                                            <textarea name="translation_<?php echo esc_attr($lang['code']); ?>" class="lmat-add-translation" rows="2" placeholder="<?php esc_attr_e('Custom Translation', 'linguator-multilingual-ai-translation'); ?>"></textarea>
-                                            <div class="lmat-translation-error"><?php esc_html_e('Too long, must be less than 240 characters', 'linguator-multilingual-ai-translation'); ?></div>
+                                            <textarea name="translation_<?php echo esc_attr($lang['code']); ?>" class="lmat-add-translation" rows="2" placeholder="<?php esc_attr_e('Custom Translation', 'translate-words'); ?>"></textarea>
+                                            <div class="lmat-translation-error"><?php esc_html_e('Too long, must be less than 240 characters', 'translate-words'); ?></div>
                                         </label>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                             <div class="lmat-glossary-modal-actions" style="margin-top: 18px;">
-                                <span class="lmat-glossary-modal-actions-left" style="cursor:pointer;"><?php esc_html_e('Cancel', 'linguator-multilingual-ai-translation'); ?></span>
-                                <button type="submit" id="add-glossary-term-btn"  class="button button-primary"><?php esc_html_e('Add Term', 'linguator-multilingual-ai-translation'); ?></button>
+                                <span class="lmat-glossary-modal-actions-left" style="cursor:pointer;"><?php esc_html_e('Cancel', 'translate-words'); ?></span>
+                                <button type="submit" id="add-glossary-term-btn"  class="button button-primary"><?php esc_html_e('Add Term', 'translate-words'); ?></button>
                             </div>
                         </form>
                         <div id="add-glossary-success" class="lmat-import-success lmat-hidden">
@@ -217,9 +217,9 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                 <img src="<?php echo esc_url(plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE)); ?>" alt="Success Icon" />
                             </div>
                             <div class="lmat-import-success-message">
-                                <?php esc_html_e('Glossary term added successfully!', 'linguator-multilingual-ai-translation'); ?>
+                                <?php esc_html_e('Glossary term added successfully!', 'translate-words'); ?>
                             </div>
-                            <button id="lmat-glossary-success-close" class="lmat-close-button" type="button"><?php esc_html_e('Close', 'linguator-multilingual-ai-translation'); ?></button>
+                            <button id="lmat-glossary-success-close" class="lmat-close-button" type="button"><?php esc_html_e('Close', 'translate-words'); ?></button>
                         </div>
                     </div>
                 </div>
@@ -231,7 +231,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                     <button type="button" class="lmat-modal-close-btn" aria-label="Close">&times;</button>
                     <div class="lmat-glossary-modal-content">
                         <div class="lmat-import-glossary" id="lmat-import-glossary-ui">
-                            <h2 class="lmat-title"><?php esc_html_e( 'Import glossary', 'linguator-multilingual-ai-translation' ); ?></h2>
+                            <h2 class="lmat-title"><?php esc_html_e( 'Import glossary', 'translate-words' ); ?></h2>
 
                             <label class="lmat-upload-box" id="upload-label">
                                 <input type="file" accept=".csv" id="lmat-csv-upload" hidden>
@@ -239,14 +239,14 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                     <?php 
                                     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plugins_url() returns a safe URL. ?>
                                     <img src="<?php echo esc_url(plugins_url('assets/images/csv.svg', LINGUATOR_ROOT_FILE)); ?>" alt="CSV Icon" />
-                                    <span id="file-name-display"><?php esc_html_e( 'Select a CSV file to upload', 'linguator-multilingual-ai-translation' ); ?></span>
+                                    <span id="file-name-display"><?php esc_html_e( 'Select a CSV file to upload', 'translate-words' ); ?></span>
                                 </div>
                             </label>
                             <a
                                 href="<?php echo esc_url( plugins_url('assets/sample-glossary.csv', LINGUATOR_ROOT_FILE) ); ?>"
                                 class="lmat-download-link"
                                 download="sample-glossary.csv">
-                                <?php esc_html_e( 'Download sample glossary CSV file', 'linguator-multilingual-ai-translation' ); ?>
+                                <?php esc_html_e( 'Download sample glossary CSV file', 'translate-words' ); ?>
                             </a>
                         </div>
                         <!-- Success UI (hidden by default) -->
@@ -257,13 +257,13 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                     <img src="<?php echo esc_url(plugins_url('assets/images/success.svg', LINGUATOR_ROOT_FILE)); ?>" alt="Success Icon" />
                                 </div>
                                 <div class="import-success-file">
-                                    <span id="importing-file-label"><?php esc_html_e('Importing:', 'linguator-multilingual-ai-translation'); ?></span>
+                                    <span id="importing-file-label"><?php esc_html_e('Importing:', 'translate-words'); ?></span>
                                     <span id="importing-file-name"></span>
                                 </div>
                                 <div class="lmat-import-success-message">
-                                    <?php esc_html_e('Glossary terms imported successfully', 'linguator-multilingual-ai-translation'); ?>
+                                    <?php esc_html_e('Glossary terms imported successfully', 'translate-words'); ?>
                                 </div>
-                                <button class="lmat-import-close-btn lmat-close-button" type="button"><?php esc_html_e('Close', 'linguator-multilingual-ai-translation'); ?></button>
+                                <button class="lmat-import-close-btn lmat-close-button" type="button"><?php esc_html_e('Close', 'translate-words'); ?></button>
                             </div>
                         </div>
                     </div>
@@ -271,7 +271,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
             </div>
         </div>
 
-        <nav class="lmat-alphabet" aria-label="<?php esc_attr_e('Glossary Alphabet Navigation', 'linguator-multilingual-ai-translation'); ?>">
+        <nav class="lmat-alphabet" aria-label="<?php esc_attr_e('Glossary Alphabet Navigation', 'translate-words'); ?>">
             <?php
             $alphabet = array_merge(['123'], range('A', 'Z'), ['#&à']);
 
@@ -448,7 +448,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                                             data-source-lang="<?php echo esc_attr(sanitize_key($original_language_code)); ?>">
                                                         <?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plugins_url() returns a safe URL. ?>
                                                         <img src="<?php echo esc_url(plugins_url('assets/images/file.svg', LINGUATOR_ROOT_FILE)); ?>" 
-                                                            alt="<?php esc_attr_e('No translation', 'linguator-multilingual-ai-translation'); ?>" />
+                                                            alt="<?php esc_attr_e('No translation', 'translate-words'); ?>" />
                                                     </button>
                                                 </span>
                                             <?php endif; ?>
@@ -461,12 +461,12 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                         <button type="button" class="lmat-edit-btn" 
                                                 data-term="<?php echo esc_attr(sanitize_text_field($term)); ?>"
                                                 data-source-lang="<?php echo esc_attr(sanitize_key($original_language_code)); ?>">
-                                            <?php esc_html_e('Edit', 'linguator-multilingual-ai-translation'); ?>
+                                            <?php esc_html_e('Edit', 'translate-words'); ?>
                                         </button>
                                         <button type="button" class="lmat-delete-btn" 
                                                 data-term="<?php echo esc_attr(sanitize_text_field($term)); ?>"
                                                 data-source-lang="<?php echo esc_attr(sanitize_key($original_language_code)); ?>">
-                                            <?php esc_html_e('Delete', 'linguator-multilingual-ai-translation'); ?>
+                                            <?php esc_html_e('Delete', 'translate-words'); ?>
                                         </button>
                                     </div>
                                 </td>
@@ -483,31 +483,31 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
         <script type="text/template" id="lmat-glossary-edit-row-template">
             <tr class="lmat-glossary-edit-row">
                 <td>
-                    <textarea class="lmat-edit-term" rows="3" placeholder="<?php esc_attr_e('String Translation', 'linguator-multilingual-ai-translation'); ?>"><%= term %></textarea>
+                    <textarea class="lmat-edit-term" rows="3" placeholder="<?php esc_attr_e('String Translation', 'translate-words'); ?>"><%= term %></textarea>
                     <div class="lmat-translation-error"></div>
-                    <textarea class="lmat-edit-desc" rows="4" placeholder="<?php esc_attr_e('Example: The name of the add-on that allows translating strings', 'linguator-multilingual-ai-translation'); ?>"><%= desc %></textarea>
+                    <textarea class="lmat-edit-desc" rows="4" placeholder="<?php esc_attr_e('Example: The name of the add-on that allows translating strings', 'translate-words'); ?>"><%= desc %></textarea>
                 </td>
                 <td>
                     <select class="lmat-edit-type">
-                        <option value="general" <%= type === 'general' ? 'selected' : '' %>><?php esc_html_e('General', 'linguator-multilingual-ai-translation'); ?></option>
-                        <option value="name" <%= type === 'name' ? 'selected' : '' %>><?php esc_html_e('Name', 'linguator-multilingual-ai-translation'); ?></option>
+                        <option value="general" <%= type === 'general' ? 'selected' : '' %>><?php esc_html_e('General', 'translate-words'); ?></option>
+                        <option value="name" <%= type === 'name' ? 'selected' : '' %>><?php esc_html_e('Name', 'translate-words'); ?></option>
                     </select>
                 </td>
                 <% for (var i = 0; i < languages.length; i++) { 
                     if (languages[i].code === source_lang) continue;
                 %>
                     <td colspan="2">
-                        <textarea class="lmat-edit-translation" data-lang="<%= languages[i].code %>" placeholder="<?php esc_attr_e('Custom Translation', 'linguator-multilingual-ai-translation'); ?>" rows="9"><%= translations[languages[i].code] || '' %></textarea>
-                        <div class="lmat-translation-error"><?php esc_html_e('Too long, must be less than 220 characters', 'linguator-multilingual-ai-translation'); ?></div>
+                        <textarea class="lmat-edit-translation" data-lang="<%= languages[i].code %>" placeholder="<?php esc_attr_e('Custom Translation', 'translate-words'); ?>" rows="9"><%= translations[languages[i].code] || '' %></textarea>
+                        <div class="lmat-translation-error"><?php esc_html_e('Too long, must be less than 220 characters', 'translate-words'); ?></div>
                     </td>
                 <% } %>
                 <td colspan="2" class="lmat-actions-cell">
                     <div class="lmat-action-buttons">
                         <button type="button" class="lmat-save-edit-btn button button-primary">
-                            <?php esc_html_e('Save', 'linguator-multilingual-ai-translation'); ?>
+                            <?php esc_html_e('Save', 'translate-words'); ?>
                         </button>
                         <button type="button" class="lmat-cancel-edit-btn">
-                            <?php esc_html_e('Cancel', 'linguator-multilingual-ai-translation'); ?>
+                            <?php esc_html_e('Cancel', 'translate-words'); ?>
                         </button>
                     </div>
                 </td>

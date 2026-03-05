@@ -82,7 +82,7 @@ class Inactive_Option extends Abstract_Option {
 				self::ERROR_CODE,
 				esc_html( sprintf( 
 					// translators: %s is a blog ID.
-					__( 'Linguator is not active on site %s.', 'linguator-multilingual-ai-translation' ),
+					__( 'Linguator is not active on site %s.', 'translate-words' ),
 					(int) get_current_blog_id()
 				) )
 			);

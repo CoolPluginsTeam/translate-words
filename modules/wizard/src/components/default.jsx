@@ -23,7 +23,7 @@ const Default = () => {
     setDefaultLoader(true)
     try {
       if (defaultLanguage === null) {
-        throw new Error(__('Please select a default language', 'linguator-multilingual-ai-translation'))
+        throw new Error(__('Please select a default language', 'translate-words'))
       }
       
       let updatedLanguages = languagesArray;
@@ -112,9 +112,9 @@ const Default = () => {
     <div className='mx-auto p-10 max-w-[600px] min-h-[40vh] bg-white shadow-sm flex flex-col'>
       <div className='flex-grow'>
         <div className='flex-grow'>
-          <h2>{__('Default Language', 'linguator-multilingual-ai-translation')}</h2>
-          <p className='m-0 text-sm/6'>{__('Set your website’s default language here.', 'linguator-multilingual-ai-translation')}</p>
-          <p className='m-0 text-sm/6'>{__('This language will be shown to visitors if their preferred language isn’t available.', 'linguator-multilingual-ai-translation')}</p>
+          <h2>{__('Default Language', 'translate-words')}</h2>
+          <p className='m-0 text-sm/6'>{__('Set your website’s default language here.', 'translate-words')}</p>
+          <p className='m-0 text-sm/6'>{__('This language will be shown to visitors if their preferred language isn’t available.', 'translate-words')}</p>
           <Select
             combobox
             onChange={(value) => setDefaultLanguage(value)}
@@ -130,8 +130,8 @@ const Default = () => {
             by="locale"
           >
             <Select.Button
-              label={__("Choose the language to be assigned", 'linguator-multilingual-ai-translation')}
-              placeholder={__("Select an option", 'linguator-multilingual-ai-translation')}
+              label={__("Choose the language to be assigned", 'translate-words')}
+              placeholder={__("Select an option", 'translate-words')}
               render={() => <RenderedLanguage languageName={defaultLanguage?.name} languageFlag={defaultLanguage?.flag} flagUrl={true} languageLocale={defaultLanguage?.locale} />}
             />
             <Select.Options>
@@ -163,7 +163,7 @@ const Default = () => {
               Loading...
             </SetupContinueButton>
             :
-            <SetupContinueButton SaveSettings={saveDefault} >{__('Continue', 'linguator-multilingual-ai-translation')}</SetupContinueButton>
+            <SetupContinueButton SaveSettings={saveDefault} >{__('Continue', 'translate-words')}</SetupContinueButton>
         }
       </div>
 

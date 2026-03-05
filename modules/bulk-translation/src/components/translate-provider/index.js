@@ -24,10 +24,10 @@ export default (props) => {
             SettingBtnText: "Translate",
             serviceLabel: "Google Translate",
             Docs: "https://docs.coolplugins.net/doc/google-translate-for-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=bulk_translate_google",
-            heading: __("Choose Language", 'linguator-multilingual-ai-translation'),
+            heading: __("Choose Language", 'translate-words'),
             BetaEnabled: false,
             ButtonDisabled: props.googleButtonDisabled,
-            ErrorMessage: props.googleButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.googleButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error.', 'linguator-multilingual-ai-translation')}</div> : <></>,
+            ErrorMessage: props.googleButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.googleButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error.', 'translate-words')}</div> : <></>,
             Logo: <GoogleIcon className="icon-size" />,
             filterHtmlContent: true
         },
@@ -36,11 +36,11 @@ export default (props) => {
             title: "Chrome Built-in AI",
             SettingBtnText: "Translate",
             serviceLabel: "Chrome AI Translator",
-            heading: sprintf(__("Translate Using %s", 'linguator-multilingual-ai-translation'), "Chrome built-in API"),
+            heading: sprintf(__("Translate Using %s", 'translate-words'), "Chrome built-in API"),
             Docs: "https://docs.coolplugins.net/doc/chrome-ai-translation-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=bulk_translate_chrome",
             BetaEnabled: true,
             ButtonDisabled: props.localAiTranslatorButtonDisabled,
-            ErrorMessage: props.localAiTranslatorButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.localAiTranslatorButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error', 'linguator-multilingual-ai-translation')}</div> : <></>,
+            ErrorMessage: props.localAiTranslatorButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.localAiTranslatorButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
             Logo: <ChromeIcon className="icon-size"  />,
             filterHtmlContent: true
         }

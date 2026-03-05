@@ -124,7 +124,7 @@ abstract class Abstract_Screen {
 		);
 
 		wp_add_inline_script( static::get_handle(), $lmat_settings_script, 'before' );
-		wp_set_script_translations( static::get_handle(), 'linguator-multilingual-ai-translation' );
+		wp_set_script_translations( static::get_handle(), 'translate-words' );
 
 		if ( ! empty( $this->block_editor ) ) {
 			$this->block_editor->filter_rest_routes->add_inline_script( static::get_handle() );

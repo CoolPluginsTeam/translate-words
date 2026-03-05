@@ -14,9 +14,9 @@ const StringPopUpHeader = (props) => {
     return (
         <div className="modal-header" key={props.modalRender}>
             <span className="close" onClick={closeModal}>&times;</span>
-            <h2 className="notranslate">{sprintf(__("%sStart Automatic Translation Process", 'linguator-multilingual-ai-translation'), serviceProvideLength > 1 ? 'Step 2 - ' : '')}</h2>
+            <h2 className="notranslate">{sprintf(__("%sStart Automatic Translation Process", 'translate-words'), serviceProvideLength > 1 ? 'Step 2 - ' : '')}</h2>
             <div className="save_btn_cont">
-                <button className="notranslate save_it button button-primary" disabled={props.translatePendingStatus} onClick={props.updatePostData}>{props.translateButtonStatus ? <><span className="updating-text">{__("Updating", 'linguator-multilingual-ai-translation')}<span className="dot" style={{"--i": 0}}></span><span className="dot" style={{"--i": 1}}></span><span className ="dot" style={{"--i": 2}}></span></span></> : __("Update Content", 'linguator-multilingual-ai-translation')}</button>
+                <button className="notranslate save_it button button-primary" disabled={props.translatePendingStatus} onClick={props.updatePostData}>{props.translateButtonStatus ? <><span className="updating-text">{__("Updating", 'translate-words')}<span className="dot" style={{"--i": 0}}></span><span className="dot" style={{"--i": 1}}></span><span className ="dot" style={{"--i": 2}}></span></span></> : __("Update Content", 'translate-words')}</button>
             </div>
         </div>
     );

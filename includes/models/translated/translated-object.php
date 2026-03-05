@@ -601,7 +601,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			);
 
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_insert_terms', __( 'Could not insert the terms.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_insert_terms', __( 'Could not insert the terms.', 'translate-words' ) );
 			}
 		}
 		
@@ -623,7 +623,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			);
 
 			if(is_wp_error($terms)){
-				$errors->add( 'lmat_get_terms_by_slugs', __( 'Could not get the terms by slugs.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_get_terms_by_slugs', __( 'Could not get the terms by slugs.', 'translate-words' ) );
 			}
 		}
 
@@ -671,7 +671,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			);
 
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_insert_term_taxonomies', __( 'Could not insert the term taxonomies.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_insert_term_taxonomies', __( 'Could not insert the term taxonomies.', 'translate-words' ) );
 			}
 		}
 		

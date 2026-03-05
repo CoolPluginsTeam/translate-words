@@ -130,11 +130,11 @@ const LanguageSection = ( { lang, allLanguages } ) => {
                 }
                 window.location.href = currentUrl.toString();
             } else {
-                throw new Error(__( 'Language update did not succeed.', 'linguator-multilingual-ai-translation' ));
+                throw new Error(__( 'Language update did not succeed.', 'translate-words' ));
             }
         } catch ( e ) {
             setUpdating(false);
-            setError( __( 'Failed to update language. Please try again.', 'linguator-multilingual-ai-translation' ) );
+            setError( __( 'Failed to update language. Please try again.', 'translate-words' ) );
         }
     };
 
@@ -189,7 +189,7 @@ const LanguageSection = ( { lang, allLanguages } ) => {
 
     return (
         <>
-            <PanelBody title={ __( 'Language', 'linguator-multilingual-ai-translation' ) } initialOpen >
+            <PanelBody title={ __( 'Language', 'translate-words' ) } initialOpen >
                 <Flex align="center">
                     <FlexItem>
                         { lang?.flag_url ? (
@@ -202,7 +202,7 @@ const LanguageSection = ( { lang, allLanguages } ) => {
                             value={ selectValue }
                             onChange={ handleLanguageChange }
                             disabled={ updating || showConfirmDialog }
-                            help={ updating ? __( 'Updating language...', 'linguator-multilingual-ai-translation' ) : undefined }
+                            help={ updating ? __( 'Updating language...', 'translate-words' ) : undefined }
                             options={ options.map( ( opt ) => ( { label: opt.label, value: opt.value } ) ) }
                         />
                     </FlexItem>
@@ -215,17 +215,17 @@ const LanguageSection = ( { lang, allLanguages } ) => {
             </PanelBody>
             { showConfirmDialog && (
                 <Modal
-                    title={ __( 'Change Language', 'linguator-multilingual-ai-translation' ) }
+                    title={ __( 'Change Language', 'translate-words' ) }
                     onRequestClose={ handleCancelLanguageChange }
                     isDismissible={ true }
                 >
                     <p>
-                        { __( 'Are you sure you want to change the language of this post to', 'linguator-multilingual-ai-translation' ) }
+                        { __( 'Are you sure you want to change the language of this post to', 'translate-words' ) }
                         { ' ' }
                         <strong>{ getSelectedLanguageName() }</strong>?
                     </p>
                     <p>
-                        { __( 'This will update the language of the current post. Any unsaved changes will be lost.', 'linguator-multilingual-ai-translation' ) }
+                        { __( 'This will update the language of the current post. Any unsaved changes will be lost.', 'translate-words' ) }
                     </p>
                     <div style={ { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' } }>
                         <Button
@@ -233,14 +233,14 @@ const LanguageSection = ( { lang, allLanguages } ) => {
                             onClick={ handleCancelLanguageChange }
                             disabled={ updating }
                         >
-                            { __( 'Cancel', 'linguator-multilingual-ai-translation' ) }
+                            { __( 'Cancel', 'translate-words' ) }
                         </Button>
                         <Button
                             variant="primary"
                             onClick={ handleConfirmLanguageChange }
                             disabled={ updating }
                         >
-                            { __( 'Change Language', 'linguator-multilingual-ai-translation' ) }
+                            { __( 'Change Language', 'translate-words' ) }
                         </Button>
                     </div>
                 </Modal>
@@ -288,7 +288,7 @@ const TranslationRow = ( { row } ) => {
             setSaving(false);
         } catch (e) {
             setSaving(false);
-            setError( __( 'Failed to save title. Please try again.', 'linguator-multilingual-ai-translation' ) );
+            setError( __( 'Failed to save title. Please try again.', 'translate-words' ) );
             // Optional: console.error(e);
         }
     }, 2000);
@@ -361,7 +361,7 @@ const TranslationRow = ( { row } ) => {
             });
             window.location.reload();
         } catch (e) {
-            setError( __( 'Failed to link page. Please try again.', 'linguator-multilingual-ai-translation' ) );
+            setError( __( 'Failed to link page. Please try again.', 'translate-words' ) );
         } finally {
             setLinking(false);
         }
@@ -395,7 +395,7 @@ const TranslationRow = ( { row } ) => {
             // Refresh to reflect new translation and show Edit icon
             window.location.reload();
         } catch (e) {
-            setError( __( 'Failed to create page. Please try again.', 'linguator-multilingual-ai-translation' ) );
+            setError( __( 'Failed to create page. Please try again.', 'translate-words' ) );
         } finally {
             setLinking(false);
         }
@@ -413,38 +413,38 @@ const TranslationRow = ( { row } ) => {
                     <TextControl
                         value={ title }
                         onChange={ handleTitleChange }
-                        placeholder={ __( 'title', 'linguator-multilingual-ai-translation' ) }
+                        placeholder={ __( 'title', 'translate-words' ) }
                         readOnly={ !editable }
                         disabled={ !editable }
                         help={
                             editable
                                 ? ( saving
-                                    ? __( 'Saving…', 'linguator-multilingual-ai-translation' )
-                                    : __( 'Type title to save translation.', 'linguator-multilingual-ai-translation' )
+                                    ? __( 'Saving…', 'translate-words' )
+                                    : __( 'Type title to save translation.', 'translate-words' )
                                   )
-                                : __( 'Modify title via Edit.', 'linguator-multilingual-ai-translation' )
+                                : __( 'Modify title via Edit.', 'translate-words' )
                         }
                     />
                 </FlexItem>
                 <FlexItem style={{paddingTop:'14px'}}>
                     { hasEdit ? (
-                        <a href={ links.edit_link } aria-label={ __( 'Edit translation', 'linguator-multilingual-ai-translation' ) } style={ { marginLeft: 8,height: "100%",width: "100%",display: "flex",alignItems: "center",justifyContent: "center" } }>
+                        <a href={ links.edit_link } aria-label={ __( 'Edit translation', 'translate-words' ) } style={ { marginLeft: 8,height: "100%",width: "100%",display: "flex",alignItems: "center",justifyContent: "center" } }>
                             <SquarePen size={20} />
                         </a>
                     ) : null }
                     { ! hasEdit && (
                         selectedSuggestion ? (
-                            <button onClick={ linkSelected } aria-label={ __( 'Link existing page', 'linguator-multilingual-ai-translation' ) } style={ { marginLeft: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer' } }>
+                            <button onClick={ linkSelected } aria-label={ __( 'Link existing page', 'translate-words' ) } style={ { marginLeft: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer' } }>
                                 <CirclePlus size={20} />
                             </button>
                         ) : (
                             hasAdd ? (
                                 (title || '').trim().length > 0 ? (
-                                    <button onClick={ createFromTyped } aria-label={ __( 'Create translation from typed title', 'linguator-multilingual-ai-translation' ) } style={ { marginLeft: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer' } }>
+                                    <button onClick={ createFromTyped } aria-label={ __( 'Create translation from typed title', 'translate-words' ) } style={ { marginLeft: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer' } }>
                                         <CirclePlus size={20} />
                                     </button>
                                 ) : (
-                                    <a href={ links.add_link } aria-label={ __( 'Add translation', 'linguator-multilingual-ai-translation' ) } style={ { marginLeft: 8,height: "100%",width: "100%",display: "flex",alignItems: "center",justifyContent: "center" } }>
+                                    <a href={ links.add_link } aria-label={ __( 'Add translation', 'translate-words' ) } style={ { marginLeft: 8,height: "100%",width: "100%",display: "flex",alignItems: "center",justifyContent: "center" } }>
                                         <CirclePlus size={20} />
                                     </a>
                                 )
@@ -478,7 +478,7 @@ const TranslationRow = ( { row } ) => {
 const TranslationsSection = ( { translations } ) => {
     const rows = Object.values( translations );
     return (
-        <PanelBody title={ __( 'Translations', 'linguator-multilingual-ai-translation' ) } initialOpen >
+        <PanelBody title={ __( 'Translations', 'translate-words' ) } initialOpen >
             { rows.map( ( row ) => (
                 <TranslationRow key={ row.lang.slug } row={ row } />
             ) ) }
@@ -494,9 +494,9 @@ const Sidebar = () => {
     return (
         <>
             <PluginSidebarMoreMenuItem target={ SIDEBAR_NAME }>
-                { __( 'Linguator', 'linguator-multilingual-ai-translation' ) }
+                { __( 'Linguator', 'translate-words' ) }
             </PluginSidebarMoreMenuItem>
-            <PluginSidebar name={ SIDEBAR_NAME } title={ __( 'Linguator', 'linguator-multilingual-ai-translation' ) }>
+            <PluginSidebar name={ SIDEBAR_NAME } title={ __( 'Linguator', 'translate-words' ) }>
                 <LanguageSection lang={ lang } allLanguages={ translations } />
                 <TranslationsSection translations={ translations } />
             </PluginSidebar>

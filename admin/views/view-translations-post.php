@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 ?>
-<p><strong><?php esc_html_e( 'Translations', 'linguator-multilingual-ai-translation' ); ?></strong></p>
+<p><strong><?php esc_html_e( 'Translations', 'translate-words' ); ?></strong></p>
 <table>
 	<?php
 	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
@@ -73,7 +73,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span lang="%5$s" dir="%6$s"><input type="text" class="tr_lang" id="tr_lang_%1$s" value="%4$s" /></span>',
 					esc_attr( $language->slug ),
 					/* translators: accessibility text */
-					esc_html__( 'Translation', 'linguator-multilingual-ai-translation' ),
+					esc_html__( 'Translation', 'translate-words' ),
 					( empty( $translation ) ? '0' : esc_attr( (string) $translation->ID ) ),
 					( empty( $translation ) ? '' : esc_attr( $translation->post_title ) ),
 					esc_attr( $language->get_locale( 'display' ) ),

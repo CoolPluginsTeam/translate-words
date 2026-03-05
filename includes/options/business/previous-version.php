@@ -39,7 +39,7 @@ class Previous_Version extends Version {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( "Linguator's previous version.", 'linguator-multilingual-ai-translation' );
+		return __( "Linguator's previous version.", 'translate-words' );
 	}
 
 	/**
@@ -53,7 +53,7 @@ class Previous_Version extends Version {
 	 */
 	public function get_site_health_info( Options $options ): array { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		if ( ! $this->get() ) {
-			return $this->format_single_value_for_site_health_info( __( 'This is the first activation', 'linguator-multilingual-ai-translation' ) );
+			return $this->format_single_value_for_site_health_info( __( 'This is the first activation', 'translate-words' ) );
 		}
 
 		return parent::get_site_health_info( $options );

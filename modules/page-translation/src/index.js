@@ -51,18 +51,18 @@ const StringModalBodyNotice = () => {
         <p>
           {__(
             "For accurate custom field translations, please disable the Custom Fields synchronization in ",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           )}
           <a
             href={`${lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            {__("Linguator settings", "linguator-multilingual-ai-translation")}
+            {__("Linguator settings", "translate-words")}
           </a>
           {__(
             ". This may affect linked posts or pages.",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           )}
         </p>
       ),
@@ -85,7 +85,7 @@ const StringModalBodyNotice = () => {
           <p>
             {__(
               "No block rules were found. It appears that the block-rules.JSON file could not be fetched, possibly because it is blocked by your server settings. Please check your server configuration to resolve this issue.",
-              "linguator-multilingual-ai-translation"
+              "translate-words"
             )}
           </p>
         ),
@@ -105,7 +105,7 @@ const StringModalBodyNotice = () => {
           <p>
             {__(
               "This page may contain Gutenberg block content. After the translation, please review the updated content before finalizing the page update.",
-              "linguator-multilingual-ai-translation"
+              "translate-words"
             )}
           </p>
         ),
@@ -121,7 +121,7 @@ const StringModalBodyNotice = () => {
         <p>
           {__(
             "WPBakery Page Builder content will be translated. Please save the page after translation to apply changes.",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           )}
         </p>
       ),
@@ -230,7 +230,7 @@ const App = () => {
         metaFieldBtn.disabled = true;
         metaFieldBtn.value = __(
           "Already Translated",
-          "linguator-multilingual-ai-translation"
+          "translate-words"
         );
       }
     }
@@ -285,7 +285,7 @@ const createMessagePopup = () => {
         <p>${wp.i18n.sprintf(
           wp.i18n.__(
             "Would you like to duplicate your original %s content and have it automatically translated into %s?",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           ),
           postType,
           targetLangName
@@ -293,11 +293,11 @@ const createMessagePopup = () => {
         <div>
           <div data-value="yes">${wp.i18n.__(
             "Yes",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           )}</div>
           <div data-value="no">${wp.i18n.__(
             "No",
-            "linguator-multilingual-ai-translation"
+            "translate-words"
           )}</div>
         </div>
       </div>

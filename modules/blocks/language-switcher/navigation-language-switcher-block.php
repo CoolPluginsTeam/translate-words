@@ -163,7 +163,7 @@ class LMAT_Navigation_Language_Switcher_Block extends LMAT_Abstract_Language_Swi
 			'_lmat_menu_item',
 			array(
 				'object_subtype' => 'nav_menu_item',
-				'description'    => __( 'Language switcher settings', 'linguator-multilingual-ai-translation' ),
+				'description'    => __( 'Language switcher settings', 'translate-words' ),
 				'single'         => true,
 				'show_in_rest'   => array(
 					'schema' => array(
@@ -250,7 +250,7 @@ class LMAT_Navigation_Language_Switcher_Block extends LMAT_Abstract_Language_Swi
 					'aria-label',
 					str_replace(
 						static::PLACEHOLDER,
-						__( 'Languages', 'linguator-multilingual-ai-translation' ),
+						__( 'Languages', 'translate-words' ),
 						(string) $content_tags->get_attribute( 'aria-label' )
 					)
 				);

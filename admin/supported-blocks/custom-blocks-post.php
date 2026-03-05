@@ -116,19 +116,19 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 		 */
 		public function register_custom_post_type() {
 		$labels = array(
-			'name'               => _x( 'Automatic Translations', 'post type general name', 'linguator-multilingual-ai-translation' ),
-			'singular_name'      => _x( 'Automatic Translation', 'post type singular name', 'linguator-multilingual-ai-translation' ),
-			'menu_name'          => _x( 'Automatic Translations', 'admin menu', 'linguator-multilingual-ai-translation' ),
-			'name_admin_bar'     => _x( 'Automatic Translation', 'add new on admin bar', 'linguator-multilingual-ai-translation' ),
-			'add_new'            => _x( 'Add New', 'Automatic Translation', 'linguator-multilingual-ai-translation' ),
-			'add_new_item'       => __( 'Add New Automatic Translation', 'linguator-multilingual-ai-translation' ),
-			'new_item'           => __( 'New Automatic Translation', 'linguator-multilingual-ai-translation' ),
-			'edit_item'          => __( 'Edit Automatic Translation', 'linguator-multilingual-ai-translation' ),
-			'view_item'          => __( 'View Automatic Translation', 'linguator-multilingual-ai-translation' ),
-			'all_items'          => __( 'Automatic Translations', 'linguator-multilingual-ai-translation' ),
-			'search_items'       => __( 'Search Automatic Translations', 'linguator-multilingual-ai-translation' ),
-			'not_found'          => __( 'No Automatic Translations found.', 'linguator-multilingual-ai-translation' ),
-			'not_found_in_trash' => __( 'No Automatic Translations found in Trash.', 'linguator-multilingual-ai-translation' ),
+			'name'               => _x( 'Automatic Translations', 'post type general name', 'translate-words' ),
+			'singular_name'      => _x( 'Automatic Translation', 'post type singular name', 'translate-words' ),
+			'menu_name'          => _x( 'Automatic Translations', 'admin menu', 'translate-words' ),
+			'name_admin_bar'     => _x( 'Automatic Translation', 'add new on admin bar', 'translate-words' ),
+			'add_new'            => _x( 'Add New', 'Automatic Translation', 'translate-words' ),
+			'add_new_item'       => __( 'Add New Automatic Translation', 'translate-words' ),
+			'new_item'           => __( 'New Automatic Translation', 'translate-words' ),
+			'edit_item'          => __( 'Edit Automatic Translation', 'translate-words' ),
+			'view_item'          => __( 'View Automatic Translation', 'translate-words' ),
+			'all_items'          => __( 'Automatic Translations', 'translate-words' ),
+			'search_items'       => __( 'Search Automatic Translations', 'translate-words' ),
+			'not_found'          => __( 'No Automatic Translations found.', 'translate-words' ),
+			'not_found_in_trash' => __( 'No Automatic Translations found in Trash.', 'translate-words' ),
 			);
 
 			$args = array(
@@ -163,12 +163,12 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 
 		public function get_custom_blocks_content() {
 			if ( ! check_ajax_referer( 'lmat_block_update_nonce', 'lmat_nonce', false ) ) {
-				wp_send_json_error( __( 'Invalid security token sent.', 'linguator-multilingual-ai-translation' ) );
+				wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
 				wp_die( '0', 400 );
 			}
 
 			if(!current_user_can('edit_posts')){
-				wp_send_json_error( __( 'Unauthorized', 'linguator-multilingual-ai-translation' ), 403 );
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
 				wp_die( '0', 403 );
 			}
 
@@ -177,19 +177,19 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 			if ( $custom_content && is_string( $custom_content ) && ! empty( trim( $custom_content ) ) ) {
 				return wp_send_json_success( array( 'block_data' => $custom_content ) );
 			} else {
-				return wp_send_json_success( array( 'message' => __( 'No custom blocks found.', 'linguator-multilingual-ai-translation' ) ) );
+				return wp_send_json_success( array( 'message' => __( 'No custom blocks found.', 'translate-words' ) ) );
 			}
 			exit();
 		}
 		
 		public function update_custom_blocks_content() {
 			if ( ! check_ajax_referer( 'lmat_block_update_nonce', 'lmat_nonce', false ) ) {
-				wp_send_json_error( __( 'Invalid security token sent.', 'linguator-multilingual-ai-translation' ) );
+				wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
 				wp_die( '0', 400 );
 			}
 
 			if(!current_user_can('edit_posts')){
-				wp_send_json_error( __( 'Unauthorized', 'linguator-multilingual-ai-translation' ), 403 );
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
 				wp_die( '0', 403 );
 			}
 
@@ -197,7 +197,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 		$json = isset($_POST['save_block_data']) ? sanitize_textarea_field(wp_unslash($_POST['save_block_data'])) : false;
 			$updated_blocks_data = json_decode($json, true);
 			if(json_last_error() !== JSON_ERROR_NONE){ 
-				wp_send_json_error( __( 'Invalid JSON', 'linguator-multilingual-ai-translation' ) );
+				wp_send_json_error( __( 'Invalid JSON', 'translate-words' ) );
 				wp_die( '0', 400 );
 			}
 
@@ -205,7 +205,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 				Supported_Blocks::get_instance()->update_custom_blocks_content($updated_blocks_data);
 			}
 
-			return wp_send_json_success( array( 'message' => __( 'Linguator Multilingual AI Translation: Custom Blocks data updated successfully', 'linguator-multilingual-ai-translation' ) ) );
+			return wp_send_json_success( array( 'message' => __( 'Linguator Multilingual AI Translation: Custom Blocks data updated successfully', 'translate-words' ) ) );
 			exit();
 		}
 	}

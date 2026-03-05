@@ -65,7 +65,7 @@ class LMAT_Usable {
 	public static function php_version_notice() {
 		// Load translations for plugin text.
 		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
-		load_plugin_textdomain( 'linguator-multilingual-ai-translation' );
+		load_plugin_textdomain( 'translate-words' );
 
 		printf(
 			'<div class="error"><p>%s</p></div>',
@@ -73,7 +73,7 @@ class LMAT_Usable {
 				/*
 				* translators: 1: Plugin name 2: Current PHP version 3: Required PHP version
 				*/
-				esc_html__( '%1$s has deactivated itself because you are using an old version of PHP. You are using using PHP %2$s. %1$s requires PHP %3$s.', 'linguator-multilingual-ai-translation' ),
+				esc_html__( '%1$s has deactivated itself because you are using an old version of PHP. You are using using PHP %2$s. %1$s requires PHP %3$s.', 'translate-words' ),
 				esc_html( static::get_plugin_name() ),
 				esc_html( LMAT_get_constant( 'PHP_VERSION', '' ) ),
 				esc_html( static::get_min_php_version() )
@@ -92,11 +92,11 @@ class LMAT_Usable {
 		?>
 		<div class="notice notice-error">
 			<p>
-				<strong><?php esc_html_e( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'linguator-multilingual-ai-translation' ); ?></strong>
+				<strong><?php esc_html_e( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'translate-words' ); ?></strong>
 			</p>
 			<p>
 				<?php 
-				echo esc_html__( 'Linguator cannot run alongside Polylang. Please deactivate Polylang first.', 'linguator-multilingual-ai-translation' );
+				echo esc_html__( 'Linguator cannot run alongside Polylang. Please deactivate Polylang first.', 'translate-words' );
 				?>
 			</p>
 		</div>
@@ -114,7 +114,7 @@ class LMAT_Usable {
 
 		// Load translations for plugin text.
 		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
-		load_plugin_textdomain( 'linguator-multilingual-ai-translation' );
+		load_plugin_textdomain( 'translate-words' );
 
 		printf(
 			'<div class="error"><p>%s</p></div>',
@@ -122,7 +122,7 @@ class LMAT_Usable {
 				/*
 				* translators: 1: Plugin name 2: Current WordPress version 3: Required WordPress version
 				*/
-				esc_html__( '%1$s has deactivated itself because you are using an old version of WordPress. You are using using WordPress %2$s. %1$s requires at least WordPress %3$s.', 'linguator-multilingual-ai-translation' ),
+				esc_html__( '%1$s has deactivated itself because you are using an old version of WordPress. You are using using WordPress %2$s. %1$s requires at least WordPress %3$s.', 'translate-words' ),
 				esc_html( static::get_plugin_name() ),
 				esc_html( $wp_version ),
 				esc_html( static::get_min_wp_version() )

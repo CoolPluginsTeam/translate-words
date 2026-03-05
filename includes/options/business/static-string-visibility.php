@@ -77,6 +77,6 @@ class Static_Strings_Visibility extends Abstract_Option {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'Show or hide the Static Strings tab in the admin menu.', 'linguator-multilingual-ai-translation' );
+		return __( 'Show or hide the Static Strings tab in the admin menu.', 'translate-words' );
 	}
 }

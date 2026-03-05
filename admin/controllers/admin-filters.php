@@ -130,7 +130,7 @@ class LMAT_Admin_Filters extends LMAT_Filters {
 		$page_for_privacy_policy = get_option( 'wp_page_for_privacy_policy' );
 
 		if ( $page_for_privacy_policy && in_array( $post->ID, $this->model->post->get_translations( $page_for_privacy_policy ) ) ) {
-			$post_states['page_for_privacy_policy'] = __( 'Privacy Policy Page', 'linguator-multilingual-ai-translation' );
+			$post_states['page_for_privacy_policy'] = __( 'Privacy Policy Page', 'translate-words' );
 		}
 
 		return $post_states;

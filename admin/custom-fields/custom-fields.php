@@ -50,7 +50,7 @@ if(!class_exists('Custom_Fields')) {
                     'save_button_handler' => 'lmat_update_custom_fields_content',
                     'save_button_nonce' => wp_create_nonce('lmat_save_custom_fields'),
                     'save_button_enabled'=>true,
-                    'save_button_text'=>__('Save Fields', 'linguator-multilingual-ai-translation'),
+                    'save_button_text'=>__('Save Fields', 'translate-words'),
                     'save_button_class'=>'lmat-save-custom-fields',
                 ) );
 				
@@ -94,29 +94,29 @@ if(!class_exists('Custom_Fields')) {
                 $s_no                        = 1;
                 ?>
                 <div class="lmat-custom-data-table-wrapper lmat-custom-fields">
-                    <h3><?php echo esc_html__('Custom Fields Translation Settings', 'linguator-multilingual-ai-translation'); ?>
+                    <h3><?php echo esc_html__('Custom Fields Translation Settings', 'translate-words'); ?>
                     <br>
                     <p><?php 
 						// translators: %s: Linguator.
-						printf( esc_html__( 'Select which custom fields will be translated by %s.', 'linguator-multilingual-ai-translation' ), 'Linguator' ); 
+						printf( esc_html__( 'Select which custom fields will be translated by %s.', 'translate-words' ), 'Linguator' ); 
 					?></p>
                     </h3>
-                    <button class="button button-primary lmat-save-custom-fields"><?php esc_html_e( 'Save Fields', 'linguator-multilingual-ai-translation' ); ?></button>
+                    <button class="button button-primary lmat-save-custom-fields"><?php esc_html_e( 'Save Fields', 'translate-words' ); ?></button>
                     <div class="lmat-custom-data-table-filters">
                         <div class="lmat-filter-tab" data-column="3" data-default="all">
-                            <label for="lmat-fields-filter"><?php esc_html_e( 'Show Fields:', 'linguator-multilingual-ai-translation' ); ?></label>
+                            <label for="lmat-fields-filter"><?php esc_html_e( 'Show Fields:', 'translate-words' ); ?></label>
                             <select id="lmat-fields-filter" name="lmat_fields_filter">
-                                <option value="all"><?php esc_html_e( 'All', 'linguator-multilingual-ai-translation' ); ?></option>
-                                <option value="supported"><?php esc_html_e( 'Translatable', 'linguator-multilingual-ai-translation' ); ?></option>
-                                <option value="unsupported"><?php esc_html_e( 'Non-Translatable', 'linguator-multilingual-ai-translation' ); ?></option>
+                                <option value="all"><?php esc_html_e( 'All', 'translate-words' ); ?></option>
+                                <option value="supported"><?php esc_html_e( 'Translatable', 'translate-words' ); ?></option>
+                                <option value="unsupported"><?php esc_html_e( 'Non-Translatable', 'translate-words' ); ?></option>
                             </select>
                         </div>
                         <div class="lmat-filter-tab" data-column="2" data-default="all">
-                            <label for="lmat-fields-filter"><?php esc_html_e( 'Type:', 'linguator-multilingual-ai-translation' ); ?></label>
+                            <label for="lmat-fields-filter"><?php esc_html_e( 'Type:', 'translate-words' ); ?></label>
                             <select id="lmat-fields-value-type-filter" name="lmat_fields_value_type_filter">
-                                <option value="all"><?php esc_html_e( 'All', 'linguator-multilingual-ai-translation' ); ?></option>
-                                <option value="string"><?php esc_html_e( 'String', 'linguator-multilingual-ai-translation' ); ?></option>
-                                <option value="array"><?php esc_html_e( 'Array', 'linguator-multilingual-ai-translation' ); ?></option>
+                                <option value="all"><?php esc_html_e( 'All', 'translate-words' ); ?></option>
+                                <option value="string"><?php esc_html_e( 'String', 'translate-words' ); ?></option>
+                                <option value="array"><?php esc_html_e( 'Array', 'translate-words' ); ?></option>
                             </select>
                         </div>
                     </div>
@@ -125,11 +125,11 @@ if(!class_exists('Custom_Fields')) {
                             <table class="lmat-custom-data-table-table" id="lmat-custom-datatable">
                                 <thead>
                                     <tr>
-                                        <th><?php esc_html_e( 'Sr.No', 'linguator-multilingual-ai-translation' ); ?></th>
-                                        <th><?php esc_html_e( 'Field Name', 'linguator-multilingual-ai-translation' ); ?></th>
-                                        <th><?php esc_html_e( 'Type', 'linguator-multilingual-ai-translation' ); ?></th>
-                                        <th><?php esc_html_e( 'Status', 'linguator-multilingual-ai-translation' ); ?></th>
-                                        <th align="center"><?php esc_html_e( 'Translate', 'linguator-multilingual-ai-translation' ); ?></th>
+                                        <th><?php esc_html_e( 'Sr.No', 'translate-words' ); ?></th>
+                                        <th><?php esc_html_e( 'Field Name', 'translate-words' ); ?></th>
+                                        <th><?php esc_html_e( 'Type', 'translate-words' ); ?></th>
+                                        <th><?php esc_html_e( 'Status', 'translate-words' ); ?></th>
+                                        <th align="center"><?php esc_html_e( 'Translate', 'translate-words' ); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -166,12 +166,12 @@ if(!class_exists('Custom_Fields')) {
 
         public function update_custom_fields_content(){
             if ( ! check_ajax_referer( 'lmat_save_custom_fields', 'lmat_nonce', false ) ) {
-                wp_send_json_error( __( 'Invalid security token sent.', 'linguator-multilingual-ai-translation' ) );
+                wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
                 wp_die( '0', 400 );
             }
 
             if(!current_user_can('edit_posts')){
-                wp_send_json_error( __( 'Unauthorized', 'linguator-multilingual-ai-translation' ), 403 );
+                wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
                 wp_die( '0', 403 );
             }
             
@@ -182,14 +182,14 @@ if(!class_exists('Custom_Fields')) {
 			$existing_fields=get_option('lmat_allowed_custom_fields', false);
 
 			if(json_last_error() !== JSON_ERROR_NONE){ 
-                wp_send_json_error( __( 'Invalid JSON', 'linguator-multilingual-ai-translation' ) );
+                wp_send_json_error( __( 'Invalid JSON', 'translate-words' ) );
                 wp_die( '0', 400 );
             }
 			
 			$allowed_fields=self::get_custom_fields_data();
 
 			if(!$allowed_fields || !is_array($allowed_fields)){
-				wp_send_json_error( __( 'Invalid allowed fields', 'linguator-multilingual-ai-translation' ) );
+				wp_send_json_error( __( 'Invalid allowed fields', 'translate-words' ) );
 				wp_die( '0', 400 );
 			}
 
@@ -218,7 +218,7 @@ if(!class_exists('Custom_Fields')) {
 			}
 
 			if(count($sanitize_fields) < 1){
-				wp_send_json_success(array( 'message' => __( 'No changes detected. All selected custom fields are already up to date.', 'linguator-multilingual-ai-translation' ) ));
+				wp_send_json_success(array( 'message' => __( 'No changes detected. All selected custom fields are already up to date.', 'translate-words' ) ));
 				exit;
 			}
 
@@ -227,12 +227,12 @@ if(!class_exists('Custom_Fields')) {
 			$save_settings=get_option('lmat_allowed_custom_fields', false);
 
 			if ( ! $save_settings || ! is_array( $save_settings ) || count( $save_settings ) < 1 ) {
-				wp_send_json_success( array( 'message' => __( 'No custom fields selected. Autopoly cannot translate any fields.', 'linguator-multilingual-ai-translation' ) ) );
+				wp_send_json_success( array( 'message' => __( 'No custom fields selected. Autopoly cannot translate any fields.', 'translate-words' ) ) );
 				exit;
 			}
 
             wp_send_json_success( array(
-                'message' => __( 'Custom fields translation settings have been updated successfully. Your selected fields will now be translated automatically.', 'linguator-multilingual-ai-translation' ),
+                'message' => __( 'Custom fields translation settings have been updated successfully. Your selected fields will now be translated automatically.', 'translate-words' ),
                 'updated_fields' => $sanitize_fields
             ) );
 

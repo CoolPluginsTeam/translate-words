@@ -173,8 +173,8 @@ class LMAT_Admin extends LMAT_Admin_Base {
 	 * @return string[] Modified list of links.
 	 */
 	public function plugin_action_links( $links ) {
-		array_unshift( $links, '<a href="admin.php?page=lmat_settings">' . __( 'Settings', 'linguator-multilingual-ai-translation' ) . '</a>' );
-		array_unshift( $links, '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=plugins_list" target="_blank">' . __( 'Learn More', 'linguator-multilingual-ai-translation' ) . '</a>' );
+		array_unshift( $links, '<a href="admin.php?page=lmat_settings">' . __( 'Settings', 'translate-words' ) . '</a>' );
+		array_unshift( $links, '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=plugins_list" target="_blank">' . __( 'Learn More', 'translate-words' ) . '</a>' );
 		return $links;
 	}
 
