@@ -1,13 +1,13 @@
 === Linguator AI – Auto Translate & Create Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
-Tags: translation, multilingual, languages, ai translation, polylang fork 
+Tags: translation, multilingual, languages, ai translation
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 2.0.6
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Stable tag: 2.0.7
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Translate your WordPress website into multiple languages with AI. Linguator makes creating multilingual sites simple, fast, and SEO-friendly.
 
@@ -68,9 +68,11 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 
 == Credits ==
 
-This plugin is a derivative work and a fork of [Polylang Pro](https://polylang.pro/) by [WP SYNTEX](https://wordpress.org/plugins/polylang/). 
+This plugin is a derivative work and a fork of the free version of  [Polylang](https://wordpress.org/plugins/polylang/) by WP SYNTEX.
 
-Linguator AI includes substantial code from Polylang Pro and is distributed under the terms of the GNU General Public License, version 3 (GPLv3). We are grateful to the original authors, Frédéric Demarle and the WP SYNTEX team, for their foundational work in the WordPress multilingual space.
+While the core of this plugin is a fork of the free version, it incorporates the Abstract_Screen class structure originally found in the WP_Syntex\Polylang_Pro\Editors\Screens namespace of Polylang Pro. This architecture has been refactored into the Linguator\Modules\Editors\Screens namespace to ensure a unique environment, maintain compatibility, and prevent naming collisions with the original plugin.
+
+This plugin is distributed under the terms of the GNU General Public License, version 3 (GPLv3). We are grateful to the original authors, Frédéric Demarle and the WP SYNTEX team, for their foundational work in the WordPress multilingual space.
 
 **Use of 3rd Party Services:** This plugin connects to the Cool Plugins API to display information about related plugins inside the dashboard. It also offers optional usage tracking and optional feedback submission on deactivation. Data is sent only after explicit user consent. No hidden tracking is performed, and no frontend visitor or site user data is collected. For more details, please review our [Data Usage Policy](https://my.coolplugins.net/terms/usage-tracking/), [TOS](https://my.coolplugins.net/terms/), and [Privacy Policy](https://my.coolplugins.net/terms/privacy-policy/).
 
@@ -156,6 +158,12 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
 > The current functionality will remain available until around **31st December 2026**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.0.7 | 5 March 2026 =
+* Added proper attribution indicating that this plugin is a fork of the free Polylang plugin.
+* Added documentation reference for the Pro plugin in the credits section. 
+* Updated the readme to include the original source and credit all original authors.
+* Corrected the license information in the header and readme file.
 
 = Version 2.0.6 | 3 February 2026 =
 * Added translation for WPBakery Page Builder plugin.

@@ -3,22 +3,26 @@
  * Plugin Name:       Linguator AI – Auto Translate & Create Multilingual Sites
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Auto Translate & Create Multilingual Sites.
- * Version:           2.0.6
+ * Version:           2.0.7
  * Requires PHP:      7.2
  * Author:            Cool Plugins
  * Author URI:        https://coolplugins.net/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=plugins_list
  * Text Domain:       linguator-multilingual-ai-translation
- * License:           GPL-3.0-or-later
+ * License:           GPL v3 or later
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.txt
  *
  * --- CREDITS & COPYRIGHT NOTICE ---
- * This plugin is a derivative work (fork) of Polylang Pro, 
- * originally developed by WP SYNTEX (https://polylang.pro).
+ * This plugin is a derivative work (fork) of the free version of Polylang, 
+ * originally developed by WP SYNTEX (https://wordpress.org/plugins/polylang).
  * Original Copyright 2011-2019 Frédéric Demarle
  * Original Copyright 2019-2026 WP SYNTEX
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 or later.
+ *  * * NOTE: While this is a fork of the free version, it incorporates the 
+ * 'Abstract_Screen' class structure originally from the 
+ * 'WP_Syntex\Polylang_Pro\Editors\Screens' namespace. This has been 
+ * refactored into the 'Linguator\Modules\Editors\Screens' namespace 
+ * to ensure a unique environment and prevent naming collisions.
  * ----------------------------------
  */
 
@@ -35,7 +39,7 @@ use Linguator\Install\LMAT_Usable;
 
 // Linguator constants - wrapped in checks to prevent redeclaration
 if ( ! defined( 'LINGUATOR_VERSION' ) ) {
-	define( 'LINGUATOR_VERSION', '2.0.6' );
+	define( 'LINGUATOR_VERSION', '2.0.7' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
 	define( 'LMAT_MIN_WP_VERSION', '6.8' );
