@@ -161,9 +161,8 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = Version 2.0.7 | 5 March 2026 =
 * Added proper attribution indicating that this plugin is a fork of the free Polylang plugin.
-* Added documentation reference for the Pro plugin in the credits section. 
-* Updated the readme to include the original source and credit all original authors.
 * Corrected the license information in the header and readme file.
+* Minor textual changes.
 
 = Version 2.0.6 | 3 February 2026 =
 * Added translation for WPBakery Page Builder plugin.
