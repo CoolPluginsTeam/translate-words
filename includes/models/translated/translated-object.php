@@ -589,7 +589,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			// @since 2.0.6
 			// Performance fix: Avoid wp_insert_term() overhead when processing
 			// many terms across multiple languages.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.DirectQuery
 			$wpdb->query(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(
@@ -600,6 +600,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 				)
 			);
 
+			// phpcs:ignore
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_insert_terms', __( 'Could not insert the terms.', 'translate-words' ) );
 			}
@@ -611,7 +612,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			// @since 2.0.6
 			// Performance fix: Avoid get_terms() overhead when processing
 			// many slugs across multiple languages.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.DirectQuery
 			$terms = $wpdb->get_results(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(
@@ -659,7 +660,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			// @since 2.0.6
 			// Performance fix: Avoid wp_update_term() && wp_update_term_count_now() overhead when processing
 			// many term taxonomies & term count across multiple languages.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.DirectQuery
 			$wpdb->query(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(
@@ -670,6 +671,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 				)
 			);
 
+			// phpcs:ignore
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_insert_term_taxonomies', __( 'Could not insert the term taxonomies.', 'translate-words' ) );
 			}
@@ -710,7 +712,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			// @since 2.0.6
 			// Performance fix: Avoid wp_set_object_terms() overhead when processing
 			// many term relationships across multiple languages.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(

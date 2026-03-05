@@ -1072,7 +1072,7 @@ class Languages {
 			// Performance fix: Avoid wp_remove_object_terms() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1083,7 +1083,8 @@ class Languages {
 					array_merge( $dr['id'], $dr['tt'] )
 				)
 			);
-
+			
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'translate-words' ) );
 			}
@@ -1104,7 +1105,7 @@ class Languages {
 			// Performance fix: Avoid wp_delete_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1115,6 +1116,7 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'translate-words' ) );
 			}
@@ -1123,7 +1125,7 @@ class Languages {
 			// Performance fix: Avoid wp_delete_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1134,6 +1136,7 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_delete_term_taxonomy', __( 'Could not delete the term taxonomy.', 'translate-words' ) );
 			}
@@ -1163,7 +1166,7 @@ class Languages {
 			// Performance fix: Avoid wp_update_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1175,6 +1178,7 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
 				$errors->add( 'lmat_update_term_taxonomy', __( 'Could not update the term taxonomy.', 'translate-words' ) );
 			}

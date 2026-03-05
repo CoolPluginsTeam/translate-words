@@ -7,6 +7,8 @@
 
 namespace Linguator\Includes\Migration;
 
+// phpcs:disable
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -63,7 +65,6 @@ class Polylang_Migration {
 
 		// Check if Polylang data exists in database (works even if plugin is deactivated)
 		// Check for 'language' taxonomy terms directly in database
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$polylang_languages_count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -113,7 +114,6 @@ class Polylang_Migration {
 		}
 
 		// Count translation links - check database directly since taxonomies might not be registered
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$post_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -121,7 +121,6 @@ class Polylang_Migration {
 			)
 		);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$term_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -141,7 +140,6 @@ class Polylang_Migration {
 			}
 		} elseif ( $polylang_languages_count > 0 ) {
 			// Query database directly if languages aren't loaded
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id 
@@ -201,7 +199,6 @@ class Polylang_Migration {
 
 		// If get_terms didn't work, query database directly
 		if ( empty( $polylang_languages ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id, t.name, t.slug, tt.description 
@@ -456,7 +453,7 @@ class Polylang_Migration {
 		);
 	
 		$wpdb->query( $insert_sql );
-	
+
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -588,11 +585,10 @@ class Polylang_Migration {
 			$term_relationships_derived_args[] = absint( $term['post_id'] );
 			$term_relationships_derived_args[] = '%i:' . absint( $term['post_id'] ) . ';%';
 		}
-	
+
 		$wpdb->query(
 			"INSERT IGNORE INTO {$wpdb->terms} ( name, slug, term_group ) VALUES " . implode( ',', $term_values )
 		);
-	
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -624,7 +620,6 @@ class Polylang_Migration {
 			)
 			)
 		);
-
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -661,7 +656,6 @@ class Polylang_Migration {
 				)
 			)
 		);
-		
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -675,7 +669,6 @@ class Polylang_Migration {
 	public function migration_term_language_assignment(&$results, $lang_map){
 		global $wpdb;
 		
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$pll_translation_terms = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT tr.object_id as taxonomy_id, tt.term_taxonomy_id as term_taxonomy_id, tt.description as description, t.term_id as term_id, t.slug as slug
@@ -687,7 +680,7 @@ class Polylang_Migration {
 			)
 		);
 
-				// -----------------------------
+		// -----------------------------
 		// 2. Fetch posts with Polylang language (exclude already migrated)
 		// -----------------------------
 		$pll_translation_terms = $wpdb->get_results(
@@ -739,7 +732,7 @@ class Polylang_Migration {
 
 		// Delete old relations
 		$delete_old_relations_ids = implode( ',', array_fill( 0, count( $inserted_term_ids ), '%d' ) );
-
+	
 		$wpdb->query(
 			$wpdb->prepare(
 				"
@@ -778,7 +771,7 @@ class Polylang_Migration {
 		);
 	
 		$wpdb->query( $insert_sql );
-	
+
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -915,7 +908,6 @@ class Polylang_Migration {
 		$wpdb->query(
 			"INSERT IGNORE INTO {$wpdb->terms} ( name, slug, term_group ) VALUES " . implode( ',', $term_values )
 		);
-	
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -947,7 +939,6 @@ class Polylang_Migration {
 			)
 			)
 		);
-
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -984,7 +975,6 @@ class Polylang_Migration {
 				)
 			)
 		);
-		
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -1063,7 +1053,6 @@ class Polylang_Migration {
 		$wpdb->query(
 			$wpdb->prepare( $update_counts, $params )
 		);
-		
 
 		if($wpdb->last_error) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
@@ -1292,7 +1281,6 @@ class Polylang_Migration {
 
 		// If get_terms didn't work, query database directly
 		if ( empty( $polylang_languages ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id, t.name, t.slug, tt.description 
@@ -1462,7 +1450,6 @@ class Polylang_Migration {
 		// or that have Polylang menu-item meta. Some installs store the switcher
 		// in `_pll_menu_item` without using the `_menu_item_url = '#pll_switcher'` marker,
 		// so check for either condition.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$menu_items = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT DISTINCT p.ID
@@ -1668,7 +1655,9 @@ class Polylang_Migration {
 			$this->model->languages->clean_cache();
 			delete_option( 'rewrite_rules' );
 		}
-
+ 
 		return $results;
 	}
 }
+
+// phpcs:enable

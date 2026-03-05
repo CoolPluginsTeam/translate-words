@@ -31,6 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      * A temporary variable since we don't seem to be able to use function calls in
      * HEREDOC.
      */
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Legacy variable name kept for backward compatibility with existing option keys.
     $tww_translation_lines = esc_attr(TWW_TRANSLATIONS_LINES);
 
     /**

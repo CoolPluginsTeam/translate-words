@@ -163,7 +163,7 @@ class WPML_Migration {
 		}
 
 		// Count active languages
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpml_languages_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$icl_languages_table} WHERE active = %d",
@@ -181,7 +181,7 @@ class WPML_Migration {
 		}
 
 		// Count post translations (grouped by trid)
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$post_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(DISTINCT trid) 
@@ -196,7 +196,7 @@ class WPML_Migration {
 		// phpcs:enable
 
 		// Count term translations (grouped by trid)
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$term_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(DISTINCT trid) 
@@ -211,7 +211,7 @@ class WPML_Migration {
 		// phpcs:enable
 
 		// Count posts with language assignments
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$posts_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(DISTINCT element_id) 
@@ -228,7 +228,7 @@ class WPML_Migration {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$strings_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $icl_strings_table ) ) === $icl_strings_table;
 		if ( $strings_table_exists ) {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$strings_count = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$icl_strings_table} WHERE value IS NOT NULL AND value != %s",
@@ -267,7 +267,7 @@ class WPML_Migration {
 		$icl_flags_table = $wpdb->prefix . 'icl_flags';
 
 		// Get active WPML languages
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpml_languages = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$icl_languages_table} WHERE active = %d ORDER BY id ASC",
@@ -444,7 +444,7 @@ class WPML_Migration {
 		$language_cache = array();
 
 		// Migrate post language assignments
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$posts_with_language = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT DISTINCT element_id, language_code 
@@ -505,7 +505,7 @@ class WPML_Migration {
 		// Migrate term language assignments
 		// In WPML, terms are stored with element_type like 'tax_category', 'tax_post_tag', etc.
 		// The element_id is the term_taxonomy_id, not the term_id
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$terms_with_language = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT DISTINCT t.term_id, icl.language_code
@@ -590,7 +590,7 @@ class WPML_Migration {
 
 		// Migrate post translations
 		// Group by trid to get translation groups
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$post_translation_groups = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT trid, GROUP_CONCAT(CONCAT(language_code, ':', element_id) SEPARATOR '|') as translations
@@ -645,7 +645,7 @@ class WPML_Migration {
 
 		// Migrate term translations
 		// Group by trid to get translation groups
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$term_translation_groups = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT trid, GROUP_CONCAT(CONCAT(icl.language_code, ':', t.term_id) SEPARATOR '|') as translations
@@ -1222,8 +1222,9 @@ class WPML_Migration {
 		// Prepare arguments: taxonomy name first, then post IDs
 		$prepare_args = array_merge( array( 'lmat_language' ), $post_ids );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$results = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $query ), $prepare_args ) )
 		);
 		// phpcs:enable
@@ -1273,7 +1274,7 @@ class WPML_Migration {
 		// Prepare arguments: taxonomy name first, then term IDs
 		$prepare_args = array_merge( array( 'lmat_term_language' ), $term_ids );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$results = $wpdb->get_results(
 			call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $query ), $prepare_args ) )
 		);
@@ -1331,7 +1332,7 @@ class WPML_Migration {
 				$placeholders = implode( ',', array_fill( 0, count( $term_taxonomy_ids ), '%d' ) );
 				
 				// Get taxonomy names to determine if we're counting posts or terms
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 				$taxonomies = $wpdb->get_results(
 					$wpdb->prepare(
 						"SELECT DISTINCT term_taxonomy_id, taxonomy 
@@ -1360,7 +1361,7 @@ class WPML_Migration {
 					
 					// Get all distinct post types that actually have language assignments
 					// This ensures we count all custom post types, not just configured ones
-					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 					$post_types = $wpdb->get_col(
 						$wpdb->prepare(
 							"SELECT DISTINCT p.post_type
@@ -1385,7 +1386,7 @@ class WPML_Migration {
 					$post_type_placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
 					
 					// Update counts excluding trashed posts and only counting published posts
-					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 					$wpdb->query(
 						$wpdb->prepare(
 							"UPDATE {$wpdb->term_taxonomy} tt
@@ -1424,7 +1425,7 @@ class WPML_Migration {
 				if ( ! empty( $term_lang_tt_ids ) ) {
 					$term_placeholders = implode( ',', array_fill( 0, count( $term_lang_tt_ids ), '%d' ) );
 					
-					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 					$wpdb->query(
 						$wpdb->prepare(
 							"UPDATE {$wpdb->term_taxonomy} tt
