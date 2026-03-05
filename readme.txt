@@ -1,7 +1,7 @@
 === Linguator AI – Auto Translate & Create Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
-Tags: translation, multilingual, languages, ai translation 
+Tags: translation, multilingual, languages, ai translation, polylang fork 
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
@@ -65,6 +65,12 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 * [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
 
 [Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words)
+
+== Credits ==
+
+This plugin is a derivative work and a fork of [Polylang Pro](https://polylang.pro/) by [WP SYNTEX](https://wordpress.org/plugins/polylang/). 
+
+Linguator AI includes substantial code from Polylang Pro and is distributed under the terms of the GNU General Public License, version 3 (GPLv3). We are grateful to the original authors, Frédéric Demarle and the WP SYNTEX team, for their foundational work in the WordPress multilingual space.
 
 **Use of 3rd Party Services:** This plugin connects to the Cool Plugins API to display information about related plugins inside the dashboard. It also offers optional usage tracking and optional feedback submission on deactivation. Data is sent only after explicit user consent. No hidden tracking is performed, and no frontend visitor or site user data is collected. For more details, please review our [Data Usage Policy](https://my.coolplugins.net/terms/usage-tracking/), [TOS](https://my.coolplugins.net/terms/), and [Privacy Policy](https://my.coolplugins.net/terms/privacy-policy/).
 

@@ -4,13 +4,22 @@
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Auto Translate & Create Multilingual Sites.
  * Version:           2.0.6
- * Requires at least: 6.8
  * Requires PHP:      7.2
  * Author:            Cool Plugins
  * Author URI:        https://coolplugins.net/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=plugins_list
  * Text Domain:       linguator-multilingual-ai-translation
- * License:           GPL2
- * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * License:           GPL-3.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-3.0.txt
+ *
+ * --- CREDITS & COPYRIGHT NOTICE ---
+ * This plugin is a derivative work (fork) of Polylang Pro, 
+ * originally developed by WP SYNTEX (https://polylang.pro).
+ * Original Copyright 2011-2019 Frédéric Demarle
+ * Original Copyright 2019-2026 WP SYNTEX
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * ----------------------------------
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
