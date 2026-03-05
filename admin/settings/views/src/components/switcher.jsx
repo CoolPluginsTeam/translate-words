@@ -58,7 +58,7 @@ const Switcher = ({ data, setData }) => {
                 })
 
         } catch (error) {
-            toast.error(error.message || __("Something went wrong", "linguator-multilingual-ai-translation"));
+            toast.error(error.message || __("Something went wrong", "translate-words"));
         }
     }
 
@@ -66,7 +66,7 @@ const Switcher = ({ data, setData }) => {
         <Container className='bg-white p-10 rounded-lg' cols="1" containerType='grid'>
             <Container className='flex items-center'>
                 <Container.Item className='flex w-full justify-between px-4 gap-6'>
-                    <h1 className='font-bold'>{__('Language Switcher Widget Configuration', 'linguator-multilingual-ai-translation')}</h1>
+                    <h1 className='font-bold'>{__('Language Switcher Widget Configuration', 'translate-words')}</h1>
                     <Button
                         disabled={handleButtonDisabled}
                         className=""
@@ -77,7 +77,7 @@ const Switcher = ({ data, setData }) => {
                         onClick={SaveSettings}
                         variant="primary"
                     >
-                        {__('Save Settings', 'linguator-multilingual-ai-translation')}
+                        {__('Save Settings', 'translate-words')}
                     </Button>
                 </Container.Item>
             </Container>
@@ -85,10 +85,10 @@ const Switcher = ({ data, setData }) => {
             <Container.Item className='p-6 rounded-lg' style={{ border: "1px solid #e5e7eb" }}>
                 <Label size='md' className='font-bold flex items-center gap-2'>
                     <Settings className="flex-shrink-0 size-5 text-icon-secondary" />
-                    {__('Widget Types', 'linguator-multilingual-ai-translation')}
+                    {__('Widget Types', 'translate-words')}
                 </Label>
                 <Label variant='help'>
-                    {__('Enable or disable different types of language switcher . You can enable multiple  types to provide different options for displaying the language switcher.', 'linguator-multilingual-ai-translation')}
+                    {__('Enable or disable different types of language switcher . You can enable multiple  types to provide different options for displaying the language switcher.', 'translate-words')}
                 </Label>
                 <div className='flex flex-col gap-2' style={{ marginTop: "20px" }}>
                     {
@@ -97,10 +97,10 @@ const Switcher = ({ data, setData }) => {
                                 <div className='switcher p-6 rounded-lg'>
                                     <Container.Item>
                                         <h3 className='flex items-center gap-2'>
-                                            {__(switcher.label, 'linguator-multilingual-ai-translation')}
+                                            {__(switcher.label, 'translate-words')}
                                         </h3>
                                         <p>
-                                            {__(switcher.subheading, 'linguator-multilingual-ai-translation')}
+                                            {__(switcher.subheading, 'translate-words')}
                                         </p>
                                     </Container.Item>
                                     <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
@@ -131,7 +131,7 @@ const Switcher = ({ data, setData }) => {
                         onClick={SaveSettings}
                         variant="primary"
                     >
-                        {__('Save Settings', 'linguator-multilingual-ai-translation')}
+                        {__('Save Settings', 'translate-words')}
                     </Button>
 
                 </Container.Item>

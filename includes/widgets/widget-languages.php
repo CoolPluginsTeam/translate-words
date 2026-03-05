@@ -40,9 +40,9 @@ class LMAT_Widget_Languages extends WP_Widget {
 	public function __construct() {
 		parent::__construct(
 			'linguator_widget',
-			__( 'Language switcher', 'linguator-multilingual-ai-translation' ),
+			__( 'Language switcher', 'translate-words' ),
 			array(
-				'description'                 => __( 'Displays a language switcher', 'linguator-multilingual-ai-translation' ),
+				'description'                 => __( 'Displays a language switcher', 'translate-words' ),
 				'customize_selective_refresh' => true,
 			)
 		);
@@ -96,7 +96,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 			// The title may be filtered: Strip out HTML and make sure the aria-label is never empty.
 			$aria_label = trim( wp_strip_all_tags( $title ) );
 			if ( ! $aria_label ) {
-				$aria_label = __( 'Choose a language', 'linguator-multilingual-ai-translation' );
+				$aria_label = __( 'Choose a language', 'translate-words' );
 			}
 
 			if ( $instance['dropdown'] ) {
@@ -163,7 +163,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 		printf(
 			'<p><label for="%1$s">%2$s</label><input class="widefat" id="%1$s" name="%3$s" type="text" value="%4$s" /></p>',
 			esc_attr( $this->get_field_id( 'title' ) ),
-			esc_html__( 'Title:', 'linguator-multilingual-ai-translation' ),
+			esc_html__( 'Title:', 'translate-words' ),
 			esc_attr( $this->get_field_name( 'title' ) ),
 			esc_attr( $instance['title'] )
 		);

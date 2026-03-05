@@ -43,7 +43,7 @@ class Feedback_Data extends Abstract_Boolean {
 	protected function get_description(): string {
 		return sprintf(
 			/* translators: %1$s and %2$s are "true/false" values. */
-			__( 'Enable usage data sharing: %1$s to enable, %2$s to disable.', 'linguator-multilingual-ai-translation' ),
+			__( 'Enable usage data sharing: %1$s to enable, %2$s to disable.', 'translate-words' ),
 			'`true`',
 			'`false`'
 		);

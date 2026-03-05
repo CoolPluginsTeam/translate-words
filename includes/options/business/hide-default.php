@@ -74,7 +74,7 @@ class Hide_Default extends Abstract_Boolean {
 	protected function get_description(): string {
 		return sprintf(
 			/* translators: %1$s and %2$s are "true/false" values. */
-			__( 'Remove the language code in URL for the default language: %1$s to hide, %2$s to display.', 'linguator-multilingual-ai-translation' ),
+			__( 'Remove the language code in URL for the default language: %1$s to hide, %2$s to display.', 'translate-words' ),
 			'`true`',
 			'`false`'
 		);
@@ -91,9 +91,9 @@ class Hide_Default extends Abstract_Boolean {
 	 */
 	public function get_site_health_info( Options $options ): array { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		if ( $this->get() ) {
-			$value = '1: ' . __( 'Hide URL language information for default language', 'linguator-multilingual-ai-translation' );
+			$value = '1: ' . __( 'Hide URL language information for default language', 'translate-words' );
 		} else {
-			$value = '0: ' . __( 'Display URL language information for default language', 'linguator-multilingual-ai-translation' );
+			$value = '0: ' . __( 'Display URL language information for default language', 'translate-words' );
 		}
 
 		return $this->format_single_value_for_site_health_info( $value );

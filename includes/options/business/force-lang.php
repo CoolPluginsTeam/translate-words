@@ -67,7 +67,7 @@ class Force_Lang extends Abstract_Option {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'Determine how the current language is defined.', 'linguator-multilingual-ai-translation' );
+		return __( 'Determine how the current language is defined.', 'translate-words' );
 	}
 
 	/**
@@ -82,16 +82,16 @@ class Force_Lang extends Abstract_Option {
 	public function get_site_health_info( Options $options ): array { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		switch ( $this->get() ) {
 			case '0':
-				$value = '0: ' . __( 'The language is set from content', 'linguator-multilingual-ai-translation' );
+				$value = '0: ' . __( 'The language is set from content', 'translate-words' );
 				break;
 			case '1':
-				$value = '1: ' . __( 'The language is set from the directory name in pretty permalinks', 'linguator-multilingual-ai-translation' );
+				$value = '1: ' . __( 'The language is set from the directory name in pretty permalinks', 'translate-words' );
 				break;
 			case '2':
-				$value = '2: ' . __( 'The language is set from the subdomain name in pretty permalinks', 'linguator-multilingual-ai-translation' );
+				$value = '2: ' . __( 'The language is set from the subdomain name in pretty permalinks', 'translate-words' );
 				break;
 			case '3':
-				$value = '3: ' . __( 'The language is set from different domains', 'linguator-multilingual-ai-translation' );
+				$value = '3: ' . __( 'The language is set from different domains', 'translate-words' );
 				break;
 			default:
 				$value = '';

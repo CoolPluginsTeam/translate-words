@@ -51,6 +51,6 @@ class Taxonomies extends Abstract_Object_Types {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'List of taxonomies to translate.', 'linguator-multilingual-ai-translation' );
+		return __( 'List of taxonomies to translate.', 'translate-words' );
 	}
 }

@@ -133,7 +133,7 @@ if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
             return;
         }
 
-        $post_label=__("Pages", "linguator-multilingual-ai-translation");
+        $post_label=__("Pages", "translate-words");
         $taxonomy_page=false;
 
         if(isset($current_screen->post_type)){
@@ -173,7 +173,7 @@ if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
 		wp_enqueue_script( 'lmat-bulk-translate', plugins_url( 'admin/assets/bulk-translate/index.js', LINGUATOR_ROOT_FILE ), array_merge( $editor_script_asset['dependencies'], array( 'lmat-google-api' ) ), $editor_script_asset['version'], true );
    
 		// Set script translations for wp-i18n functions (required for WordPress 6.9+)
-		wp_set_script_translations( 'lmat-bulk-translate', 'linguator-multilingual-ai-translation' );
+		wp_set_script_translations( 'lmat-bulk-translate', 'translate-words' );
 		
 		wp_enqueue_style( 'lmat-bulk-translate', plugins_url( 'admin/assets/bulk-translate/index.css', LINGUATOR_ROOT_FILE ), array(), $editor_script_asset['version'] );
 

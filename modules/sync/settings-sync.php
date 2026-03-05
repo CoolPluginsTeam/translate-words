@@ -38,8 +38,8 @@ class LMAT_Settings_Sync extends LMAT_Settings_Module {
 			$linguator,
 			array(
 				'module'      => 'sync',
-				'title'       => __( 'Synchronization', 'linguator-multilingual-ai-translation' ),
-				'description' => __( 'The synchronization options allow to maintain exact same values (or translations in the case of taxonomies and page parent) of meta content between the translations of a post or page.', 'linguator-multilingual-ai-translation' ),
+				'title'       => __( 'Synchronization', 'translate-words' ),
+				'description' => __( 'The synchronization options allow to maintain exact same values (or translations in the case of taxonomies and page parent) of meta content between the translations of a post or page.', 'translate-words' ),
 			)
 		);
 	}
@@ -89,17 +89,17 @@ class LMAT_Settings_Sync extends LMAT_Settings_Module {
 	 */
 	public static function list_metas_to_sync() {
 		return array(
-			'taxonomies'        => __( 'Taxonomies', 'linguator-multilingual-ai-translation' ),
-			'post_meta'         => __( 'Custom fields', 'linguator-multilingual-ai-translation' ),
-			'comment_status'    => __( 'Comment status', 'linguator-multilingual-ai-translation' ),
-			'ping_status'       => __( 'Ping status', 'linguator-multilingual-ai-translation' ),
-			'sticky_posts'      => __( 'Sticky posts', 'linguator-multilingual-ai-translation' ),
-			'post_date'         => __( 'Published date', 'linguator-multilingual-ai-translation' ),
-			'post_format'       => __( 'Post format', 'linguator-multilingual-ai-translation' ),
-			'post_parent'       => __( 'Page parent', 'linguator-multilingual-ai-translation' ),
-			'_wp_page_template' => __( 'Page template', 'linguator-multilingual-ai-translation' ),
-			'menu_order'        => __( 'Page order', 'linguator-multilingual-ai-translation' ),
-			'_thumbnail_id'     => __( 'Featured image', 'linguator-multilingual-ai-translation' ),
+			'taxonomies'        => __( 'Taxonomies', 'translate-words' ),
+			'post_meta'         => __( 'Custom fields', 'translate-words' ),
+			'comment_status'    => __( 'Comment status', 'translate-words' ),
+			'ping_status'       => __( 'Ping status', 'translate-words' ),
+			'sticky_posts'      => __( 'Sticky posts', 'translate-words' ),
+			'post_date'         => __( 'Published date', 'translate-words' ),
+			'post_format'       => __( 'Post format', 'translate-words' ),
+			'post_parent'       => __( 'Page parent', 'translate-words' ),
+			'_wp_page_template' => __( 'Page template', 'translate-words' ),
+			'menu_order'        => __( 'Page order', 'translate-words' ),
+			'_thumbnail_id'     => __( 'Featured image', 'translate-words' ),
 		);
 	}
 }

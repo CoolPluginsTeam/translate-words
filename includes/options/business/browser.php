@@ -64,7 +64,7 @@ class Browser extends Abstract_Boolean {
 	protected function get_description(): string {
 		return sprintf(
 			/* translators: %1$s and %2$s are "true/false" values. */
-			__( 'Detect preferred browser language on front page: %1$s to detect, %2$s to not detect.', 'linguator-multilingual-ai-translation' ),
+			__( 'Detect preferred browser language on front page: %1$s to detect, %2$s to not detect.', 'translate-words' ),
 			'`true`',
 			'`false`'
 		);
@@ -81,9 +81,9 @@ class Browser extends Abstract_Boolean {
 	 */
 	public function get_site_health_info( Options $options ): array { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		if ( ! $this->get() ) {
-			$value = '0: ' . __( 'Detect browser language deactivated', 'linguator-multilingual-ai-translation' );
+			$value = '0: ' . __( 'Detect browser language deactivated', 'translate-words' );
 		} else {
-			$value = '1: ' . __( 'Detect browser language activated', 'linguator-multilingual-ai-translation' );
+			$value = '1: ' . __( 'Detect browser language activated', 'translate-words' );
 		}
 
 		return $this->format_single_value_for_site_health_info( $value );

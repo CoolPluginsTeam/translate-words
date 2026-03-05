@@ -537,7 +537,7 @@ class Settings extends Abstract_Controller {
 		if ( empty( $domains ) || ! is_array( $domains ) ) {
 			$errors->add(
 				'missing_domains',
-				__( 'Domains are required when language is set from different domains.', 'linguator-multilingual-ai-translation' ),
+				__( 'Domains are required when language is set from different domains.', 'translate-words' ),
 				array( 'status' => 400 )
 			);
 			return $errors;
@@ -554,7 +554,7 @@ class Settings extends Abstract_Controller {
 				$errors->add(
 					'invalid_language',
 					// translators: %s is the language slug/code that was provided
-					sprintf( __( 'Invalid language code: %s', 'linguator-multilingual-ai-translation' ), $lang_slug ),
+					sprintf( __( 'Invalid language code: %s', 'translate-words' ), $lang_slug ),
 					array( 'status' => 400 )
 				);
 				continue;
@@ -565,7 +565,7 @@ class Settings extends Abstract_Controller {
 				$errors->add(
 					'empty_domain',
 					// translators: %s is the language slug/code that needs a domain URL
-					sprintf( __( 'Domain URL is required for language: %s', 'linguator-multilingual-ai-translation' ), $lang_slug ),
+					sprintf( __( 'Domain URL is required for language: %s', 'translate-words' ), $lang_slug ),
 					array( 'status' => 400 )
 				);
 				continue;
@@ -577,7 +577,7 @@ class Settings extends Abstract_Controller {
 				$errors->add(
 					'invalid_domain_format',
 					// translators: %1$s is the language slug/code, %2$s is the invalid domain URL provided
-					sprintf( __( 'Invalid domain URL format for language %1$s: %2$s', 'linguator-multilingual-ai-translation' ), $lang_slug, $domain_url ),
+					sprintf( __( 'Invalid domain URL format for language %1$s: %2$s', 'translate-words' ), $lang_slug, $domain_url ),
 					array( 'status' => 400 )
 				);
 				continue;
@@ -593,7 +593,7 @@ class Settings extends Abstract_Controller {
 				$errors->add(
 					'missing_language_domain',
 					// translators: %s is the language slug/code that is missing a domain URL
-					sprintf( __( 'Domain URL is required for language: %s', 'linguator-multilingual-ai-translation' ), $lang_slug ),
+					sprintf( __( 'Domain URL is required for language: %s', 'translate-words' ), $lang_slug ),
 					array( 'status' => 400 )
 				);
 			}
@@ -615,10 +615,10 @@ class Settings extends Abstract_Controller {
 			// Blocking error - prevents save
 			if ( 1 === count( $failed_urls ) ) {
 				/* translators: %s is a URL. */
-				$message = __( 'Linguator was unable to access the %s URL. Please check that the URL is valid.', 'linguator-multilingual-ai-translation' );
+				$message = __( 'Linguator was unable to access the %s URL. Please check that the URL is valid.', 'translate-words' );
 			} else {
 				/* translators: %s is a list of URLs. */
-				$message = __( 'Linguator was unable to access the %s URLs. Please check that the URLs are valid.', 'linguator-multilingual-ai-translation' );
+				$message = __( 'Linguator was unable to access the %s URLs. Please check that the URLs are valid.', 'translate-words' );
 			}
 			$errors->add(
 				'lmat_invalid_domains',
@@ -646,7 +646,7 @@ class Settings extends Abstract_Controller {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error(
 				'rest_forbidden_context',
-				__( 'Sorry, you are not allowed to edit options.', 'linguator-multilingual-ai-translation' ),
+				__( 'Sorry, you are not allowed to edit options.', 'translate-words' ),
 				array( 'status' => rest_authorization_required_code() )
 			);
 		}
@@ -799,7 +799,7 @@ class Settings extends Abstract_Controller {
 		} else {
 			return new WP_Error(
 				'invalid_plugin',
-				__( 'Invalid plugin specified.', 'linguator-multilingual-ai-translation' ),
+				__( 'Invalid plugin specified.', 'translate-words' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -809,7 +809,7 @@ class Settings extends Abstract_Controller {
 				$has_key => false,
 				'message' => sprintf(
 					/* translators: %s: Plugin name */
-					__( 'No %s data found.', 'linguator-multilingual-ai-translation' ),
+					__( 'No %s data found.', 'translate-words' ),
 					$plugin_name
 				),
 			) );
@@ -840,7 +840,7 @@ class Settings extends Abstract_Controller {
 		} else {
 			return new WP_Error(
 				'invalid_plugin',
-				__( 'Invalid plugin specified.', 'linguator-multilingual-ai-translation' ),
+				__( 'Invalid plugin specified.', 'translate-words' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -851,7 +851,7 @@ class Settings extends Abstract_Controller {
 			return new WP_Error(
 				'migration_failed',
 				/* translators: %s: Plugin name */
-				sprintf( __( 'Migration from %s completed with errors.', 'linguator-multilingual-ai-translation' ), $plugin_name ),
+				sprintf( __( 'Migration from %s completed with errors.', 'translate-words' ), $plugin_name ),
 				array(
 					'status' => 500,
 					'data'   => $results,
@@ -862,7 +862,7 @@ class Settings extends Abstract_Controller {
 		return rest_ensure_response( array(
 			'success' => true,
 			/* translators: %s: Plugin name */
-			'message' => sprintf( __( 'Migration from %s completed successfully.', 'linguator-multilingual-ai-translation' ), $plugin_name ),
+			'message' => sprintf( __( 'Migration from %s completed successfully.', 'translate-words' ), $plugin_name ),
 			'data'    => $results,
 		) );
 	}

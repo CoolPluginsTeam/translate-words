@@ -111,8 +111,8 @@ class Linguator {
 				return;
 			}
 			$notice = [
-				'title' => __('Linguator AI – Auto Translate & Create Multilingual Sites', 'linguator-multilingual-ai-translation'),
-				'message' => __('Help us make this plugin more compatible with your site by sharing non-sensitive site data.', 'linguator-multilingual-ai-translation'),
+				'title' => __('Linguator AI – Auto Translate & Create Multilingual Sites', 'translate-words'),
+				'message' => __('Help us make this plugin more compatible with your site by sharing non-sensitive site data.', 'translate-words'),
 				'pages' => ['lmat_settings'],
 				'always_show_on' => ['lmat_settings'], // This enables auto-show
 				'plugin_name'=>'lmat',

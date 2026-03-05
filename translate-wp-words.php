@@ -7,7 +7,7 @@
  * Requires PHP:      7.2
  * Author:            Cool Plugins
  * Author URI:        https://coolplugins.net/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=plugins_list
- * Text Domain:       linguator-multilingual-ai-translation
+ * Text Domain:       translate-words
  * License:           GPL v3 or later
  * License URI:       https://www.gnu.org/licenses/gpl-3.0.txt
  *
@@ -132,7 +132,7 @@ add_action('admin_notices', function() {
                 <?php
                 printf(
                     /* translators: %1$s: link to Linguator plugin, %2$s: link to Translate Words plugin */
-                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Linguator AI – Auto Translate & Create Multilingual Sites</a>.', 'linguator-multilingual-ai-translation' ) ),
+                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Linguator AI – Auto Translate & Create Multilingual Sites</a>.', 'translate-words' ) ),
                     esc_url( 'https://wordpress.org/plugins/linguator-multilingual-ai-translation/' ),
                     esc_url( 'https://wordpress.org/plugins/translate-words/' )
                 );

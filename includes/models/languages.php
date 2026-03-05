@@ -222,13 +222,13 @@ class Languages {
 		);
 
 		if ( is_wp_error( $r ) ) {
-			return new WP_Error( 'lmat_add_language', __( 'Impossible to add the language. Please check if the language code or locale is unique.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_add_language', __( 'Impossible to add the language. Please check if the language code or locale is unique.', 'translate-words' ) );
 		}
 
 		$id = (int) $r['term_id'];
 
 		if ( is_wp_error( $r ) ) {
-			return new WP_Error( 'lmat_add_language', __( 'Could not set the language order.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_add_language', __( 'Could not set the language order.', 'translate-words' ) );
 		}
 
 		// The other language taxonomies
@@ -243,7 +243,7 @@ class Languages {
 		$this->clean_cache();
 		$new_language = $this->get( $id );
 		if ( ! $new_language ) {
-			return new WP_Error( 'lmat_add_language', __( 'Could not add the language.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_add_language', __( 'Could not add the language.', 'translate-words' ) );
 		}
 
 		flush_rewrite_rules();
@@ -291,7 +291,7 @@ class Languages {
 		$lang = $this->get( $id );
 
 		if ( empty( $lang ) ) {
-			return new WP_Error( 'lmat_invalid_language_id', __( 'The language does not seem to exist.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_invalid_language_id', __( 'The language does not seem to exist.', 'translate-words' ) );
 		}
 
 		$args['locale']     = $args['locale'] ?? $lang->locale;
@@ -340,7 +340,7 @@ class Languages {
 		);
 
 		if ( is_wp_error( $r ) ) {
-			return new WP_Error( 'lmat_update_language', __( 'Could not update the language.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_update_language', __( 'Could not update the language.', 'translate-words' ) );
 		}
 
 		if ( $old_slug !== $slug ) {
@@ -408,7 +408,7 @@ class Languages {
 		$updated_language = $this->get( $id );
 
 		if ( ! $updated_language ) {
-			return new WP_Error( 'lmat_update_language', __( 'Could not update the language.', 'linguator-multilingual-ai-translation' ) );
+			return new WP_Error( 'lmat_update_language', __( 'Could not update the language.', 'translate-words' ) );
 		}
 
 		// Refresh rewrite rules.
@@ -953,26 +953,26 @@ class Languages {
 
 		// Validate locale with the same pattern as WP 4.3. 
 		if ( empty( $args['locale'] ) || ! preg_match( '#' . self::LOCALE_PATTERN . '#', $args['locale'], $matches ) ) {
-			$errors->add( 'lmat_invalid_locale', __( 'Enter a valid WordPress locale', 'linguator-multilingual-ai-translation' ) );
+			$errors->add( 'lmat_invalid_locale', __( 'Enter a valid WordPress locale', 'translate-words' ) );
 		}
 
 		// Validate slug characters.
 		if ( empty( $args['slug'] ) || ! preg_match( '#' . self::SLUG_PATTERN . '#', $args['slug'] ) ) {
-			$errors->add( 'lmat_invalid_slug', __( 'The language code contains invalid characters', 'linguator-multilingual-ai-translation' ) );
+			$errors->add( 'lmat_invalid_slug', __( 'The language code contains invalid characters', 'translate-words' ) );
 		}
 
 		// Validate slug is unique.
 		foreach ( $this->get_list() as $language ) {
 			// Check if both slug and locale are the same (exact duplicate)
 			if ( ! empty( $args['slug'] ) && $language->slug === $args['slug'] && $language->locale === $args['locale'] && ( null === $lang || $lang->term_id !== $language->term_id ) ) {
-				$errors->add( 'lmat_non_unique_slug', __( 'This language with the same code and locale already exists', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_non_unique_slug', __( 'This language with the same code and locale already exists', 'translate-words' ) );
 			}
 		}
 
 		// Validate name.
 		// No need to sanitize it as `wp_insert_term()` will do it for us.
 		if ( empty( $args['name'] ) ) {
-			$errors->add( 'lmat_invalid_name', __( 'The language must have a name', 'linguator-multilingual-ai-translation' ) );
+			$errors->add( 'lmat_invalid_name', __( 'The language must have a name', 'translate-words' ) );
 		}
 
 		// Validate flag.
@@ -984,7 +984,7 @@ class Languages {
 			}
 
 			if ( empty( $response ) || is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-				$errors->add( 'lmat_invalid_flag', __( 'The flag does not exist', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_invalid_flag', __( 'The flag does not exist', 'translate-words' ) );
 			}
 		}
 
@@ -1072,7 +1072,7 @@ class Languages {
 			// Performance fix: Avoid wp_remove_object_terms() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1083,9 +1083,10 @@ class Languages {
 					array_merge( $dr['id'], $dr['tt'] )
 				)
 			);
-
+			
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'translate-words' ) );
 			}
 		}
 
@@ -1104,7 +1105,7 @@ class Languages {
 			// Performance fix: Avoid wp_delete_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1115,15 +1116,16 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'translate-words' ) );
 			}
 
 			// @since 2.0.6
 			// Performance fix: Avoid wp_delete_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1134,8 +1136,9 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_delete_term_taxonomy', __( 'Could not delete the term taxonomy.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_delete_term_taxonomy', __( 'Could not delete the term taxonomy.', 'translate-words' ) );
 			}
 		}
 
@@ -1163,7 +1166,7 @@ class Languages {
 			// Performance fix: Avoid wp_update_term() overhead when processing
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				$wpdb->prepare(
 					sprintf(
@@ -1175,8 +1178,9 @@ class Languages {
 				)
 			);
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			if(is_wp_error($wpdb->query)){
-				$errors->add( 'lmat_update_term_taxonomy', __( 'Could not update the term taxonomy.', 'linguator-multilingual-ai-translation' ) );
+				$errors->add( 'lmat_update_term_taxonomy', __( 'Could not update the term taxonomy.', 'translate-words' ) );
 			}
 		}
 
@@ -1228,7 +1232,7 @@ class Languages {
 					$errors->add(
 						'lmat_add_secondary_language_terms',
 						/* translators: %s is a taxonomy name */
-						sprintf( __( 'Could not add secondary language term for taxonomy %s.', 'linguator-multilingual-ai-translation' ), $object->get_tax_language() )
+						sprintf( __( 'Could not add secondary language term for taxonomy %s.', 'translate-words' ), $object->get_tax_language() )
 					);
 				}
 				continue;
@@ -1242,7 +1246,7 @@ class Languages {
 					$errors->add(
 						'lmat_update_secondary_language_terms',
 						/* translators: %s is a taxonomy name */
-						sprintf( __( 'Could not update secondary language term for taxonomy %s.', 'linguator-multilingual-ai-translation' ), $object->get_tax_language() )
+						sprintf( __( 'Could not update secondary language term for taxonomy %s.', 'translate-words' ), $object->get_tax_language() )
 					);
 				}
 			}

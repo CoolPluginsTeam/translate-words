@@ -112,9 +112,9 @@ class LMAT_Frontend_Filters_Search {
 		$form .= '<input class="adminbar-input" name="s" id="adminbar-search" type="text" value="" maxlength="150" />';
 		$form .= '<label for="adminbar-search" class="screen-reader-text">' .
 					/* translators: Hidden accessibility text. */
-					esc_html__( 'Search', 'linguator-multilingual-ai-translation' ) .
+					esc_html__( 'Search', 'translate-words' ) .
 				'</label>';
-		$form .= '<input type="submit" class="adminbar-button" value="' . esc_attr__( 'Search', 'linguator-multilingual-ai-translation' ) . '" />';
+		$form .= '<input type="submit" class="adminbar-button" value="' . esc_attr__( 'Search', 'translate-words' ) . '" />';
 		$form .= '</form>';
 
 		$wp_admin_bar->add_node(

@@ -230,7 +230,7 @@ class LMAT_Admin_Notices {
 			'<a class="notice-dismiss" href="%s"><span class="screen-reader-text">%s</span></a>',
 			esc_url( wp_nonce_url( add_query_arg( 'lmat-hide-notice', $name ), $name, '_lmat_notice_nonce' ) ),
 			// translators: accessibility text
-			esc_html__( 'Dismiss this notice.', 'linguator-multilingual-ai-translation' )
+			esc_html__( 'Dismiss this notice.', 'translate-words' )
 		);
 	}
 

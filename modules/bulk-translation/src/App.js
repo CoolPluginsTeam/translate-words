@@ -13,7 +13,7 @@ import Notice from './components/notice/index.js';
 const App = ({ onDestory, prefix, postIds }) => {
     const dispatch = useDispatch();
     const { languageObject = {} } = lmatBulkTranslationGlobal || {};
-    const emptyPostIdsErrorMessage = sprintf(__('Please select at least one %s for translation.', 'linguator-multilingual-ai-translation'), lmatBulkTranslationGlobal.post_label);
+    const emptyPostIdsErrorMessage = sprintf(__('Please select at least one %s for translation.', 'translate-words'), lmatBulkTranslationGlobal.post_label);
     const [selectedLanguages, setSelectedLanguages] = useState([]);
     const [errorMessage, setErrorMessage] = useState(postIds.length === 0 ? emptyPostIdsErrorMessage : '');
     const [settingModalVisibility, setSettingModalVisibility] = useState(false);
@@ -34,7 +34,7 @@ const App = ({ onDestory, prefix, postIds }) => {
         const checkStatus = async () => {
             const status = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi');
             if (status.type === 'browser-not-supported' || status.type === 'translation-api-not-available' || status.type === 'browser-not-supported') {
-                setLocalAiModalError(__(status.html[0].outerHTML, 'linguator-multilingual-ai-translation'));
+                setLocalAiModalError(__(status.html[0].outerHTML, 'translate-words'));
             }
 
             setIsLoading(false);
@@ -51,7 +51,7 @@ const App = ({ onDestory, prefix, postIds }) => {
 
     const settingModalVisibilityHandler = async () => {
         if (selectedLanguages.length === 0 && !settingModalVisibility) {
-            setErrorMessage(__('Please select at least one language', 'linguator-multilingual-ai-translation'));
+            setErrorMessage(__('Please select at least one language', 'translate-words'));
             setErrorModal(true);
             return;
         }
@@ -115,15 +115,15 @@ const App = ({ onDestory, prefix, postIds }) => {
           if (postMetaSync) {
             notices.push({
               className: `${prefix}-notice ${prefix}-notice-error`, message: <p>
-                {__('For accurate custom field translations, please disable the Custom Fields synchronization in ', 'linguator-multilingual-ai-translation')}
+                {__('For accurate custom field translations, please disable the Custom Fields synchronization in ', 'translate-words')}
                 <a
                   href={`${lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {__('Linguator settings', 'linguator-multilingual-ai-translation')}
+                  {__('Linguator settings', 'translate-words')}
                 </a>
-                {sprintf(__('. This may affect linked %s.', 'linguator-multilingual-ai-translation'), lmatBulkTranslationGlobal.post_label)}
+                {sprintf(__('. This may affect linked %s.', 'translate-words'), lmatBulkTranslationGlobal.post_label)}
               </p>
             });
           }
@@ -163,11 +163,11 @@ const App = ({ onDestory, prefix, postIds }) => {
                 className={`${prefix}-language-container`}>
                 <div
                     className={`${prefix}-header`}>
-                    <h2>{__('Step 1: Select Languages', 'linguator-multilingual-ai-translation')}</h2>
+                    <h2>{__('Step 1: Select Languages', 'translate-words')}</h2>
                     <span
                         className="close"
                         onClick={destroyApp}
-                        title={__('Close', 'linguator-multilingual-ai-translation')}
+                        title={__('Close', 'translate-words')}
                     >
                         &times;
                     </span>
@@ -222,7 +222,7 @@ const App = ({ onDestory, prefix, postIds }) => {
                                 <label
                                     htmlFor="select-all-languages"
                                 >
-                                    {selectedLanguages.length === Object.keys(languageObject).length ? __('Unselect All', 'linguator-multilingual-ai-translation') : __('Select All', 'linguator-multilingual-ai-translation')}
+                                    {selectedLanguages.length === Object.keys(languageObject).length ? __('Unselect All', 'translate-words') : __('Select All', 'translate-words')}
                                 </label>
                             </div>
                         </div>
@@ -232,14 +232,14 @@ const App = ({ onDestory, prefix, postIds }) => {
                                 className={`${prefix}-footer-button button button-primary`}
                                 onClick={destroyApp}
                                 title={!postIds.length ? emptyPostIdsErrorMessage : ''}>
-                                {__('Close', 'linguator-multilingual-ai-translation')}
+                                {__('Close', 'translate-words')}
                             </button>
                             <button
                                 className={`${prefix}-footer-button button button-primary`}
                                 onClick={settingModalVisibilityHandler}
                                 disabled={!postIds.length || !selectedLanguages.length}
-                                title={!postIds.length ? emptyPostIdsErrorMessage : (!selectedLanguages.length ? __('Please select at least one language', 'linguator-multilingual-ai-translation') : '')}>
-                                {__('Translate', 'linguator-multilingual-ai-translation')}
+                                title={!postIds.length ? emptyPostIdsErrorMessage : (!selectedLanguages.length ? __('Please select at least one language', 'translate-words') : '')}>
+                                {__('Translate', 'translate-words')}
                             </button>
                         </div>
                     </>}

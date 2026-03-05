@@ -50,6 +50,6 @@ class Post_Types extends Abstract_Object_Types {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'List of post types to translate.', 'linguator-multilingual-ai-translation' );
+		return __( 'List of post types to translate.', 'translate-words' );
 	}
 }

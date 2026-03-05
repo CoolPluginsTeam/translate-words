@@ -58,24 +58,24 @@ class LMAT_Admin_Feedback {
 		}
 		$deactivate_reasons = array(
 			'didnt_work_as_expected'         => array(
-				'title'             => __( 'The plugin didn\'t work as expected.', 'linguator-multilingual-ai-translation' ),
+				'title'             => __( 'The plugin didn\'t work as expected.', 'translate-words' ),
 				'input_placeholder' => 'What did you expect?',
 			),
 			'found_a_better_plugin'          => array(
-				'title'             => __( 'I found a better plugin.', 'linguator-multilingual-ai-translation' ),
-				'input_placeholder' => __( 'Please share which plugin.', 'linguator-multilingual-ai-translation' ),
+				'title'             => __( 'I found a better plugin.', 'translate-words' ),
+				'input_placeholder' => __( 'Please share which plugin.', 'translate-words' ),
 			),
 			'couldnt_get_the_plugin_to_work' => array(
-				'title'             => __( 'The plugin is not working.', 'linguator-multilingual-ai-translation' ),
+				'title'             => __( 'The plugin is not working.', 'translate-words' ),
 				'input_placeholder' => 'Please share your issue. So we can fix that for other users.',
 			),
 			'temporary_deactivation'         => array(
-				'title'             => __( 'It\'s a temporary deactivation.', 'linguator-multilingual-ai-translation' ),
+				'title'             => __( 'It\'s a temporary deactivation.', 'translate-words' ),
 				'input_placeholder' => '',
 			),
 			'other'                          => array(
-				'title'             => __( 'Other reason.', 'linguator-multilingual-ai-translation' ),
-				'input_placeholder' => __( 'Please share the reason.', 'linguator-multilingual-ai-translation' ),
+				'title'             => __( 'Other reason.', 'translate-words' ),
+				'input_placeholder' => __( 'Please share the reason.', 'translate-words' ),
 			),
 		);
 
@@ -85,7 +85,7 @@ class LMAT_Admin_Feedback {
 			<div class="cp-feedback-wrapper">
 
 			<div class="cp-feedback-header">
-				<div class="cp-feedback-title"><?php echo esc_html__( 'Quick Feedback', 'linguator-multilingual-ai-translation' ); ?></div>
+				<div class="cp-feedback-title"><?php echo esc_html__( 'Quick Feedback', 'translate-words' ); ?></div>
 				<div class="cp-feedback-title-link">A plugin by <a href="https://coolplugins.net/?utm_source=<?php echo esc_attr( $this->plugin_slug ); ?>_plugin&utm_medium=inside&utm_campaign=coolplugins&utm_content=deactivation_feedback" target="_blank">CoolPlugins.net</a></div>
 			</div>
 
@@ -94,7 +94,7 @@ class LMAT_Admin_Feedback {
 			</div>
 
 			<div class="cp-feedback-form-wrapper">
-				<div class="cp-feedback-form-title"><?php echo esc_html__( 'If you have a moment, please share the reason for deactivating this plugin.', 'linguator-multilingual-ai-translation' ); ?></div>
+				<div class="cp-feedback-form-title"><?php echo esc_html__( 'If you have a moment, please share the reason for deactivating this plugin.', 'translate-words' ); ?></div>
 				<form class="cp-feedback-form" method="post">
 					<?php
 					wp_nonce_field( '_cool-plugins_deactivate_feedback_nonce' );
@@ -115,7 +115,7 @@ class LMAT_Admin_Feedback {
 					<?php endforeach; ?>
 					
 					<div class="cp-feedback-terms">
-					<input class="cp-feedback-terms-input" id="cp-feedback-terms-input" type="checkbox"><label for="cp-feedback-terms-input"><?php echo esc_html__( 'I agree to share anonymous usage data and basic site details (such as server, PHP, and WordPress versions) to support Linguator AI – Auto Translate & Create Multilingual Sites improvement efforts. Additionally, I allow Cool Plugins to store all information provided through this form and to respond to my inquiry.', 'linguator-multilingual-ai-translation' ); ?></label>
+					<input class="cp-feedback-terms-input" id="cp-feedback-terms-input" type="checkbox"><label for="cp-feedback-terms-input"><?php echo esc_html__( 'I agree to share anonymous usage data and basic site details (such as server, PHP, and WordPress versions) to support Linguator AI – Auto Translate & Create Multilingual Sites improvement efforts. Additionally, I allow Cool Plugins to store all information provided through this form and to respond to my inquiry.', 'translate-words' ); ?></label>
 					</div>
 
 					<div class="cp-feedback-button-wrapper">
@@ -198,24 +198,24 @@ class LMAT_Admin_Feedback {
 			$reason             = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
 			$deactivate_reasons = array(
 				'didnt_work_as_expected'         => array(
-					'title'             => __( 'The plugin didn\'t work as expected', 'linguator-multilingual-ai-translation' ),
+					'title'             => __( 'The plugin didn\'t work as expected', 'translate-words' ),
 					'input_placeholder' => 'What did you expect?',
 				),
 				'found_a_better_plugin'          => array(
-					'title'             => __( 'I found a better plugin', 'linguator-multilingual-ai-translation' ),
-					'input_placeholder' => __( 'Please share which plugin.', 'linguator-multilingual-ai-translation' ),
+					'title'             => __( 'I found a better plugin', 'translate-words' ),
+					'input_placeholder' => __( 'Please share which plugin.', 'translate-words' ),
 				),
 				'couldnt_get_the_plugin_to_work' => array(
-					'title'             => __( 'The plugin is not working', 'linguator-multilingual-ai-translation' ),
+					'title'             => __( 'The plugin is not working', 'translate-words' ),
 					'input_placeholder' => 'Please share your issue. So we can fix that for other users.',
 				),
 				'temporary_deactivation'         => array(
-					'title'             => __( 'It\'s a temporary deactivation.', 'linguator-multilingual-ai-translation' ),
+					'title'             => __( 'It\'s a temporary deactivation.', 'translate-words' ),
 					'input_placeholder' => '',
 				),
 				'other'                          => array(
-					'title'             => __( 'Other', 'linguator-multilingual-ai-translation' ),
-					'input_placeholder' => __( 'Please share the reason.', 'linguator-multilingual-ai-translation' ),
+					'title'             => __( 'Other', 'translate-words' ),
+					'input_placeholder' => __( 'Please share the reason.', 'translate-words' ),
 				),
 			);
 

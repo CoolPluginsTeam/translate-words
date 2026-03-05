@@ -244,6 +244,4 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 == Upgrade Notice ==
 = 2.0.0 =
-Important Update: Translate Words is transitioning to our new AI-powered multilingual plugin, **Linguator AI**.
-The current Translate Words functionality will be deprecated around **31st December 2026**. You can continue using this plugin safely until then.
-If you prefer a manual string-based translation workflow, please migrate to **Loco Translate**.
+Translate Words is transitioning to our new AI-powered multilingual plugin Linguator AI. Existing functionality will remain available until around 31 December 2026. For manual string-based translation workflows, we recommend migrating to Loco Translate.

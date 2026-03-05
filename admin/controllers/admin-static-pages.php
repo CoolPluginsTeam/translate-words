@@ -57,11 +57,11 @@ class LMAT_Admin_Static_Pages extends LMAT_Static_Pages {
 	 */
 	public function display_post_states( $post_states, $post ) {
 		if ( in_array( $post->ID, $this->model->get_languages_list( array( 'fields' => 'page_on_front' ) ) ) ) {
-			$post_states['page_on_front'] = __( 'Front Page', 'linguator-multilingual-ai-translation' );
+			$post_states['page_on_front'] = __( 'Front Page', 'translate-words' );
 		}
 
 		if ( in_array( $post->ID, $this->model->get_languages_list( array( 'fields' => 'page_for_posts' ) ) ) ) {
-			$post_states['page_for_posts'] = __( 'Posts Page', 'linguator-multilingual-ai-translation' );
+			$post_states['page_for_posts'] = __( 'Posts Page', 'translate-words' );
 		}
 
 		return $post_states;
@@ -149,7 +149,7 @@ class LMAT_Admin_Static_Pages extends LMAT_Static_Pages {
 			if ( ! empty( $untranslated ) ) {
 				$message = sprintf(
 					/* translators: %s is a comma separated list of native language names */
-					esc_html__( 'You must translate your static front page in %s.', 'linguator-multilingual-ai-translation' ),
+					esc_html__( 'You must translate your static front page in %s.', 'translate-words' ),
 					implode( ', ', $untranslated ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				);
 			}

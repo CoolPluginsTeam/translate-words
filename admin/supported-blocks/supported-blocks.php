@@ -133,28 +133,28 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		public function render_supported_blocks_page() {
 			?>
 		<div class="lmat-custom-data-table-wrapper">
-			<h3><?php echo esc_html__('Supported Blocks Translation Settings', 'linguator-multilingual-ai-translation'); ?>
+			<h3><?php echo esc_html__('Supported Blocks Translation Settings', 'translate-words'); ?>
 			<br><p>
 			<?php 
 				// translators: %s: Linguator.
-				printf( esc_html__( 'Manage Gutenberg blocks to make them translation-ready with %s.', 'linguator-multilingual-ai-translation' ), 'Linguator' ); 
+				printf( esc_html__( 'Manage Gutenberg blocks to make them translation-ready with %s.', 'translate-words' ), 'Linguator' ); 
 			?></p>
 			</h3>
 			<div class="lmat-custom-data-table-filters">
 				<div class="lmat-filter-tab" data-column="1" data-default="all">
-					<label for="lmat-blocks-category"><?php esc_html_e( 'Block Type Category:', 'linguator-multilingual-ai-translation' ); ?></label>
+					<label for="lmat-blocks-category"><?php esc_html_e( 'Block Type Category:', 'translate-words' ); ?></label>
 					<select id="lmat-blocks-category" name="lmat_blocks_category">
-						<option value="all"><?php esc_html_e( 'All', 'linguator-multilingual-ai-translation' ); ?></option>
+						<option value="all"><?php esc_html_e( 'All', 'translate-words' ); ?></option>
 						<option value="core">Core</option>
 						<?php $this->lmat_get_blocks_category(); ?>
 					</select>
 				</div>
 				<div class="lmat-filter-tab" data-column="3" data-default="all">
-					<label for="lmat-blocks-filter"><?php esc_html_e( 'Show Blocks:', 'linguator-multilingual-ai-translation' ); ?></label>
+					<label for="lmat-blocks-filter"><?php esc_html_e( 'Show Blocks:', 'translate-words' ); ?></label>
 					<select id="lmat-blocks-filter" name="lmat_blocks_filter">
-						<option value="all"><?php esc_html_e( 'All', 'linguator-multilingual-ai-translation' ); ?></option>
-						<option value="supported"><?php esc_html_e( 'Supported Blocks', 'linguator-multilingual-ai-translation' ); ?></option>
-						<option value="unsupported"><?php esc_html_e( 'Unsupported Blocks', 'linguator-multilingual-ai-translation' ); ?></option>
+						<option value="all"><?php esc_html_e( 'All', 'translate-words' ); ?></option>
+						<option value="supported"><?php esc_html_e( 'Supported Blocks', 'translate-words' ); ?></option>
+						<option value="unsupported"><?php esc_html_e( 'Unsupported Blocks', 'translate-words' ); ?></option>
 					</select>
 				</div>
 			</div>
@@ -163,11 +163,11 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					<table class="lmat-custom-data-table-table" id="lmat-custom-datatable">
 						<thead>
 							<tr>
-								<th><?php esc_html_e( 'Sr.No', 'linguator-multilingual-ai-translation' ); ?></th>
-								<th><?php esc_html_e( 'Block Name', 'linguator-multilingual-ai-translation' ); ?></th>
-								<th><?php esc_html_e( 'Block Title', 'linguator-multilingual-ai-translation' ); ?></th>
-								<th><?php esc_html_e( 'Status', 'linguator-multilingual-ai-translation' ); ?></th>
-								<th><?php esc_html_e( 'Modify', 'linguator-multilingual-ai-translation' ); ?></th>
+								<th><?php esc_html_e( 'Sr.No', 'translate-words' ); ?></th>
+								<th><?php esc_html_e( 'Block Name', 'translate-words' ); ?></th>
+								<th><?php esc_html_e( 'Block Title', 'translate-words' ); ?></th>
+								<th><?php esc_html_e( 'Status', 'translate-words' ); ?></th>
+								<th><?php esc_html_e( 'Modify', 'translate-words' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
@@ -232,7 +232,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					$block_title = esc_html( $block->title );
 
 					$status      = ! in_array( $block_name, $lmat_supported_blocks_names ) ? 'Unsupported' : 'Supported'; // You can modify this logic based on your requirements
-					$modify_text = ! in_array( $block_name, $lmat_supported_blocks_names ) ? esc_html__( 'Add', 'linguator-multilingual-ai-translation' ) : esc_html__( 'Edit', 'linguator-multilingual-ai-translation' );
+					$modify_text = ! in_array( $block_name, $lmat_supported_blocks_names ) ? esc_html__( 'Add', 'translate-words' ) : esc_html__( 'Edit', 'translate-words' );
 					$modify_link = '<a href="' . esc_url( admin_url( 'post.php?post=' . esc_attr( $lmat_post_id ) . '&action=edit&lmat_new_block=' ) . esc_attr( $block_name ) ) . '">' . $modify_text . '</a>'; // Modify link
 					$modify_link = '<a href="' . esc_url( admin_url( 'post.php?post=' . esc_attr( $lmat_post_id ) . '&action=edit&lmat_new_block=' ) . esc_attr( $block_name ) ) . '">' . $modify_text . '</a>'; // Modify link
 
@@ -278,7 +278,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			$existing_post = $query->posts ? $query->posts[0] : null;
 
 			if (! $existing_post) {
-				$post_title    = esc_html__('Add More Gutenberg Blocks', 'linguator-multilingual-ai-translation');
+				$post_title    = esc_html__('Add More Gutenberg Blocks', 'translate-words');
 				$first_post_id = wp_insert_post(
 					array(
 						'post_title'   => $post_title,

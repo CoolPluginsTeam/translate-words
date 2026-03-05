@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 ?>
-<p><strong><?php esc_html_e( 'Translations', 'linguator-multilingual-ai-translation' ); ?></strong></p>
+<p><strong><?php esc_html_e( 'Translations', 'translate-words' ); ?></strong></p>
 <table>
 	<?php
 	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound

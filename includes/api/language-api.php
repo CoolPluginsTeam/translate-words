@@ -639,7 +639,7 @@ function lmat_insert_post( array $postarr, $language ) {
 	$language = LMAT()->model->get_language( $language );
 
 	if ( ! $language instanceof LMAT_Language ) {
-		return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'linguator-multilingual-ai-translation' ) );
+		return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'translate-words' ) );
 	}
 
 	return LMAT()->model->post->insert( $postarr, $language );
@@ -674,7 +674,7 @@ function lmat_insert_term( string $term, string $taxonomy, $language, array $arg
 	$language = LMAT()->model->get_language( $language );
 
 	if ( ! $language instanceof LMAT_Language ) {
-		return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'linguator-multilingual-ai-translation' ) );
+		return new WP_Error( 'invalid_language', __( 'Please provide a valid language.', 'translate-words' ) );
 	}
 
 	return LMAT()->model->term->insert( $term, $taxonomy, $language, $args );

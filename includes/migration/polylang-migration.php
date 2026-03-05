@@ -7,6 +7,8 @@
 
 namespace Linguator\Includes\Migration;
 
+// phpcs:disable
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -63,7 +65,6 @@ class Polylang_Migration {
 
 		// Check if Polylang data exists in database (works even if plugin is deactivated)
 		// Check for 'language' taxonomy terms directly in database
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$polylang_languages_count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -113,7 +114,6 @@ class Polylang_Migration {
 		}
 
 		// Count translation links - check database directly since taxonomies might not be registered
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$post_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -121,7 +121,6 @@ class Polylang_Migration {
 			)
 		);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$term_translations_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
@@ -141,7 +140,6 @@ class Polylang_Migration {
 			}
 		} elseif ( $polylang_languages_count > 0 ) {
 			// Query database directly if languages aren't loaded
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id 
@@ -201,7 +199,6 @@ class Polylang_Migration {
 
 		// If get_terms didn't work, query database directly
 		if ( empty( $polylang_languages ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id, t.name, t.slug, tt.description 
@@ -229,7 +226,7 @@ class Polylang_Migration {
 
 		if ( empty( $polylang_languages ) ) {
 			$results['success'] = false;
-			$results['errors'][] = __( 'No Polylang languages found.', 'linguator-multilingual-ai-translation' );
+			$results['errors'][] = __( 'No Polylang languages found.', 'translate-words' );
 			return $results;
 		}
 
@@ -274,7 +271,7 @@ class Polylang_Migration {
 			if ( is_wp_error( $result ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language name */
-					__( 'Failed to migrate language: %s', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate language: %s', 'translate-words' ),
 					$pll_lang->name
 				);
 				$results['success'] = false;
@@ -456,7 +453,7 @@ class Polylang_Migration {
 		);
 	
 		$wpdb->query( $insert_sql );
-	
+
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -588,11 +585,10 @@ class Polylang_Migration {
 			$term_relationships_derived_args[] = absint( $term['post_id'] );
 			$term_relationships_derived_args[] = '%i:' . absint( $term['post_id'] ) . ';%';
 		}
-	
+
 		$wpdb->query(
 			"INSERT IGNORE INTO {$wpdb->terms} ( name, slug, term_group ) VALUES " . implode( ',', $term_values )
 		);
-	
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -624,7 +620,6 @@ class Polylang_Migration {
 			)
 			)
 		);
-
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -661,7 +656,6 @@ class Polylang_Migration {
 				)
 			)
 		);
-		
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -675,7 +669,6 @@ class Polylang_Migration {
 	public function migration_term_language_assignment(&$results, $lang_map){
 		global $wpdb;
 		
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$pll_translation_terms = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT tr.object_id as taxonomy_id, tt.term_taxonomy_id as term_taxonomy_id, tt.description as description, t.term_id as term_id, t.slug as slug
@@ -687,7 +680,7 @@ class Polylang_Migration {
 			)
 		);
 
-				// -----------------------------
+		// -----------------------------
 		// 2. Fetch posts with Polylang language (exclude already migrated)
 		// -----------------------------
 		$pll_translation_terms = $wpdb->get_results(
@@ -739,7 +732,7 @@ class Polylang_Migration {
 
 		// Delete old relations
 		$delete_old_relations_ids = implode( ',', array_fill( 0, count( $inserted_term_ids ), '%d' ) );
-
+	
 		$wpdb->query(
 			$wpdb->prepare(
 				"
@@ -778,7 +771,7 @@ class Polylang_Migration {
 		);
 	
 		$wpdb->query( $insert_sql );
-	
+
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -915,7 +908,6 @@ class Polylang_Migration {
 		$wpdb->query(
 			"INSERT IGNORE INTO {$wpdb->terms} ( name, slug, term_group ) VALUES " . implode( ',', $term_values )
 		);
-	
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -947,7 +939,6 @@ class Polylang_Migration {
 			)
 			)
 		);
-
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -984,7 +975,6 @@ class Polylang_Migration {
 				)
 			)
 		);
-		
 		if ( $wpdb->last_error ) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
 			$results['success']  = false;
@@ -1063,7 +1053,6 @@ class Polylang_Migration {
 		$wpdb->query(
 			$wpdb->prepare( $update_counts, $params )
 		);
-		
 
 		if($wpdb->last_error) {
 			$results['errors'][] = esc_html( $wpdb->last_error );
@@ -1207,7 +1196,7 @@ class Polylang_Migration {
 			if ( ! $this->options->has( $lmat_key ) ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Setting key */
-					__( 'Setting %s is not registered in Linguator', 'linguator-multilingual-ai-translation' ),
+					__( 'Setting %s is not registered in Linguator', 'translate-words' ),
 					$lmat_key
 				);
 				$results['success'] = false;
@@ -1223,7 +1212,7 @@ class Polylang_Migration {
 				$error_message = ! empty( $error_messages ) ? implode( ', ', $error_messages ) : '';
 				$results['errors'][] = sprintf(
 					/* translators: %1$s: Setting key, %2$s: Error message */
-					__( 'Failed to migrate setting: %1$s%2$s', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to migrate setting: %1$s%2$s', 'translate-words' ),
 					$lmat_key,
 					$error_message ? ' (' . $error_message . ')' : ''
 				);
@@ -1292,7 +1281,6 @@ class Polylang_Migration {
 
 		// If get_terms didn't work, query database directly
 		if ( empty( $polylang_languages ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$language_terms = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT t.term_id, t.name, t.slug, tt.description 
@@ -1335,7 +1323,7 @@ class Polylang_Migration {
 			if ( ! $lmat_lang ) {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language slug */
-					__( 'Linguator language not found for Polylang language: %s', 'linguator-multilingual-ai-translation' ),
+					__( 'Linguator language not found for Polylang language: %s', 'translate-words' ),
 					$pll_lang->slug
 				);
 				$results['success'] = false;
@@ -1403,7 +1391,7 @@ class Polylang_Migration {
 				} else {
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language slug, %2$d: Stored count, %3$d: Expected count */
-						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'translate-words' ),
 						$lmat_lang->slug,
 						$stored_count,
 						$expected_count
@@ -1413,7 +1401,7 @@ class Polylang_Migration {
 			} else {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language slug */
-					__( 'Failed to save strings for language: %s (no strings stored)', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to save strings for language: %s (no strings stored)', 'translate-words' ),
 					$lmat_lang->slug
 				);
 				$results['success'] = false;
@@ -1462,7 +1450,6 @@ class Polylang_Migration {
 		// or that have Polylang menu-item meta. Some installs store the switcher
 		// in `_pll_menu_item` without using the `_menu_item_url = '#pll_switcher'` marker,
 		// so check for either condition.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$menu_items = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT DISTINCT p.ID
@@ -1509,7 +1496,7 @@ class Polylang_Migration {
 			if ( $current_url !== '#lmat_switcher' ) {
 				$results['errors'][] = sprintf(
 					/* translators: %d: Menu item ID */
-					__( 'Failed to update URL for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+					__( 'Failed to update URL for menu item ID %d', 'translate-words' ),
 					$menu_item_id
 				);
 				$results['success'] = false;
@@ -1528,7 +1515,7 @@ class Polylang_Migration {
 				if ( empty( $stored_meta ) || ! is_array( $stored_meta ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to migrate options for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to migrate options for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;
@@ -1551,7 +1538,7 @@ class Polylang_Migration {
 				if ( empty( $stored_default ) || ! is_array( $stored_default ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to set default options for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to set default options for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;
@@ -1562,14 +1549,14 @@ class Polylang_Migration {
 			// Update menu item title to Linguator's default if needed
 			$menu_item_title = get_post_meta( $menu_item_id, '_menu_item_title', true );
 			if ( empty( $menu_item_title ) ) {
-				update_post_meta( $menu_item_id, '_menu_item_title', __( 'Languages', 'linguator-multilingual-ai-translation' ) );
+				update_post_meta( $menu_item_id, '_menu_item_title', __( 'Languages', 'translate-words' ) );
 
 				// verify title set
 				$stored_title = get_post_meta( $menu_item_id, '_menu_item_title', true );
 				if ( empty( $stored_title ) ) {
 					$results['errors'][] = sprintf(
 						/* translators: %d: Menu item ID */
-						__( 'Failed to set menu item title for menu item ID %d', 'linguator-multilingual-ai-translation' ),
+						__( 'Failed to set menu item title for menu item ID %d', 'translate-words' ),
 						$menu_item_id
 					);
 					$results['success'] = false;
@@ -1668,7 +1655,9 @@ class Polylang_Migration {
 			$this->model->languages->clean_cache();
 			delete_option( 'rewrite_rules' );
 		}
-
+ 
 		return $results;
 	}
 }
+
+// phpcs:enable

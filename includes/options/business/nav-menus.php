@@ -153,7 +153,7 @@ class Nav_Menus extends Abstract_Option {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'Translated navigation menus for each theme.', 'linguator-multilingual-ai-translation' );
+		return __( 'Translated navigation menus for each theme.', 'translate-words' );
 	}
 
 	/**
@@ -179,7 +179,7 @@ class Nav_Menus extends Abstract_Option {
 
 			if ( empty( $lang ) ) {
 				/* translators: default value when a menu location is not used. */
-				$fields[ $location ]['value'] = __( 'Not used', 'linguator-multilingual-ai-translation' );
+				$fields[ $location ]['value'] = __( 'Not used', 'translate-words' );
 			} else {
 				$fields[ $location ]['value'] = $this->format_array_for_site_health_info( $lang );
 			}

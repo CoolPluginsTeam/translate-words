@@ -300,10 +300,10 @@ class Options implements ArrayAccess, IteratorAggregate {
 		// Merge all "unknown option" errors into a single error message.
 		if ( 1 === count( $values ) ) {
 			/* translators: %s is an option name. */
-			$message = __( 'Unknown option key %s.', 'linguator-multilingual-ai-translation' );
+			$message = __( 'Unknown option key %s.', 'translate-words' );
 		} else {
 			/* translators: %s is a list of option names. */
-			$message = __( 'Unknown option keys %s.', 'linguator-multilingual-ai-translation' );
+			$message = __( 'Unknown option keys %s.', 'translate-words' );
 		}
 
 		$errors->add(
@@ -352,7 +352,7 @@ class Options implements ArrayAccess, IteratorAggregate {
 		$this->schema[ $this->current_blog_id ] = array(
 			'$schema'              => 'http://json-schema.org/draft-04/schema#',
 			'title'                => static::OPTION_NAME,
-			'description'          => __( 'Linguator options', 'linguator-multilingual-ai-translation' ),
+			'description'          => __( 'Linguator options', 'translate-words' ),
 			'type'                 => 'object',
 			'properties'           => $properties,
 			'additionalProperties' => false,
@@ -407,7 +407,7 @@ class Options implements ArrayAccess, IteratorAggregate {
 	public function set( string $key, $value ): WP_Error {
 		if ( ! $this->has( $key ) ) {
 			/* translators: %s is the name of an option. */
-			return new WP_Error( 'lmat_unknown_option_key', sprintf( __( 'Unknown option key %s.', 'linguator-multilingual-ai-translation' ), "'$key'" ) );
+			return new WP_Error( 'lmat_unknown_option_key', sprintf( __( 'Unknown option key %s.', 'translate-words' ), "'$key'" ) );
 		}
 
 		/** @var Abstract_Option */

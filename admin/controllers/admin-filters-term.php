@@ -149,7 +149,7 @@ class LMAT_Admin_Filters_Term {
 				<div id="select-add-term-language">%s</div>
 				<p>%s</p>
 			</div>',
-			esc_html__( 'Language', 'linguator-multilingual-ai-translation' ),
+			esc_html__( 'Language', 'translate-words' ),
 			wp_kses(
 				$dropdown_html,
 				array(
@@ -181,7 +181,7 @@ class LMAT_Admin_Filters_Term {
 				),
 				array_merge( wp_allowed_protocols(), array( 'data' ) )
 			),
-			esc_html__( 'Sets the language', 'linguator-multilingual-ai-translation' )
+			esc_html__( 'Sets the language', 'translate-words' )
 		);
 
 		if ( ! empty( $from_term_id ) ) {
@@ -252,7 +252,7 @@ class LMAT_Admin_Filters_Term {
 					<p class="description">%s</p>
 				</td>
 			</tr>',
-			esc_html__( 'Language', 'linguator-multilingual-ai-translation' ),
+			esc_html__( 'Language', 'translate-words' ),
 			wp_kses(
 				$dropdown_html,
 				array(
@@ -284,7 +284,7 @@ class LMAT_Admin_Filters_Term {
 				),
 				array_merge( wp_allowed_protocols(), array( 'data' ) )
 			),
-			esc_html__( 'Sets the language', 'linguator-multilingual-ai-translation' )
+			esc_html__( 'Sets the language', 'translate-words' )
 		);
 
 		echo '<tr id="term-translations" class="form-field">';
@@ -551,7 +551,7 @@ class LMAT_Admin_Filters_Term {
 				'name'             => 'parent',
 				'orderby'          => 'name',
 				'hierarchical'     => true,
-				'show_option_none' => __( 'None', 'linguator-multilingual-ai-translation' ),
+				'show_option_none' => __( 'None', 'translate-words' ),
 				'echo'             => 0,
 			);
 			$x->Add( array( 'what' => 'parent', 'data' => wp_dropdown_categories( $args ) ) );

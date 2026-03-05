@@ -349,7 +349,7 @@ class LMAT_Widget_Calendar extends WP_Widget_Calendar {
 				// phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
 				$date_format = gmdate( _x( 'F j, Y', 'daily archives date format' ), strtotime( "{$thisyear}-{$thismonth}-{$day}" ) );
 				/* translators: Post calendar label. %s: Date. */
-				$label            = sprintf( __( 'Posts published on %s','linguator-multilingual-ai-translation' ), $date_format ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
+				$label            = sprintf( __( 'Posts published on %s','translate-words' ), $date_format ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
 				$calendar_output .= sprintf(
 					'<a href="%s" aria-label="%s">%s</a>',
 					get_day_link( $thisyear, $thismonth, $day ),
@@ -377,7 +377,7 @@ class LMAT_Widget_Calendar extends WP_Widget_Calendar {
 		$calendar_output .= "\n\t</table>";
 
 		// phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
-		$calendar_output .= '<nav aria-label="' . __( 'Previous and next months', 'linguator-multilingual-ai-translation' ) . '" class="wp-calendar-nav">';
+		$calendar_output .= '<nav aria-label="' . __( 'Previous and next months', 'translate-words' ) . '" class="wp-calendar-nav">';
 
 		if ( $previous ) {
 			$calendar_output .= "\n\t\t" . '<span class="wp-calendar-nav-prev"><a href="' . get_month_link( $previous->year, $previous->month ) . '">&laquo; ' .

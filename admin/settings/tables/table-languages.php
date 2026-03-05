@@ -99,7 +99,7 @@ class LMAT_Table_Languages extends WP_List_Table {
 	public function column_name( $item ) {
 		return sprintf(
 			'<a title="%s" href="%s">%s</a>',
-			esc_attr__( 'Edit this language', 'linguator-multilingual-ai-translation' ),
+			esc_attr__( 'Edit this language', 'translate-words' ),
 			esc_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ) ),
 			esc_html( $item->name )
 		);
@@ -120,10 +120,10 @@ class LMAT_Table_Languages extends WP_List_Table {
 				'<div class="row-actions"><span class="default-lang">
 				<a class="icon-default-lang" title="%1$s" href="%2$s"><span class="screen-reader-text">%3$s</span></a>
 				</span></div>',
-				esc_attr__( 'Select as default language', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Select as default language', 'translate-words' ),
 				wp_nonce_url( '?page=lmat&amp;lmat_action=default-lang&amp;noheader=true&amp;lang=' . $item->term_id, 'default-lang' ),
 				/* translators: accessibility text, %s is a native language name */
-				esc_html( sprintf( __( 'Choose %s as default language', 'linguator-multilingual-ai-translation' ), $item->name ) )
+				esc_html( sprintf( __( 'Choose %s as default language', 'translate-words' ), $item->name ) )
 			);
 
 			/**
@@ -139,7 +139,7 @@ class LMAT_Table_Languages extends WP_List_Table {
 			$s = sprintf(
 				'<span class="icon-default-lang"><span class="screen-reader-text">%1$s</span></span>',
 				/* translators: accessibility text */
-				esc_html__( 'Default language', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'Default language', 'translate-words' )
 			);
 		}
 
@@ -155,13 +155,13 @@ class LMAT_Table_Languages extends WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
-			'name'         => esc_html__( 'Full name', 'linguator-multilingual-ai-translation' ),
-			'locale'       => esc_html__( 'Locale', 'linguator-multilingual-ai-translation' ),
-			'slug'         => esc_html__( 'Code', 'linguator-multilingual-ai-translation' ),
-			'default_lang' => sprintf( '<span title="%1$s" class="icon-default-lang"><span class="screen-reader-text">%2$s</span></span>', esc_attr__( 'Default language', 'linguator-multilingual-ai-translation' ), esc_html__( 'Default language', 'linguator-multilingual-ai-translation' ) ),
-			'term_group'   => esc_html__( 'Order', 'linguator-multilingual-ai-translation' ),
-			'flag'         => esc_html__( 'Flag', 'linguator-multilingual-ai-translation' ),
-			'count'        => esc_html__( 'Posts', 'linguator-multilingual-ai-translation' ),
+			'name'         => esc_html__( 'Full name', 'translate-words' ),
+			'locale'       => esc_html__( 'Locale', 'translate-words' ),
+			'slug'         => esc_html__( 'Code', 'translate-words' ),
+			'default_lang' => sprintf( '<span title="%1$s" class="icon-default-lang"><span class="screen-reader-text">%2$s</span></span>', esc_attr__( 'Default language', 'translate-words' ), esc_html__( 'Default language', 'translate-words' ) ),
+			'term_group'   => esc_html__( 'Order', 'translate-words' ),
+			'flag'         => esc_html__( 'Flag', 'translate-words' ),
+			'count'        => esc_html__( 'Posts', 'translate-words' ),
 		);
 	}
 
@@ -211,16 +211,16 @@ class LMAT_Table_Languages extends WP_List_Table {
 		$actions = array(
 			'edit'   => sprintf(
 				'<a title="%s" href="%s">%s</a>',
-				esc_attr__( 'Edit this language', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Edit this language', 'translate-words' ),
 				esc_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ) ),
-				esc_html__( 'Edit', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'Edit', 'translate-words' )
 			),
 			'delete' => sprintf(
 				'<a title="%s" href="%s" onclick = "return confirm( \'%s\' );">%s</a>',
-				esc_attr__( 'Delete this language and all its associated data', 'linguator-multilingual-ai-translation' ),
+				esc_attr__( 'Delete this language and all its associated data', 'translate-words' ),
 				wp_nonce_url( '?page=lmat&amp;lmat_action=delete&amp;noheader=true&amp;lang=' . $item->term_id, 'delete-lang' ),
-				esc_js( __( 'You are about to permanently delete this language. Are you sure?', 'linguator-multilingual-ai-translation' ) ),
-				esc_html__( 'Delete', 'linguator-multilingual-ai-translation' )
+				esc_js( __( 'You are about to permanently delete this language. Are you sure?', 'translate-words' ) ),
+				esc_html__( 'Delete', 'translate-words' )
 			),
 		);
 

@@ -159,7 +159,7 @@ class LMAT_Admin_Menu_Sync {
 			'languages'  => $lang_data,
 			'menuId'     => $nav_menu_selected_id,
 			'menuLang'   => '', // No language selected
-			'syncButton' => __( 'Sync Menu', 'linguator-multilingual-ai-translation' ),
+			'syncButton' => __( 'Sync Menu', 'translate-words' ),
 		) );
 		
 		return;
@@ -291,22 +291,22 @@ class LMAT_Admin_Menu_Sync {
 				'menuLang' => $menu_lang,
 				'languages' => $lang_data,
 				'strings' => array(
-					'syncButton' => __( 'Sync Menu', 'linguator-multilingual-ai-translation' ),
-					'selectLanguages' => __( 'Select languages to sync', 'linguator-multilingual-ai-translation' ),
-					'selectAll' => __( 'Select All', 'linguator-multilingual-ai-translation' ),
-					'deselectAll' => __( 'Unselect All', 'linguator-multilingual-ai-translation' ),
-					'sync' => __( 'Sync', 'linguator-multilingual-ai-translation' ),
-					'cancel' => __( 'Cancel', 'linguator-multilingual-ai-translation' ),
-					'syncing' => __( 'Syncing...', 'linguator-multilingual-ai-translation' ),
-					'success' => __( 'Menu synced successfully!', 'linguator-multilingual-ai-translation' ),
-					'error' => __( 'Error syncing menu. Please try again.', 'linguator-multilingual-ai-translation' ),
-					'noLanguages' => __( 'Please select at least one language.', 'linguator-multilingual-ai-translation' ),
-					'confirmReplace' => __( 'This will replace existing menus in the selected languages. Continue?', 'linguator-multilingual-ai-translation' ),
-					'emptyMenuError' => __( 'The source menu is empty. Please add menu items before syncing.', 'linguator-multilingual-ai-translation' ),
-					'noTranslatedContent' => __( 'No translated content is available for selected menu items. Please add and translate content in other languages first.', 'linguator-multilingual-ai-translation' ),
-					'permissionError' => __( 'You do not have permission to sync menus.', 'linguator-multilingual-ai-translation' ),
-					'invalidMenuError' => __( 'Invalid menu selected.', 'linguator-multilingual-ai-translation' ),
-					'noTranslationsError' => __( 'No menu items could be synced. Please ensure translations exist for your menu items.', 'linguator-multilingual-ai-translation' ),
+					'syncButton' => __( 'Sync Menu', 'translate-words' ),
+					'selectLanguages' => __( 'Select languages to sync', 'translate-words' ),
+					'selectAll' => __( 'Select All', 'translate-words' ),
+					'deselectAll' => __( 'Unselect All', 'translate-words' ),
+					'sync' => __( 'Sync', 'translate-words' ),
+					'cancel' => __( 'Cancel', 'translate-words' ),
+					'syncing' => __( 'Syncing...', 'translate-words' ),
+					'success' => __( 'Menu synced successfully!', 'translate-words' ),
+					'error' => __( 'Error syncing menu. Please try again.', 'translate-words' ),
+					'noLanguages' => __( 'Please select at least one language.', 'translate-words' ),
+					'confirmReplace' => __( 'This will replace existing menus in the selected languages. Continue?', 'translate-words' ),
+					'emptyMenuError' => __( 'The source menu is empty. Please add menu items before syncing.', 'translate-words' ),
+					'noTranslatedContent' => __( 'No translated content is available for selected menu items. Please add and translate content in other languages first.', 'translate-words' ),
+					'permissionError' => __( 'You do not have permission to sync menus.', 'translate-words' ),
+					'invalidMenuError' => __( 'Invalid menu selected.', 'translate-words' ),
+					'noTranslationsError' => __( 'No menu items could be synced. Please ensure translations exist for your menu items.', 'translate-words' ),
 				),
 			)
 		);
@@ -325,7 +325,7 @@ class LMAT_Admin_Menu_Sync {
 		// Check capabilities
 		if ( ! current_user_can( 'edit_theme_options' ) ) {
 			wp_send_json_error( array( 
-				'message' => __( 'You do not have permission to perform this action.', 'linguator-multilingual-ai-translation' ),
+				'message' => __( 'You do not have permission to perform this action.', 'translate-words' ),
 				'error_code' => 'permission_denied'
 			) );
 		}
@@ -336,14 +336,14 @@ class LMAT_Admin_Menu_Sync {
 
 			if ( empty( $menu_id ) ) {
 				wp_send_json_error( array( 
-					'message' => __( 'Invalid menu ID.', 'linguator-multilingual-ai-translation' ),
+					'message' => __( 'Invalid menu ID.', 'translate-words' ),
 					'error_code' => 'invalid_menu_id'
 				) );
 			}
 
 			if ( empty( $target_langs ) ) {
 				wp_send_json_error( array( 
-					'message' => __( 'No target languages selected.', 'linguator-multilingual-ai-translation' ),
+					'message' => __( 'No target languages selected.', 'translate-words' ),
 					'error_code' => 'no_languages_selected'
 				) );
 		}
@@ -383,7 +383,7 @@ class LMAT_Admin_Menu_Sync {
 		if ( empty( $source_items ) ) {
 			return array(
 				'success' => false,
-				'message' => __( 'Source menu is empty.', 'linguator-multilingual-ai-translation' ),
+				'message' => __( 'Source menu is empty.', 'translate-words' ),
 				'error_code' => 'empty_menu'
 			);
 		}
@@ -393,7 +393,7 @@ class LMAT_Admin_Menu_Sync {
 		if ( ! $source_menu ) {
 			return array(
 				'success' => false,
-				'message' => __( 'Source menu not found.', 'linguator-multilingual-ai-translation' ),
+				'message' => __( 'Source menu not found.', 'translate-words' ),
 				'error_code' => 'menu_not_found'
 			);
 		}
@@ -422,12 +422,12 @@ class LMAT_Admin_Menu_Sync {
 		if ( ! empty( $result['synced_languages'] ) ) {
 			$result['message'] = sprintf(
 				// translators: %s: Comma-separated list of language names.
-				__( 'Menu synced to: %s', 'linguator-multilingual-ai-translation' ),
+				__( 'Menu synced to: %s', 'translate-words' ),
 				implode( ', ', $result['synced_languages'] )
 			);
 		} else {
 			$result['success'] = false;
-			$result['message'] = __( 'No menus were synced. Please ensure translations exist.', 'linguator-multilingual-ai-translation' );
+			$result['message'] = __( 'No menus were synced. Please ensure translations exist.', 'translate-words' );
 			$result['error_code'] = 'no_translations';
 		}
 

@@ -47,7 +47,7 @@ class GoogleTranslater {
         if (!GoogleLanguage().includes(this.filterLanguage(targetLang))) {
             this.storeDispatch(unsetPendingPost(this.postId + '_' + targetLang));
             this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-            this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'linguator-multilingual-ai-translation'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
+            this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
         } else {
             this.activeTargetLang = targetLang;
             this.activeLanguageGlossaryTerms[targetLang]={};
@@ -146,7 +146,7 @@ class GoogleTranslater {
                 [`${this.postId}_${this.activeTargetLang}`]: {
                     status: 'error',
                     messageClass: 'error',
-                    errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'linguator-multilingual-ai-translation'), languageObject[this.activeTargetLang]?.name, this.activeTargetLang),
+                    errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[this.activeTargetLang]?.name, this.activeTargetLang),
                     errorHtml: false
                 }
             }));
@@ -241,7 +241,7 @@ class GoogleTranslater {
             this.targetLangs.forEach(lang => {
                 this.storeDispatch(unsetPendingPost(this.postId + '_' + lang));
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-                this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'linguator-multilingual-ai-translation'), errorHtml: false } }));
+                this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false } }));
             });
         }
     }

@@ -17,7 +17,7 @@ export const initializeConfirmationModal = () => {
 			id: 'lmat-dialog',
 			style: 'display:none;'
 		}
-	).text( __( 'Are you sure you want to change the language of the current content?', 'linguator-multilingual-ai-translation' ) );
+	).text( __( 'Are you sure you want to change the language of the current content?', 'translate-words' ) );
 
 	// Put it after languages list dropdown.
 	// PHPCS ignore dialogContainer is a new safe HTML code generated above.
@@ -47,7 +47,7 @@ export const initializeConfirmationModal = () => {
 				modal: true,
 				draggable: false,
 				resizable: false,
-				title: __( 'Change language', 'linguator-multilingual-ai-translation' ),
+				title: __( 'Change language', 'translate-words' ),
 				minWidth: 600,
 				maxWidth: '100%',
 				open: function ( event, ui ) {
@@ -67,13 +67,13 @@ export const initializeConfirmationModal = () => {
 				},
 				buttons: [
 					{
-						text: __( 'OK', 'linguator-multilingual-ai-translation' ),
+						text: __( 'OK', 'translate-words' ),
 						click: function ( event ) {
 							confirmDialog( 'yes' );
 						}
 					},
 					{
-						text: __( 'Cancel', 'linguator-multilingual-ai-translation' ),
+						text: __( 'Cancel', 'translate-words' ),
 						click: function ( event ) {
 							confirmDialog( 'no' );
 						}

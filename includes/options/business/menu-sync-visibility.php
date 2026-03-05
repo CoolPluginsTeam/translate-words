@@ -77,7 +77,7 @@ class Menu_Sync_Visibility extends Abstract_Option {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'Enable or disable the Menu Sync feature.', 'linguator-multilingual-ai-translation' );
+		return __( 'Enable or disable the Menu Sync feature.', 'translate-words' );
 	}
 }
 

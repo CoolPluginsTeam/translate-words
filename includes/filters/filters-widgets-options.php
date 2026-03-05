@@ -59,7 +59,7 @@ class LMAT_Filters_Widgets_Options {
 
 		$dropdown_html = $dropdown->walk(
 			array_merge(
-				array( (object) array( 'slug' => 0, 'name' => __( 'All languages', 'linguator-multilingual-ai-translation' ) ) ),
+				array( (object) array( 'slug' => 0, 'name' => __( 'All languages', 'translate-words' ) ) ),
 				$this->model->get_languages_list()
 			),
 			-1,
@@ -74,7 +74,7 @@ class LMAT_Filters_Widgets_Options {
 		printf(
 			'<p><label for="%1$s">%2$s %3$s</label></p>',
 			esc_attr( $widget->get_field_id( 'lmat_lang' ) ),
-			esc_html__( 'The widget is displayed for:', 'linguator-multilingual-ai-translation' ),
+			esc_html__( 'The widget is displayed for:', 'translate-words' ),
 			wp_kses(
 				$dropdown_html,
 				array(

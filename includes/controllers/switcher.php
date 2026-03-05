@@ -59,12 +59,12 @@ class LMAT_Switcher {
 	 */
 	public static function get_switcher_options( $type = 'widget', $key = 'string' ) {
 		$options = array(
-			'dropdown'               => array( 'string' => __( 'Displays as a dropdown', 'linguator-multilingual-ai-translation' ), 'default' => 0 ),
-			'show_names'             => array( 'string' => __( 'Displays language names', 'linguator-multilingual-ai-translation' ), 'default' => 1 ),
-			'show_flags'             => array( 'string' => __( 'Displays flags', 'linguator-multilingual-ai-translation' ), 'default' => 0 ),
-			'force_home'             => array( 'string' => __( 'Forces link to front page', 'linguator-multilingual-ai-translation' ), 'default' => 0 ),
-			'hide_current'           => array( 'string' => __( 'Hides the current language', 'linguator-multilingual-ai-translation' ), 'default' => 0 ),
-			'hide_if_no_translation' => array( 'string' => __( 'Hides languages with no translation', 'linguator-multilingual-ai-translation' ), 'default' => 0 ),
+			'dropdown'               => array( 'string' => __( 'Displays as a dropdown', 'translate-words' ), 'default' => 0 ),
+			'show_names'             => array( 'string' => __( 'Displays language names', 'translate-words' ), 'default' => 1 ),
+			'show_flags'             => array( 'string' => __( 'Displays flags', 'translate-words' ), 'default' => 0 ),
+			'force_home'             => array( 'string' => __( 'Forces link to front page', 'translate-words' ), 'default' => 0 ),
+			'hide_current'           => array( 'string' => __( 'Hides the current language', 'translate-words' ), 'default' => 0 ),
+			'hide_if_no_translation' => array( 'string' => __( 'Hides languages with no translation', 'translate-words' ), 'default' => 0 ),
 		);
 		return wp_list_pluck( $options, $key );
 	}

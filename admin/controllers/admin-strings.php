@@ -77,8 +77,8 @@ class LMAT_Admin_Strings {
 	 */
 	public static function &get_strings() {
 		self::$default_strings = array(
-			'widget_title' => __( 'Widget title', 'linguator-multilingual-ai-translation' ),
-			'widget_text'  => __( 'Widget text', 'linguator-multilingual-ai-translation' ),
+			'widget_title' => __( 'Widget title', 'translate-words' ),
+			'widget_text'  => __( 'Widget text', 'translate-words' ),
 		);
 
 	global $wp_registered_widgets;

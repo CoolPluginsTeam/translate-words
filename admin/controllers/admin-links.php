@@ -51,12 +51,12 @@ class LMAT_Admin_Links extends LMAT_Links {
 			return sprintf(
 				'<span title="%s" class="lmat_icon_add wp-ui-text-icon"></span>',
 				/* translators: accessibility text, %s is a native language name */
-				esc_attr( sprintf( __( 'You are not allowed to add a translation in %s', 'linguator-multilingual-ai-translation' ), $language->name ) )
+				esc_attr( sprintf( __( 'You are not allowed to add a translation in %s', 'translate-words' ), $language->name ) )
 			);
 		}
 
 		/* translators: accessibility text, %s is a native language name */
-		$hint = sprintf( __( 'Add a translation in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+		$hint = sprintf( __( 'Add a translation in %s', 'translate-words' ), $language->name );
 		return sprintf(
 			'<a href="%1$s" title="%2$s" class="lmat_icon_add"><span class="screen-reader-text">%3$s</span></a>',
 			esc_url( $link ),
@@ -79,12 +79,12 @@ class LMAT_Admin_Links extends LMAT_Links {
 			return sprintf(
 				'<span title="%s" class="lmat_icon_edit wp-ui-text-icon"></span>',
 				/* translators: accessibility text, %s is a native language name */
-				esc_attr( sprintf( __( 'You are not allowed to edit a translation in %s', 'linguator-multilingual-ai-translation' ), $language->name ) )
+				esc_attr( sprintf( __( 'You are not allowed to edit a translation in %s', 'translate-words' ), $language->name ) )
 			);
 		}
 
 		/* translators: accessibility text, %s is a native language name */
-		$hint = sprintf( __( 'Edit the translation in %s', 'linguator-multilingual-ai-translation' ), $language->name );
+		$hint = sprintf( __( 'Edit the translation in %s', 'translate-words' ), $language->name );
 		return sprintf(
 			'<a href="%1$s" title="%2$s" class="lmat_icon_edit"><span class="screen-reader-text">%3$s</span></a>',
 			esc_url( $link ),

@@ -46,7 +46,7 @@ class Sync extends Abstract_List {
 	 */
 	public function get_site_health_info( Options $options ): array { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		if ( empty( $this->get() ) ) {
-			$value = '0: ' . __( 'Synchronization disabled', 'linguator-multilingual-ai-translation' );
+			$value = '0: ' . __( 'Synchronization disabled', 'translate-words' );
 		} else {
 			$value = implode( ', ', $this->get() );
 		}
@@ -64,9 +64,9 @@ class Sync extends Abstract_List {
 	 * @phpstan-return array{type: 'array', items: array{type: SchemaType, enum: non-empty-list<non-falsy-string>}}
 	 */
 	protected function get_data_structure(): array {
-		$GLOBALS['l10n']['linguator-multilingual-ai-translation'] = new NOOP_Translations(); // Prevents loading the translations too early.
+		$GLOBALS['l10n']['translate-words'] = new NOOP_Translations(); // Prevents loading the translations too early.
 		$enum = array_keys( LMAT_Settings_Sync::list_metas_to_sync() );
-		unset( $GLOBALS['l10n']['linguator-multilingual-ai-translation'] );
+		unset( $GLOBALS['l10n']['translate-words'] );
 
 		return array(
 			'type'  => 'array',
@@ -85,6 +85,6 @@ class Sync extends Abstract_List {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'List of data to synchronize.', 'linguator-multilingual-ai-translation' );
+		return __( 'List of data to synchronize.', 'translate-words' );
 	}
 }

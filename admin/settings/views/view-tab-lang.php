@@ -43,7 +43,7 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
 
 			<div class="form-wrap">
 				
-				<h2><?php echo ! empty($edit_lang) ? esc_html__('Edit language', 'linguator-multilingual-ai-translation') : esc_html__('Add new language', 'linguator-multilingual-ai-translation'); ?></h2>
+				<h2><?php echo ! empty($edit_lang) ? esc_html__('Edit language', 'translate-words') : esc_html__('Add new language', 'translate-words'); ?></h2>
 				<?php
 				// Displays the add ( or edit ) language form
 				// Adds noheader=true in the action url to allow using wp_redirect when processing the form
@@ -64,7 +64,7 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
 					}
 					?>
 					<div class="form-field">
-						<label for="lang_list"><?php esc_html_e('Choose a language', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="lang_list"><?php esc_html_e('Choose a language', 'translate-words'); ?></label>
 						<select name="lang_list" id="lang_list">
 							<option value=""></option>
 							<?php
@@ -100,63 +100,63 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
 							}
 							?>
 						</select>
-						<p><?php esc_html_e('You can choose a language from the list or directly edit it below.', 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e('You can choose a language from the list or directly edit it below.', 'translate-words'); ?></p>
 					</div>
 
 					<div class="form-field form-required">
-						<label for="lang_name"><?php esc_html_e('Full name', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="lang_name"><?php esc_html_e('Full name', 'translate-words'); ?></label>
 						<?php
 						printf(
 							'<input name="name" id="lang_name" type="text" value="%s" size="40" aria-required="true" />',
 							! empty($edit_lang) ? esc_attr($edit_lang->name) : ''
 						);
 						?>
-						<p><?php esc_html_e('The name of language will display on your site (for example: English).', 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e('The name of language will display on your site (for example: English).', 'translate-words'); ?></p>
 					</div>
 
 					<div class="form-field form-required">
-						<label for="lang_locale"><?php esc_html_e('Locale', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="lang_locale"><?php esc_html_e('Locale', 'translate-words'); ?></label>
 						<?php
 						printf(
 							'<input name="locale" id="lang_locale" type="text" value="%s" size="40" aria-required="true"  />',
 							! empty($edit_lang) ? esc_attr($edit_lang->locale) : ''
 						);
 						?>
-						<p><?php esc_html_e("WordPress Locale for the language (for example: en_US). You'll have to install the .mo file for this language.", 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e("WordPress Locale for the language (for example: en_US). You'll have to install the .mo file for this language.", 'translate-words'); ?></p>
 					</div>
 
 					<div class="form-field">
-						<label for="lang_slug"><?php esc_html_e('Language code', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="lang_slug"><?php esc_html_e('Language code', 'translate-words'); ?></label>
 						<?php
 						printf(
 							'<input name="slug" id="lang_slug" type="text" value="%s" size="40"/>',
 							! empty($edit_lang) ? esc_attr($edit_lang->slug) : ''
 						);
 						?>
-						<p><?php esc_html_e('Language code - preferably 2-letters ISO 639-1  (for example: en)', 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e('Language code - preferably 2-letters ISO 639-1  (for example: en)', 'translate-words'); ?></p>
 					</div>
 
 					<div class="form-field">
 						<fieldset>
-							<legend class="lmat-legend"><?php esc_html_e('Text direction', 'linguator-multilingual-ai-translation'); ?></legend>
+							<legend class="lmat-legend"><?php esc_html_e('Text direction', 'translate-words'); ?></legend>
 							<?php
 							printf(
 								'<label><input name="rtl" type="radio" value="0" %s /> %s</label>',
 								checked(! empty($edit_lang) && $edit_lang->is_rtl, false, false),
-								esc_html__('left to right', 'linguator-multilingual-ai-translation')
+								esc_html__('left to right', 'translate-words')
 							);
 							printf(
 								'<label><input name="rtl" type="radio" value="1" %s /> %s</label>',
 								checked(! empty($edit_lang) && $edit_lang->is_rtl, true, false),
-								esc_html__('right to left', 'linguator-multilingual-ai-translation')
+								esc_html__('right to left', 'translate-words')
 							);
 							?>
-							<p><?php esc_html_e('Choose the text direction for the language', 'linguator-multilingual-ai-translation'); ?></p>
+							<p><?php esc_html_e('Choose the text direction for the language', 'translate-words'); ?></p>
 						</fieldset>
 					</div>
 
 					<div class="form-field">
-						<label for="flag_list"><?php esc_html_e('Flag', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="flag_list"><?php esc_html_e('Flag', 'translate-words'); ?></label>
 						<select name="flag" id="flag_list">
 							<option value=""></option>
 							<?php
@@ -174,18 +174,18 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
 							}
 							?>
 						</select>
-						<p><?php esc_html_e('Choose a flag for the language.', 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e('Choose a flag for the language.', 'translate-words'); ?></p>
 					</div>
 
 					<div class="form-field">
-						<label for="lang_order"><?php esc_html_e('Order', 'linguator-multilingual-ai-translation'); ?></label>
+						<label for="lang_order"><?php esc_html_e('Order', 'translate-words'); ?></label>
 						<?php
 						printf(
 							'<input name="term_group" id="lang_order" type="text" value="%d" />',
 							! empty($edit_lang) ? esc_attr($edit_lang->term_group) : ''
 						);
 						?>
-						<p><?php esc_html_e('Position of the language in the language switcher', 'linguator-multilingual-ai-translation'); ?></p>
+						<p><?php esc_html_e('Position of the language in the language switcher', 'translate-words'); ?></p>
 					</div>
 					<?php
 					if (! empty($edit_lang)) {
@@ -206,7 +206,7 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
 						do_action('lmat_language_add_form_fields');
 					}
 
-					submit_button(! empty($edit_lang) ? __('Update', 'linguator-multilingual-ai-translation') : __('Add new language', 'linguator-multilingual-ai-translation')); // since WP 3.1
+					submit_button(! empty($edit_lang) ? __('Update', 'translate-words') : __('Add new language', 'translate-words')); // since WP 3.1
 					?>
 				</form>
 			</div><!-- form-wrap -->

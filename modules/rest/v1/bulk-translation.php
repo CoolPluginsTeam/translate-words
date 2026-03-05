@@ -215,28 +215,28 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$nonce = $request->get_header( 'X-WP-Nonce' );
 
 			if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-				return new WP_Error( 'rest_forbidden', __( 'Invalid nonce.', 'linguator-multilingual-ai-translation' ), array( 'status' => 403 ) );
+				return new WP_Error( 'rest_forbidden', __( 'Invalid nonce.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 
 			if ( ! is_user_logged_in() ) {
-				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'linguator-multilingual-ai-translation' ), array( 'status' => 401 ) );
+				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
 			}
 			if ( ! current_user_can( 'edit_posts' ) ) {
-				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'linguator-multilingual-ai-translation' ), array( 'status' => 403 ) );
+				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 			return true;
 		}
 
 		public function validate_lmat_bulk_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_bulk_translate_entries_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'linguator-multilingual-ai-translation' ), array( 'status' => 403 ) );
+			return wp_verify_nonce( $value, 'lmat_bulk_translate_entries_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		public function validate_lmat_create_post_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_create_translate_post_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'linguator-multilingual-ai-translation' ), array( 'status' => 403 ) );
+			return wp_verify_nonce( $value, 'lmat_create_translate_post_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		public function validate_lmat_create_term_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'linguator-multilingual-ai-translation' ), array( 'status' => 403 ) );
+			return wp_verify_nonce( $value, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		public function bulk_translate_entries( $params ) {

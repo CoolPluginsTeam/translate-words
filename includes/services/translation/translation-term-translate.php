@@ -51,14 +51,14 @@ class Translation_Term_Model {
 	public function translate( array $entry, LMAT_Language $target_language ) {
 		if ( ! $entry['data'] instanceof Translations ) {
 			/* translators: %d is a term ID. */
-			return new WP_Error( 'lmat_translate_term_no_translations', sprintf( __( 'The term with ID %d could not be translated.', 'linguator-multilingual-ai-translation' ), (int) $entry['id'] ) );
+			return new WP_Error( 'lmat_translate_term_no_translations', sprintf( __( 'The term with ID %d could not be translated.', 'translate-words' ), (int) $entry['id'] ) );
 		}
 
 		$source_term = get_term( $entry['id'] );
 
 		if ( ! $source_term instanceof WP_Term ) {
 			/* translators: %d is a term ID. */
-			return new WP_Error( 'lmat_translate_term_no_source_term', sprintf( __( 'The term with ID %d could not be translated as it doesn\'t exist.', 'linguator-multilingual-ai-translation' ), (int) $entry['id'] ) );
+			return new WP_Error( 'lmat_translate_term_no_source_term', sprintf( __( 'The term with ID %d could not be translated as it doesn\'t exist.', 'translate-words' ), (int) $entry['id'] ) );
 		}
 
 		$source_language = $this->model->term->get_language( $source_term->term_id );
@@ -83,7 +83,7 @@ class Translation_Term_Model {
 			$tr_term = $this->model->term->update( $tr_term_id, $args );
 			if ( is_wp_error( $tr_term ) ) {
 				/* translators: %d is a term ID. */
-				return new WP_Error( 'lmat_translate_update_term_failed', sprintf( __( 'The term with ID %d could not be updated.', 'linguator-multilingual-ai-translation' ), (int) $tr_term_id ) );
+				return new WP_Error( 'lmat_translate_update_term_failed', sprintf( __( 'The term with ID %d could not be updated.', 'translate-words' ), (int) $tr_term_id ) );
 			}
 		} else {
 			$args = array();
@@ -103,7 +103,7 @@ class Translation_Term_Model {
 			$tr_term = $this->model->term->insert( $tr_term_name, $source_term->taxonomy, $target_language, $args );
 			if ( is_wp_error( $tr_term ) ) {
 				/* translators: %d is a term ID. */
-				return new WP_Error( 'lmat_translate_term_failed', sprintf( __( 'The term with ID %d could not be translated.', 'linguator-multilingual-ai-translation' ), (int) $entry['id'] ) );
+				return new WP_Error( 'lmat_translate_term_failed', sprintf( __( 'The term with ID %d could not be translated.', 'translate-words' ), (int) $entry['id'] ) );
 			}
 			$tr_term_id = (int) $tr_term['term_id'];
 		}

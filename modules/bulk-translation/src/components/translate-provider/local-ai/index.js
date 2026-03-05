@@ -176,7 +176,7 @@ class LocalAiTranslate {
             this.targetLangs.forEach(lang=>{
                 this.storeDispatch(unsetPendingPost(this.postId+'_'+lang));
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-                this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'linguator-multilingual-ai-translation'), errorHtml: false}}));
+                this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false}}));
             });
         }
     }

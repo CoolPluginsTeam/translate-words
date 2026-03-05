@@ -361,7 +361,7 @@ var LanguageSection = function LanguageSection(_ref) {
             _context.n = 4;
             break;
           case 3:
-            throw new Error((0,external_wp_i18n_namespaceObject.__)('Language update did not succeed.', 'linguator-multilingual-ai-translation'));
+            throw new Error((0,external_wp_i18n_namespaceObject.__)('Language update did not succeed.', 'translate-words'));
           case 4:
             _context.n = 6;
             break;
@@ -369,7 +369,7 @@ var LanguageSection = function LanguageSection(_ref) {
             _context.p = 5;
             _t = _context.v;
             setUpdating(false);
-            setError((0,external_wp_i18n_namespaceObject.__)('Failed to update language. Please try again.', 'linguator-multilingual-ai-translation'));
+            setError((0,external_wp_i18n_namespaceObject.__)('Failed to update language. Please try again.', 'translate-words'));
           case 6:
             return _context.a(2);
         }
@@ -443,7 +443,7 @@ var LanguageSection = function LanguageSection(_ref) {
     return selected ? selected.lang.name : '';
   };
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.PanelBody, {
-    title: (0,external_wp_i18n_namespaceObject.__)('Language', 'linguator-multilingual-ai-translation'),
+    title: (0,external_wp_i18n_namespaceObject.__)('Language', 'translate-words'),
     initialOpen: true
   }, /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.Flex, {
     align: "center"
@@ -465,7 +465,7 @@ var LanguageSection = function LanguageSection(_ref) {
     value: selectValue,
     onChange: handleLanguageChange,
     disabled: updating || showConfirmDialog,
-    help: updating ? (0,external_wp_i18n_namespaceObject.__)('Updating language...', 'linguator-multilingual-ai-translation') : undefined,
+    help: updating ? (0,external_wp_i18n_namespaceObject.__)('Updating language...', 'translate-words') : undefined,
     options: options.map(function (opt) {
       return {
         label: opt.label,
@@ -476,10 +476,10 @@ var LanguageSection = function LanguageSection(_ref) {
     status: "error",
     isDismissible: false
   }, error) : null), showConfirmDialog && /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.Modal, {
-    title: (0,external_wp_i18n_namespaceObject.__)('Change Language', 'linguator-multilingual-ai-translation'),
+    title: (0,external_wp_i18n_namespaceObject.__)('Change Language', 'translate-words'),
     onRequestClose: handleCancelLanguageChange,
     isDismissible: true
-  }, /*#__PURE__*/React.createElement("p", null, (0,external_wp_i18n_namespaceObject.__)('Are you sure you want to change the language of this post to', 'linguator-multilingual-ai-translation'), ' ', /*#__PURE__*/React.createElement("strong", null, getSelectedLanguageName()), "?"), /*#__PURE__*/React.createElement("p", null, (0,external_wp_i18n_namespaceObject.__)('This will update the language of the current post. Any unsaved changes will be lost.', 'linguator-multilingual-ai-translation')), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("p", null, (0,external_wp_i18n_namespaceObject.__)('Are you sure you want to change the language of this post to', 'translate-words'), ' ', /*#__PURE__*/React.createElement("strong", null, getSelectedLanguageName()), "?"), /*#__PURE__*/React.createElement("p", null, (0,external_wp_i18n_namespaceObject.__)('This will update the language of the current post. Any unsaved changes will be lost.', 'translate-words')), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'flex-end',
@@ -490,11 +490,11 @@ var LanguageSection = function LanguageSection(_ref) {
     variant: "secondary",
     onClick: handleCancelLanguageChange,
     disabled: updating
-  }, (0,external_wp_i18n_namespaceObject.__)('Cancel', 'linguator-multilingual-ai-translation')), /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.Button, {
+  }, (0,external_wp_i18n_namespaceObject.__)('Cancel', 'translate-words')), /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.Button, {
     variant: "primary",
     onClick: handleConfirmLanguageChange,
     disabled: updating
-  }, (0,external_wp_i18n_namespaceObject.__)('Change Language', 'linguator-multilingual-ai-translation')))));
+  }, (0,external_wp_i18n_namespaceObject.__)('Change Language', 'translate-words')))));
 };
 var TranslationRow = function TranslationRow(_ref4) {
   var row = _ref4.row;
@@ -576,7 +576,7 @@ var TranslationRow = function TranslationRow(_ref4) {
               _context3.p = 3;
               _t2 = _context3.v;
               setSaving(false);
-              setError((0,external_wp_i18n_namespaceObject.__)('Failed to save title. Please try again.', 'linguator-multilingual-ai-translation'));
+              setError((0,external_wp_i18n_namespaceObject.__)('Failed to save title. Please try again.', 'translate-words'));
               // Optional: console.error(e);
             case 4:
               return _context3.a(2);
@@ -693,7 +693,7 @@ var TranslationRow = function TranslationRow(_ref4) {
           case 3:
             _context5.p = 3;
             _t4 = _context5.v;
-            setError((0,external_wp_i18n_namespaceObject.__)('Failed to link page. Please try again.', 'linguator-multilingual-ai-translation'));
+            setError((0,external_wp_i18n_namespaceObject.__)('Failed to link page. Please try again.', 'translate-words'));
           case 4:
             _context5.p = 4;
             setLinking(false);
@@ -749,7 +749,7 @@ var TranslationRow = function TranslationRow(_ref4) {
           case 3:
             _context6.p = 3;
             _t5 = _context6.v;
-            setError((0,external_wp_i18n_namespaceObject.__)('Failed to create page. Please try again.', 'linguator-multilingual-ai-translation'));
+            setError((0,external_wp_i18n_namespaceObject.__)('Failed to create page. Please try again.', 'translate-words'));
           case 4:
             _context6.p = 4;
             setLinking(false);
@@ -792,17 +792,17 @@ var TranslationRow = function TranslationRow(_ref4) {
   }, /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.TextControl, {
     value: title,
     onChange: handleTitleChange,
-    placeholder: (0,external_wp_i18n_namespaceObject.__)('title', 'linguator-multilingual-ai-translation'),
+    placeholder: (0,external_wp_i18n_namespaceObject.__)('title', 'translate-words'),
     readOnly: !editable,
     disabled: !editable,
-    help: editable ? saving ? (0,external_wp_i18n_namespaceObject.__)('Saving…', 'linguator-multilingual-ai-translation') : (0,external_wp_i18n_namespaceObject.__)('Type title to save translation.', 'linguator-multilingual-ai-translation') : (0,external_wp_i18n_namespaceObject.__)('Modify title via Edit.', 'linguator-multilingual-ai-translation')
+    help: editable ? saving ? (0,external_wp_i18n_namespaceObject.__)('Saving…', 'translate-words') : (0,external_wp_i18n_namespaceObject.__)('Type title to save translation.', 'translate-words') : (0,external_wp_i18n_namespaceObject.__)('Modify title via Edit.', 'translate-words')
   })), /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.FlexItem, {
     style: {
       paddingTop: '14px'
     }
   }, hasEdit ? /*#__PURE__*/React.createElement("a", {
     href: links.edit_link,
-    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Edit translation', 'linguator-multilingual-ai-translation'),
+    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Edit translation', 'translate-words'),
     style: {
       marginLeft: 8,
       height: "100%",
@@ -815,7 +815,7 @@ var TranslationRow = function TranslationRow(_ref4) {
     size: 20
   })) : null, !hasEdit && (selectedSuggestion ? /*#__PURE__*/React.createElement("button", {
     onClick: linkSelected,
-    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Link existing page', 'linguator-multilingual-ai-translation'),
+    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Link existing page', 'translate-words'),
     style: {
       marginLeft: 8,
       background: 'transparent',
@@ -827,7 +827,7 @@ var TranslationRow = function TranslationRow(_ref4) {
     size: 20
   })) : hasAdd ? (title || '').trim().length > 0 ? /*#__PURE__*/React.createElement("button", {
     onClick: createFromTyped,
-    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Create translation from typed title', 'linguator-multilingual-ai-translation'),
+    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Create translation from typed title', 'translate-words'),
     style: {
       marginLeft: 8,
       background: 'transparent',
@@ -839,7 +839,7 @@ var TranslationRow = function TranslationRow(_ref4) {
     size: 20
   })) : /*#__PURE__*/React.createElement("a", {
     href: links.add_link,
-    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Add translation', 'linguator-multilingual-ai-translation'),
+    "aria-label": (0,external_wp_i18n_namespaceObject.__)('Add translation', 'translate-words'),
     style: {
       marginLeft: 8,
       height: "100%",
@@ -882,7 +882,7 @@ var TranslationsSection = function TranslationsSection(_ref9) {
   var translations = _ref9.translations;
   var rows = Object.values(translations);
   return /*#__PURE__*/React.createElement(external_wp_components_namespaceObject.PanelBody, {
-    title: (0,external_wp_i18n_namespaceObject.__)('Translations', 'linguator-multilingual-ai-translation'),
+    title: (0,external_wp_i18n_namespaceObject.__)('Translations', 'translate-words'),
     initialOpen: true
   }, rows.map(function (row) {
     return /*#__PURE__*/React.createElement(TranslationRow, {
@@ -897,9 +897,9 @@ var Sidebar = function Sidebar() {
   var translations = (settings === null || settings === void 0 ? void 0 : settings.translations_table) || {};
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(external_wp_editPost_namespaceObject.PluginSidebarMoreMenuItem, {
     target: SIDEBAR_NAME
-  }, (0,external_wp_i18n_namespaceObject.__)('Linguator', 'linguator-multilingual-ai-translation')), /*#__PURE__*/React.createElement(external_wp_editPost_namespaceObject.PluginSidebar, {
+  }, (0,external_wp_i18n_namespaceObject.__)('Linguator', 'translate-words')), /*#__PURE__*/React.createElement(external_wp_editPost_namespaceObject.PluginSidebar, {
     name: SIDEBAR_NAME,
-    title: (0,external_wp_i18n_namespaceObject.__)('Linguator', 'linguator-multilingual-ai-translation')
+    title: (0,external_wp_i18n_namespaceObject.__)('Linguator', 'translate-words')
   }, /*#__PURE__*/React.createElement(LanguageSection, {
     lang: lang,
     allLanguages: translations

@@ -212,7 +212,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		add_screen_option(
 			'per_page',
 			array(
-				'label'   => __( 'Languages', 'linguator-multilingual-ai-translation' ),
+				'label'   => __( 'Languages', 'translate-words' ),
 				'default' => 10,
 				'option'  => 'lmat_lang_per_page',
 			)
@@ -232,7 +232,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		add_screen_option(
 			'per_page',
 			array(
-				'label'   => __( 'Strings translations', 'linguator-multilingual-ai-translation' ),
+				'label'   => __( 'Strings translations', 'translate-words' ),
 				'default' => 10,
 				'option'  => 'lmat_strings_per_page',
 			)
@@ -272,7 +272,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		
 
 		wp_enqueue_script('lmat-loco-redirect-script', plugins_url('admin/assets/js/loco-redirect-script.js', LINGUATOR_ROOT_FILE), array('jquery'), LINGUATOR_VERSION, true);
-		wp_localize_script('lmat-loco-redirect-script', 'lmat_loco_redirect_script', array('admin_' => esc_url(admin_url('admin.php?page=lmat_settings')), 'loco_iframe_page_url' => array("url" => $plugin_info_url, "title" => esc_js( __( 'Plugin: Loco Translate', 'linguator-multilingual-ai-translation' ) )), 'loco_install' => $loco_install));
+		wp_localize_script('lmat-loco-redirect-script', 'lmat_loco_redirect_script', array('admin_' => esc_url(admin_url('admin.php?page=lmat_settings')), 'loco_iframe_page_url' => array("url" => $plugin_info_url, "title" => esc_js( __( 'Plugin: Loco Translate', 'translate-words' ) )), 'loco_install' => $loco_install));
 	}
 
 	/**
@@ -333,14 +333,14 @@ class LMAT_Settings extends LMAT_Admin_Base {
 				if ( is_wp_error( $language ) ) {
 						lmat_add_notice( $language );
 				} else {
-					lmat_add_notice( new WP_Error( 'lmat_languages_created', __( 'Language added.', 'linguator-multilingual-ai-translation' ), 'success' ) );
+					lmat_add_notice( new WP_Error( 'lmat_languages_created', __( 'Language added.', 'translate-words' ), 'success' ) );
 					$locale = $language->locale;
 
 					if ( 'en_US' !== $language->locale && current_user_can( 'install_languages' ) ) {
 						// Attempts to install the language pack
 						require_once ABSPATH . 'wp-admin/includes/translation-install.php';
 						if ( ! wp_download_language_pack( $language->locale ) ) {
-							lmat_add_notice( new WP_Error( 'lmat_download_mo', __( 'The language was created, but the WordPress language file was not downloaded. Please install it manually.', 'linguator-multilingual-ai-translation' ), 'warning' ) );
+							lmat_add_notice( new WP_Error( 'lmat_download_mo', __( 'The language was created, but the WordPress language file was not downloaded. Please install it manually.', 'translate-words' ), 'warning' ) );
 						}
 
 						// Force checking for themes and plugins translations updates
@@ -355,7 +355,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 				check_admin_referer( 'delete-lang' );
 
 				if ( ! empty( $_GET['lang'] ) && $this->model->delete_language( (int) $_GET['lang'] ) ) {
-					lmat_add_notice( new WP_Error( 'lmat_languages_deleted', __( 'Language deleted.', 'linguator-multilingual-ai-translation' ), 'success' ) );
+					lmat_add_notice( new WP_Error( 'lmat_languages_deleted', __( 'Language deleted.', 'translate-words' ), 'success' ) );
 				}
 
 				
@@ -377,7 +377,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 				if ( is_wp_error( $errors ) ) {
 					lmat_add_notice( $errors );
 				} else {
-					lmat_add_notice( new WP_Error( 'lmat_languages_updated', __( 'Language updated.', 'linguator-multilingual-ai-translation' ), 'success' ) );
+					lmat_add_notice( new WP_Error( 'lmat_languages_updated', __( 'Language updated.', 'translate-words' ), 'success' ) );
 				}
 
 
@@ -543,19 +543,19 @@ class LMAT_Settings extends LMAT_Admin_Base {
 	private function get_language_switcher_options() {
         $language_switcher_options = array(
             array(
-                'label' => __( 'Classic (Widgets) Based', 'linguator-multilingual-ai-translation' ),
+                'label' => __( 'Classic (Widgets) Based', 'translate-words' ),
                 'value' => 'default',
 				'subheading' => 'Standard language switcher widget that can be added to widget areas and sidebars.'
             ),
             array(
-                'label' => __( 'Block Based', 'linguator-multilingual-ai-translation' ),
+                'label' => __( 'Block Based', 'translate-words' ),
                 'value' => 'block',
 				'subheading' => 'Gutenberg block widget for the block editor, compatible with modern WordPress themes.'
             )
         );
         if(lmat_is_plugin_active('elementor/elementor.php')){
             $language_switcher_options[] = array(
-                'label' => __( 'Elementor Widget Based', 'linguator-multilingual-ai-translation' ),
+                'label' => __( 'Elementor Widget Based', 'translate-words' ),
                 'value' => 'elementor',
 				'subheading' => 'Specialized widget for Elementor page builder with enhanced styling and customization options.'
             );
@@ -618,7 +618,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 				$translation_providers=(isset($cpt_dashboard_data['service_providers']) && is_array($cpt_dashboard_data['service_providers'])) ? $cpt_dashboard_data['service_providers'] : array();
 				$translations_data['total_string']=isset($cpt_dashboard_data['total_string_count']) ? $this->lmat_format_number($cpt_dashboard_data['total_string_count']) : 0;
 				$translations_data['total_character']=isset($cpt_dashboard_data['total_character_count']) ? $this->lmat_format_number($cpt_dashboard_data['total_character_count']) : 0;
-				$translations_data['total_time']=isset($cpt_dashboard_data['total_time_taken']) ? $this->lmat_format_time_taken($cpt_dashboard_data['total_time_taken'], 'linguator-multilingual-ai-translation') : 0;
+				$translations_data['total_time']=isset($cpt_dashboard_data['total_time_taken']) ? $this->lmat_format_time_taken($cpt_dashboard_data['total_time_taken']) : 0;
 				$translations_data['total_pages']=isset($cpt_dashboard_data['data']) ? count($cpt_dashboard_data['data']) : 0;
 				$translations_data['service_providers']=array_map(function($item) use ($avilable_service_providers){
 					return $avilable_service_providers[$item];
@@ -639,7 +639,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 				'lmat_settings',
 				'lmat_settings',
 				array(
-					'dismiss_notice' => esc_html__( 'Dismiss this notice.', 'linguator-multilingual-ai-translation' ),
+					'dismiss_notice' => esc_html__( 'Dismiss this notice.', 'translate-words' ),
 					'api_url'        => rest_url( 'lmat/v1/' ),
 					'nonce'          => wp_create_nonce( 'wp_rest' ),
 					'activate_nonce' => wp_create_nonce( 'activate-plugin_automatic-translator-addon-for-loco-translate/automatic-translator-addon-for-loco-translate.php' ),
@@ -680,7 +680,7 @@ class LMAT_Settings extends LMAT_Admin_Base {
 			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
 			wp_enqueue_script( 'lmat_settings', plugins_url( 'admin/assets/js/build/settings' . $suffix . '.js', LINGUATOR_ROOT_FILE ), array( 'jquery', 'wp-ajax-response', 'postbox', 'jquery-ui-selectmenu', 'wp-hooks' ), LINGUATOR_VERSION, true );
-			wp_localize_script( 'lmat_settings', 'lmat_settings', array( 'dismiss_notice' => esc_html__( 'Dismiss this notice.', 'linguator-multilingual-ai-translation' ) ) );
+			wp_localize_script( 'lmat_settings', 'lmat_settings', array( 'dismiss_notice' => esc_html__( 'Dismiss this notice.', 'translate-words' ) ) );
 
 			wp_enqueue_style( 'lmat_selectmenu', plugins_url( 'admin/assets/css/build/selectmenu' . $suffix . '.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
 		}
@@ -719,30 +719,30 @@ class LMAT_Settings extends LMAT_Admin_Base {
 	}
 
 	function lmat_format_time_taken($time_taken) {
-		if ($time_taken === 0) return esc_html__('0', 'linguator-multilingual-ai-translation');
+		if ($time_taken === 0) return esc_html__('0', 'translate-words');
 		if ($time_taken < 60) {
 			// translators: %d: Time taken in seconds.
-			return sprintf(esc_html__('%d sec', 'linguator-multilingual-ai-translation'), $time_taken);
+			return sprintf(esc_html__('%d sec', 'translate-words'), $time_taken);
 		}
 		if ($time_taken < 3600) {
 			$min = floor($time_taken / 60);
 			$sec = $time_taken % 60;
 			// translators: %1$d: Minutes, %2$d: Seconds.
-			return sprintf(esc_html__('%1$d min %2$d sec', 'linguator-multilingual-ai-translation'), $min, $sec);
+			return sprintf(esc_html__('%1$d min %2$d sec', 'translate-words'), $min, $sec);
 		}
 		$hours = floor($time_taken / 3600);
 		$min = floor(($time_taken % 3600) / 60);
 		// translators: %1$d: Hours, %2$d: Minutes.
-		return sprintf(esc_html__('%1$d hours %2$d min', 'linguator-multilingual-ai-translation'), $hours, $min);
+		return sprintf(esc_html__('%1$d hours %2$d min', 'translate-words'), $hours, $min);
 	}
 
 	public function lmat_format_number($number) {
 		if ($number >= 1000000000) {
-			return round($number / 1000000000, 1) . esc_html__('B', 'linguator-multilingual-ai-translation');
+			return round($number / 1000000000, 1) . esc_html__('B', 'translate-words');
 		} elseif ($number >= 1000000) {
-			return round($number / 1000000, 1) . esc_html__('M', 'linguator-multilingual-ai-translation');
+			return round($number / 1000000, 1) . esc_html__('M', 'translate-words');
 		} elseif ($number >= 1000) {
-			return round($number / 1000, 1) . esc_html__('K', 'linguator-multilingual-ai-translation');
+			return round($number / 1000, 1) . esc_html__('K', 'translate-words');
 		}
 		return $number;
 	}
@@ -758,9 +758,9 @@ class LMAT_Settings extends LMAT_Admin_Base {
 		if ( ! empty( $this->options['default_lang'] ) && $this->model->get_objects_with_no_lang( 1 ) ) {
 			printf(
 				'<div class="error"><p>%s <a href="%s">%s</a></p></div>',
-				esc_html__( 'There are posts, pages, categories or tags without language.', 'linguator-multilingual-ai-translation' ),
+				esc_html__( 'There are posts, pages, categories or tags without language.', 'translate-words' ),
 				esc_url( wp_nonce_url( '?page=lmat&lmat_action=content-default-lang&noheader=true', 'content-default-lang' ) ),
-				esc_html__( 'You can set them all to the default language.', 'linguator-multilingual-ai-translation' )
+				esc_html__( 'You can set them all to the default language.', 'translate-words' )
 			);
 		}
 	}

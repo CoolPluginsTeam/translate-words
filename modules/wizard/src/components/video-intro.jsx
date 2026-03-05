@@ -7,10 +7,10 @@ const VideoIntro = ({ onGetStarted }) => {
     <div className="mx-auto max-w-[600px] p-10 min-h-[38vh] bg-white shadow-sm flex flex-col" style={{marginTop: "12px"}}>
       <div className="text-center mb-6">
         <h3 className="text-2xl font-semibold text-text-primary mb-3">
-          {__("Watch Setup Guide", "linguator-multilingual-ai-translation")}
+          {__("Watch Setup Guide", "translate-words")}
         </h3>
         <p className="text-text-secondary mb-6">
-          {__("Learn how to configure Linguator for your Multilingual Website", "linguator-multilingual-ai-translation")}
+          {__("Learn how to configure Linguator for your Multilingual Website", "translate-words")}
         </p>
       </div>
       
@@ -27,7 +27,7 @@ const VideoIntro = ({ onGetStarted }) => {
       
       <div className="flex justify-center pt-4">
         <Button onClick={onGetStarted} className="px-8 py-3">
-          {__("Get Started", "linguator-multilingual-ai-translation")}
+          {__("Get Started", "translate-words")}
         </Button>
       </div>
     </div>

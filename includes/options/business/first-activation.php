@@ -72,7 +72,7 @@ class First_Activation extends Abstract_Option {
 	 * @return string
 	 */
 	protected function get_description(): string {
-		return __( 'Time of first activation of Linguator.', 'linguator-multilingual-ai-translation' );
+		return __( 'Time of first activation of Linguator.', 'translate-words' );
 	}
 
 	/**
