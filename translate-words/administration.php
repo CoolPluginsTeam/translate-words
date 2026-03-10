@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     /**
      * Admin page content.
      *
-     * @package tww
+     * @package lmat
      */
 
     // Mark this file as deprecated - only on specific admin pages
@@ -32,13 +32,13 @@ if ( ! defined( 'ABSPATH' ) ) {
      * This covers the new translation input fields and is used in both PHP and JS.
      */
     define(
-        'TWW_NEW_STRING_TEMPLATE',
+        'LMAT_NEW_STRING_TEMPLATE',
         '<tr valign="top">' .
         '<td style="white-space: nowrap">' .
-        '<input type="text" style="width:100%;" name="' . esc_attr( TWW_TRANSLATIONS_LINES ) . '[original][]" />' .
+        '<input type="text" style="width:100%;" name="' . esc_attr( LMAT_TRANSLATIONS_LINES ) . '[original][]" />' .
         '&rarr;' .
         '</td>' .
-        '<td><input type="text" style="width:100%;" name="' . esc_attr( TWW_TRANSLATIONS_LINES ) . '[overwrite][]" /></td>' .
+        '<td><input type="text" style="width:100%;" name="' . esc_attr( LMAT_TRANSLATIONS_LINES ) . '[overwrite][]" /></td>' .
         '<td></td>' .
         '</tr>'
     );
@@ -48,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function tww_add_admin_menu()
+    function lmat_add_admin_menu()
     {
 
         // Check if Loco Translate is active
@@ -56,7 +56,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        $translations = get_option(TWW_TRANSLATIONS_LINES);
+        $translations = get_option(LMAT_TRANSLATIONS_LINES);
 
         // If Loco Translate is active and there's no data, don't show the menu
         if (is_plugin_active('loco-translate/loco.php') && empty($translations)) {
@@ -67,20 +67,20 @@ if ( ! defined( 'ABSPATH' ) ) {
             esc_html__('Translate Words', 'translate-words'),
             esc_html__('Translate Words', 'translate-words'),
             'administrator',
-            TWW_PAGE,
-            'tww_setting_page'
+            LMAT_PAGE,
+            'lmat_setting_page'
         );
 
     }
 
-    add_action('admin_menu', 'tww_add_admin_menu');
+    add_action('admin_menu', 'lmat_add_admin_menu');
 
     /**
      * Enqueue Admin Scripts.
      *
      * @return void
      */
-    function tww_admin_enqueue_scripts()
+    function lmat_admin_enqueue_scripts()
     {
 
         global $pagenow;
@@ -100,18 +100,18 @@ if ( ! defined( 'ABSPATH' ) ) {
         }
 
         wp_enqueue_script(
-            'TWW_TRANSLATIONS_ADMIN',
-            TWW_PLUGINS_DIR . 'js/main.js',
+            'LMAT_TRANSLATIONS_ADMIN',
+            LMAT_PLUGINS_DIR . 'js/main.js',
             ['jquery'],
             '1.0.1',
             false
         );
 
         wp_localize_script(
-            'TWW_TRANSLATIONS_ADMIN',
-            'tww_properties',
+            'LMAT_TRANSLATIONS_ADMIN',
+            'lmat_properties',
             [
-                'template'      => TWW_NEW_STRING_TEMPLATE,
+                'template'      => LMAT_NEW_STRING_TEMPLATE,
                 'ajax_url'      => admin_url('admin-ajax.php'),
                 'dismiss_nonce' => wp_create_nonce('tww_dismiss_notice'),
             ]
@@ -119,16 +119,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         // Add inline script for notice dismissal
         wp_add_inline_script(
-            'TWW_TRANSLATIONS_ADMIN',
+            'LMAT_TRANSLATIONS_ADMIN',
             "
 		jQuery(document).ready(function($) {
 			$(document).on('click', '.tww-deprecation-notice .notice-dismiss', function() {
 				$.ajax({
-					url: tww_properties.ajax_url,
+					url: lmat_properties.ajax_url,
 					type: 'POST',
 					data: {
 						action: 'tww_dismiss_deprecation_notice',
-						nonce: tww_properties.dismiss_nonce
+						nonce: lmat_properties.dismiss_nonce
 					}
 				});
 			});
@@ -138,21 +138,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     }
 
-    add_action('admin_enqueue_scripts', 'tww_admin_enqueue_scripts');
+    add_action('admin_enqueue_scripts', 'lmat_admin_enqueue_scripts');
 
     /**
      * Initialize the setting.
      *
      * @return void
      */
-    function tww_settings_init()
+    function lmat_settings_init()
     {
 
         register_setting(
-            TWW_TRANSLATIONS,
-            TWW_TRANSLATIONS_LINES,
+            LMAT_TRANSLATIONS,
+            LMAT_TRANSLATIONS_LINES,
             [
-                'sanitize_callback' => 'tww_validate_translations_and_save',
+                'sanitize_callback' => 'lmat_validate_translations_and_save',
                 'type'              => 'array',
                 'default'           => '',
             ]
@@ -160,7 +160,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     }
 
-    add_action('admin_init', 'tww_settings_init');
+    add_action('admin_init', 'lmat_settings_init');
 
     /**
      * Validate the translations and save the settings.
@@ -168,7 +168,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      * @param {array} $strings The translations strings to save.
      * @return {void}
      */
-    function tww_validate_translations_and_save($strings)
+    function lmat_validate_translations_and_save($strings)
     {
 
         $update_translations = [];
@@ -218,11 +218,11 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function tww_display_deprecation_notice()
+    function lmat_display_deprecation_notice()
     {
         // Only show on Translate Words settings page
         $screen = get_current_screen();
-        if (! $screen || 'settings_page_' . TWW_PAGE !== $screen->id) {
+        if (! $screen || 'settings_page_' . LMAT_PAGE !== $screen->id) {
             return;
         }
         // Don't show notice if Loco Translate is active
@@ -248,6 +248,11 @@ if ( ! defined( 'ABSPATH' ) ) {
         ) . '</p>';
         $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'translate-words') . '</strong><br>';
         $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
+        $message .= '<p>' . sprintf(
+            // translators: %s: Loco Translate
+            esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words'),
+            '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'translate-words') . '</a>'
+        ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
         $message .= '<a href="' . esc_url('https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=tw_notice') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
         $message .= '</p>';
@@ -259,14 +264,14 @@ if ( ! defined( 'ABSPATH' ) ) {
         );
     }
 
-    add_action('admin_notices', 'tww_display_deprecation_notice');
+    add_action('admin_notices', 'lmat_display_deprecation_notice');
 
     /**
      * Handle AJAX request to dismiss deprecation notice.
      *
      * @return void
      */
-    function tww_dismiss_deprecation_notice()
+    function lmat_dismiss_deprecation_notice()
     {
         check_ajax_referer('tww_dismiss_notice', 'nonce');
 
@@ -287,7 +292,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         wp_send_json_success(['message' => 'Notice dismissed successfully']);
     }
 
-    add_action('wp_ajax_tww_dismiss_deprecation_notice', 'tww_dismiss_deprecation_notice');
+    add_action('wp_ajax_tww_dismiss_deprecation_notice', 'lmat_dismiss_deprecation_notice');
 
     /**
      * Display the settings page.
@@ -297,10 +302,10 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function tww_setting_page()
+    function lmat_setting_page()
     {
 
-        $translations = get_option(TWW_TRANSLATIONS_LINES);
+        $translations = get_option(LMAT_TRANSLATIONS_LINES);
 
         // Check if Loco Translate is active
         if (! function_exists('is_plugin_active')) {
@@ -326,8 +331,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<form method="POST" action="options.php">
 
 	<?php
-		do_settings_sections(TWW_TRANSLATIONS);
-		settings_fields(TWW_TRANSLATIONS);
+		do_settings_sections(LMAT_TRANSLATIONS);
+		settings_fields(LMAT_TRANSLATIONS);
 	?>
 		<table class="translation-table wp-list-table widefat fixed striped">
 			<thead>
@@ -348,11 +353,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 				?>
 					<tr valign="top" id="row_id_<?php echo esc_attr($key); ?>_translate">
 						<td style="white-space: nowrap">
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(TWW_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_textarea($original); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_textarea($original); ?>" />
 							&rarr;
 						</td>
 						<td>
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(TWW_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_textarea($value['overwrite']); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_textarea($value['overwrite']); ?>" />
 						</td>
 						<td class="action">
 							<span class="trash">
@@ -369,7 +374,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			}
 
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template constant contains safe HTML structure with pre-defined input fields
-			echo TWW_NEW_STRING_TEMPLATE;
+			echo LMAT_NEW_STRING_TEMPLATE;
 
 		?>
 
@@ -393,25 +398,25 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return {void}
      */
-    function tww_translate_gutenberg_string()
+    function lmat_translate_gutenberg_string()
     {
 
         // Output translations as json array.
-        $overrides = get_option(TWW_TRANSLATIONS_LINES);
+        $overrides = get_option(LMAT_TRANSLATIONS_LINES);
 
         if (! is_array($overrides)) {
             return;
         }
 
         printf(
-            '<script>var tww_translations = %s;</script>',
+            '<script>var lmat_translations = %s;</script>',
             wp_json_encode($overrides)
         );
 
         // Enqueue editor scripts.
         wp_enqueue_script(
-            'TWW_TRANSLATIONS_JS',
-            TWW_PLUGINS_DIR . 'js/gb_i18n.js',
+            'LMAT_TRANSLATIONS_JS',
+            LMAT_PLUGINS_DIR . 'js/gb_i18n.js',
             ['jquery'],
             '1.0.0',
             true
@@ -419,4 +424,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     }
 
-add_filter('admin_head', 'tww_translate_gutenberg_string');
+    add_filter('admin_head', 'lmat_translate_gutenberg_string');

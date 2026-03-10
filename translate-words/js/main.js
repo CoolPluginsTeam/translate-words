@@ -22,7 +22,7 @@ function addRowTranslate( e ) {
 
 	e.preventDefault();
 
-	jQuery( '#rowsTranslations' ).append( tww_properties.template );
+	jQuery( '#rowsTranslations' ).append( lmat_properties.template );
 
 	return false;
 

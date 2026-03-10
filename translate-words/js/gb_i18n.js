@@ -1,12 +1,12 @@
 
-if ( tww_translations.length > 0 ) {
+if ( lmat_translations.length > 0 ) {
 
 	var pluginGettextFilter = function( translation ) {
 
 		var newTranslation = translation;
 
 		jQuery.each(
-			tww_translations,
+			lmat_translations,
 			function( key, object ) {
 				if ( translation === object.original ) {
 

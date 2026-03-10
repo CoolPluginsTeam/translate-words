@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Translates strings on the frontend.
  *
- * @package tww
+ * @package lmat
  */
 
 // Mark this file as deprecated - only on specific admin pages
@@ -40,14 +40,14 @@ if (
  * @param string $translated_string The string being translated.
  * @return string
  */
-function tww_apply_translate_string( $translated_string ) {
+function lmat_apply_translate_string( $translated_string ) {
 
 	static $cached_overrides = null;
 
 	// Check if overrides are already cached.
 	if ( is_null( $cached_overrides ) ) {
 		// Retrieve overrides from option if not already cached.
-		$cached_overrides = get_option( TWW_TRANSLATIONS_LINES );
+		$cached_overrides = get_option( LMAT_TRANSLATIONS_LINES );
 	}
 
 	// Check if overrides are not an array or empty.
@@ -61,12 +61,12 @@ function tww_apply_translate_string( $translated_string ) {
 	$replace = array_column( $cached_overrides, 'overwrite' );
 
 	// Perform search and replace using cached keys and replace arrays.
-	return tww_search_and_replace( $translated_string, $keys, $replace );
+	return lmat_search_and_replace( $translated_string, $keys, $replace );
 
 }
 
-add_filter( 'gettext', 'tww_apply_translate_string', 20 );
-add_filter( 'ngettext', 'tww_apply_translate_string', 20 );
+add_filter( 'gettext', 'lmat_apply_translate_string', 20 );
+add_filter( 'ngettext', 'lmat_apply_translate_string', 20 );
 
 
 /**
@@ -77,7 +77,7 @@ add_filter( 'ngettext', 'tww_apply_translate_string', 20 );
  * @param array  $replace            The replacements.
  * @return string
  */
-function tww_search_and_replace( $translated_string, $keys, $replace ) {
+function lmat_search_and_replace( $translated_string, $keys, $replace ) {
 
 	/**
 	 * We perform two replacements here: first case-sensitive, then case-insensitive.
@@ -104,14 +104,14 @@ function tww_search_and_replace( $translated_string, $keys, $replace ) {
 	 * This covers instances where there are two translations that are the same,
 	 * but with different cases.
 	 */
-	$translated_string = tww_do_search_and_replace( $translated_string, $keys, $replace );
+	$translated_string = lmat_do_search_and_replace( $translated_string, $keys, $replace );
 
 	/**
 	 * Do a case insensitive replacement.
 	 * This picks up instances where case doesn't matter, and works for
 	 * backwards compatability.
 	 */
-	$translated_string = tww_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
+	$translated_string = lmat_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
 
 	return $translated_string;
 
@@ -127,7 +127,7 @@ function tww_search_and_replace( $translated_string, $keys, $replace ) {
  * @param bool   $case_sensitive    Whether the search should be case sensitive.
  * @return string
  */
-function tww_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
+function lmat_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
 
 	$search_keys = array_map(
 		function( $key ) use ( $modifier ) {
