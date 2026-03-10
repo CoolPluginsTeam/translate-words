@@ -81,7 +81,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 				$header->header_assets();
 
 				wp_enqueue_script( 'lmat-datatable-script', plugins_url( 'admin/assets/js/dataTables.min.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
-				wp_enqueue_script( 'lmat-datatable-style', plugins_url( 'admin/assets/js/dataTables.min.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
+				wp_enqueue_style( 'lmat-datatable-style', plugins_url( 'admin/assets/css/dataTables.min.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, 'all' );
 				wp_enqueue_style( 'lmat-custom-data-table', plugins_url( 'admin/assets/css/lmat-custom-data-table.min.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
 				wp_enqueue_script( 'lmat-custom-data-table', plugins_url( 'admin/assets/js/lmat-custom-data-table.min.js', LINGUATOR_ROOT_FILE ), array('lmat-datatable-script'), LINGUATOR_VERSION, true );
 				
