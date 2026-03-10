@@ -182,8 +182,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                 if (! empty($value)) {
                     $update_translations[] = [
-                        'original'  => $value,
-                        'overwrite' => $strings['overwrite'][$key],
+                        'original'  => sanitize_textarea_field($value),
+                        'overwrite' => isset($strings['overwrite'][$key])
+                            ? sanitize_textarea_field($strings['overwrite'][$key])
+                            : '',
                     ];
                 }
             }
