@@ -110,12 +110,28 @@ class LMAT_CRUD_Posts {
 		if ( ! $user_id ) {
 			return;
 		}
-		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			update_user_meta( $user_id, '_lmat_pending_linking_intent', array(
-				'from_post' => (int) $_GET['from_post'], // phpcs:ignore WordPress.Security.NonceVerification
-				'new_lang'  => sanitize_key( $_GET['new_lang'] ), // phpcs:ignore WordPress.Security.NonceVerification
-			) );
-		} else {
+		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+			if ( wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+				$from_post_id = absint( $_GET['from_post'] );
+				$new_lang     = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
+
+				if ( $from_post_id > 0 && ! empty( $new_lang ) && current_user_can( 'edit_post', $from_post_id ) ) {
+					update_user_meta(
+						$user_id,
+						'_lmat_pending_linking_intent',
+						array(
+							'from_post' => $from_post_id,
+							'new_lang'  => $new_lang,
+						)
+					);
+					return;
+				}
+			}
+		}
+
+		// Visiting the editor without explicit intent: purge any stale intent.
+		{
 			// Visiting the editor without explicit intent: purge any stale intent.
 			delete_user_meta( $user_id, '_lmat_pending_linking_intent' );
 		}
@@ -201,15 +217,23 @@ class LMAT_CRUD_Posts {
 			$is_autodraft = isset( $post->post_status ) && 'auto-draft' === $post->post_status;
 			if ( $is_autodraft ) {
 				// Persist intended linking info to apply on first real save.
-				if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-					update_post_meta( $post_id, '_lmat_from_post', (int) $_GET['from_post'] ); // phpcs:ignore WordPress.Security.NonceVerification
-					update_post_meta( $post_id, '_lmat_new_lang', sanitize_key( $_GET['new_lang'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+				if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
+					$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+					if ( wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+						$from_post_id = absint( $_GET['from_post'] );
+						$new_lang     = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
+
+						if ( $from_post_id > 0 && ! empty( $new_lang ) && current_user_can( 'edit_post', $from_post_id ) && current_user_can( 'edit_post', $post_id ) ) {
+							update_post_meta( $post_id, '_lmat_from_post', $from_post_id );
+							update_post_meta( $post_id, '_lmat_new_lang', $new_lang );
+							return;
+						}
+					}
 				}
-				else {
-					// Ensure a plain Add New (no query args) doesn't inherit stale intent
-					delete_post_meta( $post_id, '_lmat_from_post' );
-					delete_post_meta( $post_id, '_lmat_new_lang' );
-				}
+
+				// Ensure a plain Add New (no query args) doesn't inherit stale intent.
+				delete_post_meta( $post_id, '_lmat_from_post' );
+				delete_post_meta( $post_id, '_lmat_new_lang' );
 			} else {
 				// Handle from_post parameter or previously stored intent for translation linking
 				$this->handle_translation_linking( $post_id );
@@ -240,9 +264,13 @@ class LMAT_CRUD_Posts {
 		// Prefer explicit query args, otherwise use any stored intent from post meta.
 		$from_post_id = 0;
 		$new_lang_slug = '';
-		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$from_post_id = (int) $_GET['from_post']; // phpcs:ignore WordPress.Security.NonceVerification
-			$new_lang_slug = sanitize_key( $_GET['new_lang'] ); // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+			if ( ! wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+				return;
+			}
+			$from_post_id  = absint( $_GET['from_post'] );
+			$new_lang_slug = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
 		} else {
 			$from_post_id = (int) get_post_meta( $post_id, '_lmat_from_post', true );
 			$new_lang_slug = sanitize_key( (string) get_post_meta( $post_id, '_lmat_new_lang', true ) );
@@ -255,6 +283,11 @@ class LMAT_CRUD_Posts {
 		// Validate the from_post exists and is translatable
 		$from_post = get_post( $from_post_id );
 		if ( ! $from_post || ! $this->model->is_translated_post_type( $from_post->post_type ) ) {
+			return;
+		}
+
+		// Enforce permissions for linking/creating translations.
+		if ( ! current_user_can( 'edit_post', $from_post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
 		

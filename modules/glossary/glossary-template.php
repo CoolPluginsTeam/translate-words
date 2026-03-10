@@ -342,11 +342,9 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                     class="lmat-lang-header lmat-lang-col-<?php echo esc_attr($lang['code']); ?>" 
                                     data-lang="<?php echo esc_attr($lang['code']); ?>">
                                     <?php
-                                    // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- $lang['flag'] contains pre-sanitized HTML.
                                     echo !empty($lang['flag'])
-                                        ? $lang['flag']
+                                        ? wp_kses_post( $lang['flag'] )
                                         : '<img src="' . esc_attr($lang['img']) . '" alt="' . esc_attr($lang['alt']) . '" />';
-                                    // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
                                     ?>
                                 </th>
                             <?php endforeach; ?>

@@ -81,7 +81,7 @@ class CPFM_Feedback_Notice {
             true
 
         );
-        wp_localize_script('cpfm-common-review-script', 'adminNotice', [
+        wp_localize_script('cpfm-common-review-script', 'cpfmAdminNotice', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('dismiss_admin_notice'),
             'autoShowPages' => array_unique(

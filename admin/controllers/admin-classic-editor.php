@@ -377,7 +377,13 @@ class LMAT_Admin_Classic_Editor {
 	 * @return array Modified arguments.
 	 */
 	public function page_attributes_dropdown_pages_args( $dropdown_args, $post ) {
-		$language = isset( $_POST['lang'] ) ? $this->model->get_language( sanitize_key( $_POST['lang'] ) ) : $this->model->post->get_language( $post->ID ); // phpcs:ignore WordPress.Security.NonceVerification
+		
+		$language = null;
+		if ( isset( $_POST['lang'], $_POST['_lmat_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_lmat_nonce'] ) ), 'lmat_language' ) ) {
+			$language = $this->model->get_language( sanitize_key( wp_unslash( $_POST['lang'] ) ) );
+		} else {
+			$language = $this->model->post->get_language( $post->ID );
+		}
 
 		if ( empty( $language ) ) {
 			$language = $this->pref_lang;

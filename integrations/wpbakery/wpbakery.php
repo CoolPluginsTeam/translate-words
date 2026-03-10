@@ -205,14 +205,21 @@ class LMAT_WPBakery {
 		}
 		
 		// Check if we have from_post parameter
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
-		if ( ! isset( $_GET['from_post'] ) ) {
+		if ( ! isset( $_GET['from_post'], $_GET['_wpnonce'] ) ) {
 			return $content;
 		}
 		
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
+		$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+			return $content;
+		}
+
 		$from_post_id = absint( $_GET['from_post'] );
 		if ( ! $from_post_id ) {
+			return $content;
+		}
+
+		if ( ! current_user_can( 'edit_post', $from_post_id ) ) {
 			return $content;
 		}
 		

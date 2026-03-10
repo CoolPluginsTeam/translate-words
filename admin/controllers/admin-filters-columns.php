@@ -195,7 +195,7 @@ class LMAT_Admin_Filters_Columns {
 						esc_attr( $post->post_title ),
 						esc_url( $link ),
 						esc_html( $s ),
-						$flag // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						wp_kses_post( $flag )
 					);
 				}
 			} elseif ( $id === $post_id ) {
@@ -203,13 +203,13 @@ class LMAT_Admin_Filters_Columns {
 					'<span class="lmat_column_flag" style=""><span class="screen-reader-text">%1$s</span>%2$s</span>',
 					/* translators: accessibility text, %s is a native language name */
 					esc_html( sprintf( __( 'This item is in %s', 'translate-words' ), $language->name ) ),
-					$this->get_flag_html( $language ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					wp_kses_post( $this->get_flag_html( $language ) )
 				);
 			}
 		}
 		// Link to add a new translation
 		else {
-			echo $this->links->new_post_translation_link( $post_id, $language ); // phpcs:ignore WordPress.Security.EscapeOutput
+			echo wp_kses_post( $this->links->new_post_translation_link( $post_id, $language ) );
 		}
 	}
 

@@ -45,12 +45,9 @@ class LMAT_Widget_Calendar extends WP_Widget_Calendar {
 
 		/** This filter is documented in wp-includes/widgets/class-wp-widget-pages.php */
 		$title = apply_filters( 'widget_title', $title, $instance, $this->id_base );
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is trusted as per widget API usage.
-		echo $args['before_widget'];
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is trusted as per widget API usage.
+		echo wp_kses_post( $args['before_widget'] );
 		if ( $title ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is trusted as per widget API usage.
-			echo $args['before_title'] . $title . $args['after_title'];
+			echo wp_kses_post( $args['before_title'] ) . esc_html( $title ) . wp_kses_post( $args['after_title'] );
 		}
 		if ( 0 === self::$lmat_instance ) { #modified#
 			echo '<div id="calendar_wrap" class="calendar_wrap">';
@@ -59,8 +56,7 @@ class LMAT_Widget_Calendar extends WP_Widget_Calendar {
 		}
 		empty( LMAT()->curlang ) ? get_calendar() : self::get_calendar(); #modified#
 		echo '</div>';
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is trusted as per widget API usage.
-		echo $args['after_widget'];
+		echo wp_kses_post( $args['after_widget'] );
 
 		++self::$lmat_instance; #modified#
 	}

@@ -247,6 +247,7 @@ class LMAT_WPSEO {
 	 *  
 	 */
 	public function maybe_deactivate_sitemap() {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Required: Yoast SEO plugin's global.
 		global $wpseo_sitemaps;
 
 		if ( isset( $wpseo_sitemaps ) ) {
@@ -286,6 +287,7 @@ class LMAT_WPSEO {
 	 * @return string Formatted sitemap url.
 	 */
 	protected function format_sitemap_url( $link, $post_type ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Required: Yoast SEO plugin's global.
 		global $wpseo_sitemaps;
 
 		return $wpseo_sitemaps->renderer->sitemap_url(

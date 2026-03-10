@@ -305,7 +305,20 @@ class LMAT_Switcher {
 		}
 
 		if ( $args['echo'] ) {
-			echo $out; // phpcs:ignore WordPress.Security.EscapeOutput
+			echo wp_kses(
+				$out,
+				array(
+					'nav'    => array( 'aria-label' => true, 'class' => true ),
+					'ul'     => array( 'class' => true ),
+					'li'     => array( 'class' => true ),
+					'a'      => array( 'href' => true, 'class' => true, 'title' => true, 'hreflang' => true, 'lang' => true ),
+					'span'   => array( 'class' => true, 'style' => true ),
+					'img'    => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ),
+					'label'  => array( 'for' => true, 'class' => true ),
+					'select' => array( 'id' => true, 'name' => true, 'class' => true, 'aria-label' => true ),
+					'option' => array( 'value' => true, 'selected' => true ),
+				)
+			);
 		}
 		return $out;
 	}

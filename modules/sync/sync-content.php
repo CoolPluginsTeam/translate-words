@@ -286,17 +286,24 @@ class LMAT_Sync_Post {
 	 */
 	public function ids_list_shortcode( $attr, $null, $tag ) {
 		$out = array();
+		$tag = sanitize_key( $tag );
+		if ( ! in_array( $tag, array( 'gallery', 'playlist' ), true ) ) {
+			return '';
+		}
 
 		foreach ( $attr as $k => $v ) {
+			$k = sanitize_key( $k );
 			if ( 'ids' === $k ) {
-				$ids    = explode( ',', $v );
+				$ids    = array_filter( array_map( 'absint', explode( ',', (string) $v ) ) );
 				$tr_ids = array();
 				foreach ( $ids as $id ) {
-					$tr_ids[] = $this->translate_media( (int) $id );
+					$tr_ids[] = (int) $this->translate_media( (int) $id );
 				}
-				$v = implode( ',', $tr_ids );
+				$v = implode( ',', array_filter( $tr_ids ) );
+			} else {
+				$v = sanitize_text_field( (string) $v );
 			}
-			$out[] = $k . '="' . $v . '"';
+			$out[] = $k . '="' . esc_attr( $v ) . '"';
 		}
 
 		return '[' . $tag . ' ' . implode( ' ', $out ) . ']';
@@ -316,15 +323,26 @@ class LMAT_Sync_Post {
 	public function caption_shortcode( $attr, $content, $tag ) {
 		// Translate the caption id
 		$out = array();
+		$tag = sanitize_key( $tag );
+		if ( ! in_array( $tag, array( 'caption', 'wp_caption' ), true ) ) {
+			return '';
+		}
 
 		foreach ( $attr as $k => $v ) {
+			$k = sanitize_key( $k );
 			if ( 'id' === $k ) {
+				$v = sanitize_text_field( (string) $v );
 				$idarr = explode( '_', $v );
-				$id    = $idarr[1]; // Remember this
-				$tr_id = $idarr[1] = $this->translate_media( (int) $id );
-				$v     = implode( '_', $idarr );
+				if ( isset( $idarr[1] ) ) {
+					$id    = (int) $idarr[1]; // Remember this.
+					$tr_id = (int) $this->translate_media( $id );
+					$idarr[1] = (string) $tr_id;
+					$v        = implode( '_', $idarr );
+				}
+			} else {
+				$v = sanitize_text_field( (string) $v );
 			}
-			$out[] = $k . '="' . $v . '"';
+			$out[] = $k . '="' . esc_attr( $v ) . '"';
 		}
 
 		// Translate the caption content
@@ -335,6 +353,8 @@ class LMAT_Sync_Post {
 				$content = str_replace( $p->post_excerpt, $tr_p->post_excerpt, $content );
 			}
 		}
+
+		$content = wp_kses_post( $content );
 
 		return '[' . $tag . ' ' . implode( ' ', $out ) . ']' . $content . '[/' . $tag . ']';
 	}

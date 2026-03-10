@@ -288,7 +288,7 @@ function lmat_esc_attr__( $string ) {
  * @return void
  */
 function lmat_e( $string ) {
-	echo lmat__( $string ); // phpcs:ignore
+	echo esc_html( lmat__( $string ) );
 }
 
 /**

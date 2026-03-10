@@ -241,18 +241,13 @@ if ( ! defined( 'ABSPATH' ) ) {
         // Build notice message
         $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words') . '</h3>';
         $message .= '<p>' . sprintf(
-            // phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment
+            // translators: %1$s: AI Multilingual, %2$s: Linguator
             __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words'),
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
         ) . '</p>';
         $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'translate-words') . '</strong><br>';
         $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
-        $message .= '<p>' . sprintf(
-            // phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment
-            esc_html__('If you want to keep using a similar manual string translation workflow, please migrate to %s, which offers enhanced features and better performance.', 'translate-words'),
-            '<a href="' . esc_url(admin_url('plugin-install.php?s=loco%2520translate&tab=search&type=term'))  . '" target="_blank">' . esc_html__('Loco Translate', 'translate-words') . '</a>'
-        ) . '</p>';
         $message .= '<p style="margin-top: 15px;">';
         $message .= '<a href="' . esc_url('https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=tw_notice') . '" target="_blank" class="button button-secondary" style="margin-right: 10px;">' . esc_html__('Learn About Linguator', 'translate-words') . '</a>';
         $message .= '</p>';

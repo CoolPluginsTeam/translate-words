@@ -87,10 +87,10 @@ class LMAT_Widget_Languages extends WP_Widget {
 			/** This filter is documented in wp-includes/widgets/class-wp-widget-pages.php */
 			$title = apply_filters( 'widget_title', $title, $instance, $this->id_base );
 
-			echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput
+			echo wp_kses_post( $args['before_widget'] );
 
 			if ( $title ) {
-				echo $args['before_title'] . $title . $args['after_title']; // phpcs:ignore WordPress.Security.EscapeOutput
+				echo wp_kses_post( $args['before_title'] ) . esc_html( $title ) . wp_kses_post( $args['after_title'] );
 			}
 
 			// The title may be filtered: Strip out HTML and make sure the aria-label is never empty.
@@ -101,7 +101,14 @@ class LMAT_Widget_Languages extends WP_Widget {
 
 			if ( $instance['dropdown'] ) {
 				echo '<label class="screen-reader-text" for="' . esc_attr( 'lang_choice_' . $instance['dropdown'] ) . '">' . esc_html( $aria_label ) . '</label>';
-				echo $list; // phpcs:ignore WordPress.Security.EscapeOutput
+				echo wp_kses(
+					$list,
+					array(
+						'label'  => array( 'for' => true, 'class' => true ),
+						'select' => array( 'id' => true, 'name' => true, 'class' => true, 'aria-label' => true ),
+						'option' => array( 'value' => true, 'selected' => true ),
+					)
+				);
 			} else {
 				$format = current_theme_supports( 'html5', 'navigation-widgets' ) ? 'html5' : 'xhtml';
 
@@ -113,14 +120,23 @@ class LMAT_Widget_Languages extends WP_Widget {
 					echo '<nav aria-label="' . esc_attr( $aria_label ) . '">';
 				}
 
-				echo "<ul>\n" . $list . "</ul>\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+				echo "<ul>\n" . wp_kses(
+					$list,
+					array(
+						'ul'   => array( 'class' => true ),
+						'li'   => array( 'class' => true ),
+						'a'    => array( 'href' => true, 'class' => true, 'title' => true, 'hreflang' => true, 'lang' => true ),
+						'span' => array( 'class' => true, 'style' => true ),
+						'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ),
+					)
+				) . "</ul>\n";
 
 				if ( 'html5' === $format ) {
 					echo '</nav>';
 				}
 			}
 
-			echo $args['after_widget']; // phpcs:ignore WordPress.Security.EscapeOutput
+			echo wp_kses_post( $args['after_widget'] );
 		}
 	}
 

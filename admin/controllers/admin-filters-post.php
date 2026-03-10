@@ -195,10 +195,9 @@ class LMAT_Admin_Filters_Post extends LMAT_Admin_Filters_Post_Base {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-	if ( ! wp_verify_nonce( wp_unslash( $_REQUEST['_wpnonce'] ), 'bulk-posts' ) ) {
-		return;
-	}
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-posts' ) ) {
+			return;
+		}
 
 		if ( -1 === $_GET['inline_lang_choice'] ) {
 			return;
@@ -233,10 +232,9 @@ class LMAT_Admin_Filters_Post extends LMAT_Admin_Filters_Post_Base {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-	if ( ! wp_verify_nonce( wp_unslash( $_REQUEST['_inline_edit'] ), 'inlineeditnonce' ) ) {
-		return;
-	}
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_inline_edit'] ) ), 'inlineeditnonce' ) ) {
+			return;
+		}
 
 		$language = $this->model->get_language( sanitize_key( $_POST['inline_lang_choice'] ) );
 
