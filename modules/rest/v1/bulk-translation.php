@@ -221,6 +221,20 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( ! is_user_logged_in() ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
 			}
+
+			$taxonomy = $request->get_param( 'taxonomy' );
+			if ( ! empty( $taxonomy ) ) {
+				$taxonomy = sanitize_key( $taxonomy );
+				$tax_obj  = get_taxonomy( $taxonomy );
+				if ( ! $tax_obj || empty( $tax_obj->cap ) || empty( $tax_obj->cap->manage_terms ) ) {
+					return new \WP_Error( 'rest_invalid_param', __( 'Invalid taxonomy.', 'translate-words' ), array( 'status' => 400 ) );
+				}
+				if ( ! current_user_can( $tax_obj->cap->manage_terms ) ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				return true;
+			}
+
 			if ( ! current_user_can( 'edit_posts' ) ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}

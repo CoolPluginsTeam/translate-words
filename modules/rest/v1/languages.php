@@ -879,9 +879,18 @@ class Languages extends Abstract_Controller {
 		if ( $source_id && ! current_user_can( 'edit_post', $source_id ) ) {
 			return new WP_Error( 'rest_forbidden', __( 'You are not allowed to create a translation for this post.', 'translate-words' ), array( 'status' => rest_authorization_required_code() ) );
 		}
-		if ( ! current_user_can( 'edit_posts' ) ) {
+
+		$post_type = $request->get_param( 'post_type' );
+		$post_type = ! empty( $post_type ) ? sanitize_key( $post_type ) : 'page';
+		$pto       = get_post_type_object( $post_type );
+		if ( ! $pto || empty( $pto->cap ) ) {
+			return new WP_Error( 'rest_forbidden', __( 'You are not allowed to create this type of content.', 'translate-words' ), array( 'status' => rest_authorization_required_code() ) );
+		}
+		$create_cap = ! empty( $pto->cap->create_posts ) ? $pto->cap->create_posts : ( ! empty( $pto->cap->edit_posts ) ? $pto->cap->edit_posts : 'edit_posts' );
+		if ( ! current_user_can( $create_cap ) ) {
 			return new WP_Error( 'rest_forbidden', __( 'You are not allowed to create posts.', 'translate-words' ), array( 'status' => rest_authorization_required_code() ) );
 		}
+
 		$nonce_check = $this->verify_nonce( $request );
 		if ( is_wp_error( $nonce_check ) ) {
 			return $nonce_check;
