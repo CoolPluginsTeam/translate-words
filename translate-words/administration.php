@@ -28,29 +28,19 @@ if ( ! defined( 'ABSPATH' ) ) {
     }
 
     /**
-     * A temporary variable since we don't seem to be able to use function calls in
-     * HEREDOC.
-     */
-    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Legacy variable name kept for backward compatibility with existing option keys.
-    $tww_translation_lines = esc_attr(TWW_TRANSLATIONS_LINES);
-
-    /**
      * Define a template pattern for reuse.
      * This covers the new translation input fields and is used in both PHP and JS.
      */
     define(
         'TWW_NEW_STRING_TEMPLATE',
-        // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- Heredoc is used here for template readability and is a safe, standard PHP feature.
-        <<<TEMPLATE
-<tr valign="top">
-<td style="white-space: nowrap">
-	<input type="text" style="width:100%;" name="{$tww_translation_lines}[original][]" />
-	&rarr;
-</td>
-<td><input type="text" style="width:100%;" name="{$tww_translation_lines}[overwrite][]" /></td>
-<td></td>
-</tr>
-TEMPLATE
+        '<tr valign="top">' .
+        '<td style="white-space: nowrap">' .
+        '<input type="text" style="width:100%;" name="' . esc_attr( TWW_TRANSLATIONS_LINES ) . '[original][]" />' .
+        '&rarr;' .
+        '</td>' .
+        '<td><input type="text" style="width:100%;" name="' . esc_attr( TWW_TRANSLATIONS_LINES ) . '[overwrite][]" /></td>' .
+        '<td></td>' .
+        '</tr>'
     );
 
     /**
