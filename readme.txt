@@ -110,7 +110,7 @@ That's it! The setup configuration has been successfully completed. You can now 
 = Transition Notice =
 Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
 
-The current Translate Words feature set will remain available until approximately 31st December 2026. After this period, the plugin will fully transition to Linguator.
+The current Translate Words feature set will remain available until 6 months. After this period, the plugin will fully transition to Linguator.
 
 If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
 
@@ -156,7 +156,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 == Changelog ==
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
-> The current functionality will remain available until around **31st December 2026**.
+> The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
 = Version 2.0.7 | 5 March 2026 =

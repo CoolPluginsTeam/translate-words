@@ -58,11 +58,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         $translations = get_option(LMAT_TRANSLATIONS_LINES);
 
-        // If Loco Translate is active and there's no data, don't show the menu
-        if (is_plugin_active('loco-translate/loco.php') && empty($translations)) {
-            return;
-        }
-
         add_options_page(
             esc_html__('Translate Words', 'translate-words'),
             esc_html__('Translate Words', 'translate-words'),
@@ -196,19 +191,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             if (! function_exists('is_plugin_active')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
-
-            // If Loco Translate is active and all data is removed, redirect to Linguator settings
-            if (is_plugin_active('loco-translate/loco.php')) {
-                // Add a filter to change the redirect URL after settings save
-                add_filter('wp_redirect', function ($location) {
-                    // Check if this is a redirect from options.php (settings save)
-                    if (strpos($location, 'settings-updated=true') !== false) {
-                        // Redirect to Linguator settings instead
-                        return admin_url('admin.php?page=lmat_settings');
-                    }
-                    return $location;
-                }, 10, 1);
-            }
         }
         return $update_translations;
     }
@@ -229,9 +211,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         if (! function_exists('is_plugin_active')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
-        if (is_plugin_active('loco-translate/loco.php')) {
-            return;
-        }
 
         // Check if notice has been dismissed site-wide
         if (get_option('tww_deprecation_notice_dismissed')) {
@@ -246,7 +225,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
         ) . '</p>';
-        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in approximately 31st December 2026.', 'translate-words') . '</strong><br>';
+        $message .= '<p><strong>' . esc_html__('The current Translate Words functionality will be deprecated and discontinued in 6 months.', 'translate-words') . '</strong><br>';
         $message .= esc_html__('Until then, you can continue using this plugin safely.', 'translate-words') . '</p>';
         $message .= '<p>' . sprintf(
             // translators: %s: Loco Translate
@@ -310,12 +289,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         // Check if Loco Translate is active
         if (! function_exists('is_plugin_active')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        // If Loco Translate is active and there's no data, redirect to settings page
-        if (is_plugin_active('loco-translate/loco.php') && empty($translations)) {
-            wp_safe_redirect(admin_url('options-general.php'));
-            exit;
         }
 
     ?>
