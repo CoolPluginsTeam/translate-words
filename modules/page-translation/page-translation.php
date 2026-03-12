@@ -533,7 +533,11 @@ class Linguator_Page_Translation {
 	}
 
 	public function fetch_post_content() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! check_ajax_referer( 'lmat_page_translation_admin', 'lmat_page_translation_nonce', false ) ) {
+			wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
+			wp_die( '0', 400 );
+		}
+
 		$post_id = absint( ! empty( $_POST['postId'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['postId'] ) ) ) : false );
 
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
@@ -629,6 +633,17 @@ class Linguator_Page_Translation {
 	}
 
 	public function update_elementor_data() {
+		if ( ! check_ajax_referer( 'lmat_page_translation_admin', 'lmat_page_translation_nonce', false ) ) {
+			wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
+			wp_die( '0', 400 );
+		}
+
+		$post_id = isset( $_POST['post_id'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['post_id'] ) ) ) : 0;
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
+			wp_die( '0', 403 );
+		}
+
 		if ( ! $this->page_translate_helper instanceof Linguator_Page_Translation_Helper ) {
 			wp_send_json_error( array( 'message' => __( 'Elementor data update does exist AJAX handler.', 'translate-words' ) ) );
 			exit;

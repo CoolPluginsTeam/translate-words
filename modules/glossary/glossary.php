@@ -684,7 +684,10 @@ if (!class_exists('Glossary')) {
             }
 
             usort($filtered, function($a, $b) {
-                return strlen($a['original_term']) < strlen($b['original_term']);
+                $lenA = isset( $a['original_term'] ) ? strlen( $a['original_term'] ) : 0;
+                $lenB = isset( $b['original_term'] ) ? strlen( $b['original_term'] ) : 0;
+
+                return $lenA <=> $lenB;
             });
 
             wp_send_json_success(['terms' => $filtered]);

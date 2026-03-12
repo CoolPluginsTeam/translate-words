@@ -298,16 +298,21 @@ if(!class_exists('Linguator_Translation_Dashboard')){
                 wp_die( '0', 403 );
             }
 
-            if(isset($_POST['nonce'], $_POST['prefix']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'lmat_hide_review_notice')){
-                $prefix = sanitize_key(wp_unslash($_POST['prefix']));
-                $review_notice_dismissed = get_option('cpt_review_notice_dismissed', array());
-                $review_notice_dismissed[$prefix] = true;
-                update_option('cpt_review_notice_dismissed', $review_notice_dismissed);
-                wp_send_json_success();
-            }else{
+            if ( ! check_ajax_referer( 'lmat_hide_review_notice', 'nonce', false ) ) {
                 wp_send_json_error( __( 'Invalid nonce', 'translate-words' ), 400 );
                 wp_die( '0', 400 );
             }
+
+            if ( ! isset( $_POST['prefix'] ) ) {
+                wp_send_json_error( __( 'Missing prefix', 'translate-words' ), 400 );
+                wp_die( '0', 400 );
+            }
+
+            $prefix = sanitize_key( wp_unslash( $_POST['prefix'] ) );
+            $review_notice_dismissed = get_option('cpt_review_notice_dismissed', array());
+            $review_notice_dismissed[$prefix] = true;
+            update_option('cpt_review_notice_dismissed', $review_notice_dismissed);
+            wp_send_json_success();
         }
     }
 }

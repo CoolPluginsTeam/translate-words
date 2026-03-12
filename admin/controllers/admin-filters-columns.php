@@ -383,6 +383,11 @@ class Linguator_Admin_Filters_Columns {
 			wp_die( 0 );
 		}
 
+		$post_id = absint( wp_unslash( $_POST['post_id'] ) );
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( 0 );
+		}
+
 		$post_type = sanitize_key( wp_unslash( $_POST['post_type'] ) );
 
 		if ( ! post_type_exists( $post_type ) || ! $this->model->is_translated_post_type( $post_type ) ) {
@@ -398,7 +403,7 @@ class Linguator_Admin_Filters_Columns {
 		$translations = empty( $_POST['translations'] ) ? array() : explode( ',', sanitize_text_field( wp_unslash( $_POST['translations'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$translations = array_map( 'intval', $translations );
 
-		$translations = array_merge( $translations, array( absint( wp_unslash( $_POST['post_id'] ) ) ) ); // Add current post
+		$translations = array_merge( $translations, array( $post_id ) ); // Add current post
 
 		foreach ( $translations as $post_id ) {
 			$level = is_post_type_hierarchical( $post_type ) ? count( get_ancestors( $post_id, $post_type ) ) : 0;
@@ -428,8 +433,13 @@ class Linguator_Admin_Filters_Columns {
 		}
 
 		$taxonomy = sanitize_key( wp_unslash( $_POST['taxonomy'] ) );
+		$term_id  = absint( wp_unslash( $_POST['term_id'] ) );
 
 		if ( ! taxonomy_exists( $taxonomy ) || ! $this->model->is_translated_taxonomy( $taxonomy ) ) {
+			wp_die( 0 );
+		}
+
+		if ( ! $term_id || ! current_user_can( 'edit_term', $term_id ) ) {
 			wp_die( 0 );
 		}
 
@@ -442,7 +452,7 @@ class Linguator_Admin_Filters_Columns {
 		$translations = empty( $_POST['translations'] ) ? array() : explode( ',', sanitize_text_field( wp_unslash( $_POST['translations'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$translations = array_map( 'intval', $translations );
 
-		$translations = array_merge( $translations, $this->model->term->get_translations( absint( wp_unslash( $_POST['term_id'] ) ) ) ); // Add current translations
+		$translations = array_merge( $translations, $this->model->term->get_translations( $term_id ) ); // Add current translations
 		$translations = array_unique( $translations ); // Remove duplicates
 
 		foreach ( $translations as $term_id ) {
