@@ -422,7 +422,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                 ?>
                                     <td colspan="2" class="lmat-lang-col-<?php echo esc_attr($lang['code']); ?>" 
                                         data-lang="<?php echo esc_attr($lang['code']); ?>"
-                                        data-is-source="<?php echo $is_source ? 'true' : 'false'; ?>">
+                                        data-is-source="<?php echo esc_attr( $is_source ? 'true' : 'false' ); ?>">
                                         <?php if ($is_source): ?>
                                             <span class="lmat-source-term">
                                                 <?php echo esc_html($term); ?>
