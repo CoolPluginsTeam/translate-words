@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Frontend\Controllers\LMAT_Frontend;
+use Linguator\Frontend\Controllers\Linguator_Frontend;
 use Featured_Content;
 
 
@@ -18,7 +18,7 @@ use Featured_Content;
  *
  *  
  */
-class LMAT_Featured_Content {
+class Linguator_Featured_Content {
 	/**
 	 * Constructor
 	 *
@@ -123,10 +123,11 @@ class LMAT_Featured_Content {
 	 * @return array modified $settings
 	 */
 	public function option_featured_content( $settings ) {
-		if ( $this->is_active() && LMAT() instanceof LMAT_Frontend && $settings['tag-id'] && $tr = lmat_get_term( $settings['tag-id'] ) ) {
+		if ( $this->is_active() && LMAT() instanceof Linguator_Frontend && $settings['tag-id'] && $tr = linguator_get_term( $settings['tag-id'] ) ) {
 			$settings['tag-id'] = $tr;
 		}
 
 		return $settings;
 	}
 }
+

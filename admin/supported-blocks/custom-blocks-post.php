@@ -1,6 +1,6 @@
 <?php
 namespace Linguator\Supported_Blocks;
-use Linguator\Modules\Page_Translation\LMAT_Page_Translation_Helper;
+use Linguator\Modules\Page_Translation\Linguator_Page_Translation_Helper;
 
 /**
  * Do not access the page directly

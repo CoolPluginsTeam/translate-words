@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
  * Main class that handles the translation of the templates in full site editing.
  *
  */
-class LMAT_FSE_Tools {
+class Linguator_FSE_Tools {
 
 	/**
 	 * Returns the name of the template post types that are translated by Linguator.
@@ -210,3 +210,4 @@ class LMAT_FSE_Tools {
 		);
 	}
 }
+

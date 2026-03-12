@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Cache_Compat {
+class Linguator_Cache_Compat {
 	/**
 	 * Setups actions
 	 *
@@ -68,7 +68,7 @@ class LMAT_Cache_Compat {
 				{$format}
 			}());\n",
 			esc_js( LMAT_COOKIE ),
-			esc_js( lmat_current_language() ),
+			esc_js( linguator_current_language() ),
 			esc_js( COOKIEPATH ),
 			$domain ? '; domain=' . esc_js( $domain ) : '',
 			is_ssl() ? '; secure' : '',
@@ -89,7 +89,7 @@ class LMAT_Cache_Compat {
 	 *  
 	 */
 	public function do_not_cache_site_home() {
-		if ( ! defined( 'DONOTCACHEPAGE' ) && LMAT()->options['browser'] && LMAT()->options['hide_default'] && is_front_page() && lmat_current_language() === lmat_default_language() ) {
+		if ( ! defined( 'DONOTCACHEPAGE' ) && LMAT()->options['browser'] && LMAT()->options['hide_default'] && is_front_page() && linguator_current_language() === linguator_default_language() ) {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
 			define( 'DONOTCACHEPAGE', true );
 		}
@@ -107,10 +107,11 @@ class LMAT_Cache_Compat {
 
 		if ( $lang ) {
 			$filter_callback = function ( $link, $post_type ) use ( $lang ) {
-				return lmat_is_translated_post_type( $post_type ) && 'post' !== $post_type ? LMAT()->links_model->switch_language_in_link( $link, $lang ) : $link;
+				return linguator_is_translated_post_type( $post_type ) && 'post' !== $post_type ? LMAT()->links_model->switch_language_in_link( $link, $lang ) : $link;
 			};
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			add_filter( 'post_type_archive_link', $filter_callback, 99, 2 );
 		}
 	}
 }
+

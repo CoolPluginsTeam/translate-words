@@ -481,9 +481,9 @@ class WPML_Migration {
 					$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
 				}
 
-				$lmat_lang = $language_cache[ $lang_code ];
-				if ( $lmat_lang ) {
-					$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_language', 'term_taxonomy_id' );
+				$linguator_lang = $language_cache[ $lang_code ];
+				if ( $linguator_lang ) {
+					$lang_tt_id = $linguator_lang->get_tax_prop( 'lmat_language', 'term_taxonomy_id' );
 					if ( $lang_tt_id ) {
 						$bulk_assignments[] = array(
 							'object_id' => $post_id,
@@ -544,9 +544,9 @@ class WPML_Migration {
 					$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
 				}
 
-				$lmat_lang = $language_cache[ $lang_code ];
-				if ( $lmat_lang ) {
-					$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
+				$linguator_lang = $language_cache[ $lang_code ];
+				if ( $linguator_lang ) {
+					$lang_tt_id = $linguator_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
 					if ( $lang_tt_id ) {
 						$bulk_term_assignments[] = array(
 							'object_id' => $term_id,
@@ -614,7 +614,7 @@ class WPML_Migration {
 			foreach ( $post_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
 				$translations_parts = explode( '|', $group->translations );
-				$lmat_translations = array();
+				$linguator_translations = array();
 
 				foreach ( $translations_parts as $part ) {
 					list( $lang_code, $post_id ) = explode( ':', $part, 2 );
@@ -625,14 +625,14 @@ class WPML_Migration {
 						$language_cache[ $lang_code ] = $this->model->languages->get( $lang_code );
 					}
 
-					$lmat_lang = $language_cache[ $lang_code ];
-					if ( $lmat_lang ) {
-						$lmat_translations[ $lang_code ] = $post_id;
+					$linguator_lang = $language_cache[ $lang_code ];
+					if ( $linguator_lang ) {
+						$linguator_translations[ $lang_code ] = $post_id;
 					}
 				}
 
-				if ( count( $lmat_translations ) > 1 ) {
-					$post_translation_sets[] = $lmat_translations;
+				if ( count( $linguator_translations ) > 1 ) {
+					$post_translation_sets[] = $linguator_translations;
 				}
 			}
 
@@ -703,9 +703,9 @@ class WPML_Migration {
 				
 				// Only assign language if missing or incorrect
 				if ( ! $current_lang || $current_lang !== $expected_lang_code ) {
-					$lmat_lang = $language_cache[ $expected_lang_code ];
-					if ( $lmat_lang ) {
-						$lang_tt_id = $lmat_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
+					$linguator_lang = $language_cache[ $expected_lang_code ];
+					if ( $linguator_lang ) {
+						$lang_tt_id = $linguator_lang->get_tax_prop( 'lmat_term_language', 'term_taxonomy_id' );
 						if ( $lang_tt_id ) {
 							$bulk_term_language_assignments[] = array(
 								'object_id' => $term_id,
@@ -728,21 +728,21 @@ class WPML_Migration {
 			foreach ( $term_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
 				$translations_parts = explode( '|', $group->translations );
-				$lmat_translations = array();
+				$linguator_translations = array();
 
 				foreach ( $translations_parts as $part ) {
 					list( $lang_code, $term_id ) = explode( ':', $part, 2 );
 					$term_id = (int) $term_id;
 
 					// Use cached language (already fetched in first pass)
-					$lmat_lang = isset( $language_cache[ $lang_code ] ) ? $language_cache[ $lang_code ] : null;
-					if ( $lmat_lang ) {
-						$lmat_translations[ $lang_code ] = $term_id;
+					$linguator_lang = isset( $language_cache[ $lang_code ] ) ? $language_cache[ $lang_code ] : null;
+					if ( $linguator_lang ) {
+						$linguator_translations[ $lang_code ] = $term_id;
 					}
 				}
 
-				if ( count( $lmat_translations ) > 1 ) {
-					$term_translation_sets[] = $lmat_translations;
+				if ( count( $linguator_translations ) > 1 ) {
+					$term_translation_sets[] = $linguator_translations;
 				}
 			}
 
@@ -931,8 +931,8 @@ class WPML_Migration {
 				$array[ $key ] = $this->convert_language_slugs_in_array( $value );
 			} elseif ( is_string( $key ) ) {
 				// Check if key is a language slug
-				$lmat_lang = $this->model->languages->get( $key );
-				if ( ! $lmat_lang ) {
+				$linguator_lang = $this->model->languages->get( $key );
+				if ( ! $linguator_lang ) {
 					// Key might be a WPML slug that doesn't exist in Linguator, skip it
 					unset( $array[ $key ] );
 				}
@@ -1064,10 +1064,10 @@ class WPML_Migration {
 			$merged_strings = array_values( $strings_map );
 
 			// Update term meta with merged strings
-			update_term_meta( $lmat_lang->term_id, '_lmat_strings_translations', $merged_strings );
+			update_term_meta( $linguator_lang->term_id, '_lmat_strings_translations', $merged_strings );
 
 			// Verify the update was successful
-			$stored_meta = get_term_meta( $lmat_lang->term_id, '_lmat_strings_translations', true );
+			$stored_meta = get_term_meta( $linguator_lang->term_id, '_lmat_strings_translations', true );
 
 			if ( is_array( $stored_meta ) && ! empty( $stored_meta ) ) {
 				$stored_count = count( $stored_meta );
@@ -1080,7 +1080,7 @@ class WPML_Migration {
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language code, %2$d: Stored count, %3$d: Expected count */
 						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'translate-words' ),
-						$lmat_lang->slug,
+						$linguator_lang->slug,
 						$stored_count,
 						$expected_count
 					);
@@ -1090,7 +1090,7 @@ class WPML_Migration {
 				$results['errors'][] = sprintf(
 					/* translators: %s: Language code */
 					__( 'Failed to save strings for language: %s (no strings stored)', 'translate-words' ),
-					$lmat_lang->slug
+					$linguator_lang->slug
 				);
 				$results['success'] = false;
 			}
@@ -1098,12 +1098,12 @@ class WPML_Migration {
 
 		// Clear cache after migration
 		if ( $results['strings_migrated'] > 0 ) {
-			if ( class_exists( '\Linguator\Includes\Helpers\LMAT_Cache' ) ) {
-				$cache = new \Linguator\Includes\Helpers\LMAT_Cache();
+			if ( class_exists( '\Linguator\Includes\Helpers\Linguator_Cache' ) ) {
+				$cache = new \Linguator\Includes\Helpers\Linguator_Cache();
 				foreach ( $wpml_languages as $wpml_lang ) {
-					$lmat_lang = $this->model->languages->get( $wpml_lang );
-					if ( $lmat_lang ) {
-						$cache->clean( $lmat_lang->slug );
+					$linguator_lang = $this->model->languages->get( $wpml_lang );
+					if ( $linguator_lang ) {
+						$cache->clean( $linguator_lang->slug );
 					}
 				}
 			}

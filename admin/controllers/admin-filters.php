@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Filters\LMAT_Filters;
+use Linguator\Includes\Filters\Linguator_Filters;
 
 
 
@@ -17,7 +17,7 @@ use Linguator\Includes\Filters\LMAT_Filters;
  *
  *  
  */
-class LMAT_Admin_Filters extends LMAT_Filters {
+class Linguator_Admin_Filters extends Linguator_Filters {
 
 	/**
 	 * Constructor: setups filters and actions.

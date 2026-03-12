@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Helpers\LMAT_Cache;
+use Linguator\Includes\Helpers\Linguator_Cache;
 
 
 
@@ -18,18 +18,18 @@ use Linguator\Includes\Helpers\LMAT_Cache;
  *
  *  
  */
-class LMAT_Frontend_Filters_Widgets {
+class Linguator_Frontend_Filters_Widgets {
 	/**
 	 * Internal non persistent cache object.
 	 *
-	 * @var LMAT_Cache<array>
+	 * @var Linguator_Cache<array>
 	 */
 	public $cache;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
@@ -42,7 +42,7 @@ class LMAT_Frontend_Filters_Widgets {
 	 */
 	public function __construct( &$linguator ) {
 		$this->curlang = &$linguator->curlang;
-		$this->cache = new LMAT_Cache();
+		$this->cache = new Linguator_Cache();
 
 		add_filter( 'sidebars_widgets', array( $this, 'sidebars_widgets' ) );
 	}

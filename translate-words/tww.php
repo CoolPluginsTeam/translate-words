@@ -46,7 +46,7 @@ define( 'LMAT_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
  *
  * @return bool
  */
-function lmat_is_legacy_user() {
+function linguator_is_legacy_user() {
 	$legacy_flag = get_option( 'tww_is_legacy_user' );
 	
 	// If flag doesn't exist, check if they have existing translations
@@ -74,10 +74,10 @@ function lmat_is_legacy_user() {
  *
  * @return void
  */
-function lmat_init() {
+function linguator_init() {
 
 	// Only initialize Translate Words for legacy users
-	if ( ! lmat_is_legacy_user() ) {
+	if ( ! linguator_is_legacy_user() ) {
 		return;
 	}
 
@@ -97,4 +97,5 @@ function lmat_init() {
 }
 
 // Initialize Translate Words
-lmat_init();
+linguator_init();
+

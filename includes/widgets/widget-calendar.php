@@ -27,7 +27,7 @@ if ( ! class_exists( 'WP_Widget_Calendar' ) ) {
  *
  *  
  */
-class LMAT_Widget_Calendar extends WP_Widget_Calendar {
+class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 	protected static $lmat_instance = 0; // Can't use $instance of WP_Widget_Calendar as it's private :/.
 
 	/**
@@ -411,3 +411,4 @@ class LMAT_Widget_Calendar extends WP_Widget_Calendar {
 		return $calendar_output;
 	}
 }
+

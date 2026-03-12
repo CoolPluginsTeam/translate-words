@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.4
  */
-class LMAT_WPBakery {
+class Linguator_WPBakery {
 	/**
 	 * Constructor
 	 *
@@ -266,7 +266,7 @@ class LMAT_WPBakery {
 
 		// Check if this is a translated post
 		global $post;
-		if ( $post && lmat_get_post_language( $post->ID ) ) {
+		if ( $post && linguator_get_post_language( $post->ID ) ) {
 			// If it has a language assigned, it's likely a translation
 			// Allow WPBakery editor
 			return true;
@@ -1428,4 +1428,5 @@ class LMAT_WPBakery {
 		return $content;
 	}
 }
+
 

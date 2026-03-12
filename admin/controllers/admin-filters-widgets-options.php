@@ -8,17 +8,17 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Filters\LMAT_Filters_Widgets_Options;
+use Linguator\Includes\Filters\Linguator_Filters_Widgets_Options;
 
 
 /**
- * Class LMAT_Widgets_Filters
+ * Class Linguator_Widgets_Filters
  *
  *  
  *
  * Adds new options to {@see https://developer.wordpress.org/reference/classes/wp_widget/ WP_Widget} and saves them.
  */
-class LMAT_Admin_Filters_Widgets_Options extends LMAT_Filters_Widgets_Options {
+class Linguator_Admin_Filters_Widgets_Options extends Linguator_Filters_Widgets_Options {
 	/**
 	 * Modifies the widgets forms to add our language dropdown list.
 	 *

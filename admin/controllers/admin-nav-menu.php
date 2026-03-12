@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 
-use Linguator\Includes\Controllers\LMAT_Nav_Menu;
-use Linguator\Includes\Controllers\LMAT_Switcher;
+use Linguator\Includes\Controllers\Linguator_Nav_Menu;
+use Linguator\Includes\Controllers\Linguator_Switcher;
 
 
 
@@ -21,12 +21,12 @@ use Linguator\Includes\Controllers\LMAT_Switcher;
  *
  *  
  */
-class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
+class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 	/**
 	 * Current language (used to filter the content).
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $filter_lang;
 
@@ -67,7 +67,7 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 		// Translation of menus based on chosen locations
 		add_filter( 'pre_update_option_theme_mods_' . $this->theme, array( $this, 'pre_update_option_theme_mods' ) );
 		add_action( 'delete_nav_menu', array( $this, 'delete_nav_menu' ) );
-		add_action( 'admin_footer', array( $this, 'lmat_nav_menu_language_controls' ), 10 );
+		add_action( 'admin_footer', array( $this, 'linguator_nav_menu_language_controls' ), 10 );
 		
 		// Filter menu dropdown list by language
 		add_filter( 'wp_get_nav_menus', array( $this, 'filter_nav_menus_by_language' ), 10, 1 );
@@ -150,7 +150,7 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 			'current_lang' => $current_filter_lang
 		) );
 		$data = array(
-			'strings' => LMAT_Switcher::get_switcher_options( 'menu', 'string' ), // The strings for the options
+			'strings' => Linguator_Switcher::get_switcher_options( 'menu', 'string' ), // The strings for the options
 			'title'   => __( 'Languages', 'translate-words' ), // The title
 			'val'     => array(),
 		);
@@ -387,16 +387,16 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 	 *
 	 * @return void
 	 */
-	public function lmat_nav_menu_language_controls() {
+	public function linguator_nav_menu_language_controls() {
 		$screen = get_current_screen();
 		if ( empty( $screen ) || 'nav-menus' !== $screen->base ) {
 			return;
 		}
 
 		// Get all available languages
-		$lmat_languages = $this->model->get_languages_list();
+		$linguator_languages = $this->model->get_languages_list();
 		
-		if ( count( $lmat_languages ) <= 1 ) {
+		if ( count( $linguator_languages ) <= 1 ) {
 			return; // No need for language filters if there's only one language
 		}
 
@@ -428,7 +428,7 @@ class LMAT_Admin_Nav_Menu extends LMAT_Nav_Menu {
 					</a>
 				</li>
 				
-				<?php foreach ( $lmat_languages as $lang ) : ?>
+				<?php foreach ( $linguator_languages as $lang ) : ?>
 					<?php
 					$lang_class = $lang->slug === $current_lang ? 'current' : '';
 					$lang_url_args = array(

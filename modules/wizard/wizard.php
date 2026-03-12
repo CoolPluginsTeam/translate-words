@@ -10,9 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Admin\Controllers\LMAT_Admin_Notices;
-use Linguator\Includes\Other\LMAT_Language;
-use Linguator\Admin\Controllers\LMAT_Admin_Model;
+use Linguator\Admin\Controllers\Linguator_Admin_Notices;
+use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Admin\Controllers\Linguator_Admin_Model;
 use Linguator\Includes\Core\Linguator;
 use WP_Error;
 
@@ -25,12 +25,12 @@ use Linguator\Includes\Options\Options;
  *
  *  
  */
-class LMAT_Wizard
+class Linguator_Wizard
 {
 	/**
 	 * Reference to the model object
 	 *
-	 * @var LMAT_Admin_Model
+	 * @var Linguator_Admin_Model
 	 */
 	protected $model;
 
@@ -189,7 +189,7 @@ class LMAT_Wizard
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language[] $languages List of language objects.
+	 * @param Linguator_Language[] $languages List of language objects.
 	 * @return bool
 	 */
 	public function is_media_step_displayable($languages)
@@ -223,7 +223,7 @@ class LMAT_Wizard
 	{
 
 		if (!get_option('lmat_setup_complete')) {
-			LMAT_Admin_Notices::add_notice('wizard', $this->wizard_notice());
+			Linguator_Admin_Notices::add_notice('wizard', $this->wizard_notice());
 		}
 
 		$this->redirect_to_wizard();
@@ -295,7 +295,7 @@ class LMAT_Wizard
 				'subheading' => 'Gutenberg block widget for the block editor, compatible with modern WordPress themes.'
             )
         );
-        if(lmat_is_plugin_active('elementor/elementor.php')){
+        if(linguator_is_plugin_active('elementor/elementor.php')){
             $language_switcher_options[] = array(
                 'label' => __( 'Elementor Widget Based', 'translate-words' ),
                 'value' => 'elementor',
@@ -421,7 +421,7 @@ class LMAT_Wizard
 					'api_url'        => rest_url('lmat/v1/'),
 					'nonce'          => wp_create_nonce('wp_rest'),
 					'languages'      => $this->model->get_languages_list(),
-					'all_languages'  => \Linguator\Settings\Controllers\LMAT_Settings::get_predefined_languages(),
+					'all_languages'  => \Linguator\Settings\Controllers\Linguator_Settings::get_predefined_languages(),
 					'media'          => $is_media_step_displayable,
 					'untranslated_contents' => $is_untranslated_contents_displayable,
 					'home_page' => $is_home_page_displayable,
@@ -541,8 +541,9 @@ class LMAT_Wizard
 				)
 			);
 			$translations[$language] = $id;
-			lmat_set_post_language($id, $language);
+			linguator_set_post_language($id, $language);
 		}
-		lmat_save_post_translations($translations);
+		linguator_save_post_translations($translations);
 	}
 }
+

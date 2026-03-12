@@ -5,7 +5,7 @@
 
 namespace Linguator\Includes\Capabilities\Create;
 
-use Linguator\Includes\Other\LMAT_Language;
+use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Includes\Capabilities\User;
 
 /**
@@ -38,9 +38,9 @@ class Term extends Abstract_Object {
 	 * @param int    $id       The term’s ID (usually 0 for new).
 	 * @param string $taxonomy The taxonomy’s name (optional).
 	 *
-	 * @return LMAT_Language   The chosen language for this term.
+	 * @return Linguator_Language   The chosen language for this term.
 	 */
-	public function get_language( User $user, int $id = 0, string $taxonomy = '' ): LMAT_Language {
+	public function get_language( User $user, int $id = 0, string $taxonomy = '' ): Linguator_Language {
 		/** The default language as a fallback. */
 		$default_language = $this->model->get_default_language();
 

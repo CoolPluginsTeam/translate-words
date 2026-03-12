@@ -9,10 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Language;
-use Linguator\Includes\Other\LMAT_Model;
+use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Modules\REST\Abstract_Controller;
-use Linguator\Includes\Models\Translatable\LMAT_Translatable_Objects;
+use Linguator\Includes\Models\Translatable\Linguator_Translatable_Objects;
 use ReflectionClass;
 use stdClass;
 use WP_Error;
@@ -35,14 +35,14 @@ class Languages extends Abstract_Controller {
 	private $languages;
 
 	/**
-	 * @var LMAT_Translatable_Objects
+	 * @var Linguator_Translatable_Objects
 	 */
 	private $translatable_objects;
 
 	/**
 	 * Reference to the model object
 	 *
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
@@ -53,9 +53,9 @@ class Languages extends Abstract_Controller {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Model $model Linguator's model.
+	 * @param Linguator_Model $model Linguator's model.
 	 */
-	public function __construct( LMAT_Model $model ) {
+	public function __construct( Linguator_Model $model ) {
 		$this->namespace            = 'lmat/v1';
 		$this->rest_base            = 'languages';
 		$this->model                = $model;
@@ -477,7 +477,7 @@ class Languages extends Abstract_Controller {
 			return $this->add_status_to_error( $language );
 		}
 
-		/** @var LMAT_Language */
+		/** @var Linguator_Language */
 		// Try to get the language by locale first, then by slug if not found
 		$language = $this->languages->get( $args['locale'] );
 		if ( ! $language ) {
@@ -546,7 +546,7 @@ class Languages extends Abstract_Controller {
 			}
 
 			// Get the created language and prepare response
-			/** @var LMAT_Language */
+			/** @var Linguator_Language */
 			// Try to get the language by locale first, then by slug if not found
 			$language = $this->languages->get( $args['locale'] );
 			if ( ! $language ) {
@@ -699,7 +699,7 @@ class Languages extends Abstract_Controller {
 		
 		$lang = sanitize_text_field( $request['slug'] );
 		$language = $this->model->get_language( $lang );
-		if ( ! ( $language instanceof LMAT_Language ) ) {
+		if ( ! ( $language instanceof Linguator_Language ) ) {
 			return new WP_Error(
 				'lmat_invalid_language',
 				__( 'Invalid language locale provided.', 'translate-words' ),
@@ -843,7 +843,7 @@ class Languages extends Abstract_Controller {
 		}
 
 		// Assign language and link translations.
-		lmat_set_post_language( $new_post_id, $target_lang_slug );
+		linguator_set_post_language( $new_post_id, $target_lang_slug );
 
 		$translations = $this->model->post->get_translations( $source_id );
 		$source_lang  = $this->model->post->get_language( $source_id );
@@ -981,7 +981,7 @@ class Languages extends Abstract_Controller {
 		$created_pages = [];
 		
 		// Get source language
-		$source_language = $this->model->get_language(lmat_get_post_language($source_id));
+		$source_language = $this->model->get_language(linguator_get_post_language($source_id));
 		if (!$source_language) {
 			return new WP_Error(
 				'lmat_invalid_source',
@@ -996,14 +996,14 @@ class Languages extends Abstract_Controller {
 		);
 
 		// Get and merge existing translations
-		$existing_translations = lmat_get_post_translations($source_id);
+		$existing_translations = linguator_get_post_translations($source_id);
 		if (!empty($existing_translations)) {
 			$all_translations = array_merge($all_translations, $existing_translations);
 		}
 		
 		// Create pages for each language
 		foreach ($languages as $language_data) {
-			// Convert language data to LMAT_Language object if needed
+			// Convert language data to Linguator_Language object if needed
 			$language = $this->model->get_language($language_data['locale']);
 			
 			if (!$language) {
@@ -1027,7 +1027,7 @@ class Languages extends Abstract_Controller {
 			
 			if (!is_wp_error($new_page)) {
 				// Set language for new page
-				lmat_set_post_language($new_page, $language->locale);
+				linguator_set_post_language($new_page, $language->locale);
 				
 				// Add to translations array
 				$all_translations[$language->locale] = $new_page;
@@ -1044,15 +1044,15 @@ class Languages extends Abstract_Controller {
 		if (!empty($created_pages)) {
 			// Ensure all pages have their languages set
 			foreach ($all_translations as $locale => $page_id) {
-				lmat_set_post_language($page_id, $locale);
+				linguator_set_post_language($page_id, $locale);
 			}
 
 			// Save translations multiple times to ensure all links are created
-			lmat_save_post_translations($all_translations);
+			linguator_save_post_translations($all_translations);
 			// Second pass to ensure bidirectional links
 			foreach ($all_translations as $page_id) {
-				$page_translations = lmat_get_post_translations($page_id);
-				lmat_save_post_translations(array_merge($page_translations, $all_translations));
+				$page_translations = linguator_get_post_translations($page_id);
+				linguator_save_post_translations(array_merge($page_translations, $all_translations));
 			}
 		}
 		
@@ -1251,7 +1251,7 @@ class Languages extends Abstract_Controller {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language    $item    Language object.
+	 * @param Linguator_Language    $item    Language object.
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response Response object.
 	 *
@@ -1535,7 +1535,7 @@ class Languages extends Abstract_Controller {
 	 *  
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
-	 * @return LMAT_Language|WP_Error Language object if the ID or slug is valid, WP_Error otherwise.
+	 * @return Linguator_Language|WP_Error Language object if the ID or slug is valid, WP_Error otherwise.
 	 *
 	 * @phpstan-template T of array
 	 * @phpstan-param WP_REST_Request<T> $request
@@ -1554,7 +1554,7 @@ class Languages extends Abstract_Controller {
 
 			$language = $this->languages->get( (int) $request['term_id'] );
 
-			if ( ! $language instanceof LMAT_Language ) {
+			if ( ! $language instanceof Linguator_Language ) {
 				return $error;
 			}
 
@@ -1564,7 +1564,7 @@ class Languages extends Abstract_Controller {
 		if ( isset( $request['slug'] ) ) {
 			$language = $this->languages->get( (string) $request['slug'] );
 
-			if ( ! $language instanceof LMAT_Language ) {
+			if ( ! $language instanceof Linguator_Language ) {
 				return new WP_Error(
 					'rest_invalid_slug',
 					__( 'Invalid language slug', 'translate-words' ),

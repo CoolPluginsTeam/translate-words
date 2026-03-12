@@ -48,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function lmat_add_admin_menu()
+    function linguator_add_admin_menu()
     {
 
         // Check if Loco Translate is active
@@ -63,19 +63,19 @@ if ( ! defined( 'ABSPATH' ) ) {
             esc_html__('Translate Words', 'translate-words'),
             'administrator',
             LMAT_PAGE,
-            'lmat_setting_page'
+            'linguator_setting_page'
         );
 
     }
 
-    add_action('admin_menu', 'lmat_add_admin_menu');
+    add_action('admin_menu', 'linguator_add_admin_menu');
 
     /**
      * Enqueue Admin Scripts.
      *
      * @return void
      */
-    function lmat_admin_enqueue_scripts()
+    function linguator_admin_enqueue_scripts()
     {
 
         global $pagenow;
@@ -133,21 +133,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     }
 
-    add_action('admin_enqueue_scripts', 'lmat_admin_enqueue_scripts');
+    add_action('admin_enqueue_scripts', 'linguator_admin_enqueue_scripts');
 
     /**
      * Initialize the setting.
      *
      * @return void
      */
-    function lmat_settings_init()
+    function linguator_settings_init()
     {
 
         register_setting(
             LMAT_TRANSLATIONS,
             LMAT_TRANSLATIONS_LINES,
             [
-                'sanitize_callback' => 'lmat_validate_translations_and_save',
+                'sanitize_callback' => 'linguator_validate_translations_and_save',
                 'type'              => 'array',
                 'default'           => '',
             ]
@@ -155,7 +155,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     }
 
-    add_action('admin_init', 'lmat_settings_init');
+    add_action('admin_init', 'linguator_settings_init');
 
     /**
      * Validate the translations and save the settings.
@@ -163,7 +163,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      * @param {array} $strings The translations strings to save.
      * @return {void}
      */
-    function lmat_validate_translations_and_save($strings)
+    function linguator_validate_translations_and_save($strings)
     {
 
         $update_translations = [];
@@ -200,7 +200,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function lmat_display_deprecation_notice()
+    function linguator_display_deprecation_notice()
     {
         // Only show on Translate Words settings page
         $screen = get_current_screen();
@@ -243,14 +243,14 @@ if ( ! defined( 'ABSPATH' ) ) {
         );
     }
 
-    add_action('admin_notices', 'lmat_display_deprecation_notice');
+    add_action('admin_notices', 'linguator_display_deprecation_notice');
 
     /**
      * Handle AJAX request to dismiss deprecation notice.
      *
      * @return void
      */
-    function lmat_dismiss_deprecation_notice()
+    function linguator_dismiss_deprecation_notice()
     {
         check_ajax_referer('tww_dismiss_notice', 'nonce');
 
@@ -271,7 +271,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         wp_send_json_success(['message' => 'Notice dismissed successfully']);
     }
 
-    add_action('wp_ajax_tww_dismiss_deprecation_notice', 'lmat_dismiss_deprecation_notice');
+    add_action('wp_ajax_tww_dismiss_deprecation_notice', 'linguator_dismiss_deprecation_notice');
 
     /**
      * Display the settings page.
@@ -281,7 +281,7 @@ if ( ! defined( 'ABSPATH' ) ) {
      *
      * @return void
      */
-    function lmat_setting_page()
+    function linguator_setting_page()
     {
 
         $translations = get_option(LMAT_TRANSLATIONS_LINES);
@@ -398,3 +398,4 @@ if ( ! defined( 'ABSPATH' ) ) {
     }
 
     add_filter('admin_head', 'lmat_translate_gutenberg_string');
+

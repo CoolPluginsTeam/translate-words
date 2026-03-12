@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Includes\Options\Options;
 use Linguator\Includes\Options\Registry as Options_Registry;
-use Linguator\Modules\Wizard\LMAT_Wizard;
+use Linguator\Modules\Wizard\Linguator_Wizard;
 
 
 /**
@@ -24,7 +24,7 @@ use Linguator\Modules\Wizard\LMAT_Wizard;
  *
  * @since 0.0.8
  */
-class LMAT_Activate extends LMAT_Abstract_Activate {
+class Linguator_Activate extends Linguator_Abstract_Activate {
 	/**
 	 * Adds required hooks for plugin activation.
 	 *
@@ -35,7 +35,7 @@ class LMAT_Activate extends LMAT_Abstract_Activate {
 	 */
 	public static function add_hooks(): void {
 		// When the plugin is activated, start the setup wizard.
-		register_activation_hook( static::get_plugin_basename(), array( LMAT_Wizard::class, 'start_wizard' ) );
+		register_activation_hook( static::get_plugin_basename(), array( Linguator_Wizard::class, 'start_wizard' ) );
 
 		// Call any hooks defined in the parent class.
 		parent::add_hooks();
@@ -103,8 +103,8 @@ class LMAT_Activate extends LMAT_Abstract_Activate {
 		add_option( 'lmat_language_taxonomies', array() );
 
 		// Also clear any cached language data in the cache object
-		if ( class_exists( 'Linguator\Includes\Helpers\LMAT_Cache' ) ) {
-			$cache = new \Linguator\Includes\Helpers\LMAT_Cache();
+		if ( class_exists( 'Linguator\Includes\Helpers\Linguator_Cache' ) ) {
+			$cache = new \Linguator\Includes\Helpers\Linguator_Cache();
 			$cache->clean();
 		}
 
@@ -120,3 +120,4 @@ class LMAT_Activate extends LMAT_Abstract_Activate {
 		}
 	}
 }
+

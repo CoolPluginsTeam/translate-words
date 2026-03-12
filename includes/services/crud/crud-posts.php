@@ -9,8 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Language;
-use Linguator\Includes\Other\LMAT_Model;
+use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Modules\REST\Request;
 use Linguator\Includes\Capabilities\User;
 use Linguator\Includes\Capabilities\Create\Post as Create_Post;
@@ -22,23 +22,23 @@ use WP_Term;
  *
  *  
  */
-class LMAT_CRUD_Posts {
+class Linguator_CRUD_Posts {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
 	/**
 	 * Preferred language to assign to a new post.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	protected $pref_lang;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	protected $curlang;
 
@@ -173,8 +173,8 @@ class LMAT_CRUD_Posts {
 		$post_language = new Create_Post(
 			$this->model,
 			$this->request,
-			$this->pref_lang instanceof LMAT_Language ? $this->pref_lang : null, // Can be `false` as well...
-			$this->curlang instanceof LMAT_Language ? $this->curlang : null // Can be `false` as well...
+			$this->pref_lang instanceof Linguator_Language ? $this->pref_lang : null, // Can be `false` as well...
+			$this->curlang instanceof Linguator_Language ? $this->curlang : null // Can be `false` as well...
 		);
 
 		$this->model->post->set_language(
@@ -321,8 +321,8 @@ class LMAT_CRUD_Posts {
 	 *
 	 * @param int           $from_post_id Original post ID.
 	 * @param int           $to_post_id   New translation post ID.
-	 * @param LMAT_Language $from_lang    Original post language.
-	 * @param LMAT_Language $to_lang      New translation language.
+	 * @param Linguator_Language $from_lang    Original post language.
+	 * @param Linguator_Language $to_lang      New translation language.
 	 * @return void
 	 */
 	private function create_translation_link( $from_post_id, $to_post_id, $from_lang, $to_lang ) {
@@ -553,7 +553,7 @@ class LMAT_CRUD_Posts {
 
 		$term_ids = wp_list_pluck( $terms, 'term_id' );
 
-		// Let's ensure that `LMAT_CRUD_Posts::set_object_terms()` will do its job.
+		// Let's ensure that `Linguator_CRUD_Posts::set_object_terms()` will do its job.
 		wp_set_post_terms( $post_id, $term_ids, 'post_tag' );
 	}
 
@@ -565,12 +565,12 @@ class LMAT_CRUD_Posts {
 	 *
 	 * @param WP_Term[]    $terms    List of terms to translate.
 	 * @param string       $taxonomy The terms' taxonomy.
-	 * @param LMAT_Language $language The language to translate the terms into.
+	 * @param Linguator_Language $language The language to translate the terms into.
 	 * @return int[] List of `term_id`s.
 	 *
 	 * @phpstan-return array<positive-int>
 	 */
-	private function translate_terms( array $terms, string $taxonomy, LMAT_Language $language ): array {
+	private function translate_terms( array $terms, string $taxonomy, Linguator_Language $language ): array {
 		$term_ids_translated = array();
 
 		foreach ( $terms as $term ) {
@@ -588,12 +588,12 @@ class LMAT_CRUD_Posts {
 	 *
 	 * @param WP_Term      $term     The term to translate.
 	 * @param string       $taxonomy The term's taxonomy.
-	 * @param LMAT_Language $language The language to translate the term into.
+	 * @param Linguator_Language $language The language to translate the term into.
 	 * @return int A `term_id` on success, `0` on failure.
 	 *
 	 * @phpstan-return int<0, max>
 	 */
-	private function translate_term( WP_Term $term, string $taxonomy, LMAT_Language $language ): int {
+	private function translate_term( WP_Term $term, string $taxonomy, Linguator_Language $language ): int {
 		// Check if the term is in the correct language or if a translation exists.
 		$tr_term_id = $this->model->term->get( $term->term_id, $language );
 
@@ -622,7 +622,7 @@ class LMAT_CRUD_Posts {
 		}
 
 		$lang_callback   = function ( $lang, $tax, $slug ) use ( $language, $term, $taxonomy ) {
-			if ( ! $lang instanceof LMAT_Language && $tax === $taxonomy && $slug === $term->slug ) {
+			if ( ! $lang instanceof Linguator_Language && $tax === $taxonomy && $slug === $term->slug ) {
 				return $language;
 			}
 			return $lang;

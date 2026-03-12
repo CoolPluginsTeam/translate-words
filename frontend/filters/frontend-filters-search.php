@@ -13,18 +13,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Frontend_Filters_Search {
+class Linguator_Frontend_Filters_Search {
 	/**
-	 * Instance of a child class of LMAT_Links_Model.
+	 * Instance of a child class of Linguator_Links_Model.
 	 *
-	 * @var LMAT_Links_Model
+	 * @var Linguator_Links_Model
 	 */
 	public $links_model;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 

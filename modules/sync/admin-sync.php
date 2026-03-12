@@ -11,9 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Admin_Sync extends LMAT_Sync {
+class Linguator_Admin_Sync extends Linguator_Sync {
 	/**
-	 * @var LMAT_Admin_Links
+	 * @var Linguator_Admin_Links
 	 */
 	private $links;
 
@@ -189,8 +189,8 @@ class LMAT_Admin_Sync extends LMAT_Sync {
 	 * @param WP_Post $post         Post object.
 	 * @param int[]   $translations Post translations.
 	 */
-	public function lmat_save_post( $post_id, $post, $translations ) {
-		parent::lmat_save_post( $post_id, $post, $translations );
+	public function linguator_save_post( $post_id, $post, $translations ) {
+		parent::linguator_save_post( $post_id, $post, $translations );
 
 		// Sticky posts
 		if ( in_array( 'sticky_posts', $this->options['sync'] ) ) {
@@ -206,3 +206,4 @@ class LMAT_Admin_Sync extends LMAT_Sync {
 
 
 }
+

@@ -16,13 +16,13 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Class LMAT_Widget
+ * Class Linguator_Widget
  *
  * Main widget class for the Language Switcher Linguator Elementor widget.
  *
  *  
  */
-class LMAT_Widget extends Widget_Base
+class Linguator_Widget extends Widget_Base
 {
 
     /**
@@ -41,10 +41,10 @@ class LMAT_Widget extends Widget_Base
             LINGUATOR_VERSION
         );
 
-        add_action('elementor/editor/after_enqueue_scripts', [$this, 'lmat_language_switcher_icon_css']);
+        add_action('elementor/editor/after_enqueue_scripts', [$this, 'linguator_language_switcher_icon_css']);
     }
 
-    public function lmat_language_switcher_icon_css()
+    public function linguator_language_switcher_icon_css()
     {
         wp_enqueue_style('lmat-style');
 
@@ -648,13 +648,13 @@ class LMAT_Widget extends Widget_Base
     {
         try {
                 // Try different approach - get languages without show_flags first
-                $languages_raw = lmat_the_languages(['raw' => 1, 'show_flags' => 0]);
+                $languages_raw = linguator_the_languages(['raw' => 1, 'show_flags' => 0]);
                 if (empty($languages_raw)) {
                     return $data; // If no languages, exit early
                 }
-                $lang_curr = strtolower(lmat_current_language());
+                $lang_curr = strtolower(linguator_current_language());
                 if (empty($lang_curr)) {
-                    $lang_curr = strtolower(lmat_default_language());
+                    $lang_curr = strtolower(linguator_default_language());
                 }
 
                 
@@ -870,3 +870,4 @@ class LMAT_Widget extends Widget_Base
         return $html;
     }
 }
+

@@ -40,7 +40,7 @@ if (
  * @param string $translated_string The string being translated.
  * @return string
  */
-function lmat_apply_translate_string( $translated_string ) {
+function linguator_apply_translate_string( $translated_string ) {
 
 	static $cached_overrides = null;
 
@@ -57,16 +57,16 @@ function lmat_apply_translate_string( $translated_string ) {
 	}
 
 	// Extract keys and replace arrays from cached overrides.
-	$keys = array_column( $cached_overrides, 'original' );
+	$keys    = array_column( $cached_overrides, 'original' );
 	$replace = array_column( $cached_overrides, 'overwrite' );
 
 	// Perform search and replace using cached keys and replace arrays.
-	return lmat_search_and_replace( $translated_string, $keys, $replace );
+	return linguator_search_and_replace( $translated_string, $keys, $replace );
 
 }
 
-add_filter( 'gettext', 'lmat_apply_translate_string', 20 );
-add_filter( 'ngettext', 'lmat_apply_translate_string', 20 );
+add_filter( 'gettext', 'linguator_apply_translate_string', 20 );
+add_filter( 'ngettext', 'linguator_apply_translate_string', 20 );
 
 
 /**
@@ -77,7 +77,7 @@ add_filter( 'ngettext', 'lmat_apply_translate_string', 20 );
  * @param array  $replace            The replacements.
  * @return string
  */
-function lmat_search_and_replace( $translated_string, $keys, $replace ) {
+function linguator_search_and_replace( $translated_string, $keys, $replace ) {
 
 	/**
 	 * We perform two replacements here: first case-sensitive, then case-insensitive.
@@ -104,14 +104,14 @@ function lmat_search_and_replace( $translated_string, $keys, $replace ) {
 	 * This covers instances where there are two translations that are the same,
 	 * but with different cases.
 	 */
-	$translated_string = lmat_do_search_and_replace( $translated_string, $keys, $replace );
+	$translated_string = linguator_do_search_and_replace( $translated_string, $keys, $replace );
 
 	/**
 	 * Do a case insensitive replacement.
 	 * This picks up instances where case doesn't matter, and works for
 	 * backwards compatability.
 	 */
-	$translated_string = lmat_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
+	$translated_string = linguator_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
 
 	return $translated_string;
 
@@ -127,7 +127,7 @@ function lmat_search_and_replace( $translated_string, $keys, $replace ) {
  * @param bool   $case_sensitive    Whether the search should be case sensitive.
  * @return string
  */
-function lmat_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
+function linguator_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
 
 	$search_keys = array_map(
 		function( $key ) use ( $modifier ) {

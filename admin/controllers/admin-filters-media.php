@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Walkers\LMAT_Walker_Dropdown;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
 use Linguator\Includes\Capabilities\User;
 
 /**
@@ -17,9 +17,9 @@ use Linguator\Includes\Capabilities\User;
  *
  *  
  */
-class LMAT_Admin_Filters_Media extends LMAT_Admin_Filters_Post_Base {
+class Linguator_Admin_Filters_Media extends Linguator_Admin_Filters_Post_Base {
 	/**
-	 * @var LMAT_CRUD_Posts|null
+	 * @var Linguator_CRUD_Posts|null
 	 */
 	public $posts;
 
@@ -79,7 +79,7 @@ class LMAT_Admin_Filters_Media extends LMAT_Admin_Filters_Post_Base {
 		// - or the media has a language but the user is not allowed to translate it.
 		$disabled = empty( $lang ) ? $user->is_translator() : ! $user->can_translate( $lang );
 
-		$dropdown = new LMAT_Walker_Dropdown();
+		$dropdown = new Linguator_Walker_Dropdown();
 		$fields['language'] = array(
 			'label' => __( 'Language', 'translate-words' ),
 			'input' => 'html',

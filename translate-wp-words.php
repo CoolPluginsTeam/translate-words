@@ -31,9 +31,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Core\Linguator;
-use Linguator\Install\LMAT_Activate;
-use Linguator\Install\LMAT_Deactivate;
-use Linguator\Install\LMAT_Usable;
+use Linguator\Install\Linguator_Activate;
+use Linguator\Install\Linguator_Deactivate;
+use Linguator\Install\Linguator_Usable;
 
 
 
@@ -208,7 +208,7 @@ add_action('admin_init', function() {
 if ( ! function_exists( 'lmat_has_constant' ) ) {
 	require __DIR__ . '/includes/helpers/constant-functions.php';
 }
-if ( ! LMAT_Usable::can_activate() ) {
+if ( ! Linguator_Usable::can_activate() ) {
 	// WP version or php version is too old.
 	return;
 }
@@ -217,13 +217,13 @@ if ( ! defined( 'LMAT_ACTIVE' ) ) {
 	define( 'LMAT_ACTIVE', true );
 }
 
-if ( LMAT_Deactivate::is_deactivation() ) {
+if ( Linguator_Deactivate::is_deactivation() ) {
 	// Stopping here if we are going to deactivate the plugin (avoids breaking rewrite rules).
-	LMAT_Deactivate::add_hooks();
+	Linguator_Deactivate::add_hooks();
 	return;
 }
 
-LMAT_Activate::add_hooks();
+Linguator_Activate::add_hooks();
 
 new Linguator();
 

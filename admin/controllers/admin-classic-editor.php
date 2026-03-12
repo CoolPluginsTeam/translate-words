@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Model;
-use Linguator\Includes\Walkers\LMAT_Walker_Dropdown;
+use Linguator\Includes\Other\Linguator_Model;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
 use WP_Ajax_Response;
 
 
@@ -20,28 +20,28 @@ use WP_Ajax_Response;
  *
  *  
  */
-class LMAT_Admin_Classic_Editor {
+class Linguator_Admin_Classic_Editor {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * @var LMAT_Admin_Links
+	 * @var Linguator_Admin_Links
 	 */
 	public $links;
 
 	/**
 	 * Current language (used to filter the content).
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
 	/**
 	 * Preferred language to assign to new contents.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $pref_lang;
 
@@ -50,7 +50,7 @@ class LMAT_Admin_Classic_Editor {
 	 *
 	 *  
 	 *
-	 * @param object $linguator The Linguator object.
+	 * @param object $linguator The Linguator_Admin object.
 	 */
 	public function __construct( &$linguator ) {
 		$this->model = &$linguator->model;
@@ -90,7 +90,7 @@ class LMAT_Admin_Classic_Editor {
 				'side',
 				'high',
 				array(
-					'__back_compat_meta_box' => lmat_use_block_editor_plugin(),
+					'__back_compat_meta_box' => linguator_use_block_editor_plugin(),
 				)
 			);
 		}
@@ -114,7 +114,7 @@ class LMAT_Admin_Classic_Editor {
 			( isset( $_GET['new_lang'] ) ? $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification
 			$this->pref_lang );
 
-		$dropdown = new LMAT_Walker_Dropdown();
+		$dropdown = new Linguator_Walker_Dropdown();
 
 		$id = ( 'attachment' === $post_type ) ? sprintf( 'attachments[%d][language]', (int) $post_ID ) : 'post_lang_choice';
 

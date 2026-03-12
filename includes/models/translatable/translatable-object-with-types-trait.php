@@ -11,11 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Trait to use for objects that can have one or more types.
- * This must be used with {@see LMAT_Translatable_Object_With_Types_Interface}.
+ * This must be used with {@see Linguator_Translatable_Object_With_Types_Interface}.
  *
  *  
  */
-trait LMAT_Translatable_Object_With_Types_Trait {
+trait Linguator_Translatable_Object_With_Types_Trait {
 
 	/**
 	 * Fetches the IDs of the objects without language.

@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Model;
+use Linguator\Includes\Other\Linguator_Model;
 
 
 /**
@@ -17,7 +17,7 @@ use Linguator\Includes\Other\LMAT_Model;
  *
  *  
  */
-class LMAT_Filter_REST_Routes {
+class Linguator_Filter_REST_Routes {
 	/**
 	 * Cached REST routes filterable by language ordered by types.
 	 *
@@ -27,7 +27,7 @@ class LMAT_Filter_REST_Routes {
 	private $filtered_routes = array();
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	private $model;
 
@@ -36,9 +36,9 @@ class LMAT_Filter_REST_Routes {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Model $model Shared instance of the current LMAT_Model.
+	 * @param Linguator_Model $model Shared instance of the current Linguator_Model.
 	 */
-	public function __construct( LMAT_Model $model ) {
+	public function __construct( Linguator_Model $model ) {
 		$this->model = $model;
 	}
 

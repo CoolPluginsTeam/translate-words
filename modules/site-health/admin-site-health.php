@@ -9,31 +9,31 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 /**
- * Class LMAT_Admin_Site_Health to add debug info in WP Site Health.
+ * Class Linguator_Admin_Site_Health to add debug info in WP Site Health.
  *
  * @see https://make.wordpress.org/core/2019/04/25/site-health-check-in-5-2/ since WordPress 5.2
  *
  * @since 2.8
  */
-class LMAT_Admin_Site_Health {
+class Linguator_Admin_Site_Health {
 	/**
-	 * A reference to the LMAT_Model instance.
+	 * A reference to the Linguator_Model instance.
 	 *
 	 *
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
 	/**
-	 * A reference to the LMAT_Admin_Static_Pages instance.
+	 * A reference to the Linguator_Admin_Static_Pages instance.
 	 *
 	 *
-	 * @var LMAT_Admin_Static_Pages|null
+	 * @var Linguator_Admin_Static_Pages|null
 	 */
 	protected $static_pages;
 
 	/**
-	 * LMAT_Admin_Site_Health constructor.
+	 * Linguator_Admin_Site_Health constructor.
 	 *
 	 *
 	 * @param object $linguator The Linguator object.
@@ -188,7 +188,7 @@ class LMAT_Admin_Site_Health {
 	 * Returns the flag used in the language switcher.
 	 *
 	 *
-	 * @param LMAT_Language $language Language object.
+	 * @param Linguator_Language $language Language object.
 	 * @return string
 	 */
 	protected function get_flag( $language ) {
@@ -342,3 +342,4 @@ class LMAT_Admin_Site_Health {
 		return $terms;
 	}
 }
+

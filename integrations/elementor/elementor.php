@@ -9,8 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-use Linguator\Frontend\Controllers\LMAT_Frontend;
-use Linguator\Includes\Other\LMAT_Model;
+use Linguator\Frontend\Controllers\Linguator_Frontend;
+use Linguator\Includes\Other\Linguator_Model;
 
 
 /**
@@ -18,7 +18,7 @@ use Linguator\Includes\Other\LMAT_Model;
  *
  *  
  */
-class LMAT_Elementor {
+class Linguator_Elementor {
 	/**
 	 * Constructor
 	 *
@@ -105,7 +105,7 @@ class LMAT_Elementor {
 		}
 
 		// Get the post language
-		$language = lmat_get_post_language( $post_id );
+		$language = linguator_get_post_language( $post_id );
 		
 		if ( ! $language ) {
 			return new WP_Error( 'language_not_found', 'Language not found for this post', [ 'status' => 404 ] );
@@ -193,3 +193,4 @@ class LMAT_Elementor {
 		}
 	}
 } 
+

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Filters {
+class Linguator_Filters {
 	/**
 	 * Stores the plugin options.
 	 *
@@ -23,21 +23,21 @@ class LMAT_Filters {
 	public $options;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * Instance of a child class of LMAT_Links_Model.
+	 * Instance of a child class of Linguator_Links_Model.
 	 *
-	 * @var LMAT_Links_Model
+	 * @var Linguator_Links_Model
 	 */
 	public $links_model;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
@@ -111,7 +111,7 @@ class LMAT_Filters {
 	 *   Always returns an array. Renamed from get_comments_queried_language().
 	 *
 	 * @param WP_Comment_Query $query WP_Comment_Query object.
-	 * @return LMAT_Language[] The languages to use in the filter.
+	 * @return Linguator_Language[] The languages to use in the filter.
 	 */
 	protected function get_comments_queried_languages( $query ) {
 		// Don't filter comments if comment ids or post ids are specified.
@@ -265,7 +265,7 @@ class LMAT_Filters {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language $language The language to use in the relationship
+	 * @param Linguator_Language $language The language to use in the relationship
 	 * @param string       $relation 'IN' or 'NOT IN'.
 	 * @param array        $args     Array of get_pages() arguments.
 	 * @return int[]
@@ -352,7 +352,7 @@ class LMAT_Filters {
 	 * @return string[] Translated email contents.
 	 */
 	public function translate_user_email( $email ) {
-		$blog_name = wp_specialchars_decode( lmat__( get_option( 'blogname' ) ), ENT_QUOTES );
+		$blog_name = wp_specialchars_decode( linguator__( get_option( 'blogname' ) ), ENT_QUOTES );
 		$email['subject'] = sprintf( $email['subject'], $blog_name );
 		$email['message'] = str_replace( '###SITENAME###', $blog_name, $email['message'] );
 		return $email;

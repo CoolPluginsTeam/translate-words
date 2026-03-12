@@ -7,8 +7,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Linguator\Includes\Core\Linguator;
-use Linguator\Includes\Filters\LMAT_Filters;
-use Linguator\Includes\Other\LMAT_Language;
+use Linguator\Includes\Filters\Linguator_Filters;
+use Linguator\Includes\Other\Linguator_Language;
 
 
 
@@ -21,7 +21,7 @@ use Linguator\Includes\Other\LMAT_Language;
  *
  *  
  */
-class LMAT_Frontend_Filters extends LMAT_Filters {
+class Linguator_Frontend_Filters extends Linguator_Filters {
 	/**
 	 * Constructor: setups filters and actions
 	 *
@@ -51,7 +51,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 
 		// Strings translation ( must be applied before WordPress applies its default formatting filters )
 		foreach ( array( 'widget_text', 'widget_title' ) as $filter ) {
-			add_filter( $filter, 'lmat__', 1 );
+			add_filter( $filter, 'linguator__', 1 );
 		}
 
 		// Translates biography
@@ -170,7 +170,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 	 * @return string modified WHERE clause
 	 */
 	public function getarchives_where( $sql, $r ) {
-		if ( ! $this->curlang instanceof LMAT_Language ) {
+		if ( ! $this->curlang instanceof Linguator_Language ) {
 			return $sql;
 		}
 
@@ -204,7 +204,7 @@ class LMAT_Frontend_Filters extends LMAT_Filters {
 	 * @return array
 	 */
 	public function widget_media_instance( $instance ) {
-		if ( empty( $instance['lmat_lang'] ) && $instance['attachment_id'] && $tr_id = lmat_get_post( $instance['attachment_id'] ) ) {
+		if ( empty( $instance['lmat_lang'] ) && $instance['attachment_id'] && $tr_id = linguator_get_post( $instance['attachment_id'] ) ) {
 			$instance['attachment_id'] = $tr_id;
 			$attachment = get_post( $tr_id );
 

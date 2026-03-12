@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Controllers\LMAT_Switcher;
+use Linguator\Includes\Controllers\Linguator_Switcher;
 use WP_Widget;
 
 
@@ -30,7 +30,7 @@ use WP_Widget;
  *     hide_if_no_translation: 0|1
  * }
  */
-class LMAT_Widget_Languages extends WP_Widget {
+class Linguator_Widget_Languages extends WP_Widget {
 
 	/**
 	 * Constructor
@@ -79,7 +79,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 		$instance['dropdown'] = empty( $instance['dropdown'] ) ? 0 : $this->id;
 		$instance['echo']     = 0;
 		$instance['raw']      = 0;
-		$list                 = lmat_the_languages( $instance );
+		$list                 = linguator_the_languages( $instance );
 
 		if ( $list ) {
 			$title = empty( $instance['title'] ) ? '' : $instance['title'];
@@ -154,7 +154,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 	 */
 	public function update( $new_instance, $old_instance ) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		$instance = array( 'title' => sanitize_text_field( $new_instance['title'] ) );
-		foreach ( array_keys( LMAT_Switcher::get_switcher_options( 'widget' ) ) as $key ) {
+		foreach ( array_keys( Linguator_Switcher::get_switcher_options( 'widget' ) ) as $key ) {
 			$instance[ $key ] = ! empty( $new_instance[ $key ] ) ? 1 : 0;
 		}
 
@@ -173,7 +173,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 	 */
 	public function form( $instance ) {
 		// Default values
-		$instance = wp_parse_args( (array) $instance, array_merge( array( 'title' => '' ), LMAT_Switcher::get_switcher_options( 'widget', 'default' ) ) );
+		$instance = wp_parse_args( (array) $instance, array_merge( array( 'title' => '' ), Linguator_Switcher::get_switcher_options( 'widget', 'default' ) ) );
 
 		// Title
 		printf(
@@ -184,7 +184,7 @@ class LMAT_Widget_Languages extends WP_Widget {
 			esc_attr( $instance['title'] )
 		);
 
-		foreach ( LMAT_Switcher::get_switcher_options( 'widget' ) as $key => $str ) {
+		foreach ( Linguator_Switcher::get_switcher_options( 'widget' ) as $key => $str ) {
 			printf(
 				'<div%5$s%6$s><input type="checkbox" class="checkbox %7$s" id="%1$s" name="%2$s"%3$s /><label for="%1$s">%4$s</label></div>',
 				esc_attr( $this->get_field_id( $key ) ),
@@ -200,3 +200,4 @@ class LMAT_Widget_Languages extends WP_Widget {
 		return ''; // Because the parent class returns a string, however not used.
 	}
 }
+

@@ -8,10 +8,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Admin\Controllers\LMAT_Admin_Strings;
-use Linguator\Includes\Helpers\LMAT_MO;
-use Linguator\Includes\Other\LMAT_Language;
-use Linguator\Settings\Controllers\LMAT_Settings;
+use Linguator\Admin\Controllers\Linguator_Admin_Strings;
+use Linguator\Includes\Helpers\Linguator_MO;
+use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Settings\Controllers\Linguator_Settings;
 use Linguator\Includes\Models\Languages;
 use WP_List_Table;
 use WP_Error;
@@ -26,7 +26,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  *  
  */
-class LMAT_Table_String extends WP_List_Table {
+class Linguator_Table_String extends WP_List_Table {
 	/**
 	 * The list of languages.
 	 *
@@ -71,7 +71,7 @@ class LMAT_Table_String extends WP_List_Table {
 		);
 
 		$this->languages = $languages;
-		$this->strings = LMAT_Admin_Strings::get_strings();
+		$this->strings = Linguator_Admin_Strings::get_strings();
 		$this->groups = array_unique( wp_list_pluck( $this->strings, 'context' ) );
 
 		$this->selected_group = -1;
@@ -214,7 +214,7 @@ class LMAT_Table_String extends WP_List_Table {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language[] $languages An array of language objects.
+	 * @param Linguator_Language[] $languages An array of language objects.
 	 * @param string         $s         Searched string.
 	 * @return string[] Found strings.
 	 */
@@ -222,7 +222,7 @@ class LMAT_Table_String extends WP_List_Table {
 		$founds = array();
 
 		foreach ( $languages as $language ) {
-			$mo = new LMAT_MO();
+			$mo = new Linguator_MO();
 			$mo->import_from_db( $language );
 			foreach ( wp_list_pluck( $mo->entries, 'translations' ) as $string => $translation ) {
 				if ( false !== stripos( $translation[0], $s ) ) {
@@ -318,7 +318,7 @@ class LMAT_Table_String extends WP_List_Table {
 		foreach ( $languages as $language ) {
 			$disabled = disabled( in_array( $language->slug, $allowed_language_slugs, true ), false, false );
 
-			$mo = new LMAT_MO();
+			$mo = new Linguator_MO();
 			$mo->import_from_db( $language );
 			foreach ( $this->items as $key => $row ) {
 				$this->items[ $key ]['translations'][ $language->slug ] = $mo->translate_if_any( $row['string'] );
@@ -401,21 +401,21 @@ class LMAT_Table_String extends WP_List_Table {
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below with sanitize_textarea_field
 				$translations = array_map( 'sanitize_textarea_field', array_map( 'trim', (array) wp_unslash( $_POST['translation'][ $language->slug ] ) ) );
 
-				$mo = new LMAT_MO();
+				$mo = new Linguator_MO();
 				$mo->import_from_db( $language );
 
 				foreach ( $translations as $key => $translation ) {
 					/**
 					 * Filters the string translation before it is saved in DB.
-					 * Allows to sanitize strings registered with lmat_register_string().
+					 * Allows to sanitize strings registered with linguator_register_string().
 					 *
 					 *  
 					 *   The translation passed to the filter is unslashed.
 					 *   Add original string as 4th parameter.
 					 *
 					 * @param string $translation The string translation.
-					 * @param string $name        The name as defined in lmat_register_string.
-					 * @param string $context     The context as defined in lmat_register_string.
+					 * @param string $name        The name as defined in linguator_register_string.
+					 * @param string $context     The context as defined in linguator_register_string.
 					 * @param string $original    The original string to translate.
 					 */
 					$translation = apply_filters( 'lmat_sanitize_string_translation', $translation, $this->strings[ $key ]['name'], $this->strings[ $key ]['context'], $this->strings[ $key ]['string'] );
@@ -429,7 +429,7 @@ class LMAT_Table_String extends WP_List_Table {
 
 				// Clean database ( removes all strings which were registered some day but are no more )
 				if ( ! empty( $_POST['clean'] ) && current_user_can( 'manage_options' ) ) {
-					$new_mo = new LMAT_MO();
+					$new_mo = new Linguator_MO();
 
 					foreach ( $this->strings as $string ) {
 						$new_mo->add_entry( $mo->make_entry( $string['string'], $mo->translate( $string['string'] ) ) );
@@ -439,7 +439,7 @@ class LMAT_Table_String extends WP_List_Table {
 				isset( $new_mo ) ? $new_mo->export_to_db( $language ) : $mo->export_to_db( $language );
 			}
 
-			lmat_add_notice( new WP_Error( 'lmat_strings_translations_updated', __( 'Translations updated.', 'translate-words' ), 'success' ) );
+			linguator_add_notice( new WP_Error( 'lmat_strings_translations_updated', __( 'Translations updated.', 'translate-words' ), 'success' ) );
 
 			/**
 			 * Fires after the strings translations are saved in DB
@@ -464,6 +464,6 @@ class LMAT_Table_String extends WP_List_Table {
 		if ( ! empty( $args['s'] ) ) {
 			$args['s'] = urlencode( $args['s'] ); // Searched string needs to be encoded as it comes from $_POST
 		}
-		LMAT_Settings::redirect( $args );
+		Linguator_Settings::redirect( $args );
 	}
 }

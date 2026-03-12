@@ -17,7 +17,7 @@ use Linguator\Includes\Options\Options;
  *
  *  
  */
-class LMAT_Settings_Module {
+class Linguator_Settings_Module {
 	/**
 	 * Stores the plugin options.
 	 *
@@ -26,14 +26,14 @@ class LMAT_Settings_Module {
 	public $options;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * Instance of a child class of LMAT_Links_Model.
+	 * Instance of a child class of Linguator_Links_Model.
 	 *
-	 * @var LMAT_Links_Model
+	 * @var Linguator_Links_Model
 	 */
 	public $links_model;
 
@@ -289,13 +289,13 @@ class LMAT_Settings_Module {
 
 			if ( ! $errors->has_errors() ) {
 				// Send update message
-				lmat_add_notice( new WP_Error( 'settings_updated', __( 'Settings saved.', 'translate-words' ), 'success' ) );
+				linguator_add_notice( new WP_Error( 'settings_updated', __( 'Settings saved.', 'translate-words' ), 'success' ) );
 				$notice_html = $this->render_settings_errors_html( 'linguator' );
 				$x = new WP_Ajax_Response( array( 'what' => 'success', 'data' => $notice_html ) );
 				$x->send();
 			} else {
 				// Send error messages
-				lmat_add_notice( $errors );
+				linguator_add_notice( $errors );
 				$notice_html = $this->render_settings_errors_html( 'linguator' );
 				$x = new WP_Ajax_Response( array( 'what' => 'error', 'data' => $notice_html ) );
 				$x->send();

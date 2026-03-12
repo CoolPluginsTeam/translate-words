@@ -8,9 +8,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Admin\Controllers\LMAT_Admin_Filters_Post_Base;
-use Linguator\Admin\Controllers\LMAT_Language;
-use Linguator\Includes\Other\LMAT_Query;
+use Linguator\Admin\Controllers\Linguator_Admin_Filters_Post_Base;
+use Linguator\Admin\Controllers\Linguator_Language;
+use Linguator\Includes\Other\Linguator_Query;
 use Linguator\Includes\Capabilities\User;
 
 /**
@@ -18,11 +18,11 @@ use Linguator\Includes\Capabilities\User;
  *
  *  
  */
-class LMAT_Admin_Filters_Post extends LMAT_Admin_Filters_Post_Base {
+class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 	/**
 	 * Current language (used to filter the content).
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
@@ -130,8 +130,8 @@ class LMAT_Admin_Filters_Post extends LMAT_Admin_Filters_Post_Base {
 	 * @return void
 	 */
 	public function parse_query( $query ) {
-		$lmat_query = new LMAT_Query( $query, $this->model );
-		$lmat_query->filter_query( $this->curlang );
+		$linguator_query = new Linguator_Query( $query, $this->model );
+		$linguator_query->filter_query( $this->curlang );
 	}
 
 	/**

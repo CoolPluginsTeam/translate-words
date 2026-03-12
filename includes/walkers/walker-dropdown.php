@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Displays languages in a dropdown list
  *
  *  
- *   Extends `LMAT_Walker` now.
+ *   Extends `Linguator_Walker` now.
  */
-class LMAT_Walker_Dropdown extends LMAT_Walker {
+class Linguator_Walker_Dropdown extends Linguator_Walker {
 	/**
 	 * Database fields to use.
 	 *
@@ -73,12 +73,12 @@ class LMAT_Walker_Dropdown extends LMAT_Walker {
 	 * class    => the class attribute
 	 * disabled => disables the dropdown if set to 1
 	 *
-	 * @param array $elements  An array of `LMAT_language` or `stdClass` elements.
+	 * @param array $elements  An array of `Linguator_language` or `stdClass` elements.
 	 * @param int   $max_depth The maximum hierarchical depth.
 	 * @param mixed ...$args   Additional arguments.
 	 * @return string The hierarchical item output.
 	 *
-	 * @phpstan-param array<LMAT_Language|stdClass> $elements
+	 * @phpstan-param array<Linguator_Language|stdClass> $elements
 	 */
 	public function walk( $elements, $max_depth, ...$args ) { // // phpcs:ignore WordPressVIPMinimum.Classes.DeclarationCompatibility.DeclarationCompatibility
 		$output = '';
@@ -110,3 +110,4 @@ class LMAT_Walker_Dropdown extends LMAT_Walker {
 		return $output;
 	}
 }
+

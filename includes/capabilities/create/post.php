@@ -5,7 +5,7 @@
 
 namespace Linguator\Includes\Capabilities\Create;
 
-use Linguator\Includes\Other\LMAT_Language;
+use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Includes\Capabilities\User;
 
 /**
@@ -37,9 +37,9 @@ class Post extends Abstract_Object {
 	 *
 	 * @param User $user The user doing the action.
 	 * @param int  $id   The post ID (0 for new posts).
-	 * @return LMAT_Language The selected language to assign to the post.
+	 * @return Linguator_Language The selected language to assign to the post.
 	 */
-	public function get_language( User $user, int $id = 0 ): LMAT_Language {
+	public function get_language( User $user, int $id = 0 ): Linguator_Language {
 		/** Get the default language from the system as a final fallback. */
 		$default_language = $this->model->get_default_language();
 

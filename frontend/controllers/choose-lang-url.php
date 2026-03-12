@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Choose_Lang_Url extends LMAT_Choose_Lang {
+class Linguator_Choose_Lang_Url extends Linguator_Choose_Lang {
 	/**
 	 * The name of the index file which is the entry point to all requests.
 	 * We need this before the global $wp_rewrite is created.
@@ -53,7 +53,7 @@ class LMAT_Choose_Lang_Url extends LMAT_Choose_Lang {
 		$host      = str_replace( 'www.', '', (string) wp_parse_url( $this->links_model->home, PHP_URL_HOST ) ); // Remove www. for the comparison
 		$home_path = (string) wp_parse_url( $this->links_model->home, PHP_URL_PATH );
 
-		$requested_url   = lmat_get_requested_url();
+		$requested_url   = linguator_get_requested_url();
 		$requested_host  = str_replace( 'www.', '', (string) wp_parse_url( $requested_url, PHP_URL_HOST ) ); // Remove www. for the comparison
 		$requested_path  = rtrim( str_replace( $this->index, '', (string) wp_parse_url( $requested_url, PHP_URL_PATH ) ), '/' ); // Some PHP setups turn requests for / into /index.php in REQUEST_URI
 		$requested_query = wp_parse_url( $requested_url, PHP_URL_QUERY );

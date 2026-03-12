@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Walkers\LMAT_Walker_Dropdown;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
 use WP_Screen;
 use WP_Ajax_Response;
 use WP_Term;
@@ -20,21 +20,21 @@ use WP_Term;
  *
  *  
  */
-class LMAT_Admin_Filters_Columns {
+class Linguator_Admin_Filters_Columns {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * @var LMAT_Admin_Links|null
+	 * @var Linguator_Admin_Links|null
 	 */
 	public $links;
 
 	/**
 	 * Language selected in the admin language filter.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $filter_lang;
 
@@ -229,7 +229,7 @@ class LMAT_Admin_Filters_Columns {
 				array_unshift( $elements, (object) array( 'slug' => -1, 'name' => __( '&mdash; No Change &mdash;', 'translate-words' ) ) );
 			}
 
-			$dropdown = new LMAT_Walker_Dropdown();
+			$dropdown = new Linguator_Walker_Dropdown();
 			// The hidden field 'old_lang' allows to pass the old language to ajax request
 			printf(
 				'<fieldset class="inline-edit-col-left">
@@ -467,7 +467,7 @@ class LMAT_Admin_Filters_Columns {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language $language LMAT_Language object.
+	 * @param Linguator_Language $language Linguator_Language object.
 	 * @return string
 	 */
 	protected function get_flag_html( $language ) {

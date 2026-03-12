@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Displays a language list
  *
  *  
- *   Extends `LMAT_Walker` now.
+ *   Extends `Linguator_Walker` now.
  */
-class LMAT_Walker_List extends LMAT_Walker {
+class Linguator_Walker_List extends Linguator_Walker {
 	/**
 	 * Database fields to use.
 	 *
@@ -93,3 +93,4 @@ class LMAT_Walker_List extends LMAT_Walker {
 		return parent::walk( $elements, $max_depth, $args );
 	}
 }
+

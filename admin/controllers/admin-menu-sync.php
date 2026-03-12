@@ -14,11 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class LMAT_Admin_Menu_Sync
+ * Class Linguator_Admin_Menu_Sync
  * 
  * Provides functionality to sync menu structure across multiple languages
  */
-class LMAT_Admin_Menu_Sync {
+class Linguator_Admin_Menu_Sync {
 
 	/**
 	 * Flag to track if AJAX handler has been registered
@@ -556,7 +556,7 @@ class LMAT_Admin_Menu_Sync {
 				return false;
 			}
 			
-			$translations = lmat_get_post_translations( $item->object_id );
+			$translations = linguator_get_post_translations( $item->object_id );
 			
 			// If no translations array exists, the post isn't in a translation group yet
 			if ( empty( $translations ) ) {
@@ -580,7 +580,7 @@ class LMAT_Admin_Menu_Sync {
 
 		// Check if taxonomy item has translation
 		if ( $item->type === 'taxonomy' ) {
-			$translations = lmat_get_term_translations( $item->object_id );
+			$translations = linguator_get_term_translations( $item->object_id );
 			
 			if ( ! isset( $translations[ $lang->slug ] ) ) {
 				return false;
@@ -640,7 +640,7 @@ class LMAT_Admin_Menu_Sync {
 			}
 			
 			// Get translated post (supports all post types including custom)
-			$translations = lmat_get_post_translations( $item->object_id );
+			$translations = linguator_get_post_translations( $item->object_id );
 			
 			if ( ! isset( $translations[ $lang->slug ] ) ) {
 				return false; // No translation available
@@ -672,7 +672,7 @@ class LMAT_Admin_Menu_Sync {
 			}
 		} elseif ( $item->type === 'taxonomy' ) {
 			// Get translated term
-			$translations = lmat_get_term_translations( $item->object_id );
+			$translations = linguator_get_term_translations( $item->object_id );
 			
 			if ( ! isset( $translations[ $lang->slug ] ) ) {
 				return false; // No translation available

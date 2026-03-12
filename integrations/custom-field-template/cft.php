@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Cft {
+class Linguator_Cft {
 	/**
 	 * Setups actions.
 	 *
@@ -39,3 +39,4 @@ class LMAT_Cft {
 		}
 	}
 }
+

@@ -35,8 +35,8 @@ if (!class_exists('Glossary')) {
          */
         public function __construct() {
             add_filter('lmat_frontend_settings_assets', array($this, 'stop_frontend_setting_assets'), 10, 3);
-			add_filter('lmat_admin_settings_assets', array($this, 'lmat_supported_blocks_assets'), 10, 3);
-			add_filter('lmat_render_languages_page', array($this, 'lmat_render_supported_blocks_page'), 10, 3);
+			add_filter('lmat_admin_settings_assets', array($this, 'linguator_supported_blocks_assets'), 10, 3);
+			add_filter('lmat_render_languages_page', array($this, 'linguator_render_supported_blocks_page'), 10, 3);
 
             // Add AJAX hooks here
             add_action('wp_ajax_lmat_import_glossary', array($this, 'import_glossary_ajax'));
@@ -47,14 +47,14 @@ if (!class_exists('Glossary')) {
             add_action('wp_ajax_lmat_get_glossary', array($this, 'get_glossary_ajax'));
         }
 
-        /*
+		/*
 		Filter to enqueue the admin supported blocks assets
 		@param bool $status
 		@param string $tab
 		@param bool $is_settings_tab
 		@return bool
 		*/
-		public function lmat_supported_blocks_assets($status, $tab, $is_settings_tab){
+		public function linguator_supported_blocks_assets($status, $tab, $is_settings_tab){
 			if($is_settings_tab && $tab === 'glossary' && function_exists('LMAT')){
 
 				$header = Header::get_instance('glossary', LMAT()->model);
@@ -103,7 +103,7 @@ if (!class_exists('Glossary')) {
 		@param string $active_tab
 		@return bool
 		*/
-		public function lmat_render_supported_blocks_page($status, $selected_tab, $active_tab) {
+		public function linguator_render_supported_blocks_page($status, $selected_tab, $active_tab) {
 			if($selected_tab === 'glossary' && $active_tab === 'settings'){
 
 				$header = Header::get_instance('glossary', LMAT()->model);

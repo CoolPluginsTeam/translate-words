@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Filters_Links {
+class Linguator_Filters_Links {
 	/**
 	 * Stores the plugin options.
 	 *
@@ -23,26 +23,26 @@ class LMAT_Filters_Links {
 	public $options;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * Instance of a child class of LMAT_Links_Model.
+	 * Instance of a child class of Linguator_Links_Model.
 	 *
-	 * @var LMAT_Links_Model
+	 * @var Linguator_Links_Model
 	 */
 	public $links_model;
 
 	/**
-	 * @var LMAT_Links|null
+	 * @var Linguator_Links|null
 	 */
 	public $links;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
@@ -74,7 +74,7 @@ class LMAT_Filters_Links {
 		}
 
 		// Keeps the preview post link on default domain when using multiple domains and SSO is not available.
-		if ( 3 === $this->options['force_lang'] && ! class_exists( 'LMAT_Xdata_Domain' ) ) {
+		if ( 3 === $this->options['force_lang'] && ! class_exists( 'Linguator_Xdata_Domain' ) ) {
 			add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 20 );
 		}
 
@@ -130,7 +130,7 @@ class LMAT_Filters_Links {
 			 *  
 			 *
 			 * @param string       $link The post link.
-			 * @param LMAT_Language $lang The current language.
+			 * @param Linguator_Language $lang The current language.
 			 * @param WP_Post      $post The post object.
 			 */
 			$link = apply_filters( 'lmat_post_type_link', $link, $lang, $post );
@@ -160,13 +160,13 @@ class LMAT_Filters_Links {
 			 *  
 			 *
 			 * @param string       $link The term link.
-			 * @param LMAT_Language $lang The current language.
+			 * @param Linguator_Language $lang The current language.
 			 * @param WP_Term      $term The term object.
 			 */
 			return apply_filters( 'lmat_term_link', $link, $lang, $term );
 		}
 
-		// In case someone calls get_term_link for the 'lmat_language' taxonomy.
+		// In case someone calls get_term_link for the 'linguator_language' taxonomy.
 		if ( 'lmat_language' === $tax ) {
 			$lang = $this->model->get_language( $term->term_id );
 			if ( $lang ) {
