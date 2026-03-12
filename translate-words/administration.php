@@ -90,7 +90,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking page parameter to conditionally load scripts, not processing form data.
-        if (isset($_REQUEST['page']) && 'tww_settings' !== $_REQUEST['page']) {
+        if (isset($_REQUEST['page']) && 'tww_settings' !== sanitize_key( wp_unslash( $_REQUEST['page'] ) ) ) {
             return;
         }
 

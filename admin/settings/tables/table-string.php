@@ -245,7 +245,7 @@ class Linguator_Table_String extends WP_List_Table {
 	 */
 	protected function usort_reorder( $a, $b ) {
 		if ( ! empty( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$orderby = sanitize_key( $_GET['orderby'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$orderby = sanitize_key( wp_unslash( $_GET['orderby'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			if ( isset( $a[ $orderby ], $b[ $orderby ] ) ) {
 				$result = strcmp( $a[ $orderby ], $b[ $orderby ] ); // Determine sort order
 				return ( empty( $_GET['order'] ) || 'asc' === $_GET['order'] ) ? $result : -$result; // phpcs:ignore WordPress.Security.NonceVerification
@@ -395,11 +395,11 @@ class Linguator_Table_String extends WP_List_Table {
 
 		if ( ! empty( $_POST['submit'] ) ) {
 			foreach ( $this->languages->filter( 'translator' )->get_list() as $language ) {
-				if ( empty( $_POST['translation'][ $language->slug ] ) || ! is_array( $_POST['translation'][ $language->slug ] ) ) { // In case the language filter is active
+				if ( empty( $_POST['translation'][ $language->slug ] ) || ! is_array( wp_unslash( $_POST['translation'][ $language->slug ] ) ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 					continue;
 				}
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below with sanitize_textarea_field
-				$translations = array_map( 'sanitize_textarea_field', array_map( 'trim', (array) wp_unslash( $_POST['translation'][ $language->slug ] ) ) );
+				$translations = array_map( 'sanitize_textarea_field', array_map( 'trim', (array) wp_unslash( $_POST['translation'][ $language->slug ] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 				$mo = new Linguator_MO();
 				$mo->import_from_db( $language );
@@ -457,9 +457,9 @@ class Linguator_Table_String extends WP_List_Table {
 		}
 
 		// To refresh the page 
-		$args = array_intersect_key( $_REQUEST, array_flip( array( 's', 'paged', 'group' ) ) );
+		$args = array_intersect_key( wp_unslash( $_REQUEST ), array_flip( array( 's', 'paged', 'group' ) ) );
 		if ( ! empty( $_GET['paged'] ) && ! empty( $_POST['submit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$args['paged'] = (int) $_GET['paged']; // Don't rely on $_REQUEST['paged'] or $_POST['paged']. 
+			$args['paged'] = absint( wp_unslash( $_GET['paged'] ) ); // Don't rely on $_REQUEST['paged'] or $_POST['paged'].
 		}
 		if ( ! empty( $args['s'] ) ) {
 			$args['s'] = urlencode( $args['s'] ); // Searched string needs to be encoded as it comes from $_POST

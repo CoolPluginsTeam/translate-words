@@ -168,7 +168,7 @@ class Linguator_Frontend extends Linguator_Base {
 		 * Early instantiated to be able to correctly initialize language properties.
 		 * Also loaded in customizer preview, directly reading the request as we act before WP.
 		 */
-		if ( 'page' === get_option( 'show_on_front' ) || ( isset( $_REQUEST['wp_customize'] ) && 'on' === $_REQUEST['wp_customize'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( 'page' === get_option( 'show_on_front' ) || ( isset( $_REQUEST['wp_customize'] ) && 'on' === sanitize_key( wp_unslash( $_REQUEST['wp_customize'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$this->static_pages = new Linguator_Frontend_Static_Pages( $this );
 		}
 

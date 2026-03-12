@@ -74,7 +74,7 @@ abstract class Linguator_Choose_Lang {
 	 */
 	public function init() {
 		if ( Linguator::is_ajax_on_front() || ! wp_using_themes() ) {
-			$this->set_language( empty( $_REQUEST['lmat_lang'] ) ? $this->get_preferred_language() : $this->model->get_language( sanitize_key( $_REQUEST['lmat_lang'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$this->set_language( empty( $_REQUEST['lmat_lang'] ) ? $this->get_preferred_language() : $this->model->get_language( sanitize_key( wp_unslash( $_REQUEST['lmat_lang'] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		add_action( 'pre_comment_on_post', array( $this, 'pre_comment_on_post' ) ); // sets the language of comment

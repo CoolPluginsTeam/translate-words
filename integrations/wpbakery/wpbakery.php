@@ -214,7 +214,7 @@ class Linguator_WPBakery {
 			return $content;
 		}
 
-		$from_post_id = absint( $_GET['from_post'] );
+		$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
 		if ( ! $from_post_id ) {
 			return $content;
 		}
@@ -335,7 +335,7 @@ class Linguator_WPBakery {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
 		if ( isset( $_GET['from_post'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
-			$from_post_id = absint( $_GET['from_post'] );
+			$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
 			if ( $from_post_id ) {
 				$wpb_status = get_post_meta( $from_post_id, '_wpb_vc_js_status', true );
 				if ( 'true' === $wpb_status || true === $wpb_status ) {

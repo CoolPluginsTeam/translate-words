@@ -84,13 +84,13 @@ class Linguator_FSE_Tools {
 			return null;
 		}
 
-		$template_id = wp_unslash( $_GET['postId'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$template_id = sanitize_text_field( wp_unslash( $_GET['postId'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( ! preg_match( '@^.+//[a-zA-Z0-9_-]+$@', $template_id ) ) {
 			return null;
 		}
 
-		$template_type = sanitize_key( $_GET['postType'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$template_type = sanitize_key( wp_unslash( $_GET['postType'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( ! self::is_template_post_type( $template_type ) ) {
 			return null;

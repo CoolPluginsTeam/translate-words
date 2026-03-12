@@ -65,12 +65,12 @@ class Linguator_Choose_Lang_Url extends Linguator_Choose_Lang {
 		}
 
 		// Take care to post & page preview http://wordpress.org/support/topic/static-frontpage-url-parameter-url-language-information
-		elseif ( isset( $_GET['preview'] ) && ( ( isset( $_GET['p'] ) && $id = (int) $_GET['p'] ) || ( isset( $_GET['page_id'] ) && $id = (int) $_GET['page_id'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		elseif ( isset( $_GET['preview'] ) && ( ( isset( $_GET['p'] ) && $id = absint( wp_unslash( $_GET['p'] ) ) ) || ( isset( $_GET['page_id'] ) && $id = absint( wp_unslash( $_GET['page_id'] ) ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$curlang = ( $lg = $this->model->post->get_language( $id ) ) ? $lg : $this->model->get_default_language();
 		}
 
 		// Take care to ( unattached ) attachments
-		elseif ( isset( $_GET['attachment_id'] ) && $id = (int) $_GET['attachment_id'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+		elseif ( isset( $_GET['attachment_id'] ) && $id = absint( wp_unslash( $_GET['attachment_id'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$curlang = ( $lg = $this->model->post->get_language( $id ) ) ? $lg : $this->get_preferred_language();
 		}
 

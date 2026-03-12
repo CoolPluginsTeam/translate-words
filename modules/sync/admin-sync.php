@@ -169,7 +169,7 @@ class Linguator_Admin_Sync extends Linguator_Sync {
 			$post_type = $GLOBALS['post_type'];
 		} elseif ( isset( $_REQUEST['post_type'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			// 2nd case for quick edit.
-			$post_type = sanitize_key( $_REQUEST['post_type'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$post_type = sanitize_key( wp_unslash( $_REQUEST['post_type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 
 		// Make sure not to impact media translations when creating them at the same time as post
@@ -195,7 +195,7 @@ class Linguator_Admin_Sync extends Linguator_Sync {
 		// Sticky posts
 		if ( in_array( 'sticky_posts', $this->options['sync'] ) ) {
 			$stickies = get_option( 'sticky_posts' );
-			if ( isset( $_REQUEST['sticky'] ) && 'sticky' === $_REQUEST['sticky'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			if ( isset( $_REQUEST['sticky'] ) && 'sticky' === sanitize_key( wp_unslash( $_REQUEST['sticky'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$stickies = array_merge( $stickies, array_values( $translations ) );
 			} else {
 				$stickies = array_diff( $stickies, array_values( $translations ) );

@@ -100,7 +100,7 @@ class Linguator_Table_Languages extends WP_List_Table {
 		return sprintf(
 			'<a title="%s" href="%s">%s</a>',
 			esc_attr__( 'Edit this language', 'translate-words' ),
-			esc_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ) ),
+			esc_url( wp_nonce_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ), 'edit-lang' ) ),
 			esc_html( $item->name )
 		);
 	}
@@ -212,7 +212,7 @@ class Linguator_Table_Languages extends WP_List_Table {
 			'edit'   => sprintf(
 				'<a title="%s" href="%s">%s</a>',
 				esc_attr__( 'Edit this language', 'translate-words' ),
-				esc_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ) ),
+				esc_url( wp_nonce_url( admin_url( 'admin.php?page=lmat&amp;lmat_action=edit&amp;lang=' . $item->term_id ), 'edit-lang' ) ),
 				esc_html__( 'Edit', 'translate-words' )
 			),
 			'delete' => sprintf(
@@ -247,7 +247,7 @@ class Linguator_Table_Languages extends WP_List_Table {
 	 * @return int -1 or 1 if $a is considered to be respectively less than or greater than $b.
 	 */
 	protected function usort_reorder( $a, $b ) {
-		$orderby = ! empty( $_GET['orderby'] ) ? sanitize_key( $_GET['orderby'] ) : 'name'; // phpcs:ignore WordPress.Security.NonceVerification
+		$orderby = ! empty( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'name'; // phpcs:ignore WordPress.Security.NonceVerification
 		// Determine sort order
 		if ( is_numeric( $a->$orderby ) ) {
 			$result = $a->$orderby > $b->$orderby ? 1 : -1;

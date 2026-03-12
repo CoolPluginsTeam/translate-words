@@ -144,7 +144,7 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		$w = 0;
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['w'] ) ) {
-			$w = (int) $_GET['w'];
+			$w = absint( wp_unslash( $_GET['w'] ) );
 		}
 
 		/*

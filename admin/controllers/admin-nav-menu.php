@@ -178,7 +178,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @return void
 	 */
 	public function wp_update_nav_menu_item( $menu_id = 0, $menu_item_db_id = 0 ) {
-		if ( empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== $_POST['menu-item-url'][ $menu_item_db_id ] ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== sanitize_key( wp_unslash( $_POST['menu-item-url'][ $menu_item_db_id ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return;
 		}
 
@@ -186,7 +186,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		if ( current_user_can( 'edit_theme_options' ) ) {
 			check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
 
-		if ( empty( $_POST['menu-item-url'] ) || ! is_array( $_POST['menu-item-url'] ) || empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== $_POST['menu-item-url'][ $menu_item_db_id ] ) {
+		if ( empty( $_POST['menu-item-url'] ) || ! is_array( array_map( 'sanitize_key', wp_unslash( $_POST['menu-item-url'] ) ) ) || empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== sanitize_key( wp_unslash( $_POST['menu-item-url'][ $menu_item_db_id ] ) ) ) {
 					return;
 			}
 			$options = array( 'hide_if_no_translation' => 0, 'hide_current' => 0, 'force_home' => 0, 'show_flags' => 0, 'show_names' => 1, 'dropdown' => 0 ); // Default values
@@ -199,7 +199,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			}
 			else {
 				foreach ( array_keys( $options ) as $opt ) {
-					$options[ $opt ] = empty( $_POST[ 'menu-item-' . $opt ][ $menu_item_db_id ] ) ? 0 : 1;
+					$options[ $opt ] = ! empty( $_POST[ 'menu-item-' . $opt ][ $menu_item_db_id ] ) ? 1 : 0;
 				}
 				update_post_meta( $menu_item_db_id, '_lmat_menu_item', $options ); // Allow us to easily identify our nav menu item
 			}
@@ -267,7 +267,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		if (
 			isset( $_POST['action'], $_REQUEST['update-nav-menu-nonce'] )
 			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['update-nav-menu-nonce'] ) ), 'update-nav_menu' )
-			&& 'update' === $_POST['action']
+			&& 'update' === sanitize_key( wp_unslash( $_POST['action'] ) )
 		) {
 			$nav_menus = $this->options->get( 'nav_menus' );
 
@@ -291,7 +291,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			if (
 				isset( $_POST['action'], $_REQUEST['nonce'] )
 				&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ), $action )
-				&& 'customize_save' == $_POST['action']
+				&& 'customize_save' == sanitize_key( wp_unslash( $_POST['action'] ) )
 			) {
 				$mods['nav_menu_locations'] = $this->update_nav_menu_locations( $mods['nav_menu_locations'] );
 
@@ -299,7 +299,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 			// Edit Menus tab in Appearance -> Menus
 			// Add the test of $_POST['update-nav-menu-nonce'] to avoid conflict with Vantage theme
-			elseif ( isset( $_POST['action'], $_POST['update-nav-menu-nonce'] ) && 'update' === $_POST['action'] ) {
+			elseif ( isset( $_POST['action'], $_POST['update-nav-menu-nonce'] ) && 'update' === sanitize_key( wp_unslash( $_POST['action'] ) ) ) {
 				check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
 
 				$nav_menus = $this->options->get( 'nav_menus' );
@@ -310,7 +310,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			// Customizer
 			// Don't reset locations in this case.
 			// see http://wordpress.org/support/topic/menus-doesnt-show-and-not-saved-in-theme-settings-multilingual-site
-			elseif ( isset( $_POST['action'] ) && 'customize_save' == $_POST['action'] ) {
+			elseif ( isset( $_POST['action'] ) && 'customize_save' === sanitize_key( wp_unslash( $_POST['action'] ) ) ) {
 				check_ajax_referer( 'save-customize_' . $GLOBALS['wp_customize']->get_stylesheet(), 'nonce' );
 			}
 

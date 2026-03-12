@@ -148,7 +148,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 
 			check_admin_referer( 'lmat_language', '_lmat_nonce' );
 
-			$post_id = (int) $_POST['post_ID'];
+			$post_id = absint( wp_unslash( $_POST['post_ID'] ) );
 			$post = get_post( $post_id );
 
 			if ( empty( $post ) ) {
@@ -166,7 +166,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 				return;
 			}
 
-			$language = $this->model->get_language( sanitize_key( $_POST['post_lang_choice'] ) );
+			$language = $this->model->get_language( sanitize_key( wp_unslash( $_POST['post_lang_choice'] ) ) );
 
 			if ( empty( $language ) ) {
 				return;
@@ -180,7 +180,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 				return;
 			}
 
-			$this->save_translations( $post_id, array_map( 'absint', $_POST['post_tr_lang'] ) );
+			$this->save_translations( $post_id, array_map( 'absint', wp_unslash( $_POST['post_tr_lang'] ) ) );
 	}
 
 	/**
@@ -199,11 +199,16 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 			return;
 		}
 
-		if ( -1 === $_GET['inline_lang_choice'] ) {
+		$inline_lang_choice = isset( $_GET['inline_lang_choice'] ) 
+		? absint( wp_unslash( $_GET['inline_lang_choice'] ) ) 
+		: 0;
+
+
+		if ( -1 === $inline_lang_choice ) {
 			return;
 		}
 
-		$language = $this->model->get_language( sanitize_key( $_GET['inline_lang_choice'] ) );
+		$language = $this->model->get_language( sanitize_key( wp_unslash( $_GET['inline_lang_choice'] ) ) );
 
 		if ( empty( $language ) ) {
 			return;
@@ -212,7 +217,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 		$user = new User();
 		$user->can_translate_or_die( $language );
 
-		$post_ids = array_map( 'intval', (array) $_REQUEST['post'] );
+		$post_ids = array_map( 'intval', (array) wp_unslash( $_REQUEST['post'] ) );
 		foreach ( $post_ids as $post_id ) {
 			if ( $user->has_cap( 'edit_post', $post_id ) ) {
 				$this->model->post->set_language( $post_id, $language );
@@ -236,7 +241,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 			return;
 		}
 
-		$language = $this->model->get_language( sanitize_key( $_POST['inline_lang_choice'] ) );
+		$language = $this->model->get_language( sanitize_key( wp_unslash( $_POST['inline_lang_choice'] ) ) );
 
 		if ( empty( $language ) ) {
 			return;
@@ -245,7 +250,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 		$user = new User();
 		$user->can_translate_or_die( $language );
 
-		$post_id = (int) $_POST['post_ID'];
+		$post_id = absint( wp_unslash( $_POST['post_ID'] ) );
 
 		if ( ! $post_id || ! $user->has_cap( 'edit_post', $post_id ) ) {
 			return;

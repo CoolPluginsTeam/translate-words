@@ -312,13 +312,14 @@ class Linguator_Admin_Links extends Linguator_Links {
 			return array();
 		}
 
-		if ( empty( $post_type ) || $post_type !== $_GET['post_type'] || ! $this->model->is_translated_post_type( $post_type ) ) {
+		$request_post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		if ( empty( $post_type ) || $post_type !== $request_post_type || ! $this->model->is_translated_post_type( $post_type ) ) {
 			return array();
 		}
 
 		// Capability check already done in post-new.php.
 		check_admin_referer( 'new-post-translation' );
-		return $this->get_objects_from_new_post_translation_request( (int) $_GET['from_post'], sanitize_key( $_GET['new_lang'] ) );
+		return $this->get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_post'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
 	}
 
 	/**
@@ -338,12 +339,12 @@ class Linguator_Admin_Links extends Linguator_Links {
 			return array();
 		}
 
-		if ( ! isset( $_GET['action'], $_GET['_wpnonce'], $_GET['from_media'], $_GET['new_lang'] ) || 'translate_media' !== $_GET['action'] ) {
+		if ( ! isset( $_GET['action'], $_GET['_wpnonce'], $_GET['from_media'], $_GET['new_lang'] ) || 'translate_media' !== sanitize_key( wp_unslash( $_GET['action'] ) ) ) {
 			return array();
 		}
 
 		check_admin_referer( 'translate_media' );
-		return $this->get_objects_from_new_post_translation_request( (int) $_GET['from_media'], sanitize_key( $_GET['new_lang'] ) );
+		return $this->get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_media'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
 	}
 
 	/**

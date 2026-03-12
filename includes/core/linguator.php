@@ -162,7 +162,7 @@ class Linguator {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for filtering
 		if ( isset( $_REQUEST['action'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for filtering
-			$action = sanitize_key( $_REQUEST['action'] );
+			$action = sanitize_key( wp_unslash( $_REQUEST['action'] ) );
 			// Check for Elementor actions - these should be treated as admin operations
 			if ( strpos( $action, 'elementor' ) !== false || 
 				 in_array( $action, array( 'heartbeat' ) ) ) {
@@ -170,7 +170,7 @@ class Linguator {
 			}
 		}
 		
-		$in = isset( $_REQUEST['action'] ) && in_array( sanitize_key( $_REQUEST['action'] ), $excluded_actions ); // phpcs:ignore WordPress.Security.NonceVerification
+		$in = isset( $_REQUEST['action'] ) && in_array( sanitize_key( wp_unslash( $_REQUEST['action'] ) ), $excluded_actions ); // phpcs:ignore WordPress.Security.NonceVerification
 		$is_ajax_on_front = wp_doing_ajax() && empty( $_REQUEST['lmat_ajax_backend'] ) && ! $in; // phpcs:ignore WordPress.Security.NonceVerification
 
 		/**
@@ -219,7 +219,7 @@ class Linguator {
 	 * @return bool
 	 */
 	public static function is_wizard() {
-		return isset( $_GET['page'] ) && ! empty( $_GET['page'] ) && 'lmat_wizard' === sanitize_key( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification
+		return isset( $_GET['page'] ) && ! empty( $_GET['page'] ) && 'lmat_wizard' === sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 	}
 
 	/**
@@ -245,7 +245,7 @@ class Linguator {
 
 		// Settings page whatever the tab except for the wizard which needs to be an admin process.
 		if ( ! defined( 'LMAT_SETTINGS' ) ) {
-			define( 'LMAT_SETTINGS', is_admin() && ( ( isset( $_GET['page'] ) && 0 === strpos( sanitize_key( $_GET['page'] ), 'lmat' ) && ! self::is_wizard() ) || ! empty( $_REQUEST['lmat_ajax_settings'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			define( 'LMAT_SETTINGS', is_admin() && ( ( isset( $_GET['page'] ) && 0 === strpos( sanitize_key( wp_unslash( $_GET['page'] ) ), 'lmat' ) && ! self::is_wizard() ) || ! empty( $_REQUEST['lmat_ajax_settings'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 	}
 

@@ -36,7 +36,7 @@ class Linguator_Admin_Filters_Widgets_Options extends Linguator_Filters_Widgets_
 
 		// Test the Widgets screen and the Customizer to avoid displaying the option in page builders
 		// Saving the widget reloads the form. And curiously the action is in $_REQUEST but neither in $_POST, nor in $_GET.
-		if ( ( isset( $screen ) && 'widgets' === $screen->base ) || ( isset( $_REQUEST['action'] ) && 'save-widget' === $_REQUEST['action'] ) || isset( $GLOBALS['wp_customize'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ( isset( $screen ) && 'widgets' === $screen->base ) || ( isset( $_REQUEST['action'] ) && 'save-widget' === sanitize_key( wp_unslash( $_REQUEST['action'] ) ) ) || isset( $GLOBALS['wp_customize'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			parent::in_widget_form( $widget, $return, $instance );
 		}
 	}

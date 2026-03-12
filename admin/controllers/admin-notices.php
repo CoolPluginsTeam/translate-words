@@ -166,7 +166,7 @@ class Linguator_Admin_Notices {
 	 */
 	public function hide_notice() {
 		if ( isset( $_GET['lmat-hide-notice'], $_GET['_lmat_notice_nonce'] ) ) {
-			$notice = sanitize_key( $_GET['lmat-hide-notice'] );
+			$notice = sanitize_key( wp_unslash( $_GET['lmat-hide-notice'] ) );
 			check_admin_referer( $notice, '_lmat_notice_nonce' );
 			// Handle all review related notices
 			if (in_array($notice, array('already-rated', 'not-interested'))) {

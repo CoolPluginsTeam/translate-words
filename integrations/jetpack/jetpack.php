@@ -27,7 +27,7 @@ class Linguator_Jetpack {
 		add_filter( 'jetpack_relatedposts_filter_filters', array( $this, 'jetpack_relatedposts_filter_filters' ), 10, 2 );
 
 		// Jetpack infinite scroll.
-		if ( isset( $_GET['infinity'], $_POST['action'] ) && 'infinite_scroll' == $_POST['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( isset( $_GET['infinity'], $_POST['action'] ) && 'infinite_scroll' === sanitize_key( wp_unslash( $_POST['action'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			add_filter( 'lmat_is_ajax_on_front', '__return_true' );
 		}
 	}

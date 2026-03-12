@@ -113,7 +113,7 @@ class Linguator_CRUD_Posts {
 		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
 			$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
 			if ( wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
-				$from_post_id = absint( $_GET['from_post'] );
+				$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
 				$new_lang     = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
 
 				if ( $from_post_id > 0 && ! empty( $new_lang ) && current_user_can( 'edit_post', $from_post_id ) ) {
@@ -194,62 +194,77 @@ class Linguator_CRUD_Posts {
 	 * @return void
 	 */
 	public function save_post( $post_id, $post ) {
+
+		// Avoid issues when switching blogs in multisite.
 		if ( is_multisite() && ms_is_switched() && ! $this->model->has_languages() ) {
 			return;
 		}
-
+	
+		// Ignore autosave and revisions.
+		if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+	
+		// Only handle translated post types.
 		if ( ! $this->model->is_translated_post_type( $post->post_type ) ) {
 			return;
 		}
-
-			if ( $id = wp_is_post_revision( $post_id ) ) {
-				$post_id = $id;
-			}
-
-			$lang = $this->model->post->get_language( $post_id );
-
-			// Ensure the post has a language set at least once.
-			if ( empty( $lang ) ) {
-				$this->set_default_language( $post_id );
-			}
-
-			// Avoid creating translation links on auto-draft creation.
-			$is_autodraft = isset( $post->post_status ) && 'auto-draft' === $post->post_status;
-			if ( $is_autodraft ) {
-				// Persist intended linking info to apply on first real save.
-				if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
-					$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
-					if ( wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
-						$from_post_id = absint( $_GET['from_post'] );
-						$new_lang     = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
-
-						if ( $from_post_id > 0 && ! empty( $new_lang ) && current_user_can( 'edit_post', $from_post_id ) && current_user_can( 'edit_post', $post_id ) ) {
-							update_post_meta( $post_id, '_lmat_from_post', $from_post_id );
-							update_post_meta( $post_id, '_lmat_new_lang', $new_lang );
-							return;
-						}
+	
+		// Ensure the post has a language set.
+		$lang = $this->model->post->get_language( $post_id );
+		if ( empty( $lang ) ) {
+			$this->set_default_language( $post_id );
+		}
+	
+		// Avoid linking during auto-draft creation.
+		if ( isset( $post->post_status ) && 'auto-draft' === $post->post_status ) {
+	
+			// Persist linking intent.
+			if ( isset( $_GET['from_post'], $_GET['new_lang'], $_GET['_wpnonce'] ) ) {
+	
+				$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+	
+				if ( wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+	
+					$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
+					$new_lang     = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
+	
+					if (
+						$from_post_id > 0 &&
+						$new_lang &&
+						current_user_can( 'edit_post', $from_post_id ) &&
+						current_user_can( 'edit_post', $post_id )
+					) {
+						update_post_meta( $post_id, '_lmat_from_post', $from_post_id );
+						update_post_meta( $post_id, '_lmat_new_lang', $new_lang );
+						return;
 					}
 				}
-
-				// Ensure a plain Add New (no query args) doesn't inherit stale intent.
-				delete_post_meta( $post_id, '_lmat_from_post' );
-				delete_post_meta( $post_id, '_lmat_new_lang' );
-			} else {
-				// Handle from_post parameter or previously stored intent for translation linking
-				$this->handle_translation_linking( $post_id );
 			}
-			
-			/**
-			 * Fires after the post language and translations are saved.
-			 *
-			 *  
-			 *
-			 * @param int     $post_id      Post id.
-			 * @param WP_Post $post         Post object.
-			 * @param int[]   $translations The list of translations post ids.
-			 */
-			do_action( 'lmat_save_post', $post_id, $post, $this->model->post->get_translations( $post_id ) );
-
+	
+			// Clear stale linking intent.
+			delete_post_meta( $post_id, '_lmat_from_post' );
+			delete_post_meta( $post_id, '_lmat_new_lang' );
+	
+			return;
+		}
+	
+		// Handle translation linking for real saves.
+		$this->handle_translation_linking( $post_id );
+	
+		/**
+		 * Fires after the post language and translations are saved.
+		 *
+		 * @param int     $post_id
+		 * @param WP_Post $post
+		 * @param int[]   $translations
+		 */
+		do_action(
+			'lmat_save_post',
+			$post_id,
+			$post,
+			$this->model->post->get_translations( $post_id )
+		);
 	}
 
 	/**
@@ -261,55 +276,76 @@ class Linguator_CRUD_Posts {
 	 * @return void
 	 */
 	public function handle_translation_linking( $post_id ) {
-		// Prefer explicit query args, otherwise use any stored intent from post meta.
+
 		$from_post_id = 0;
 		$new_lang_slug = '';
-		if ( ! empty( $_GET['from_post'] ) && ! empty( $_GET['new_lang'] ) && ! empty( $_GET['_wpnonce'] ) ) {
+	
+		// Prefer explicit query args
+		if (
+			isset( $_GET['from_post'], $_GET['new_lang'], $_GET['_wpnonce'] )
+		) {
+	
 			$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+	
 			if ( ! wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
 				return;
 			}
-			$from_post_id  = absint( $_GET['from_post'] );
+	
+			$from_post_id  = absint( wp_unslash( $_GET['from_post'] ) );
 			$new_lang_slug = sanitize_key( wp_unslash( $_GET['new_lang'] ) );
+	
 		} else {
-			$from_post_id = (int) get_post_meta( $post_id, '_lmat_from_post', true );
+	
+			// Fallback to stored intent
+			$from_post_id  = absint( get_post_meta( $post_id, '_lmat_from_post', true ) );
 			$new_lang_slug = sanitize_key( (string) get_post_meta( $post_id, '_lmat_new_lang', true ) );
 		}
-
-		if ( empty( $from_post_id ) || empty( $new_lang_slug ) ) {
+	
+		if ( ! $from_post_id || ! $new_lang_slug ) {
 			return;
 		}
-		
-		// Validate the from_post exists and is translatable
+	
+		// Validate source post
 		$from_post = get_post( $from_post_id );
+	
 		if ( ! $from_post || ! $this->model->is_translated_post_type( $from_post->post_type ) ) {
 			return;
 		}
-
-		// Enforce permissions for linking/creating translations.
-		if ( ! current_user_can( 'edit_post', $from_post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
+	
+		// Permission checks
+		if (
+			! current_user_can( 'edit_post', $from_post_id ) ||
+			! current_user_can( 'edit_post', $post_id )
+		) {
 			return;
 		}
-		
-		// Validate the new language exists
+	
+		// Validate target language
 		$new_lang = $this->model->get_language( $new_lang_slug );
+	
 		if ( ! $new_lang ) {
 			return;
 		}
-		
-		// Get the original post's language
+	
+		// Get original language
 		$from_lang = $this->model->post->get_language( $from_post_id );
+	
 		if ( ! $from_lang ) {
 			return;
 		}
-		
-		// Set the language for the new post
+	
+		// Assign language to new post
 		$this->model->post->set_language( $post_id, $new_lang );
-		
-		// Create the translation link between the posts
-		$this->create_translation_link( $from_post_id, $post_id, $from_lang, $new_lang );
-
-		// Clear stored intent to avoid re-linking in future saves.
+	
+		// Create translation link
+		$this->create_translation_link(
+			$from_post_id,
+			$post_id,
+			$from_lang,
+			$new_lang
+		);
+	
+		// Clear stored intent
 		delete_post_meta( $post_id, '_lmat_from_post' );
 		delete_post_meta( $post_id, '_lmat_new_lang' );
 	}

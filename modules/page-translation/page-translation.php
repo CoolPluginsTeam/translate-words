@@ -68,7 +68,7 @@ class Linguator_Page_Translation {
 	public function linguator_gutenberg_metabox() {
 		if ( isset( $_GET['from_post'], $_GET['new_lang'], $_GET['_wpnonce'] ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'new-post-translation' ) ) {
-			$post_id = isset( $_GET['from_post'] ) ? absint( $_GET['from_post'] ) : 0;
+			$post_id = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 
 			if ( 0 === $post_id ) {
 				return;
@@ -117,7 +117,7 @@ class Linguator_Page_Translation {
 			if ( ( isset( $_GET['from_post'], $_GET['new_lang'], $_GET['_wpnonce'] ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'new-post-translation' ) ) ) {
 
-				$post_id = isset( $_GET['from_post'] ) ? absint( $_GET['from_post'] ) : 0;
+				$post_id = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 				$post_id = ! empty( $post_parent_post_id ) ? $post_parent_post_id : $post_id;
 
 				if ( 0 === $post_id ) {
@@ -169,9 +169,9 @@ class Linguator_Page_Translation {
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'new-post-translation' ) ) {
 			$target_language = '';
 			if ( function_exists( 'LMAT' ) ) {
-				$parent_post_id       = isset( $_GET['from_post'] ) ? sanitize_key( $_GET['from_post'] ) : '';
+				$parent_post_id       = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 				$parent_post_language = linguator_get_post_language( $parent_post_id, 'name' );
-				$target_code          = isset( $_GET['new_lang'] ) ? sanitize_key( $_GET['new_lang'] ) : '';
+				$target_code          = isset( $_GET['new_lang'] ) ? sanitize_key( wp_unslash( $_GET['new_lang'] ) ) : '';
 				$languages            = LMAT()->model->get_languages_list();
 				foreach ( $languages as $lang ) {
 					if ( $lang->slug === $target_code ) {
@@ -217,7 +217,7 @@ class Linguator_Page_Translation {
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'new-post-translation' )
 		) {
 			if ( method_exists( $current_screen, 'is_block_editor' ) && $current_screen->is_block_editor() ) {
-				$from_post_id = isset( $_GET['from_post'] ) ? absint( $_GET['from_post'] ) : 0;
+				$from_post_id = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 
 				global $post;
 
@@ -225,7 +225,7 @@ class Linguator_Page_Translation {
 					return;
 				}
 
-				$lang = isset( $_GET['new_lang'] ) ? sanitize_key( $_GET['new_lang'] ) : '';
+				$lang = isset( $_GET['new_lang'] ) ? sanitize_key( wp_unslash( $_GET['new_lang'] ) ) : '';
 
 				$editor = '';
 				if ( 'builder' === get_post_meta( $from_post_id, '_elementor_edit_mode', true ) && defined( 'ELEMENTOR_VERSION' ) ) {
@@ -250,7 +250,7 @@ class Linguator_Page_Translation {
 
 				$post_translate = LMAT()->model->is_translated_post_type( $post->post_type );
 
-				$post_type = isset( $_GET['post_type'] ) ? sanitize_key( $_GET['post_type'] ) : '';
+				$post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
 
 				if ( $post_translate && $lang && $post_type ) {
 					$data = array(
@@ -281,14 +281,14 @@ class Linguator_Page_Translation {
 			$current_screen = get_current_screen();
 
 			if ( method_exists( $current_screen, 'is_block_editor' ) && ! $current_screen->is_block_editor() ) {
-				$from_post_id = isset( $_GET['from_post'] ) ? absint( $_GET['from_post'] ) : 0;
+				$from_post_id = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 				$from_post_id = ! empty( $post_parent_post_id ) ? $post_parent_post_id : $from_post_id;
 
 				if ( null === $post || 0 === $from_post_id ) {
 					return;
 				}
 
-				$lang = isset( $_GET['new_lang'] ) ? sanitize_key( $_GET['new_lang'] ) : '';
+				$lang = isset( $_GET['new_lang'] ) ? sanitize_key( wp_unslash( $_GET['new_lang'] ) ) : '';
 
 				if ( ! empty( $post_translate_status ) && $post_translate_status === 'pending' ) {
 					$lang = linguator_get_post_language( $post->ID, 'slug' );
@@ -520,7 +520,7 @@ class Linguator_Page_Translation {
 				global $post;
 				$current_post_id = $post->ID;
 
-				$parent_post_id        = isset( $_GET['from_post'] ) ? sanitize_key( $_GET['from_post'] ) : '';
+				$parent_post_id        = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 				$parent_editor         = get_post_meta( $parent_post_id, '_elementor_edit_mode', true );
 				$parent_elementor_data = get_post_meta( $parent_post_id, '_elementor_data', true );
 
@@ -534,7 +534,7 @@ class Linguator_Page_Translation {
 
 	public function fetch_post_content() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$post_id = absint( isset( $_POST['postId'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['postId'] ) ) ) : false );
+		$post_id = absint( ! empty( $_POST['postId'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['postId'] ) ) ) : false );
 
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );

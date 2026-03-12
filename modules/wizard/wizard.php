@@ -144,7 +144,7 @@ class Linguator_Wizard
 		
 		if (get_transient('lmat_activation_redirect')) {
 			$do_redirect = true;
-			if ((isset($_GET['page']) && 'lmat_wizard' === sanitize_key($_GET['page'])) || isset($_GET['activate-multi'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ( isset( $_GET['page'] ) && 'lmat_wizard' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) || isset( $_GET['activate-multi'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				delete_transient('lmat_activation_redirect');
 				$do_redirect = false;
 			}

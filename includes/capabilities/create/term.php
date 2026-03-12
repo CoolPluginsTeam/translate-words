@@ -45,19 +45,19 @@ class Term extends Abstract_Object {
 		$default_language = $this->model->get_default_language();
 
 		// 1. If 'new_lang' is set in GET (admin interface), use it.
-		if ( ! empty( $_GET['new_lang'] ) && $lang = $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! empty( $_GET['new_lang'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return $lang;
 		}
 		// 1. If posted term_lang_choice is set, use it.
-		if ( ! empty( $_POST['term_lang_choice'] ) && is_string( $_POST['term_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( $_POST['term_lang_choice'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! empty( $_POST['term_lang_choice'] ) && is_string( $_POST['term_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_POST['term_lang_choice'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return $lang;
 		}
 		// 1. If posted inline_lang_choice is set, use it.
-		if ( ! empty( $_POST['inline_lang_choice'] ) && is_string( $_POST['inline_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( $_POST['inline_lang_choice'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! empty( $_POST['inline_lang_choice'] ) && is_string( $_POST['inline_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_POST['inline_lang_choice'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return $lang;
 		}
 		// 2. If no preferred language, but 'lang' exists in the request (often frontend), use that.
-		if ( ! isset( $this->pref_lang ) && ! empty( $_REQUEST['lang'] ) && $lang = $this->model->get_language( sanitize_key( $_REQUEST['lang'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! isset( $this->pref_lang ) && ! empty( $_REQUEST['lang'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_REQUEST['lang'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return $lang;
 		}
 		// 3. If this is a REST request, use its language.

@@ -71,7 +71,7 @@ class Linguator_WPSEO {
 
 			// Yoast SEO adds the columns hooks only for the 'inline-save' action. We need them for 'lmat_update_post_rows' too.
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing
-			if ( wp_doing_ajax() && isset( $_POST['action'] ) && 'lmat_update_post_rows' === $_POST['action'] ) {
+			if ( wp_doing_ajax() && isset( $_POST['action'] ) && 'lmat_update_post_rows' === sanitize_key( wp_unslash( $_POST['action'] ) ) ) {
 				 // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 				$GLOBALS['wpseo_meta_columns'] = new WPSEO_Meta_Columns();
 			}

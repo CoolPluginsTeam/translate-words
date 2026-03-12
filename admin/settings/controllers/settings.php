@@ -117,7 +117,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		$loco=isset($_GET['loco']) ? sanitize_text_field(wp_unslash($_GET['loco'])) : '';
 		
 		if ( isset( $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$this->active_tab = 'lmat' === $_GET['page'] ? 'lang' : substr( sanitize_key( $_GET['page'] ), 5 ); // phpcs:ignore WordPress.Security.NonceVerification
+			$page            = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$this->active_tab = 'lmat' === $page ? 'lang' : substr( $page, 5 );
 		}
 
 		
@@ -321,12 +322,13 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'add':
 				check_admin_referer( 'add-lang', '_wpnonce_add-lang' );
 				$sanitized_data = array(
-					'name' => sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ),
-					'slug' => sanitize_key( wp_unslash( $_POST['slug'] ?? '' ) ),
-					'locale' => sanitize_locale_name( wp_unslash( $_POST['locale'] ?? '' ) ),
-					'rtl' => isset( $_POST['rtl'] ) ? (bool) $_POST['rtl'] : false,
-					'term_group' => isset( $_POST['term_group'] ) ? (int) $_POST['term_group'] : 0,
-					'flag' => sanitize_text_field( wp_unslash( $_POST['flag'] ?? '' ) ),
+					'name'       => ! empty( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '',
+					'slug'       => ! empty( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '',
+					'locale'     => ! empty( $_POST['locale'] ) ? sanitize_locale_name( wp_unslash( $_POST['locale'] ) ) : '',
+					// Treat rtl as a boolean flag derived from a sanitized, unslashed value.
+					'rtl'        => ! empty( $_POST['rtl'] ) ? (bool) sanitize_text_field( wp_unslash( $_POST['rtl'] ) ) : false,
+					'term_group' => ! empty( $_POST['term_group'] ) ? absint( wp_unslash( $_POST['term_group'] ) ) : 0,
+					'flag'       => ! empty( $_POST['flag'] ) ? sanitize_text_field( wp_unslash( $_POST['flag'] ) ) : '',
 				);
 				$language = $this->model->add_language( $sanitized_data );
 
@@ -354,7 +356,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'delete':
 				check_admin_referer( 'delete-lang' );
 
-				if ( ! empty( $_GET['lang'] ) && $this->model->delete_language( (int) $_GET['lang'] ) ) {
+				$lang_id = ! empty( $_GET['lang'] ) ? absint( wp_unslash( $_GET['lang'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+				if ( $lang_id && $this->model->delete_language( $lang_id ) ) {
 					linguator_add_notice( new WP_Error( 'lmat_languages_deleted', __( 'Language deleted.', 'translate-words' ), 'success' ) );
 				}
 
@@ -364,13 +367,13 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'update':
 				check_admin_referer( 'add-lang', '_wpnonce_add-lang' );
 				$sanitized_data = array(
-					'lang_id' => absint( wp_unslash( $_POST['lang_id'] ?? 0 ) ),
-					'name' => sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ),
-					'slug' => sanitize_key( wp_unslash( $_POST['slug'] ?? '' ) ),
-					'locale' => sanitize_locale_name( wp_unslash( $_POST['locale'] ?? '' ) ),
-					'rtl' => isset( $_POST['rtl'] ) ? (bool) $_POST['rtl'] : false,
-					'term_group' => isset( $_POST['term_group'] ) ? (int) $_POST['term_group'] : 0,
-					'flag' => sanitize_text_field( wp_unslash( $_POST['flag'] ?? '' ) ),
+					'lang_id'    => ! empty( $_POST['lang_id'] ) ? absint( wp_unslash( $_POST['lang_id'] ) ) : 0,
+					'name'       => ! empty( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '',
+					'slug'       => ! empty( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '',
+					'locale'     => ! empty( $_POST['locale'] ) ? sanitize_locale_name( wp_unslash( $_POST['locale'] ) ) : '',
+					'rtl'        => ! empty( $_POST['rtl'] ) ? (bool) sanitize_text_field( wp_unslash( $_POST['rtl'] ) ) : false,
+					'term_group' => ! empty( $_POST['term_group'] ) ? absint( wp_unslash( $_POST['term_group'] ) ) : 0,
+					'flag'       => ! empty( $_POST['flag'] ) ? sanitize_text_field( wp_unslash( $_POST['flag'] ) ) : '',
 				);
 				$errors = $this->model->update_language( $sanitized_data );
 
@@ -386,7 +389,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'default-lang':
 				check_admin_referer( 'default-lang' );
 
-				if ( $lang = $this->model->get_language( (int) $_GET['lang'] ) ) {
+				$lang_id = ! empty( $_GET['lang'] ) ? absint( wp_unslash( $_GET['lang'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+				if ( $lang_id && $lang = $this->model->get_language( $lang_id ) ) {
 					$this->model->update_default_lang( $lang->slug );
 				}
 
@@ -404,7 +408,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'activate':
 				check_admin_referer( 'lmat_activate' );
 				if ( isset( $_GET['module'] ) ) {
-					$module = sanitize_key( $_GET['module'] );
+					$module = sanitize_key( wp_unslash( $_GET['module'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 					if ( isset( $this->modules[ $module ] ) ) {
 						$this->modules[ $module ]->activate();
 					}
@@ -415,7 +419,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			case 'deactivate':
 				check_admin_referer( 'lmat_deactivate' );
 				if ( isset( $_GET['module'] ) ) {
-					$module = sanitize_key( $_GET['module'] );
+					$module = sanitize_key( wp_unslash( $_GET['module'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 					if ( isset( $this->modules[ $module ] ) ) {
 						$this->modules[ $module ]->deactivate();
 					}
@@ -462,8 +466,17 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		
 		if ( $is_settings_tab ) {
 			// Handle user input for legacy actions
-			$action = isset( $_REQUEST['lmat_action'] ) && is_string( $_REQUEST['lmat_action'] ) ? sanitize_key( $_REQUEST['lmat_action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+			$raw_action = isset( $_REQUEST['lmat_action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['lmat_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+			$action     = is_string( $raw_action ) ? sanitize_key( $raw_action ) : '';
 			if ( ! empty( $action ) ) {
+				// Legacy settings actions are passed via URL (GET) and must be nonce protected.
+				$nonce_action = $action;
+				if ( 'activate' === $action ) {
+					$nonce_action = 'lmat_activate';
+				} elseif ( 'deactivate' === $action ) {
+					$nonce_action = 'lmat_deactivate';
+				}
+				check_admin_referer( $nonce_action );
 				$this->handle_actions( $action );
 			}
 
@@ -490,10 +503,13 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		}
 
 		// Handle user input
-		$action = isset( $_REQUEST['lmat_action'] ) && is_string( $_REQUEST['lmat_action'] ) ? sanitize_key( $_REQUEST['lmat_action'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$raw_action = isset( $_REQUEST['lmat_action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['lmat_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$action     = is_string( $raw_action ) ? sanitize_key( $raw_action ) : '';
 		if ( 'edit' === $action && ! empty( $_GET['lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			check_admin_referer( 'edit-lang' );
+			$lang_id = ! empty( $_GET['lang'] ) ? absint( wp_unslash( $_GET['lang'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 			// phpcs:ignore WordPress.Security.NonceVerification, VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-			$edit_lang = $this->model->get_language( (int) $_GET['lang'] );
+			$edit_lang = $this->model->get_language( $lang_id );
 		} elseif ( ! empty( $action ) ) {
 			$this->handle_actions( $action );
 		}

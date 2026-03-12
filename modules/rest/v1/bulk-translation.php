@@ -212,6 +212,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		public function permission_only_admins( $request ) {
+
+			if ( ! is_user_logged_in() ) {
+				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
+			}
+
 			$nonce = $request->get_header( 'X-WP-Nonce' );
 
 			if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {

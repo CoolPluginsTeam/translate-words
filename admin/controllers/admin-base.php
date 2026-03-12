@@ -482,22 +482,22 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$this->curlang = $this->filter_lang;
 
 		// Edit Post
-		if ( isset( $_REQUEST['lmat_post_id'] ) && $lang = $this->model->post->get_language( (int) $_REQUEST['lmat_post_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( isset( $_REQUEST['lmat_post_id'] ) && $lang = $this->model->post->get_language( absint( wp_unslash( $_REQUEST['lmat_post_id'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$this->curlang = $lang;
-		} elseif ( 'post.php' === $GLOBALS['pagenow'] && isset( $_GET['post'] ) && $this->model->is_translated_post_type( get_post_type( (int) $_GET['post'] ) ) && $lang = $this->model->post->get_language( (int) $_GET['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( 'post.php' === $GLOBALS['pagenow'] && isset( $_GET['post'] ) && $this->model->is_translated_post_type( get_post_type( absint( wp_unslash( $_GET['post'] ) ) ) ) && $lang = $this->model->post->get_language( absint( wp_unslash( $_GET['post'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$this->curlang = $lang;
-		} elseif ( 'post-new.php' === $GLOBALS['pagenow'] && ( empty( $_GET['post_type'] ) || $this->model->is_translated_post_type( sanitize_key( $_GET['post_type'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$this->curlang = empty( $_GET['new_lang'] ) ? $this->pref_lang : $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( 'post-new.php' === $GLOBALS['pagenow'] && ( empty( $_GET['post_type'] ) || $this->model->is_translated_post_type( sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$this->curlang = empty( $_GET['new_lang'] ) ? $this->pref_lang : $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		// Edit Term
-		elseif ( isset( $_REQUEST['lmat_term_id'] ) && $lang = $this->model->term->get_language( (int) $_REQUEST['lmat_term_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		elseif ( isset( $_REQUEST['lmat_term_id'] ) && $lang = $this->model->term->get_language( absint( wp_unslash( $_REQUEST['lmat_term_id'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$this->curlang = $lang;
-		} elseif ( in_array( $GLOBALS['pagenow'], array( 'edit-tags.php', 'term.php' ) ) && isset( $_GET['taxonomy'] ) && $this->model->is_translated_taxonomy( sanitize_key( $_GET['taxonomy'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			if ( isset( $_GET['tag_ID'] ) && $lang = $this->model->term->get_language( (int) $_GET['tag_ID'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( in_array( $GLOBALS['pagenow'], array( 'edit-tags.php', 'term.php' ) ) && isset( $_GET['taxonomy'] ) && $this->model->is_translated_taxonomy( sanitize_key( wp_unslash( $_GET['taxonomy'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			if ( isset( $_GET['tag_ID'] ) && $lang = $this->model->term->get_language( absint( wp_unslash( $_GET['tag_ID'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$this->curlang = $lang;
 			} elseif ( ! empty( $_GET['new_lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-				$this->curlang = $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+				$this->curlang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			} elseif ( empty( $this->curlang ) ) {
 				$this->curlang = $this->pref_lang;
 			}
@@ -505,7 +505,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 
 		// Ajax
 		if ( wp_doing_ajax() && ! empty( $_REQUEST['lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$this->curlang = $this->model->get_language( sanitize_key( $_REQUEST['lang'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$this->curlang = $this->model->get_language( sanitize_key( wp_unslash( $_REQUEST['lang'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		/**
@@ -542,8 +542,8 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		// Don't update global filter when editing posts or terms (post.php, term.php)
 		$is_edit_page = in_array( $GLOBALS['pagenow'], array( 'post.php', 'term.php' ) );
 		
-		if ( ! wp_doing_ajax() && ! empty( $_GET['lang'] ) && ! is_numeric( sanitize_key( $_GET['lang'] ) ) && ! $is_edit_page && current_user_can( 'edit_user', $user_id = get_current_user_id() ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			update_user_meta( $user_id, 'lmat_filter_content', ( $lang = $this->model->get_language( sanitize_key( $_GET['lang'] ) ) ) ? $lang->slug : '' ); // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! wp_doing_ajax() && ! empty( $_GET['lang'] ) && ! is_numeric( sanitize_key( wp_unslash( $_GET['lang'] ) ) ) && ! $is_edit_page && current_user_can( 'edit_user', $user_id = get_current_user_id() ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			update_user_meta( $user_id, 'lmat_filter_content', ( $lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['lang'] ) ) ) ) ? $lang->slug : '' ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		$this->filter_lang = $this->model->get_language( get_user_meta( get_current_user_id(), 'lmat_filter_content', true ) );

@@ -61,7 +61,7 @@ class Linguator_Domain_Mapping {
 			}
 
 			// Don't redirect theme customizer
-			if ( isset( $_POST['customize'] ) && isset( $_POST['theme'] ) && 'on' === $_POST['customize'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			if ( isset( $_POST['customize'] ) && isset( $_POST['theme'] ) && 'on' === sanitize_key( wp_unslash( $_POST['customize'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				return;
 			}
 
