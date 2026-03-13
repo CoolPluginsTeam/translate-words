@@ -246,13 +246,19 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		$unixmonth = mktime( 0, 0, 0, $thismonth, 1, $thisyear );
 		$last_day  = gmdate( 't', $unixmonth );
 
-		$join_clause  = LMAT()->model->post->join_clause(); #added#
-		$where_clause = LMAT()->model->post->where_clause( LMAT()->curlang ); #added#
+		$join_clause  = LMAT()->model->post->join_clause();
+		$where_clause = LMAT()->model->post->where_clause( LMAT()->curlang );
 
 		// Get the next and previous month and year with at least one post.
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- This is safe $join_clause and already esc_sql used.
-		$previous_prepared_query = $wpdb->prepare("SELECT MONTH(post_date) AS month, YEAR(post_date) AS year FROM {$wpdb->posts} {$join_clause} WHERE post_date < %s AND post_type = %s AND post_status = 'publish' {$where_clause} ORDER BY post_date DESC LIMIT 1",
+		$previous_sql  = "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year FROM {$wpdb->posts} ";
+		$previous_sql .= $join_clause;
+		$previous_sql .= " WHERE post_date < %s AND post_type = %s AND post_status = 'publish' ";
+		$previous_sql .= $where_clause;
+		$previous_sql .= ' ORDER BY post_date DESC LIMIT 1';
+
+		$previous_prepared_query = $wpdb->prepare(
+			$previous_sql,
 			"{$thisyear}-{$thismonth}-01",
 			$post_type
 		);
@@ -260,11 +266,17 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- This is safe query and already prepared in $previous_prepared_query.
 		$previous                = $wpdb->get_row( $previous_prepared_query );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- This is safe $join_clause and already esc_sql used.
-		$next_prepared_query = $wpdb->prepare("SELECT MONTH(post_date) AS month, YEAR(post_date) AS year FROM {$wpdb->posts} {$join_clause} WHERE post_date > %s AND post_type = %s AND post_status = 'publish' {$where_clause} ORDER BY post_date ASC LIMIT 1",
+		$next_sql  = "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year FROM {$wpdb->posts} ";
+		$next_sql .= $join_clause;
+		$next_sql .= " WHERE post_date > %s AND post_type = %s AND post_status = 'publish' ";
+		$next_sql .= $where_clause;
+		$next_sql .= ' ORDER BY post_date ASC LIMIT 1';
+
+		$next_prepared_query = $wpdb->prepare(
+			$next_sql,
 			"{$thisyear}-{$thismonth}-{$last_day} 23:59:59",
 			$post_type
-		);  #modified#
+		);
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- This is safe query and already prepared in $next_prepared_query.
 		$next                = $wpdb->get_row( $next_prepared_query );
@@ -301,8 +313,13 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		$daywithpost = array();
 
 		// Get days with posts using placeholders and $wpdb->prepare().
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- This is safe $join_clause and already esc_sql used.
-		$dayswithposts_prepared_query = $wpdb->prepare("SELECT DISTINCT DAYOFMONTH(post_date) FROM {$wpdb->posts} {$join_clause} WHERE post_date >= %s AND post_type = %s AND post_status = 'publish' AND post_date <= %s {$where_clause}",
+		$dayswithposts_sql  = "SELECT DISTINCT DAYOFMONTH(post_date) FROM {$wpdb->posts} ";
+		$dayswithposts_sql .= $join_clause;
+		$dayswithposts_sql .= ' WHERE post_date >= %s AND post_type = %s AND post_status = \'publish\' AND post_date <= %s ';
+		$dayswithposts_sql .= $where_clause;
+
+		$dayswithposts_prepared_query = $wpdb->prepare(
+			$dayswithposts_sql,
 			sprintf( '%04d-%02d-01 00:00:00', $thisyear, $thismonth ),
 			$post_type,
 			sprintf( '%04d-%02d-%02d 23:59:59', $thisyear, $thismonth, $last_day )

@@ -118,7 +118,7 @@ class Linguator {
 				'plugin_name'=>'lmat',
 				
 			];
-			\Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice::cpfm_register_notice('linguator', $notice);
+			\Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice::cpfm_register_notice('lmat', $notice);
 				if (!isset($GLOBALS['cool_plugins_feedback'])) {
 					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 					$GLOBALS['cool_plugins_feedback'] = [];
