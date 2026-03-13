@@ -757,7 +757,7 @@ class Linguator_Admin_Filters_Term {
 		// *Post* bulk edit, in case a new term is created
 		if ( isset( $_GET['bulk_edit'], $_GET['inline_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			// Bulk edit does not modify the language
-			$inline_lang_choice = isset( $_GET['inline_lang_choice'] ) ? absint( wp_unslash( $_GET['inline_lang_choice'] ) ) : 0;
+			$inline_lang_choice = isset( $_GET['inline_lang_choice'] ) ? absint( wp_unslash( $_GET['inline_lang_choice'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 
 			if ( -1 === $inline_lang_choice ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$lang = $this->model->post->get_language( $this->post_id );

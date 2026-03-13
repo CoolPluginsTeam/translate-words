@@ -3,8 +3,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
-
     /**
      * Admin page content.
      *
@@ -12,19 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
      */
 
     // Mark this file as deprecated - only on specific admin pages
-    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is only checking page parameter for deprecation notice, not processing form data.
-    if ( 
-        is_admin() && 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        isset( $_GET['page'] ) && 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        ( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' ) 
+    if (
+        is_admin() &&
+        isset( $_GET['page'] ) // phpcs:ignore WordPress.Security.NonceVerification
     ) {
-        _deprecated_file(
-            basename(__FILE__),
-            '2.0.0',
-            'Linguator functionality (use the Linguator features instead of Translate Words)'
+        $page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+    
+        if ( 'tww_settings' === $page || 'lmat_settings' === $page ) {
+        _deprecated_file( 
+            basename( __FILE__ ), 
+            '2.0.0', 
+            'Linguator functionality (use the Linguator features instead of Translate Words)' 
         );
+        }
     }
 
     /**

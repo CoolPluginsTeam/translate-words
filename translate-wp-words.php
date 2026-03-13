@@ -74,8 +74,12 @@ if ( ! defined( 'LINGUATOR' ) ) {
 }
 
 // Initialize the plugin
-if ( ! empty( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-	return;
+if ( isset( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+	$linguator_deactivate_linguator = sanitize_key( wp_unslash( $_GET['deactivate-linguator'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+
+	if ( ! empty( $linguator_deactivate_linguator ) ) {
+		return;
+	}
 }
 
 
