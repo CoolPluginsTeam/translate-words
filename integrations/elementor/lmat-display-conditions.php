@@ -14,12 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class LMAT_Display_Conditions
+ * Class Linguator_Display_Conditions
  *
  * Adds informational notes to Elementor's display conditions interface
  * to inform users about connected template conditions.
  */
-class LMAT_Display_Conditions {
+class Linguator_Display_Conditions {
 	/**
 	 * Constructor
 	 *
@@ -42,7 +42,7 @@ class LMAT_Display_Conditions {
 		}
 
 		        // Check if this is a translated template
-        $translations = lmat_get_post_translations( $post->ID );
+        $translations = linguator_get_post_translations( $post->ID );
         if ( empty( $translations ) ) {
             return;
         }
@@ -142,3 +142,4 @@ class LMAT_Display_Conditions {
 		<?php
 	}
 }
+

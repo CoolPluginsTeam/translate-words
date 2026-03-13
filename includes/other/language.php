@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     is_default: bool
  * }
  */
-class LMAT_Language {
+class Linguator_Language {
 
 	/**
 	 * Language name. Ex: English.
@@ -367,7 +367,7 @@ class LMAT_Language {
 			$default_flag['url'] = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE );
 
 			// If base64 encoded flags are preferred.
-			if ( lmat_get_constant( 'LMAT_ENCODED_FLAGS', true ) ) {
+			if ( linguator_get_constant( 'LINGUATOR_ENCODED_FLAGS', true ) ) {
 				$file_path = LINGUATOR_DIR . '/assets/flags/' . $code . '.svg';
 				$imagesize = getimagesize( $file_path );
 				if ( is_array( $imagesize ) ) {
@@ -491,7 +491,7 @@ class LMAT_Language {
 		 *  
 		 *
 		 * @param string       $flag_url Flag URL.
-		 * @param LMAT_Language $language Current `LMAT_language` instance.
+		 * @param Linguator_Language $language Current `Linguator_language` instance.
 		 */
 		return apply_filters( 'lmat_language_flag_url', $flag_url, $this );
 	}
@@ -550,11 +550,11 @@ class LMAT_Language {
 	}
 
 	/**
-	 * Converts current `LMAT_language` into a `stdClass` object. Mostly used to allow dynamic properties.
+	 * Converts current `Linguator_language` into a `stdClass` object. Mostly used to allow dynamic properties.
 	 *
 	 *  
 	 *
-	 * @return stdClass Converted `LMAT_Language` object.
+	 * @return stdClass Converted `Linguator_Language` object.
 	 */
 	public function to_std_class() {
 		return (object) $this->to_array();
@@ -582,14 +582,14 @@ class LMAT_Language {
 	 * @return string Language home URL.
 	 */
 	public function get_home_url() {
-		if ( ! lmat_get_constant( 'LMAT_CACHE_LANGUAGES', true ) || ! lmat_get_constant( 'LMAT_CACHE_HOME_URL', true ) ) {
+		if ( ! linguator_get_constant( 'LINGUATOR_CACHE_LANGUAGES', true ) || ! linguator_get_constant( 'LINGUATOR_CACHE_HOME_URL', true ) ) {
 			/**
-			 * Filters current `LMAT_Language` instance `home_url` property.
+			 * Filters current `Linguator_Language` instance `home_url` property.
 			 *
 			 *  
 			 *
 			 * @param string $home_url         The `home_url` prop.
-			 * @param array  $language Current Array of `LMAT_Language` properties.
+			 * @param array  $language Current Array of `Linguator_Language` properties.
 			 */
 			return apply_filters( 'lmat_language_home_url', $this->home_url, $this->to_array( 'db' ) );
 		}
@@ -605,14 +605,14 @@ class LMAT_Language {
 	 * @return string Language search URL.
 	 */
 	public function get_search_url() {
-		if ( ! lmat_get_constant( 'LMAT_CACHE_LANGUAGES', true ) || ! lmat_get_constant( 'LMAT_CACHE_HOME_URL', true ) ) {
+		if ( ! linguator_get_constant( 'LINGUATOR_CACHE_LANGUAGES', true ) || ! linguator_get_constant( 'LINGUATOR_CACHE_HOME_URL', true ) ) {
 			/**
-			 * Filters current `LMAT_Language` instance `search_url` property.
+			 * Filters current `Linguator_Language` instance `search_url` property.
 			 *
 			 *  
 			 *
 			 * @param string $search_url        The `search_url` prop.
-			 * @param array  $language Current Array of `LMAT_Language` properties.
+			 * @param array  $language Current Array of `Linguator_Language` properties.
 			 */
 			return apply_filters( 'lmat_language_search_url', $this->search_url, $this->to_array( 'db' ) );
 		}
@@ -627,7 +627,7 @@ class LMAT_Language {
 	 *  
 	 *
 	 * @param string $property A property name. A composite value can be used for language term property values, in the
-	 *                         form of `{language_taxonomy_name}:{property_name}` (see {@see LMAT_Language::get_tax_prop()}
+	 *                         form of `{language_taxonomy_name}:{property_name}` (see {@see Linguator_Language::get_tax_prop()}
 	 *                         for the possible values). Ex: `lmat_term_language:term_taxonomy_id`.
 	 * @return string|int|bool|string[] The requested property for the language, `false` if the property doesn't exist.
 	 *

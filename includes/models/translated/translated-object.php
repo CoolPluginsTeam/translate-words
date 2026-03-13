@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-use Linguator\Includes\Models\Translatable\LMAT_Translatable_Object;
-use Linguator\Includes\Other\LMAT_Model;
+use Linguator\Includes\Models\Translatable\Linguator_Translatable_Object;
+use Linguator\Includes\Other\Linguator_Model;
 use WP_Term;
 
 /**
@@ -20,7 +20,7 @@ use WP_Term;
  *
  *  
  */
-abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
+abstract class Linguator_Translated_Object extends Linguator_Translatable_Object {
 
 	/**
 	 * Taxonomy name for the translation groups.
@@ -36,9 +36,9 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Model $model Instance of `LMAT_Model`.
+	 * @param Linguator_Model $model Instance of `Linguator_Model`.
 	 */
-	public function __construct( LMAT_Model $model ) {
+	public function __construct( Linguator_Model $model ) {
 		parent::__construct( $model );
 
 		$this->tax_to_cache[] = $this->tax_translations;
@@ -90,7 +90,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 *  
 	 *
 	 * @param int                     $id   Object ID.
-	 * @param LMAT_Language|string|int $lang Language to assign to the object.
+	 * @param Linguator_Language|string|int $lang Language to assign to the object.
 	 * @return bool True when successfully assigned. False otherwise (or if the given language is already assigned to
 	 *              the object).
 	 */
@@ -99,7 +99,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			return false;
 		}
 
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		$translations = $this->get_translations( $id );
 
@@ -124,7 +124,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @phpstan-return array<non-empty-string, positive-int>
 	 */
 	public function get_translations_from_term_id( $term_id ) {
-		$term_id = lmat_sanitize_id( $term_id );
+		$term_id = linguator_sanitize_id( $term_id );
 
 		if ( empty( $term_id ) ) {
 			return array();
@@ -155,7 +155,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @phpstan-return array<non-empty-string, positive-int>
 	 */
 	public function save_translations( $id, array $translations = array() ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return array();
@@ -232,7 +232,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @return void
 	 */
 	public function delete_translation( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return;
@@ -272,7 +272,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @phpstan-return array<non-empty-string, positive-int>
 	 */
 	public function get_translations( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return array();
@@ -293,7 +293,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @phpstan-return array<non-empty-string, positive-int>
 	 */
 	public function get_raw_translations( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return array();
@@ -308,7 +308,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 *  
 	 *
 	 * @param int                 $id   Object ID.
-	 * @param LMAT_Language|string $lang Language (slug or object).
+	 * @param Linguator_Language|string $lang Language (slug or object).
 	 * @return int Object ID of the translation, `0` if there is none.
 	 *
 	 * @phpstan-return int<0, max>
@@ -332,13 +332,13 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 *   Returns `0` instead of `false`.
 	 *
 	 * @param int                     $id   Object ID.
-	 * @param LMAT_Language|string|int $lang Language (object, slug, or term ID).
+	 * @param Linguator_Language|string|int $lang Language (object, slug, or term ID).
 	 * @return int The translation object ID if exists. `0` if the passed object has no language or if not translated.
 	 *
 	 * @phpstan-return int<0, max>
 	 */
 	public function get( $id, $lang ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return 0;
@@ -368,7 +368,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 	 * @return bool
 	 */
 	public function current_user_can_synchronize( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return false;
@@ -509,7 +509,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 
 		// Make sure values are clean before working with them.
 		/** @phpstan-var array<non-empty-string, positive-int> $translations */
-		$translations = lmat_sanitize_ids( $translations );
+		$translations = linguator_sanitize_ids( $translations );
 
 		if ( 'save' === $context ) {
 			/**
@@ -530,7 +530,7 @@ abstract class LMAT_Translated_Object extends LMAT_Translatable_Object {
 			$translations = $valid_translations;
 		}
 
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return $translations;

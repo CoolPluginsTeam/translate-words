@@ -14,14 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Abstract class for language switcher block.
  *
  */
-abstract class LMAT_Abstract_Language_Switcher_Block {
+abstract class Linguator_Abstract_Language_Switcher_Block {
 	/**
-	 * @var LMAT_Links
+	 * @var Linguator_Links
 	 */
 	protected $links;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
@@ -44,7 +44,7 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 	 * Constructor
 	 *
 	 *
-	 * @param LMAT_Base $linguator Linguator object.
+	 * @param Linguator_Base $linguator Linguator object.
 	 */
 	public function __construct( &$linguator ) {
 		$this->model = &$linguator->model;
@@ -132,7 +132,7 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 			true
 		);
 
-		wp_localize_script( $script_handle, 'lmat_block_editor_blocks_settings', \Linguator\Includes\Controllers\LMAT_Switcher::get_switcher_options( 'block', 'string' ) );
+		wp_localize_script( $script_handle, 'lmat_block_editor_blocks_settings', \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'string' ) );
 
 		// Ensure the block editor script is enqueued in the editor context
 		add_action( 'enqueue_block_editor_assets', function() use ( $script_handle, $script_filename ) {
@@ -152,7 +152,7 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 				'default' => '',
 			),
 		);
-		foreach ( \Linguator\Includes\Controllers\LMAT_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
+		foreach ( \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
 			$attributes[ $option ] = array(
 				'type'    => 'boolean',
 				'default' => $default,
@@ -178,7 +178,7 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 	/**
 	 * Returns the REST parameters for language switcher block.
 	 * Used to store the request's language and context locally.
-	 * Previously was in the `LMAT_Block_Editor_Switcher_Block` class.
+	 * Previously was in the `Linguator_Block_Editor_Switcher_Block` class.
 	 *
 	 * @see WP_REST_Server::dispatch()
 	 *
@@ -192,7 +192,7 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 	 * @phpstan-param T $request
 	 */
 	public function get_rest_query_params( $result, $server, $request ) {
-		if ( lmat_is_edit_rest_request( $request ) ) {
+		if ( linguator_is_edit_rest_request( $request ) ) {
 			$this->is_edit_context = true;
 
 			$lang = $request->get_param( 'lang' );
@@ -222,3 +222,4 @@ abstract class LMAT_Abstract_Language_Switcher_Block {
 		return $attributes;
 	}
 }
+

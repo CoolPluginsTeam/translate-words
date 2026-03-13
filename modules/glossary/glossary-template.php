@@ -342,11 +342,9 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                     class="lmat-lang-header lmat-lang-col-<?php echo esc_attr($lang['code']); ?>" 
                                     data-lang="<?php echo esc_attr($lang['code']); ?>">
                                     <?php
-                                    // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- $lang['flag'] contains pre-sanitized HTML.
                                     echo !empty($lang['flag'])
-                                        ? $lang['flag']
+                                        ? wp_kses_post( $lang['flag'] )
                                         : '<img src="' . esc_attr($lang['img']) . '" alt="' . esc_attr($lang['alt']) . '" />';
-                                    // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
                                     ?>
                                 </th>
                             <?php endforeach; ?>
@@ -378,8 +376,8 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                     <tbody>
                         <?php
                         // UTF-8 safe truncate helper
-                        if ( ! function_exists('lmat_glossary_truncate')) {
-                            function lmat_glossary_truncate( $str, $limit = 10 ) {
+                        if ( ! function_exists('linguator_glossary_truncate')) {
+                            function linguator_glossary_truncate( $str, $limit = 10 ) {
                                 $str = (string) $str;
                                 if (mb_strlen($str, 'UTF-8') > $limit) {
                                     return mb_substr($str, 0, $limit, 'UTF-8') . '…';
@@ -424,7 +422,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                 ?>
                                     <td colspan="2" class="lmat-lang-col-<?php echo esc_attr($lang['code']); ?>" 
                                         data-lang="<?php echo esc_attr($lang['code']); ?>"
-                                        data-is-source="<?php echo $is_source ? 'true' : 'false'; ?>">
+                                        data-is-source="<?php echo esc_attr( $is_source ? 'true' : 'false' ); ?>">
                                         <?php if ($is_source): ?>
                                             <span class="lmat-source-term">
                                                 <?php echo esc_html($term); ?>
@@ -435,7 +433,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                             $translation = isset($data['translations'][$lang['code']]) ? $data['translations'][$lang['code']] : '';
                                             ?>
                                             <?php if (!empty($translation) && trim($translation) !== ''): ?>
-                                                <?php $truncated = lmat_glossary_truncate($translation, 7); ?>
+                                                <?php $truncated = linguator_glossary_truncate($translation, 7); ?>
                                                 <span class="lmat-translated-term"
                                                     title="<?php echo esc_attr($translation); ?>"
                                                     data-full-text="<?php echo esc_attr($translation); ?>">

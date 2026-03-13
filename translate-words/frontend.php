@@ -3,29 +3,26 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
-
 /**
  * Translates strings on the frontend.
  *
- * @package tww
+ * @package lmat
  */
 
 // Mark this file as deprecated - only on specific admin pages
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-if ( 
-	is_admin() && 
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	isset( $_GET['page'] ) && 
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' ) 
+if (
+	is_admin() &&
+	isset( $_GET['page'] ) // phpcs:ignore WordPress.Security.NonceVerification
 ) {
+	$page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+
+	if ( 'tww_settings' === $page || 'lmat_settings' === $page ) {
 	_deprecated_file( 
 		basename( __FILE__ ), 
 		'2.0.0', 
 		'Linguator functionality (use the Linguator features instead of Translate Words)' 
 	);
+	}
 }
 
 /**
@@ -40,14 +37,14 @@ if (
  * @param string $translated_string The string being translated.
  * @return string
  */
-function tww_apply_translate_string( $translated_string ) {
+function linguator_apply_translate_string( $translated_string ) {
 
 	static $cached_overrides = null;
 
 	// Check if overrides are already cached.
 	if ( is_null( $cached_overrides ) ) {
 		// Retrieve overrides from option if not already cached.
-		$cached_overrides = get_option( TWW_TRANSLATIONS_LINES );
+		$cached_overrides = get_option( LMAT_TRANSLATIONS_LINES );
 	}
 
 	// Check if overrides are not an array or empty.
@@ -57,16 +54,16 @@ function tww_apply_translate_string( $translated_string ) {
 	}
 
 	// Extract keys and replace arrays from cached overrides.
-	$keys = array_column( $cached_overrides, 'original' );
+	$keys    = array_column( $cached_overrides, 'original' );
 	$replace = array_column( $cached_overrides, 'overwrite' );
 
 	// Perform search and replace using cached keys and replace arrays.
-	return tww_search_and_replace( $translated_string, $keys, $replace );
+	return linguator_search_and_replace( $translated_string, $keys, $replace );
 
 }
 
-add_filter( 'gettext', 'tww_apply_translate_string', 20 );
-add_filter( 'ngettext', 'tww_apply_translate_string', 20 );
+add_filter( 'gettext', 'linguator_apply_translate_string', 20 );
+add_filter( 'ngettext', 'linguator_apply_translate_string', 20 );
 
 
 /**
@@ -77,7 +74,7 @@ add_filter( 'ngettext', 'tww_apply_translate_string', 20 );
  * @param array  $replace            The replacements.
  * @return string
  */
-function tww_search_and_replace( $translated_string, $keys, $replace ) {
+function linguator_search_and_replace( $translated_string, $keys, $replace ) {
 
 	/**
 	 * We perform two replacements here: first case-sensitive, then case-insensitive.
@@ -104,14 +101,14 @@ function tww_search_and_replace( $translated_string, $keys, $replace ) {
 	 * This covers instances where there are two translations that are the same,
 	 * but with different cases.
 	 */
-	$translated_string = tww_do_search_and_replace( $translated_string, $keys, $replace );
+	$translated_string = linguator_do_search_and_replace( $translated_string, $keys, $replace );
 
 	/**
 	 * Do a case insensitive replacement.
 	 * This picks up instances where case doesn't matter, and works for
 	 * backwards compatability.
 	 */
-	$translated_string = tww_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
+	$translated_string = linguator_do_search_and_replace( $translated_string, $keys, $replace, 'i' );
 
 	return $translated_string;
 
@@ -127,7 +124,7 @@ function tww_search_and_replace( $translated_string, $keys, $replace ) {
  * @param bool   $case_sensitive    Whether the search should be case sensitive.
  * @return string
  */
-function tww_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
+function linguator_do_search_and_replace( $translated_string, $keys, $replace, $modifier = '' ) {
 
 	$search_keys = array_map(
 		function( $key ) use ( $modifier ) {

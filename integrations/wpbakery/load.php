@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Load WPBakery Page Builder compatibility
-if ( lmat_is_plugin_active( 'js_composer/js_composer.php' ) ) {
+if ( linguator_is_plugin_active( 'js_composer/js_composer.php' ) ) {
 	require_once __DIR__ . '/wpbakery.php';
-	new Linguator\Integrations\wpbakery\LMAT_WPBakery();
+	new Linguator\Integrations\wpbakery\Linguator_WPBakery();
 }
 

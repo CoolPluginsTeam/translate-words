@@ -16,19 +16,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Default_Term {
+class Linguator_Default_Term {
 
 	/**
-	 * A reference to the LMAT_Model instance.
+	 * A reference to the Linguator_Model instance.
 	 *
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
 	/**
 	 * Preferred language to assign to new contents.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	protected $curlang;
 
@@ -128,7 +128,7 @@ class LMAT_Default_Term {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language|string|int $lang     Language.
+	 * @param Linguator_Language|string|int $lang     Language.
 	 * @param string                  $taxonomy The current taxonomy.
 	 * @return void
 	 */

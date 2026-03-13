@@ -52,7 +52,7 @@ add_action( 'admin_init', function() {
 	}
 
 	// Initialize menu sync with AJAX-only mode (registers handler but no UI)
-	new \Linguator\Admin\Controllers\LMAT_Admin_Menu_Sync( $linguator, true );
+	new \Linguator\Admin\Controllers\Linguator_Admin_Menu_Sync( $linguator, true );
 }, 5 );
 
 /**
@@ -79,5 +79,5 @@ add_action( 'load-nav-menus.php', function() {
 	}
 
 	// Initialize menu sync with full UI (enqueues scripts and styles)
-	new \Linguator\Admin\Controllers\LMAT_Admin_Menu_Sync( $linguator, false );
+	new \Linguator\Admin\Controllers\Linguator_Admin_Menu_Sync( $linguator, false );
 } );

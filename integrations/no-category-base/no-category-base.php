@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_No_Category_Base {
+class Linguator_No_Category_Base {
 	/**
 	 * Setups actions.
 	 *
@@ -39,3 +39,4 @@ class LMAT_No_Category_Base {
 		return $args;
 	}
 }
+

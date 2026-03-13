@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Static_Pages {
+class Linguator_Static_Pages {
 	/**
 	 * Id of the page on front.
 	 *
@@ -30,14 +30,14 @@ class LMAT_Static_Pages {
 	public $page_for_posts = 0;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	protected $model;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	protected $curlang;
 
@@ -54,7 +54,7 @@ class LMAT_Static_Pages {
 
 		$this->init();
 
-		add_filter( 'lmat_additional_language_data', array( $this, 'set_static_pages' ), 5, 2 ); // Before LMAT_Links_Model.
+		add_filter( 'lmat_additional_language_data', array( $this, 'set_static_pages' ), 5, 2 ); // Before Linguator_Links_Model.
 
 		// Clean the languages cache when editing page of front, page for posts.
 		add_action( 'update_option_show_on_front', array( $this, 'clean_cache' ) );
@@ -65,7 +65,7 @@ class LMAT_Static_Pages {
 		add_action( 'update_option_page_on_front', 'flush_rewrite_rules' );
 
 		// Add option filters when the current language is defined
-		add_action( 'lmat_language_defined', array( $this, 'lmat_language_defined' ) );
+		add_action( 'lmat_language_defined', array( $this, 'linguator_language_defined' ) );
 
 		// Modifies the page link in case the front page is not in the default language.
 		add_filter( 'page_link', array( $this, 'page_link' ), 20, 2 );
@@ -163,7 +163,7 @@ class LMAT_Static_Pages {
 	 *
 	 * @return void
 	 */
-	public function lmat_language_defined() {
+	public function linguator_language_defined() {
 		// Translates page for posts and page on front.
 		add_filter( 'option_page_on_front', array( $this, 'translate_page_id' ), 10, 2 );
 		add_filter( 'option_page_for_posts', array( $this, 'translate_page_id' ), 10, 2 );

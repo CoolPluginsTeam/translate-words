@@ -19,7 +19,7 @@ use WP_Widget_Custom_HTML;
  *
  *  
  */
-class LMAT_Admin_Strings {
+class Linguator_Admin_Strings {
 	/**
 	 * Stores the strings to translate.
 	 *
@@ -126,7 +126,7 @@ class LMAT_Admin_Strings {
 
 		/**
 		 * Filter the list of strings registered for translation
-		 * Mainly for use by our LMAT_WPML_Compat class
+		 * Mainly for use by our Linguator_WPML_Compat class
 		 *
 		 *  
 		 *

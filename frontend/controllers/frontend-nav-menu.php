@@ -8,8 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Controllers\LMAT_Nav_Menu;
-use Linguator\Includes\Controllers\LMAT_Switcher;
+use Linguator\Includes\Controllers\Linguator_Nav_Menu;
+use Linguator\Includes\Controllers\Linguator_Switcher;
 
 
 
@@ -18,11 +18,11 @@ use Linguator\Includes\Controllers\LMAT_Switcher;
  *
  *  
  */
-class LMAT_Frontend_Nav_Menu extends LMAT_Nav_Menu {
+class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null|false
+	 * @var Linguator_Language|null|false
 	 */
 	public $curlang;
 
@@ -120,7 +120,7 @@ class LMAT_Frontend_Nav_Menu extends LMAT_Nav_Menu {
 				/** This filter is documented in include/switcher.php */
 				$options = apply_filters( 'lmat_the_languages_args', $options ); // Honor the filter here for 'show_flags', 'show_names' and 'dropdown'.
 
-				$switcher = new LMAT_Switcher();
+				$switcher = new Linguator_Switcher();
 				$args = array_merge( array( 'raw' => 1 ), $options );
 
 				/** @var array */

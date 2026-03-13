@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Admin_Feedback {
+class Linguator_Admin_Feedback {
 
     private $plugin_url     = LINGUATOR_URL;
 	private $plugin_version = LINGUATOR_VERSION;

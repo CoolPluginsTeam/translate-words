@@ -20,7 +20,7 @@ use Linguator\Includes\Options\Options;
  *
  *  	
  */
-class LMAT_Nav_Menu {
+class Linguator_Nav_Menu {
 	/**
 	 * Stores the plugin options.
 	 *
@@ -29,7 +29,7 @@ class LMAT_Nav_Menu {
 	public $options;
 
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
@@ -126,7 +126,7 @@ class LMAT_Nav_Menu {
 	 *  
 	 *
 	 * @param string       $loc  Nav menu location.
-	 * @param LMAT_Language $lang Language object.
+	 * @param Linguator_Language $lang Language object.
 	 * @return string
 	 */
 	public function combine_location( $loc, $lang ) {

@@ -1,14 +1,14 @@
 <?php
 namespace Linguator\Modules\Bulk_Translation;
 
-use Linguator\Admin\Controllers\LMAT_Admin;
+use Linguator\Admin\Controllers\Linguator_Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
-	class LMAT_Bulk_Translation {
+if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
+	class Linguator_Bulk_Translation {
 
 		private static $instance;
 
@@ -22,7 +22,7 @@ if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
 		public function __construct() {
 			global $linguator;
 			
-			if ( $linguator instanceof LMAT_Admin ) {
+			if ( $linguator instanceof Linguator_Admin ) {
 				add_action( 'current_screen', array( $this, 'bulk_translate_btn' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_bulk_translate_assets' ) );
 			}
@@ -64,12 +64,12 @@ if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
                 return;
             }
 
-			add_filter( "views_{$current_screen->id}", array( $this, 'lmat_bulk_translate_button' ) );
+			add_filter( "views_{$current_screen->id}", array( $this, 'linguator_bulk_translate_button' ) );
 
 			add_action( 'admin_footer', array( $this, 'bulk_translate_container' ) );
 		}
 
-		public function lmat_bulk_translate_button( $views ) {
+		public function linguator_bulk_translate_button( $views ) {
 			$providers_config_class=' providers-config-no-active';
 
 			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['provider'])){
@@ -246,3 +246,4 @@ if ( ! class_exists( 'LMAT_Bulk_Translation' ) ) :
 		}
 	}
 endif;
+

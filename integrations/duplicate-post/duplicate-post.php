@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Duplicate_Post {
+class Linguator_Duplicate_Post {
 	/**
 	 * Setups actions.
 	 *
@@ -40,3 +40,4 @@ class LMAT_Duplicate_Post {
 		return $taxonomies;
 	}
 }
+

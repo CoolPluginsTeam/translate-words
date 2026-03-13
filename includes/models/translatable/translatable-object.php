@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Includes\Models\Languages;
 use Linguator\Includes\Options\Options;
-use Linguator\Includes\Other\LMAT_Model;
-use Linguator\Includes\Helpers\LMAT_Cache;
-use Linguator\Includes\Other\LMAT_Language;
+use Linguator\Includes\Other\Linguator_Model;
+use Linguator\Includes\Helpers\Linguator_Cache;
+use Linguator\Includes\Other\Linguator_Language;
 
 
 
@@ -29,7 +29,7 @@ use Linguator\Includes\Other\LMAT_Language;
  *     default_alias: non-empty-string
  * }
  */
-abstract class LMAT_Translatable_Object {
+abstract class Linguator_Translatable_Object {
 	/**
 	 * Model for the languages.
 	 *
@@ -47,7 +47,7 @@ abstract class LMAT_Translatable_Object {
 	/**
 	 * Internal non persistent cache object.
 	 *
-	 * @var LMAT_Cache<mixed>
+	 * @var Linguator_Cache<mixed>
 	 */
 	protected $cache;
 
@@ -55,7 +55,7 @@ abstract class LMAT_Translatable_Object {
 	 * List of taxonomies to cache.
 	 *
 	 * @var string[]
-	 * @see LMAT_Translatable_Object::get_object_term()
+	 * @see Linguator_Translatable_Object::get_object_term()
 	 *
 	 * @phpstan-var list<non-empty-string>
 	 */
@@ -104,9 +104,9 @@ abstract class LMAT_Translatable_Object {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Model $model Instance of `LMAT_Model`.
+	 * @param Linguator_Model $model Instance of `Linguator_Model`.
 	 */
-	public function __construct( LMAT_Model $model ) {
+	public function __construct( Linguator_Model $model ) {
 		$this->languages      = $model->languages;
 		$this->options        = $model->options;
 		$this->cache          = $model->cache;
@@ -182,12 +182,12 @@ abstract class LMAT_Translatable_Object {
 	 *  
 	 *
 	 * @param int                     $id   Object ID.
-	 * @param LMAT_Language|string|int $lang Language (object, slug, or term ID).
+	 * @param Linguator_Language|string|int $lang Language (object, slug, or term ID).
 	 * @return bool True when successfully assigned. False otherwise (or if the given language is already assigned to
 	 *              the object).
 	 */
 	public function set_language( $id, $lang ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return false;
@@ -217,17 +217,17 @@ abstract class LMAT_Translatable_Object {
 	 *   Renamed the parameter $post_id into $id.
 	 *
 	 * @param int $id Object ID.
-	 * @return LMAT_Language|false A `LMAT_Language` object. `false` if no language is associated to that object or if the
+	 * @return Linguator_Language|false A `Linguator_Language` object. `false` if no language is associated to that object or if the
 	 *                            ID is invalid.
 	 */
 	public function get_language( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return false;
 		}
 
-		// Get the language and make sure it is a LMAT_Language object.
+		// Get the language and make sure it is a Linguator_Language object.
 		$lang = $this->get_object_term( $id, $this->tax_language );
 
 		if ( empty( $lang ) ) {
@@ -246,7 +246,7 @@ abstract class LMAT_Translatable_Object {
 	 * @return void
 	 */
 	public function delete_language( $id ) {
-		$id = lmat_sanitize_id( $id );
+		$id = linguator_sanitize_id( $id );
 
 		if ( empty( $id ) ) {
 			return;
@@ -266,7 +266,7 @@ abstract class LMAT_Translatable_Object {
 	 * @return WP_Term|false The term associated to the object in the requested taxonomy if it exists, `false` otherwise.
 	 */
 	protected function get_object_terms( array $object_ids, string $taxonomy ) {
-		$object_ids = lmat_sanitize_ids( $object_ids );
+		$object_ids = linguator_sanitize_ids( $object_ids );
 		if ( empty( $object_ids ) ) {
 			return array();
 		}
@@ -405,17 +405,17 @@ abstract class LMAT_Translatable_Object {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language|LMAT_Language[]|string|string[] $lang A `LMAT_Language` object, or a comma separated list of language slugs, or an array of language slugs or objects.
+	 * @param Linguator_Language|Linguator_Language[]|string|string[] $lang A `Linguator_Language` object, or a comma separated list of language slugs, or an array of language slugs or objects.
 	 * @return string The WHERE clause.
 	 *
-	 * @phpstan-param LMAT_Language|LMAT_Language[]|non-empty-string|non-empty-string[] $lang
+	 * @phpstan-param Linguator_Language|Linguator_Language[]|non-empty-string|non-empty-string[] $lang
 	 */
 	public function where_clause( $lang ) {
 		/*
 		 * $lang is an object.
 		 * This is generally the case if the query is coming from Linguator.
 		 */
-		if ( $lang instanceof LMAT_Language ) {
+		if ( $lang instanceof Linguator_Language ) {
 			return ' AND lmat_tr.term_taxonomy_id = ' . absint( $lang->get_tax_prop( $this->tax_language, 'term_taxonomy_id' ) );
 		}
 
@@ -468,7 +468,7 @@ abstract class LMAT_Translatable_Object {
 
 		$object_ids = $this->query_objects_with_no_lang( $language_ids, $limit, $args );
 
-		return array_values( lmat_sanitize_ids( $object_ids ) );
+		return array_values( linguator_sanitize_ids( $object_ids ) );
 	}
 
 	/**
@@ -547,7 +547,7 @@ abstract class LMAT_Translatable_Object {
 	 *  
 	 *
 	 * @param int[]        $ids  Array of post ids or term ids.
-	 * @param LMAT_Language $lang Language to assign to the posts or terms.
+	 * @param Linguator_Language $lang Language to assign to the posts or terms.
 	 * @return void
 	 */
 	public function set_language_in_mass( $ids, $lang ) {
@@ -642,8 +642,8 @@ abstract class LMAT_Translatable_Object {
 	 * Returns database-related information that can be used in some of this class methods.
 	 * These are specific to the table containing the objects.
 	 *
-	 * @see LMAT_Translatable_Object::join_clause()
-	 * @see LMAT_Translatable_Object::get_raw_objects_with_no_lang()
+	 * @see Linguator_Translatable_Object::join_clause()
+	 * @see Linguator_Translatable_Object::get_raw_objects_with_no_lang()
 	 *
 	 *  
 	 *

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_AS3CF {
+class Linguator_AS3CF {
 	/**
 	 * Stores if a media is translated when it is deleted.
 	 *
@@ -55,7 +55,7 @@ class LMAT_AS3CF {
 	 * @param int $post_id Id of the attachment being deleted.
 	 */
 	public function check_translated_media( $post_id ) {
-		$this->is_media_translated[ $post_id ] = ( count( lmat_get_post_translations( $post_id ) ) > 1 );
+		$this->is_media_translated[ $post_id ] = ( count( linguator_get_post_translations( $post_id ) ) > 1 );
 	}
 
 	/**
@@ -75,3 +75,4 @@ class LMAT_AS3CF {
 		}
 	}
 }
+

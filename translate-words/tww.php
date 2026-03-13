@@ -5,37 +5,36 @@
  * This file contains all the core functionality for the legacy Translate Words feature.
  * Only active for legacy users who had Translate Words before Linguator was integrated.
  *
- * @package tww
+ * @package lmat
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
-
 // Mark this file as deprecated - only on specific admin pages
-if ( 
-	is_admin() && 
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	isset( $_GET['page'] ) && 
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	( $_GET['page'] === 'tww_settings' || $_GET['page'] === 'lmat_settings' )
+if (
+	is_admin() &&
+	isset( $_GET['page'] ) // phpcs:ignore WordPress.Security.NonceVerification
 ) {
+	$page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+
+	if ( 'tww_settings' === $page || 'lmat_settings' === $page ) {
 	_deprecated_file( 
 		basename( __FILE__ ), 
 		'2.0.0', 
 		'Linguator functionality (use the Linguator features instead of Translate Words)' 
 	);
+	}
 }
 
 
 // Translate Words constants
-define( 'TWW_TRANSLATIONS', 'tww_options' );
-define( 'TWW_PAGE', 'tww_settings' );
-define( 'TWW_TRANSLATIONS_LINES', 'tww_options_lines' );
-define( 'TWW_NONCE_KEY', 'tww-save-translations' );
-define( 'TWW_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
+define( 'LMAT_TRANSLATIONS', 'tww_options' );
+define( 'LMAT_PAGE', 'tww_settings' );
+define( 'LMAT_TRANSLATIONS_LINES', 'tww_options_lines' );
+define( 'LMAT_NONCE_KEY', 'tww-save-translations' );
+define( 'LMAT_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
 
 
 /**
@@ -46,12 +45,12 @@ define( 'TWW_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
  *
  * @return bool
  */
-function tww_is_legacy_user() {
+function linguator_is_legacy_user() {
 	$legacy_flag = get_option( 'tww_is_legacy_user' );
 	
 	// If flag doesn't exist, check if they have existing translations
 	if ( false === $legacy_flag ) {
-		$existing_translations = get_option( TWW_TRANSLATIONS_LINES );
+		$existing_translations = get_option( LMAT_TRANSLATIONS_LINES );
 		
 		// If they have translations, they're a legacy user
 		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
@@ -74,10 +73,10 @@ function tww_is_legacy_user() {
  *
  * @return void
  */
-function tww_init() {
+function linguator_init() {
 
 	// Only initialize Translate Words for legacy users
-	if ( ! tww_is_legacy_user() ) {
+	if ( ! linguator_is_legacy_user() ) {
 		return;
 	}
 
@@ -97,4 +96,5 @@ function tww_init() {
 }
 
 // Initialize Translate Words
-tww_init();
+linguator_init();
+

@@ -19,16 +19,16 @@ use WP_Term;
  *
  *  
  */
-class LMAT_Frontend_Auto_Translate {
+class Linguator_Frontend_Auto_Translate {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
 	 * Current language.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 

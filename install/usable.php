@@ -2,7 +2,7 @@
 /**
  * @package Linguator
  *
- * NOTE: The constants `LINGUATOR`, `LMAT_MIN_PHP_VERSION`, and `LMAT_MIN_WP_VERSION` must be defined before using this class.
+ * NOTE: The constants `LINGUATOR`, `Linguator_MIN_PHP_VERSION`, and `Linguator_MIN_WP_VERSION` must be defined before using this class.
  */
 
 namespace Linguator\Install;
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 0.0.8
  */
-class LMAT_Usable {
+class Linguator_Usable {
 	/**
 	 * Checks if the current PHP and WordPress versions meet the minimum requirements to use the plugin.
 	 * If requirements are not met, an error notice is shown in the admin area.
@@ -39,7 +39,7 @@ class LMAT_Usable {
 		}
 		
 		// Check if the current PHP version is less than the required version.	
-		if ( version_compare( LMAT_get_constant( 'PHP_VERSION', '' ), static::get_min_php_version(), '<' ) ) {
+		if ( version_compare( linguator_get_constant( 'PHP_VERSION', '' ), static::get_min_php_version(), '<' ) ) {
 			// Show an admin notice about outdated PHP.
 			add_action( 'admin_notices', array( static::class, 'php_version_notice' ) );
 			return false;
@@ -75,7 +75,7 @@ class LMAT_Usable {
 				*/
 				esc_html__( '%1$s has deactivated itself because you are using an old version of PHP. You are using using PHP %2$s. %1$s requires PHP %3$s.', 'translate-words' ),
 				esc_html( static::get_plugin_name() ),
-				esc_html( LMAT_get_constant( 'PHP_VERSION', '' ) ),
+				esc_html( linguator_get_constant( 'PHP_VERSION', '' ) ),
 				esc_html( static::get_min_php_version() )
 			)
 		);
@@ -137,7 +137,7 @@ class LMAT_Usable {
 	 * @return string The required PHP version (e.g. "7.4").
 	 */
 	public static function get_min_php_version() {
-		return LMAT_get_constant( 'LMAT_MIN_PHP_VERSION', '' );
+		return linguator_get_constant( 'LMAT_MIN_PHP_VERSION', '' );
 	}
 
 	/**
@@ -147,7 +147,7 @@ class LMAT_Usable {
 	 * @return string The required WordPress version (e.g. "5.0").
 	 */
 	public static function get_min_wp_version() {
-		return LMAT_get_constant( 'LMAT_MIN_WP_VERSION', '' );
+		return linguator_get_constant( 'LMAT_MIN_WP_VERSION', '' );
 	}
 
 	/**
@@ -157,6 +157,7 @@ class LMAT_Usable {
 	 * @return string The plugin name.
 	 */
 	public static function get_plugin_name() {
-		return LMAT_get_constant( 'LINGUATOR', '' );
+		return linguator_get_constant( 'LINGUATOR', '' );
 	}
 }
+

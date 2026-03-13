@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Filters\LMAT_Filters_Sanitization;
+use Linguator\Includes\Filters\Linguator_Filters_Sanitization;
 
 
 
@@ -21,56 +21,56 @@ use Linguator\Includes\Filters\LMAT_Filters_Sanitization;
  *  
  */
 #[AllowDynamicProperties]
-class LMAT_Admin extends LMAT_Admin_Base {
+class Linguator_Admin extends Linguator_Admin_Base {
 	/**
-	 * @var LMAT_Admin_Filters|null
+	 * @var Linguator_Admin_Filters|null
 	 */
 	public $filters;
 
 	/**
-	 * @var LMAT_Admin_Filters_Columns|null
+	 * @var Linguator_Admin_Filters_Columns|null
 	 */
 	public $filters_columns;
 
 	/**
-	 * @var LMAT_Admin_Filters_Post|null
+	 * @var Linguator_Admin_Filters_Post|null
 	 */
 	public $filters_post;
 
 	/**
-	 * @var LMAT_Admin_Filters_Term|null
+	 * @var Linguator_Admin_Filters_Term|null
 	 */
 	public $filters_term;
 
 	/**
-	 * @var LMAT_Admin_Filters_Media|null
+	 * @var Linguator_Admin_Filters_Media|null
 	 */
 	public $filters_media;
 
 	/**
 	 *  
 	 *
-	 * @var LMAT_Filters_Sanitization|null
+	 * @var Linguator_Filters_Sanitization|null
 	 */
 	public $filters_sanitization;
 
 	/**
-	 * @var LMAT_Admin_Block_Editor|null
+	 * @var Linguator_Admin_Block_Editor|null
 	 */
 	public $block_editor;
 
 	/**
-	 * @var LMAT_Admin_Classic_Editor|null
+	 * @var Linguator_Admin_Classic_Editor|null
 	 */
 	public $classic_editor;
 
 	/**
-	 * @var LMAT_Admin_Nav_Menu|null
+	 * @var Linguator_Admin_Nav_Menu|null
 	 */
 	public $nav_menu;
 
 	/**
-	 * @var LMAT_Admin_Filters_Widgets_Options|null
+	 * @var Linguator_Admin_Filters_Widgets_Options|null
 	 */
 	public $filters_widgets_options;
 
@@ -138,7 +138,7 @@ class LMAT_Admin extends LMAT_Admin_Base {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Links_Model $links_model Reference to the links model.
+	 * @param Linguator_Links_Model $links_model Reference to the links model.
 	 */
 	public function __construct( &$links_model ) {
 		parent::__construct( $links_model );
@@ -197,12 +197,12 @@ class LMAT_Admin extends LMAT_Admin_Base {
 	 * Setup filters for admin pages
 	 *
 	 *  
-	 *   instantiate a LMAT_Bulk_Translate instance.
+	 *   instantiate a Linguator_Bulk_Translate instance.
 	 * @return void
 	 */
 	public function add_filters() {
-		$this->filters_sanitization = new LMAT_Filters_Sanitization( $this->get_locale_for_sanitization() );
-		$this->filters_widgets_options = new LMAT_Admin_Filters_Widgets_Options( $this );
+		$this->filters_sanitization = new Linguator_Filters_Sanitization( $this->get_locale_for_sanitization() );
+		$this->filters_widgets_options = new Linguator_Admin_Filters_Widgets_Options( $this );
 
 		// All these are separated just for convenience and maintainability
 		$classes = array( 'Filters', 'Filters_Columns', 'Filters_Post', 'Filters_Term', 'Classic_Editor', 'Block_Editor', 'Nav_Menu' );
@@ -223,10 +223,10 @@ class LMAT_Admin extends LMAT_Admin_Base {
 			 *
 			 * @param string $class class name
 			 */
-			$class = apply_filters( 'lmat_' . $obj, 'LMAT_Admin_' . $class );
+			$class = apply_filters( 'linguator_' . $obj, 'Linguator_Admin_' . $class );
 			
 			// Handle namespaced classes for dynamic instantiation
-			if ( strpos( $class, 'LMAT_Admin_' ) === 0 && strpos( $class, '\\' ) === false ) {
+			if ( strpos( $class, 'Linguator_Admin_' ) === 0 && strpos( $class, '\\' ) === false ) {
 				$class = __NAMESPACE__ . '\\' . $class;
 			}
 			
@@ -255,11 +255,11 @@ class LMAT_Admin extends LMAT_Admin_Base {
 			}
 		}
 
-		if ( isset( $_POST['post_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( $_POST['post_lang_choice'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		if ( isset( $_POST['post_lang_choice'] ) && ! empty( $_POST['post_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_POST['post_lang_choice'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$locale = $lang->locale;
-		} elseif ( isset( $_POST['term_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( $_POST['term_lang_choice'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( isset( $_POST['term_lang_choice'] ) && ! empty( $_POST['term_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_POST['term_lang_choice'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$locale = $lang->locale;
-		} elseif ( isset( $_POST['inline_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( $_POST['inline_lang_choice'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( isset( $_POST['inline_lang_choice'] ) && ! empty( $_POST['inline_lang_choice'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_POST['inline_lang_choice'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$locale = $lang->locale;
 		} elseif ( ! empty( $this->curlang ) ) {
 			$locale = $this->curlang->locale;

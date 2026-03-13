@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Filters\LMAT_Filters;
+use Linguator\Includes\Filters\Linguator_Filters;
 
 
 
@@ -17,7 +17,7 @@ use Linguator\Includes\Filters\LMAT_Filters;
  *
  *  
  */
-class LMAT_Admin_Filters extends LMAT_Filters {
+class Linguator_Admin_Filters extends Linguator_Filters {
 
 	/**
 	 * Constructor: setups filters and actions.
@@ -57,7 +57,7 @@ class LMAT_Admin_Filters extends LMAT_Filters {
 		foreach ( $this->model->get_languages_list() as $lang ) {
 			$meta        = $lang->is_default ? 'description' : 'description_' . $lang->slug;
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WordPress core handles nonce verification for personal_options_update, sanitized below with sanitize_textarea_field
-			$description = empty( $_POST[ 'description_' . $lang->slug ] ) ? '' : sanitize_textarea_field( trim( wp_unslash( $_POST[ 'description_' . $lang->slug ] ) ) );
+			$description = ! empty( $_POST[ 'description_' . $lang->slug ] ) ? sanitize_textarea_field( trim( wp_unslash( $_POST[ 'description_' . $lang->slug ] ) ) ) : '';
 
 			/** This filter is documented in wp-includes/user.php */
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound

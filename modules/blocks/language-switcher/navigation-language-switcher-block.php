@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Language switcher block for navigation.
  *
  */
-class LMAT_Navigation_Language_Switcher_Block extends LMAT_Abstract_Language_Switcher_Block {
+class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_Language_Switcher_Block {
 	/**
 	 * Placeholder used to add language name or flag after WordPress renders the link labels.
 	 *
@@ -88,7 +88,7 @@ class LMAT_Navigation_Language_Switcher_Block extends LMAT_Abstract_Language_Swi
 	 */
 	public function render( $attributes, $content, $block ) {
 		$attributes        = $this->set_attributes_for_block( $attributes );
-		$switcher          = new \Linguator\Includes\Controllers\LMAT_Switcher();
+		$switcher          = new \Linguator\Includes\Controllers\Linguator_Switcher();
 		$switcher_elements = (array) $switcher->the_languages( $this->links, array_merge( $attributes, array( 'raw' => true ) ) );
 
 		if ( empty( $switcher_elements ) ) {
@@ -301,3 +301,4 @@ class LMAT_Navigation_Language_Switcher_Block extends LMAT_Abstract_Language_Swi
 		);
 	}
 }
+

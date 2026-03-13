@@ -8,8 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Walkers\LMAT_Walker_Dropdown;
-use Linguator\Includes\Other\LMAT_Language;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
+use Linguator\Includes\Other\Linguator_Language;
 use WP_Term;
 use WP_Ajax_Response;
 use Linguator\Includes\Capabilities\User;
@@ -19,28 +19,28 @@ use Linguator\Includes\Capabilities\User;
  *
  *  
  */
-class LMAT_Admin_Filters_Term {
+class Linguator_Admin_Filters_Term {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * @var LMAT_Admin_Links
+	 * @var Linguator_Admin_Links
 	 */
 	public $links;
 
 	/**
 	 * Language selected in the admin language filter.
 	 *
-	 * @var LMAT_Language
+	 * @var Linguator_Language
 	 */
 	public $filter_lang;
 
 	/**
 	 * Preferred language to assign to the new terms.
 	 *
-	 * @var LMAT_Language
+	 * @var Linguator_Language
 	 */
 	public $pref_lang;
 
@@ -52,11 +52,11 @@ class LMAT_Admin_Filters_Term {
 	protected $post_id = 0;
 
 	/**
-	 * A reference to the LMAT_Admin_Default_Term instance.
+	 * A reference to the Linguator_Admin_Default_Term instance.
 	 *
 	 *  
 	 *
-	 * @var LMAT_Admin_Default_Term|null
+	 * @var Linguator_Admin_Default_Term|null
 	 */
 	protected $default_term;
 
@@ -109,11 +109,11 @@ class LMAT_Admin_Filters_Term {
 	 */
 	public function add_term_form() {
 		if ( isset( $_GET['taxonomy'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$taxonomy = sanitize_key( $_GET['taxonomy'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$taxonomy = sanitize_key( wp_unslash( $_GET['taxonomy'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		if ( isset( $_REQUEST['post_type'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$post_type = sanitize_key( $_REQUEST['post_type'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$post_type = sanitize_key( wp_unslash( $_REQUEST['post_type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		if ( isset( $GLOBALS['post_type'] ) ) {
@@ -124,11 +124,11 @@ class LMAT_Admin_Filters_Term {
 			return;
 		}
 
-		$from_term_id = isset( $_GET['from_tag'] ) ? (int) $_GET['from_tag'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
+		$from_term_id = ! empty( $_GET['from_tag'] ) ? absint( wp_unslash( $_GET['from_tag'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 
-		$lang = isset( $_GET['new_lang'] ) ? $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ) : $this->pref_lang; // phpcs:ignore WordPress.Security.NonceVerification
+		$lang = ! empty( $_GET['new_lang'] ) ? $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ) : $this->pref_lang; // phpcs:ignore WordPress.Security.NonceVerification
 
-		$dropdown = new LMAT_Walker_Dropdown();
+		$dropdown = new Linguator_Walker_Dropdown();
 
 		$dropdown_html = $dropdown->walk(
 			$this->model->languages->filter( 'translator' )->get_list(),
@@ -206,7 +206,7 @@ class LMAT_Admin_Filters_Term {
 	 */
 	public function edit_term_form( $tag ) {
 		if ( isset( $_REQUEST['post_type'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$post_type = sanitize_key( $_REQUEST['post_type'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$post_type = sanitize_key( wp_unslash( $_REQUEST['post_type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		if ( isset( $GLOBALS['post_type'] ) ) {
@@ -226,7 +226,7 @@ class LMAT_Admin_Filters_Term {
 		// Disable the language dropdown and the translations input fields for default terms to prevent removal
 		$disabled = $this->default_term->is_default_term( $term_id );
 
-		$dropdown = new LMAT_Walker_Dropdown();
+		$dropdown = new Linguator_Walker_Dropdown();
 
 		$dropdown_html = $dropdown->walk(
 			$this->model->languages->filter( 'translator' )->get_list(),
@@ -302,14 +302,14 @@ class LMAT_Admin_Filters_Term {
 	 */
 	public function wp_dropdown_cats( $output ) {
 		if ( isset( $_GET['taxonomy'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$taxonomy = sanitize_key( $_GET['taxonomy'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$taxonomy = sanitize_key( wp_unslash( $_GET['taxonomy'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		if ( isset( $taxonomy, $_GET['from_tag'], $_GET['new_lang'] ) && taxonomy_exists( $taxonomy ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$term = get_term( (int) $_GET['from_tag'], $taxonomy ); // phpcs:ignore WordPress.Security.NonceVerification
+			$term = get_term( absint( wp_unslash( $_GET['from_tag'] ) ), $taxonomy ); // phpcs:ignore WordPress.Security.NonceVerification
 
 			if ( $term instanceof WP_Term && $id = $term->parent ) {
-				$lang = $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+				$lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 				if ( $parent = $this->model->term->get_translation( $id, $lang ) ) {
 					return str_replace( '"' . $parent . '"', '"' . $parent . '" selected="selected"', $output );
 				}
@@ -348,8 +348,11 @@ class LMAT_Admin_Filters_Term {
 	 * Category metabox.
 	 */
 	$nonce_key = '_ajax_nonce-add-' . $taxonomy;
-	if ( isset( $_POST['term_lang_choice'], $_REQUEST[ $nonce_key ] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST[ $nonce_key ] ) ), 'add-' . $taxonomy ) ) {
-		$this->maybe_set_language( $term_id, sanitize_key( $_POST['term_lang_choice'] ) );
+	if ( isset( $_POST['term_lang_choice'], $_REQUEST[ $nonce_key ] ) ) {
+		$nonce = sanitize_text_field( wp_unslash( $_REQUEST[ $nonce_key ] ) );
+		if ( wp_verify_nonce( $nonce, 'add-' . $taxonomy ) ) {
+			$this->maybe_set_language( $term_id, sanitize_key( wp_unslash( $_POST['term_lang_choice'] ) ) );
+		}
 		return;
 	}
 
@@ -358,7 +361,7 @@ class LMAT_Admin_Filters_Term {
 		 */
 		if ( isset( $_POST['term_lang_choice'] ) ) {
 			check_admin_referer( 'lmat_language', '_lmat_nonce' );
-			$this->maybe_set_language( $term_id, sanitize_key( $_POST['term_lang_choice'] ) );
+			$this->maybe_set_language( $term_id, sanitize_key( wp_unslash( $_POST['term_lang_choice'] ) ) );
 			return;
 		}
 
@@ -369,7 +372,11 @@ class LMAT_Admin_Filters_Term {
 			/*
 			 * Bulk edit does not modify the language, so we possibly create a tag in several languages.
 			 */
-			if ( -1 === (int) $_GET['inline_lang_choice'] ) {
+			$inline_lang_choice = isset( $_GET['inline_lang_choice'] ) 
+			? absint( wp_unslash( $_GET['inline_lang_choice'] ) ) 
+			: 0;
+
+			if ( -1 === $inline_lang_choice ) {
 				// The language of the current term is set a according to the language of the current post.
 				$language = $this->model->post->get_language( $this->post_id );
 
@@ -401,7 +408,7 @@ class LMAT_Admin_Filters_Term {
 			}
 
 			if ( current_user_can( 'edit_term', $term_id ) ) {
-				$this->maybe_set_language( $term_id, sanitize_key( $_GET['inline_lang_choice'] ) );
+				$this->maybe_set_language( $term_id, sanitize_key( wp_unslash( $_GET['inline_lang_choice'] ) ) );
 			}
 			return;
 		}
@@ -415,7 +422,7 @@ class LMAT_Admin_Filters_Term {
 			return;
 		}
 
-		$this->maybe_set_language( $term_id, sanitize_key( $_POST['inline_lang_choice'] ) );
+		$this->maybe_set_language( $term_id, sanitize_key( wp_unslash( $_POST['inline_lang_choice'] ) ) );
 		return;
 	}
 
@@ -424,7 +431,7 @@ class LMAT_Admin_Filters_Term {
 		 */
 		if ( isset( $_POST['post_lang_choice'] ) ) { // FIXME should be useless now.
 			check_admin_referer( 'lmat_language', '_lmat_nonce' );
-			$this->maybe_set_language( $term_id, sanitize_key( $_POST['post_lang_choice'] ) );
+			$this->maybe_set_language( $term_id, sanitize_key( wp_unslash( $_POST['post_lang_choice'] ) ) );
 		}
 	}
 
@@ -467,7 +474,7 @@ class LMAT_Admin_Filters_Term {
 
 		// Save translations after checking the translated term is in the right language ( as well as cast id to int ).
 		if ( isset( $_POST['term_tr_lang'] ) ) {
-			foreach ( array_map( 'absint', $_POST['term_tr_lang'] ) as $lang => $tr_id ) {
+			foreach ( array_map( 'absint', wp_unslash( $_POST['term_tr_lang'] ) ) as $lang => $tr_id ) {
 				$tr_lang = $this->model->term->get_language( $tr_id );
 				$translations[ $lang ] = $tr_lang && $tr_lang->slug == $lang ? $tr_id : 0;
 			}
@@ -527,10 +534,10 @@ class LMAT_Admin_Filters_Term {
 			wp_die( 0 );
 		}
 
-		$lang      = $this->model->get_language( sanitize_key( $_POST['lang'] ) );
-		$term_id   = isset( $_POST['term_id'] ) ? (int) $_POST['term_id'] : null; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		$taxonomy  = sanitize_key( $_POST['taxonomy'] );
-		$post_type = sanitize_key( $_POST['post_type'] );
+		$lang      = $this->model->get_language( sanitize_key( wp_unslash( $_POST['lang'] ) ) );
+		$term_id   = ! empty( $_POST['term_id'] ) ? absint( wp_unslash( $_POST['term_id'] ) ) : 0; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+		$taxonomy  = sanitize_key( wp_unslash( $_POST['taxonomy'] ) );
+		$post_type = sanitize_key( wp_unslash( $_POST['post_type'] ) );
 
 		if ( empty( $lang ) || ! post_type_exists( $post_type ) || ! taxonomy_exists( $taxonomy ) ) {
 			wp_die( 0 );
@@ -599,22 +606,22 @@ class LMAT_Admin_Filters_Term {
 
 		/** @var string */
 		$s = sanitize_text_field( wp_unslash( $_GET['term'] ) );
-		$post_type = sanitize_key( $_GET['post_type'] );
-		$taxonomy  = sanitize_key( $_GET['taxonomy'] );
+		$post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		$taxonomy  = sanitize_key( wp_unslash( $_GET['taxonomy'] ) );
 
 		if ( ! post_type_exists( $post_type ) || ! taxonomy_exists( $taxonomy ) ) {
 			wp_die( 0 );
 		}
 
-		$term_language = $this->model->get_language( sanitize_key( $_GET['term_language'] ) );
-		$translation_language = $this->model->get_language( sanitize_key( $_GET['translation_language'] ) );
+		$term_language        = $this->model->get_language( sanitize_key( wp_unslash( $_GET['term_language'] ) ) );
+		$translation_language = $this->model->get_language( sanitize_key( wp_unslash( $_GET['translation_language'] ) ) );
 
 		$terms  = array();
 		$return = array();
 
 		// Add current translation in list.
 		// Not in add term as term_id is not set.
-		if ( isset( $_GET['term_id'] ) && 'undefined' !== $_GET['term_id'] && $term_id = $this->model->term->get_translation( (int) $_GET['term_id'], $translation_language ) ) {
+		if ( isset( $_GET['term_id'] ) && 'undefined' !== $_GET['term_id'] && $term_id = $this->model->term->get_translation( absint( wp_unslash( $_GET['term_id'] ) ), $translation_language ) ) {
 			$terms = array( get_term( $term_id, $taxonomy ) );
 		}
 
@@ -709,8 +716,8 @@ class LMAT_Admin_Filters_Term {
 					$translations[ $key ] = $tr_id;
 				}
 
-				// Hack translation ids sent by the form to avoid overwrite in LMAT_Admin_Filters_Term::save_translations
-				if ( isset( $_POST['term_tr_lang'][ $key ] ) && $_POST['term_tr_lang'][ $key ] == $tr_id ) { // phpcs:ignore WordPress.Security.NonceVerification
+				// Hack translation ids sent by the form to avoid overwrite in Linguator_Admin_Filters_Term::save_translations
+				if ( isset( $_POST['term_tr_lang'][ $key ] ) && ! empty( $_POST['term_tr_lang'][ $key ] ) && absint( wp_unslash( $_POST['term_tr_lang'][ $key ] ) ) == $tr_id ) { // phpcs:ignore WordPress.Security.NonceVerification
 					$_POST['term_tr_lang'][ $key ] = $translations[ $key ];
 				}
 			}
@@ -727,36 +734,38 @@ class LMAT_Admin_Filters_Term {
 	 *
 	 *  
 	 *
-	 * @param LMAT_Language|null $lang     Term language object if found, null otherwise.
-	 * @return LMAT_Language|null Language object, null if none found.
+	 * @param Linguator_Language|null $lang     Term language object if found, null otherwise.
+	 * @return Linguator_Language|null Language object, null if none found.
 	 */
 	public function get_inserted_term_language( $lang ) {
-		if ( $lang instanceof LMAT_Language ) {
+		if ( $lang instanceof Linguator_Language ) {
 			return $lang;
 		}
 
 		if ( ! empty( $_POST['term_lang_choice'] ) && is_string( $_POST['term_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$lang_slug = sanitize_key( $_POST['term_lang_choice'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$lang_slug = sanitize_key( wp_unslash( $_POST['term_lang_choice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			$lang = $this->model->get_language( $lang_slug );
-			return $lang instanceof LMAT_Language ? $lang : null;
+				return $lang instanceof Linguator_Language ? $lang : null;
 		}
 
 		if ( ! empty( $_POST['inline_lang_choice'] ) && is_string( $_POST['inline_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$lang_slug = sanitize_key( $_POST['inline_lang_choice'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$lang_slug = sanitize_key( wp_unslash( $_POST['inline_lang_choice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			$lang = $this->model->get_language( $lang_slug );
-			return $lang instanceof LMAT_Language ? $lang : null;
+			return $lang instanceof Linguator_Language ? $lang : null;
 		}
 
 		// *Post* bulk edit, in case a new term is created
 		if ( isset( $_GET['bulk_edit'], $_GET['inline_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			// Bulk edit does not modify the language
-			if ( -1 === (int) $_GET['inline_lang_choice'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$inline_lang_choice = isset( $_GET['inline_lang_choice'] ) ? absint( wp_unslash( $_GET['inline_lang_choice'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+
+			if ( -1 === $inline_lang_choice ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$lang = $this->model->post->get_language( $this->post_id );
-				return $lang instanceof LMAT_Language ? $lang : null;
+				return $lang instanceof Linguator_Language ? $lang : null;
 			} elseif ( is_string( $_GET['inline_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-				$lang_slug = sanitize_key( $_GET['inline_lang_choice'] ); // phpcs:ignore WordPress.Security.NonceVerification
+				$lang_slug = sanitize_key( wp_unslash( $_GET['inline_lang_choice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 				$lang = $this->model->get_language( $lang_slug );
-				return $lang instanceof LMAT_Language ? $lang : null;
+				return $lang instanceof Linguator_Language ? $lang : null;
 			}
 		}
 
@@ -767,14 +776,14 @@ class LMAT_Admin_Filters_Term {
 			return null;
 		}
 
-		if ( ! empty( $_POST['tag_ID'] ) && in_array( (int) $default_term, $this->model->term->get_translations( (int) $_POST['tag_ID'] ), true ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$lang = $this->model->term->get_language( (int) $_POST['tag_ID'] ); // phpcs:ignore WordPress.Security.NonceVerification
-			return $lang instanceof LMAT_Language ? $lang : null;
+		if ( ! empty( $_POST['tag_ID'] ) && in_array( (int) $default_term, $this->model->term->get_translations( absint( wp_unslash( $_POST['tag_ID'] ) ) ), true ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$lang = $this->model->term->get_language( absint( wp_unslash( $_POST['tag_ID'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			return $lang instanceof Linguator_Language ? $lang : null;
 		}
 
-		if ( ! empty( $_POST['tax_ID'] ) && in_array( (int) $default_term, $this->model->term->get_translations( (int) $_POST['tax_ID'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$lang = $this->model->term->get_language( (int) $_POST['tax_ID'] ); // phpcs:ignore WordPress.Security.NonceVerification
-			return $lang instanceof LMAT_Language ? $lang : null;
+		if ( ! empty( $_POST['tax_ID'] ) && in_array( (int) $default_term, $this->model->term->get_translations( absint( wp_unslash( $_POST['tax_ID'] ) ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$lang = $this->model->term->get_language( absint( wp_unslash( $_POST['tax_ID'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			return $lang instanceof Linguator_Language ? $lang : null;
 		}
 
 		return null;
@@ -795,9 +804,9 @@ class LMAT_Admin_Filters_Term {
 		}
 
 		if ( isset( $_POST['parent'], $_POST['term_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$parent = intval( $_POST['parent'] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$parent = ! empty( $_POST['parent'] ) ? absint( wp_unslash( $_POST['parent'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 		} elseif ( isset( $_POST[ "new{$taxonomy}_parent" ], $_POST['term_lang_choice'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$parent = intval( $_POST[ "new{$taxonomy}_parent" ] ); // phpcs:ignore WordPress.Security.NonceVerification
+			$parent = ! empty( $_POST[ "new{$taxonomy}_parent" ] ) ? absint( wp_unslash( $_POST[ "new{$taxonomy}_parent" ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
 		return $parent;

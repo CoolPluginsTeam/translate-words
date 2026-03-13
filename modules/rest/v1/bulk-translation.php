@@ -212,15 +212,30 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		public function permission_only_admins( $request ) {
+
+			if ( ! is_user_logged_in() ) {
+				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
+			}
+
 			$nonce = $request->get_header( 'X-WP-Nonce' );
 
 			if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
 				return new WP_Error( 'rest_forbidden', __( 'Invalid nonce.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 
-			if ( ! is_user_logged_in() ) {
-				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
+			$taxonomy = $request->get_param( 'taxonomy' );
+			if ( ! empty( $taxonomy ) ) {
+				$taxonomy = sanitize_key( $taxonomy );
+				$tax_obj  = get_taxonomy( $taxonomy );
+				if ( ! $tax_obj || empty( $tax_obj->cap ) || empty( $tax_obj->cap->manage_terms ) ) {
+					return new \WP_Error( 'rest_invalid_param', __( 'Invalid taxonomy.', 'translate-words' ), array( 'status' => 400 ) );
+				}
+				if ( ! current_user_can( $tax_obj->cap->manage_terms ) ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				return true;
 			}
+
 			if ( ! current_user_can( 'edit_posts' ) ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
@@ -324,7 +339,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						$posts_translate[ $postId ]['excerpt'] = $post_data->post_excerpt;
 					}
 
-					$posts_translate[ $postId ]['sourceLanguage'] = ! isset( $posts_translate[ $postId ]['sourceLanguage'] ) ? lmat_default_language() : $posts_translate[ $postId ]['sourceLanguage'];
+					$posts_translate[ $postId ]['sourceLanguage'] = ! isset( $posts_translate[ $postId ]['sourceLanguage'] ) ? linguator_default_language() : $posts_translate[ $postId ]['sourceLanguage'];
 
 					if ( ! $post_meta_sync ) {
 						$post_meta_fields    = get_post_meta( $postId );
@@ -485,7 +500,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
             }
 
 			global $linguator;
-			$post_clone = new \LMAT_Sync_Post_Model( $linguator );
+			$post_clone = new \Linguator_Sync_Post_Model( $linguator );
 			$post_id    = $post_clone->copy_post( $post_id, $source_language, $target_language, false, $post_data, $editor_type );
 
 			if ( ! $post_id ) {
@@ -556,7 +571,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$taxonomy_ids = json_decode( $params['ids'] );
 
 				foreach ( $taxonomy_ids as $taxonomy_id ) {
-					$taxonomy_translate[ $taxonomy_id ]['sourceLanguage'] = lmat_get_term_language( $taxonomy_id );
+					$taxonomy_translate[ $taxonomy_id ]['sourceLanguage'] = linguator_get_term_language( $taxonomy_id );
 					$taxonomy_data                                        = get_term( $taxonomy_id, $taxonomy );
 
 					if ( ! $taxonomy_translate[ $taxonomy_id ]['sourceLanguage'] ) {
@@ -581,7 +596,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 					foreach ( $translate_lang as $lang ) {
 						if ( in_array( $lang, $lmat_langs_slugs ) ) {
-							$post_translate_status = lmat_get_term( $taxonomy_id, $lang );
+							$post_translate_status = linguator_get_term( $taxonomy_id, $lang );
 
 							if ( ! $post_translate_status ) {
 								$taxonomy_translate[ $taxonomy_id ]['languages'][] = $lang;

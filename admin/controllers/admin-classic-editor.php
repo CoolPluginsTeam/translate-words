@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Model;
-use Linguator\Includes\Walkers\LMAT_Walker_Dropdown;
+use Linguator\Includes\Other\Linguator_Model;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
 use WP_Ajax_Response;
 
 
@@ -20,28 +20,28 @@ use WP_Ajax_Response;
  *
  *  
  */
-class LMAT_Admin_Classic_Editor {
+class Linguator_Admin_Classic_Editor {
 	/**
-	 * @var LMAT_Model
+	 * @var Linguator_Model
 	 */
 	public $model;
 
 	/**
-	 * @var LMAT_Admin_Links
+	 * @var Linguator_Admin_Links
 	 */
 	public $links;
 
 	/**
 	 * Current language (used to filter the content).
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $curlang;
 
 	/**
 	 * Preferred language to assign to new contents.
 	 *
-	 * @var LMAT_Language|null
+	 * @var Linguator_Language|null
 	 */
 	public $pref_lang;
 
@@ -50,7 +50,7 @@ class LMAT_Admin_Classic_Editor {
 	 *
 	 *  
 	 *
-	 * @param object $linguator The Linguator object.
+	 * @param object $linguator The Linguator_Admin object.
 	 */
 	public function __construct( &$linguator ) {
 		$this->model = &$linguator->model;
@@ -90,7 +90,7 @@ class LMAT_Admin_Classic_Editor {
 				'side',
 				'high',
 				array(
-					'__back_compat_meta_box' => lmat_use_block_editor_plugin(),
+					'__back_compat_meta_box' => linguator_use_block_editor_plugin(),
 				)
 			);
 		}
@@ -108,13 +108,13 @@ class LMAT_Admin_Classic_Editor {
 		$post_type     = $post->post_type;
 
 		// phpcs:ignore WordPress.Security.NonceVerification, VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		$from_post_id = isset( $_GET['from_post'] ) ? (int) $_GET['from_post'] : 0;
+		$from_post_id = isset( $_GET['from_post'] ) ? absint( wp_unslash( $_GET['from_post'] ) ) : 0;
 
 		$lang = ( $lg = $this->model->post->get_language( $post_ID ) ) ? $lg :
-			( isset( $_GET['new_lang'] ) ? $this->model->get_language( sanitize_key( $_GET['new_lang'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification
+			( isset( $_GET['new_lang'] ) ? $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification
 			$this->pref_lang );
 
-		$dropdown = new LMAT_Walker_Dropdown();
+		$dropdown = new Linguator_Walker_Dropdown();
 
 		$id = ( 'attachment' === $post_type ) ? sprintf( 'attachments[%d][language]', (int) $post_ID ) : 'post_lang_choice';
 
@@ -205,10 +205,10 @@ class LMAT_Admin_Classic_Editor {
 		}
 
 		global $post_ID; // Obliged to use the global variable for wp_popular_terms_checklist
-		$post_ID   = (int) $_POST['post_id'];
-		$lang_slug     = sanitize_key( $_POST['lang'] );
+		$post_ID   = absint( wp_unslash( $_POST['post_id'] ) );
+		$lang_slug = sanitize_key( wp_unslash( $_POST['lang'] ) );
 		$lang      = $this->model->get_language( $lang_slug );
-		$post_type = sanitize_key( $_POST['post_type'] );
+		$post_type = sanitize_key( wp_unslash( $_POST['post_type'] ) );
 
 		if ( empty( $lang ) ) {
 			wp_die( esc_html( "{$lang_slug} is not a valid language code." ) );
@@ -238,10 +238,10 @@ class LMAT_Admin_Classic_Editor {
 		ob_end_clean();
 
 		// Categories
-		if ( isset( $_POST['taxonomies'] ) ) { // Not set for pages
+		if ( isset( $_POST['taxonomies'] ) && is_array( array_map( 'sanitize_key', wp_unslash( $_POST['taxonomies'] ) ) ) ) { // Not set for pages
 			$supplemental = array();
 
-			foreach ( array_map( 'sanitize_key', $_POST['taxonomies'] ) as $taxname ) {
+			foreach ( array_map( 'sanitize_key', wp_unslash( $_POST['taxonomies'] ) ) as $taxname ) {
 				$taxonomy = get_taxonomy( $taxname );
 
 				if ( ! empty( $taxonomy ) ) {
@@ -324,7 +324,7 @@ class LMAT_Admin_Classic_Editor {
 			wp_die( 0 );
 		}
 
-		$post_type = sanitize_key( $_GET['post_type'] );
+		$post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
 
 		if ( ! post_type_exists( $post_type ) ) {
 			wp_die( 0 );
@@ -332,8 +332,8 @@ class LMAT_Admin_Classic_Editor {
 
 		$term = sanitize_text_field( wp_unslash( $_GET['term'] ) );
 
-		$post_language = $this->model->get_language( sanitize_key( $_GET['post_language'] ) );
-		$translation_language = $this->model->get_language( sanitize_key( $_GET['translation_language'] ) );
+		$post_language        = $this->model->get_language( sanitize_key( wp_unslash( $_GET['post_language'] ) ) );
+		$translation_language = $this->model->get_language( sanitize_key( wp_unslash( $_GET['translation_language'] ) ) );
 
 		$return = array();
 
@@ -349,7 +349,7 @@ class LMAT_Admin_Classic_Editor {
 		}
 
 		// Add current translation in list
-		if ( $post_id = $this->model->post->get_translation( (int) $_GET['lmat_post_id'], $translation_language ) ) {
+		if ( $post_id = $this->model->post->get_translation( absint( wp_unslash( $_GET['lmat_post_id'] ) ), $translation_language ) ) {
 			$post = get_post( $post_id );
 
 			if ( ! empty( $post ) ) {
@@ -377,7 +377,24 @@ class LMAT_Admin_Classic_Editor {
 	 * @return array Modified arguments.
 	 */
 	public function page_attributes_dropdown_pages_args( $dropdown_args, $post ) {
-		$language = isset( $_POST['lang'] ) ? $this->model->get_language( sanitize_key( $_POST['lang'] ) ) : $this->model->post->get_language( $post->ID ); // phpcs:ignore WordPress.Security.NonceVerification
+
+		$language = null;
+
+		if ( isset( $_POST['lang'], $_POST['_lmat_nonce'] ) ) {
+
+			$nonce = sanitize_text_field( wp_unslash( $_POST['_lmat_nonce'] ) );
+
+			if ( wp_verify_nonce( $nonce, 'lmat_language' ) ) {
+
+				$lang_slug = sanitize_key( wp_unslash( $_POST['lang'] ) );
+
+				$language = $this->model->get_language( $lang_slug );
+			}
+		}
+
+		if ( empty( $language ) ) {
+			$language = $this->model->post->get_language( $post->ID );
+		}
 
 		if ( empty( $language ) ) {
 			$language = $this->pref_lang;

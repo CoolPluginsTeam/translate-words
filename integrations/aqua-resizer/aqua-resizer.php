@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *  
  */
-class LMAT_Aqua_Resizer {
+class Linguator_Aqua_Resizer {
 	/**
 	 * Setups filters.
 	 *
@@ -35,3 +35,4 @@ class LMAT_Aqua_Resizer {
 		return array_merge( $arr, array( array( 'function' => 'aq_resize' ) ) );
 	}
 }
+

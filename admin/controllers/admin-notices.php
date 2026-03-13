@@ -8,8 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use Linguator\Includes\Other\LMAT_Translation_Dashboard;
-use Linguator\Admin\Controllers\LMAT_Admin_Base;
+use Linguator\Includes\Other\Linguator_Translation_Dashboard;
+use Linguator\Admin\Controllers\Linguator_Admin_Base;
 
 /**
  * A class to manage admin notices
@@ -19,7 +19,7 @@ use Linguator\Admin\Controllers\LMAT_Admin_Base;
  *  
  *   Dismissed notices are stored in an option instead of a user meta
  */
-class LMAT_Admin_Notices {
+class Linguator_Admin_Notices {
 	/**
 	 * Stores the plugin options.
 	 *
@@ -124,8 +124,8 @@ class LMAT_Admin_Notices {
 			$allowed_screens = array(
 				'dashboard',
 				'plugins',
-				LMAT_Admin_Base::get_screen_id( 'lang' ),
-				LMAT_Admin_Base::get_screen_id( 'settings' ),
+				Linguator_Admin_Base::get_screen_id( 'lang' ),
+				Linguator_Admin_Base::get_screen_id( 'settings' ),
 			);
 		}
 
@@ -166,7 +166,7 @@ class LMAT_Admin_Notices {
 	 */
 	public function hide_notice() {
 		if ( isset( $_GET['lmat-hide-notice'], $_GET['_lmat_notice_nonce'] ) ) {
-			$notice = sanitize_key( $_GET['lmat-hide-notice'] );
+			$notice = sanitize_key( wp_unslash( $_GET['lmat-hide-notice'] ) );
 			check_admin_referer( $notice, '_lmat_notice_nonce' );
 			// Handle all review related notices
 			if (in_array($notice, array('already-rated', 'not-interested'))) {
@@ -191,9 +191,9 @@ class LMAT_Admin_Notices {
 		if ( current_user_can( 'manage_options' ) ) {
 			
 			if ( $this->can_display_notice( 'review' ) ) {
-				if(class_exists(LMAT_Translation_Dashboard::class)){
+				if(class_exists(Linguator_Translation_Dashboard::class)){
 					$review_url = 'https://wordpress.org/support/plugin/translate-words/reviews/#new-post';
-					LMAT_Translation_Dashboard::review_notice('lmat', 'Linguator', esc_url($review_url));
+					Linguator_Translation_Dashboard::review_notice('lmat', 'Linguator', esc_url($review_url));
 				}
 			}
 
@@ -248,7 +248,7 @@ class LMAT_Admin_Notices {
 		}
 		
 		// Check if we're specifically on the ?page=lmat page
-		return LMAT_Admin_Base::get_screen_id( 'lang' ) === $screen->id || LMAT_Admin_Base::get_screen_id( 'settings' ) === $screen->id;
+		return Linguator_Admin_Base::get_screen_id( 'lang' ) === $screen->id || Linguator_Admin_Base::get_screen_id( 'settings' ) === $screen->id;
 	}
 	/**
 	 * Add inline CSS and JavaScript for notice positioning on ?page=lmat

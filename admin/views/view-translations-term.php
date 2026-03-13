@@ -14,8 +14,8 @@ use WP_Term;
  *
  * @package Linguator
  *
- * @var LMAT_Admin_Filters_Term $this      LMAT_Admin_Filters_Term object.
- * @var LMAT_Language           $lang      The post language. Default language if no language assigned yet.
+ * @var Linguator_Admin_Filters_Term $this      Linguator_Admin_Filters_Term object.
+ * @var Linguator_Language           $lang      The post language. Default language if no language assigned yet.
  * @var string                 $taxonomy  Taxonomy name.
  * @var string                 $post_type Post type.
  */

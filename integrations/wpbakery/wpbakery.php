@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.4
  */
-class LMAT_WPBakery {
+class Linguator_WPBakery {
 	/**
 	 * Constructor
 	 *
@@ -205,14 +205,21 @@ class LMAT_WPBakery {
 		}
 		
 		// Check if we have from_post parameter
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
-		if ( ! isset( $_GET['from_post'] ) ) {
+		if ( ! isset( $_GET['from_post'], $_GET['_wpnonce'] ) ) {
 			return $content;
 		}
 		
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
-		$from_post_id = absint( $_GET['from_post'] );
+		$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'new-post-translation' ) ) {
+			return $content;
+		}
+
+		$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
 		if ( ! $from_post_id ) {
+			return $content;
+		}
+
+		if ( ! current_user_can( 'edit_post', $from_post_id ) ) {
 			return $content;
 		}
 		
@@ -259,7 +266,7 @@ class LMAT_WPBakery {
 
 		// Check if this is a translated post
 		global $post;
-		if ( $post && lmat_get_post_language( $post->ID ) ) {
+		if ( $post && linguator_get_post_language( $post->ID ) ) {
 			// If it has a language assigned, it's likely a translation
 			// Allow WPBakery editor
 			return true;
@@ -328,7 +335,7 @@ class LMAT_WPBakery {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, no nonce available
 		if ( isset( $_GET['from_post'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress core parameter, sanitized with absint()
-			$from_post_id = absint( $_GET['from_post'] );
+			$from_post_id = absint( wp_unslash( $_GET['from_post'] ) );
 			if ( $from_post_id ) {
 				$wpb_status = get_post_meta( $from_post_id, '_wpb_vc_js_status', true );
 				if ( 'true' === $wpb_status || true === $wpb_status ) {
@@ -1421,4 +1428,5 @@ class LMAT_WPBakery {
 		return $content;
 	}
 }
+
 
