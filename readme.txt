@@ -5,7 +5,7 @@ Tags: translation, multilingual, languages, ai translation
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 2.0.7
+Stable tag: 2.1.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -158,6 +158,20 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
 > The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.1.0 | 13 March 2026 =
+* Ensured manual string translation functionality remains accessible even when Loco Translate is active.
+* Replaced HEREDOC/NOWDOC syntax with standard PHP strings for better security scanning compatibility.
+* Updated bundled DataTables library to the latest stable version.
+* Added proper documentation in the readme for external services used by the plugin (Google Translate).
+* Improved REST API permission checks and strengthened capability validation.
+* Added missing nonce verification and improved input sanitization across admin and REST requests.
+* Implemented proper sanitization for register_setting() fields.
+* Replaced direct loading of WordPress core files with proper WordPress hooks.
+* Removed debugging code such as error_reporting() from production.
+* Improved escaping of variables and generated HTML output to prevent XSS vulnerabilities.
+* Refactored global filters to avoid unintended site-wide behavior changes.
+* Code quality, security, and compatibility improvements throughout the plugin.
 
 = Version 2.0.7 | 5 March 2026 =
 * Added proper attribution indicating that this plugin is a fork of the free Polylang plugin.
