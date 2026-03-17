@@ -613,11 +613,24 @@ class WPML_Migration {
 
 			foreach ( $post_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
+				if ( empty( $group->translations ) || ! is_string( $group->translations ) ) {
+					continue;
+				}
+
 				$translations_parts = explode( '|', $group->translations );
 				$linguator_translations = array();
 
 				foreach ( $translations_parts as $part ) {
-					list( $lang_code, $post_id ) = explode( ':', $part, 2 );
+					if ( false === strpos( $part, ':' ) ) {
+						continue;
+					}
+
+					$pieces = explode( ':', $part, 2 );
+					if ( count( $pieces ) < 2 ) {
+						continue;
+					}
+
+					list( $lang_code, $post_id ) = $pieces;
 					$post_id = (int) $post_id;
 
 					// ========== OPTIMIZE: Use cached language lookup ==========
@@ -671,10 +684,23 @@ class WPML_Migration {
 
 			// First pass: collect all term IDs and their expected languages
 			foreach ( $term_translation_groups as $group ) {
+				if ( empty( $group->translations ) || ! is_string( $group->translations ) ) {
+					continue;
+				}
+
 				$translations_parts = explode( '|', $group->translations );
 				
 				foreach ( $translations_parts as $part ) {
-					list( $lang_code, $term_id ) = explode( ':', $part, 2 );
+					if ( false === strpos( $part, ':' ) ) {
+						continue;
+					}
+
+					$pieces = explode( ':', $part, 2 );
+					if ( count( $pieces ) < 2 ) {
+						continue;
+					}
+
+					list( $lang_code, $term_id ) = $pieces;
 					$term_id = (int) $term_id;
 					
 					// Cache language lookup
@@ -727,11 +753,24 @@ class WPML_Migration {
 
 			foreach ( $term_translation_groups as $group ) {
 				// Parse translations: "en:123|fr:456|de:789"
+				if ( empty( $group->translations ) || ! is_string( $group->translations ) ) {
+					continue;
+				}
+
 				$translations_parts = explode( '|', $group->translations );
 				$linguator_translations = array();
 
 				foreach ( $translations_parts as $part ) {
-					list( $lang_code, $term_id ) = explode( ':', $part, 2 );
+					if ( false === strpos( $part, ':' ) ) {
+						continue;
+					}
+
+					$pieces = explode( ':', $part, 2 );
+					if ( count( $pieces ) < 2 ) {
+						continue;
+					}
+
+					list( $lang_code, $term_id ) = $pieces;
 					$term_id = (int) $term_id;
 
 					// Use cached language (already fetched in first pass)
@@ -1047,7 +1086,7 @@ class WPML_Migration {
 			// Add WPML strings (will overwrite if duplicate)
 			$strings_added = 0;
 			foreach ( $strings as $string_pair ) {
-				$original = wp_unslash( $string_pair['original'] );
+				$original    = wp_unslash( $string_pair['original'] );
 				$translation = wp_unslash( $string_pair['translation'] );
 
 				// Skip empty strings
@@ -1060,39 +1099,37 @@ class WPML_Migration {
 				$strings_added++;
 			}
 
+			// If there is nothing new to add for this language, skip quietly.
+			if ( 0 === $strings_added && empty( $lmat_strings ) ) {
+				continue;
+			}
+
 			// Convert back to array format and save
 			$merged_strings = array_values( $strings_map );
 
 			// Update term meta with merged strings
-			update_term_meta( $linguator_lang->term_id, '_lmat_strings_translations', $merged_strings );
+			update_term_meta( $lmat_lang->term_id, '_lmat_strings_translations', $merged_strings );
 
-			// Verify the update was successful
-			$stored_meta = get_term_meta( $linguator_lang->term_id, '_lmat_strings_translations', true );
+			// Verify the update was successful only when we actually attempted to add strings.
+			$stored_meta = get_term_meta( $lmat_lang->term_id, '_lmat_strings_translations', true );
 
-			if ( is_array( $stored_meta ) && ! empty( $stored_meta ) ) {
-				$stored_count = count( $stored_meta );
+			if ( is_array( $stored_meta ) && ! empty( $stored_meta ) && $strings_added > 0 ) {
+				$stored_count   = count( $stored_meta );
 				$expected_count = count( $merged_strings );
 
-				if ( $stored_count >= $expected_count || ( $stored_count > 0 && $strings_added > 0 ) ) {
-					$results['strings_migrated'] += $strings_added;
+				if ( $stored_count >= $expected_count ) {
+					$results['strings_migrated']   += $strings_added;
 					$results['languages_processed']++;
 				} else {
 					$results['errors'][] = sprintf(
 						/* translators: %1$s: Language code, %2$d: Stored count, %3$d: Expected count */
 						__( 'Failed to save strings for language: %1$s (stored: %2$d, expected: %3$d)', 'translate-words' ),
-						$linguator_lang->slug,
+						$lmat_lang->slug,
 						$stored_count,
 						$expected_count
 					);
 					$results['success'] = false;
 				}
-			} else {
-				$results['errors'][] = sprintf(
-					/* translators: %s: Language code */
-					__( 'Failed to save strings for language: %s (no strings stored)', 'translate-words' ),
-					$linguator_lang->slug
-				);
-				$results['success'] = false;
 			}
 		}
 
@@ -1101,9 +1138,9 @@ class WPML_Migration {
 			if ( class_exists( '\Linguator\Includes\Helpers\Linguator_Cache' ) ) {
 				$cache = new \Linguator\Includes\Helpers\Linguator_Cache();
 				foreach ( $wpml_languages as $wpml_lang ) {
-					$linguator_lang = $this->model->languages->get( $wpml_lang );
-					if ( $linguator_lang ) {
-						$cache->clean( $linguator_lang->slug );
+					$lmat_lang = $this->model->languages->get( $wpml_lang );
+					if ( $lmat_lang ) {
+						$cache->clean( $lmat_lang->slug );
 					}
 				}
 			}

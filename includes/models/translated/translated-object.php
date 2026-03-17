@@ -590,7 +590,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 			// Performance fix: Avoid wp_insert_term() overhead when processing
 			// many terms across multiple languages.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.DirectQuery
-			$wpdb->query(
+			$insert_terms = $wpdb->query(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(
 						"INSERT INTO {$wpdb->terms} ( slug, name ) VALUES %s",
@@ -600,8 +600,8 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 				)
 			);
 
-			// phpcs:ignore
-			if(is_wp_error($wpdb->query)){
+			// Check for query failure (wpdb->query is a method, not an error object)
+			if ( false === $insert_terms ) {
 				$errors->add( 'lmat_insert_terms', __( 'Could not insert the terms.', 'translate-words' ) );
 			}
 		}
@@ -661,7 +661,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 			// Performance fix: Avoid wp_update_term() && wp_update_term_count_now() overhead when processing
 			// many term taxonomies & term count across multiple languages.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.DirectQuery
-			$wpdb->query(
+			$insert_tts = $wpdb->query(
 				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 					sprintf(
 						"INSERT INTO {$wpdb->term_taxonomy} ( term_id, taxonomy, description, count ) VALUES %s",
@@ -671,8 +671,8 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 				)
 			);
 
-			// phpcs:ignore
-			if(is_wp_error($wpdb->query)){
+			// Check for query failure (wpdb->query is a method, not an error object)
+			if ( false === $insert_tts ) {
 				$errors->add( 'lmat_insert_term_taxonomies', __( 'Could not insert the term taxonomies.', 'translate-words' ) );
 			}
 		}
