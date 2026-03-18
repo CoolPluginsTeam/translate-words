@@ -191,9 +191,10 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
 
 		// phpcs:ignore WordPress.Security.NonceVerification
-		$menu_item_urls = ! empty( $_POST['menu-item-url'] ) ? (array) wp_unslash( $_POST['menu-item-url'] ) : array();
-		// phpcs:ignore WordPress.Security.NonceVerification
-		$item_url = isset( $menu_item_urls[ $menu_item_db_id ] ) ? sanitize_text_field( $menu_item_urls[ $menu_item_db_id ] ) : '';
+		$menu_item_urls = ! empty( $_POST['menu-item-url'] )
+			? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['menu-item-url'] ) )
+			: array();
+		$item_url = $menu_item_urls[ $menu_item_db_id ] ?? '';
 		if ( empty( $menu_item_urls ) || '#lmat_switcher' !== $item_url ) {
 					return;
 			}
