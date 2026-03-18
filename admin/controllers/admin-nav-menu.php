@@ -178,7 +178,11 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @return void
 	 */
 	public function wp_update_nav_menu_item( $menu_id = 0, $menu_item_db_id = 0 ) {
-		if ( empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== sanitize_key( wp_unslash( $_POST['menu-item-url'][ $menu_item_db_id ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		// Only handle our language switcher custom-link placeholder.
+		// Note: sanitize_key() would strip the leading "#", so we must not use it here.
+		// phpcs:ignore WordPress.Security.NonceVerification
+		$item_url = ! empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) ? sanitize_text_field( wp_unslash( $_POST['menu-item-url'][ $menu_item_db_id ] ) ) : '';
+		if ( '#lmat_switcher' !== $item_url ) {
 			return;
 		}
 
@@ -186,7 +190,11 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		if ( current_user_can( 'edit_theme_options' ) ) {
 			check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
 
-		if ( empty( $_POST['menu-item-url'] ) || ! is_array( array_map( 'sanitize_key', wp_unslash( $_POST['menu-item-url'] ) ) ) || empty( $_POST['menu-item-url'][ $menu_item_db_id ] ) || '#lmat_switcher' !== sanitize_key( wp_unslash( $_POST['menu-item-url'][ $menu_item_db_id ] ) ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification
+		$menu_item_urls = ! empty( $_POST['menu-item-url'] ) ? (array) wp_unslash( $_POST['menu-item-url'] ) : array();
+		// phpcs:ignore WordPress.Security.NonceVerification
+		$item_url = isset( $menu_item_urls[ $menu_item_db_id ] ) ? sanitize_text_field( $menu_item_urls[ $menu_item_db_id ] ) : '';
+		if ( empty( $menu_item_urls ) || '#lmat_switcher' !== $item_url ) {
 					return;
 			}
 			$options = array( 'hide_if_no_translation' => 0, 'hide_current' => 0, 'force_home' => 0, 'show_flags' => 0, 'show_names' => 1, 'dropdown' => 0 ); // Default values
