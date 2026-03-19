@@ -425,6 +425,11 @@ class Linguator_Language {
 			return '';
 		}
 
+		$src = esc_url( (string) $flag['src'] );
+		if ( '' === $src ) {
+			return '';
+		}
+
 		$alt_attr    = empty( $alt ) ? '' : sprintf( ' alt="%s"', esc_attr( $alt ) );
 		$width_attr  = empty( $flag['width'] ) ? '' : sprintf( ' width="%s"', (int) $flag['width'] );
 		$height_attr = empty( $flag['height'] ) ? '' : sprintf( ' height="%s"', (int) $flag['height'] );
@@ -442,14 +447,32 @@ class Linguator_Language {
 			$style = sprintf( ' style="%s"', implode( ' ', $sizes ) );
 		}
 
-		return sprintf(
+		$html = sprintf(
 			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- Rendering plugin-specific SVG image via <img>, not applicable to attachment-based functions like wp_get_attachment_image().
 			'<img src="%s"%s%s%s%s />',
-			$flag['src'],
+			$src,
 			$alt_attr,
 			$width_attr,
 			$height_attr,
 			$style
+		);
+
+		return wp_kses(
+			$html,
+			array(
+				'img' => array(
+					'src'      => true,
+					'alt'      => true,
+					'class'    => true,
+					'width'    => true,
+					'height'   => true,
+					'style'    => true,
+					'decoding' => true,
+					'loading'  => true,
+					'title'    => true,
+				),
+			),
+			array_merge( wp_allowed_protocols(), array( 'data' ) )
 		);
 	}
 
@@ -468,11 +491,29 @@ class Linguator_Language {
 	public function get_display_flag( $alt = 'alt' ) {
 		$flag = empty( $this->custom_flag ) ? $this->flag : $this->custom_flag;
 
-		if ( 'alt' === $alt ) {
-			return $flag;
+		$flag = wp_kses(
+			(string) $flag,
+			array(
+				'img' => array(
+					'src'      => true,
+					'alt'      => true,
+					'class'    => true,
+					'width'    => true,
+					'height'   => true,
+					'style'    => true,
+					'decoding' => true,
+					'loading'  => true,
+					'title'    => true,
+				),
+			),
+			array_merge( wp_allowed_protocols(), array( 'data' ) )
+		);
+
+		if ( 'no-alt' === $alt ) {
+			$flag = (string) preg_replace( '/\salt=("|\')[^"\']*\\1/', '', $flag );
 		}
 
-		return (string) preg_replace( '/(?<=\salt=\")([^"]+)(?=\")/', '', $flag );
+		return $flag;
 	}
 
 	/**

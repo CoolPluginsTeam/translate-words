@@ -302,7 +302,21 @@ class Linguator_Admin_Classic_Editor {
 		}
 
 		// Flag
-		$x->Add( array( 'what' => 'flag', 'data' => empty( $lang->flag ) ? esc_html( $lang->slug ) : $lang->flag ) );
+		$x->Add(
+			array(
+				'what' => 'flag',
+				'data' => empty( $lang->flag )
+					? esc_html( $lang->slug )
+					: wp_kses(
+						(string) $lang->flag,
+						array(
+							'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+							'span' => array( 'class' => true, 'style' => true ),
+						),
+						array_merge( wp_allowed_protocols(), array( 'data' ) )
+					),
+			)
+		);
 
 		// Sample permalink
 		$x->Add( array( 'what' => 'permalink', 'data' => get_sample_permalink_html( $post_ID ) ) );

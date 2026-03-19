@@ -78,6 +78,14 @@ class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 	 * @return string Formatted menu item title
 	 */
 	protected function get_item_title( $flag, $name, $options ) {
+		$flag = wp_kses(
+			(string) $flag,
+			array(
+				'span' => array( 'class' => true, 'style' => true ),
+				'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+			)
+		);
+
 		if ( $options['show_flags'] ) {
 			if ( $options['show_names'] ) {
 				$title = sprintf( '%1$s<span style="margin-%2$s:0.3em;">%3$s</span>', $flag, is_rtl() ? 'right' : 'left', esc_html( $name ) );
@@ -144,9 +152,9 @@ class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 					$lang_item->ID = $lang_item->ID . '-' . $lang['slug']; // A unique ID
 					$lang_item->title = $this->get_item_title( $lang['flag'], $lang['name'], $options );
 					$lang_item->attr_title = '';
-					$lang_item->url = $lang['url'];
-					$lang_item->lang = $lang['locale']; // Save this for use in nav_menu_link_attributes
-					$lang_item->classes = $lang['classes'];
+					$lang_item->url = esc_url_raw( (string) $lang['url'] );
+					$lang_item->lang = sanitize_text_field( (string) $lang['locale'] ); // Save this for use in nav_menu_link_attributes
+					$lang_item->classes = array_map( 'sanitize_html_class', (array) $lang['classes'] );
 					if ( ! empty( $options['dropdown'] ) ) {
 						$lang_item->menu_order = $item->menu_order + $i;
 						$lang_item->menu_item_parent = $item->db_id;

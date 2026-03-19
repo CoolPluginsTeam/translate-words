@@ -245,8 +245,8 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 		if ( 'core/navigation-submenu' === $instance->name ) {
 			// If `openSubmenusOnClick`, the submenu is rendered as a button, so there are no `<a>` to process.
 			if ( empty( $instance->context['openSubmenusOnClick'] ) && $content_tags->next_tag( array( 'tag_name' => 'a' ) ) ) {
-				$content_tags->set_attribute( 'hreflang', $instance->attributes['hreflang'] );
-				$content_tags->set_attribute( 'lang', $instance->attributes['lang'] );
+				$content_tags->set_attribute( 'hreflang', sanitize_text_field( (string) $instance->attributes['hreflang'] ) );
+				$content_tags->set_attribute( 'lang', sanitize_text_field( (string) $instance->attributes['lang'] ) );
 			}
 			if ( $content_tags->next_tag( array( 'tag_name' => 'button' ) ) ) {
 				$content_tags->set_attribute(
@@ -259,8 +259,8 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 				);
 			}
 		} elseif ( $content_tags->next_tag( array( 'tag_name' => 'a' ) ) ) {
-			$content_tags->set_attribute( 'hreflang', $instance->attributes['hreflang'] );
-			$content_tags->set_attribute( 'lang', $instance->attributes['lang'] );
+			$content_tags->set_attribute( 'hreflang', sanitize_text_field( (string) $instance->attributes['hreflang'] ) );
+			$content_tags->set_attribute( 'lang', sanitize_text_field( (string) $instance->attributes['lang'] ) );
 		}
 
 		$overridden_block_content = $content_tags->get_updated_html();
@@ -268,17 +268,21 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 		$link_label = '';
 
 		if ( $instance->attributes['lmat_show_flags'] ) {
-			$link_label .= $instance->attributes['lmat_flag'];
+			$link_label .= wp_kses( (string) $instance->attributes['lmat_flag'], $this->get_allowed_switcher_html() );
 		}
 
 		if ( $instance->attributes['lmat_show_names'] ) {
-			$link_label .= $instance->attributes['lmat_show_flags'] ? ' ' . $instance->attributes['lmat_name'] : $instance->attributes['lmat_name'];
+			$name = esc_html( (string) $instance->attributes['lmat_name'] );
+			$link_label .= $instance->attributes['lmat_show_flags'] ? ' ' . $name : $name;
 		}
 
-		return str_replace(
+		return wp_kses(
+			str_replace(
 			static::PLACEHOLDER,
 			$link_label,
 			$overridden_block_content
+			),
+			$this->get_allowed_switcher_html()
 		);
 	}
 
@@ -293,14 +297,14 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 	private function get_core_block_attributes( $attributes, $switcher_item ) {
 		return array(
 			'label'          => static::PLACEHOLDER,
-			'url'            => $switcher_item['url'],
+			'url'            => esc_url_raw( (string) $switcher_item['url'] ),
 			'lmat_show_flags' => $attributes['show_flags'],
 			'lmat_show_names' => $attributes['show_names'],
-			'lang'           => $switcher_item['locale'],
-			'hreflang'       => $switcher_item['locale'],
+			'lang'           => sanitize_text_field( (string) $switcher_item['locale'] ),
+			'hreflang'       => sanitize_text_field( (string) $switcher_item['locale'] ),
 			'lmat_flag'       => $switcher_item['flag'],
 			'lmat_name'       => $switcher_item['name'],
-			'className'      => trim( implode( ' ', (array) $switcher_item['classes'] ) ),
+			'className'      => trim( implode( ' ', array_map( 'sanitize_html_class', (array) $switcher_item['classes'] ) ) ),
 		);
 	}
 }

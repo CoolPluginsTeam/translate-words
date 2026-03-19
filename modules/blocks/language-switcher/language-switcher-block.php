@@ -49,6 +49,8 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 			return '';
 		}
 
+		$switcher_output = wp_kses( $switcher_output, $this->get_allowed_switcher_html() );
+
 		$aria_label = __( 'Choose a language', 'translate-words' );
 		if ( $attributes['dropdown'] ) {
 			$switcher_output = '<label class="screen-reader-text" for="' . esc_attr( 'lang_choice_' . $attributes['dropdown'] ) . '">' . esc_html( $aria_label ) . '</label>' . $switcher_output;
@@ -60,7 +62,7 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 
 		$wrap_attributes = get_block_wrapper_attributes();
 
-		return sprintf( $wrap_tag, $wrap_attributes, $switcher_output );
+		return wp_kses( sprintf( $wrap_tag, $wrap_attributes, $switcher_output ), $this->get_allowed_switcher_html() );
 	}
 }
 

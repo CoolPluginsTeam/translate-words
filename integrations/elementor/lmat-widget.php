@@ -660,6 +660,11 @@ class Linguator_Widget extends Widget_Base
                 
                 $languages = array_map(
                     function ($language) {
+                        $allowed_flag_html = array(
+                            'span' => array( 'class' => true, 'style' => true ),
+                            'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+                        );
+
                         // Get flag HTML directly from language object if available
                         $flag_html = '';
                         if (function_exists('LMAT') && !empty(LMAT()->model)) {
@@ -677,12 +682,17 @@ class Linguator_Widget extends Widget_Base
                             $flag_html = $language['flag'];
                         }
                         
+                        $flag_html = wp_kses(
+                            $flag_html,
+                            $allowed_flag_html,
+                            array_merge( wp_allowed_protocols(), array( 'data' ) )
+                        );
 
                         
                         return $language['name'] = [
                             'slug'           => esc_html($language['slug']),
                             'name'           => esc_html($language['name']),
-                            'no_translation' => esc_html($language['no_translation']),
+                            'no_translation' => (bool) $language['no_translation'],
                             'url'            => esc_url($language['url']),
                             'flag'           => $flag_html, // Use our generated flag HTML
                         ];

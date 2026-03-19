@@ -629,7 +629,14 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$wp_admin_bar->add_menu(
 			array(
 				'id'    => 'languages',
-				'title' => $selected->flag . $title,
+				'title' => wp_kses(
+					(string) $selected->flag,
+					array(
+						'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+						'span' => array( 'class' => true, 'style' => true ),
+					),
+					array_merge( wp_allowed_protocols(), array( 'data' ) )
+				) . $title,
 				'href'  => esc_url( add_query_arg( 'lang', $selected->slug, remove_query_arg( 'paged' ) ) ),
 				'meta'  => array(
 					'title' => __( 'Filters content by language', 'translate-words' ),

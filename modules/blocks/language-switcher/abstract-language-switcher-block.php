@@ -16,6 +16,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 abstract class Linguator_Abstract_Language_Switcher_Block {
 	/**
+	 * Returns the allowed HTML tags/attributes for switcher output.
+	 *
+	 * This is used to sanitize server-rendered block output and any injected
+	 * flag markup (e.g. <img>) before returning it to WordPress for rendering.
+	 *
+	 * @return array
+	 */
+	protected function get_allowed_switcher_html() {
+		return array(
+			'nav'    => array( 'aria-label' => true, 'class' => true, 'role' => true ),
+			'div'    => array( 'class' => true ),
+			'ul'     => array( 'class' => true ),
+			'li'     => array( 'class' => true ),
+			'a'      => array( 'href' => true, 'class' => true, 'title' => true, 'hreflang' => true, 'lang' => true, 'rel' => true, 'target' => true ),
+			'span'   => array( 'class' => true, 'style' => true ),
+			'img'    => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'loading' => true, 'decoding' => true ),
+			'label'  => array( 'for' => true, 'class' => true ),
+			'select' => array( 'id' => true, 'name' => true, 'class' => true, 'aria-label' => true ),
+			'option' => array( 'value' => true, 'selected' => true ),
+		);
+	}
+
+	/**
 	 * @var Linguator_Links
 	 */
 	protected $links;
