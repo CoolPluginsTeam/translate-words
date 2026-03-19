@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Frontend\Controllers\Linguator_Frontend;
 use Linguator\Includes\Other\Linguator_Model;
+use WP_Error;
+use WP_REST_Request;
 
 
 /**
@@ -61,31 +63,17 @@ class Linguator_Elementor {
 	 */
 	public static function register_rest_routes() {
 		register_rest_route( 'lmat/v1', '/post-language/(?P<post_id>\d+)', [
-			'methods' => 'GET',
-			'callback' => [ __CLASS__, 'get_post_language_rest' ],
-			'permission_callback' => [ __CLASS__, 'rest_permission_check' ],
-			'args' => [
+			'methods'             => 'GET',
+			'callback'            => [ __CLASS__, 'get_post_language_rest' ],
+			'permission_callback' => '__return_true',
+			'args'                => [
 				'post_id' => [
-					'required' => true,
-					'type' => 'integer',
+					'required'          => true,
+					'type'              => 'integer',
 					'sanitize_callback' => 'absint',
 				],
 			],
 		] );
-	}
-
-	/**
-	 * Permission callback for REST API.
-	 *
-	 * @access public
-	 * @static
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 * @return bool
-	 */
-	public static function rest_permission_check( $request ) {
-		// Allow if user can edit posts or if it's a public request
-		return current_user_can( 'edit_posts' ) || true;
 	}
 
 	/**
@@ -119,7 +107,7 @@ class Linguator_Elementor {
 		}
 
 		// Return language information
-		return rest_ensure_response( [
+		return \rest_ensure_response( [
 			'language' => $language,
 			'flag_url' => $language_object->flag_url,
 			'name' => $language_object->name,

@@ -73,6 +73,7 @@ if (!class_exists('Glossary')) {
                     'delete_glossary_validate' => wp_create_nonce('lmat_delete_glossary_nonce'),
                     'add_glossary_validate' => wp_create_nonce('lmat_add_glossary_nonce'),
                     'export_glossary_validate' => wp_create_nonce('lmat_export_glossary_nonce'),
+                    'edit_row_template' => self::get_edit_row_template(),
                 ));
 				
 				return false;
@@ -117,6 +118,48 @@ if (!class_exists('Glossary')) {
 
 			return $status;
 		}
+
+        /**
+         * Returns the Underscore template markup for the glossary edit row (inlined for JS, no script tag in markup).
+         *
+         * @return string
+         */
+        public static function get_edit_row_template() {
+            $placeholder_term = __( 'String Translation', 'translate-words' );
+            $placeholder_desc = __( 'Example: The name of the add-on that allows translating strings', 'translate-words' );
+            $placeholder_translation = __( 'Custom Translation', 'translate-words' );
+            $label_general = __( 'General', 'translate-words' );
+            $label_name = __( 'Name', 'translate-words' );
+            $error_length = __( 'Too long, must be less than 220 characters', 'translate-words' );
+            $label_save = __( 'Save', 'translate-words' );
+            $label_cancel = __( 'Cancel', 'translate-words' );
+
+            return '<tr class="lmat-glossary-edit-row">'
+                . '<td>'
+                . '<textarea class="lmat-edit-term" rows="3" placeholder="' . esc_attr( $placeholder_term ) . '"><%= term %></textarea>'
+                . '<div class="lmat-translation-error"></div>'
+                . '<textarea class="lmat-edit-desc" rows="4" placeholder="' . esc_attr( $placeholder_desc ) . '"><%= desc %></textarea>'
+                . '</td>'
+                . '<td>'
+                . '<select class="lmat-edit-type">'
+                . '<option value="general" <%= type === \'general\' ? \'selected\' : \'\' %>>' . esc_html( $label_general ) . '</option>'
+                . '<option value="name" <%= type === \'name\' ? \'selected\' : \'\' %>>' . esc_html( $label_name ) . '</option>'
+                . '</select>'
+                . '</td>'
+                . '<% for (var i = 0; i < languages.length; i++) { if (languages[i].code === source_lang) continue; %>'
+                . '<td colspan="2">'
+                . '<textarea class="lmat-edit-translation" data-lang="<%= languages[i].code %>" placeholder="' . esc_attr( $placeholder_translation ) . '" rows="9"><%= translations[languages[i].code] || \'\' %></textarea>'
+                . '<div class="lmat-translation-error">' . esc_html( $error_length ) . '</div>'
+                . '</td>'
+                . '<% } %>'
+                . '<td colspan="2" class="lmat-actions-cell">'
+                . '<div class="lmat-action-buttons">'
+                . '<button type="button" class="lmat-save-edit-btn button button-primary">' . esc_html( $label_save ) . '</button>'
+                . '<button type="button" class="lmat-cancel-edit-btn">' . esc_html( $label_cancel ) . '</button>'
+                . '</div>'
+                . '</td>'
+                . '</tr>';
+        }
 
         /**
          * Store glossary entry 

@@ -100,6 +100,13 @@ if ( ! defined( 'ABSPATH' ) ) {
             false
         );
 
+        wp_register_style( 'lmat_translations_admin_style', false, array(), '1.0.1' );
+        wp_enqueue_style( 'lmat_translations_admin_style' );
+        wp_add_inline_style(
+            'lmat_translations_admin_style',
+            ".translation-table{margin-top:15px;}"
+        );
+
         wp_localize_script(
             'LMAT_TRANSLATIONS_ADMIN',
             'lmat_properties',
@@ -290,11 +297,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         }
 
     ?>
-	<style>
-	.translation-table {
-		margin-top: 15px;
-	}
-	</style>
 	<div class="wrap">
 
 		<h1 class="wp-heading-inline"><?php esc_html_e('Translate Words', 'translate-words'); ?></h1>
@@ -379,11 +381,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             return;
         }
 
-        printf(
-            '<script>var lmat_translations = %s;</script>',
-            wp_json_encode($overrides)
-        );
-
         // Enqueue editor scripts.
         wp_enqueue_script(
             'LMAT_TRANSLATIONS_JS',
@@ -393,7 +390,15 @@ if ( ! defined( 'ABSPATH' ) ) {
             true
         );
 
+        // Provide translations data without printing raw <script> tags in admin markup.
+        wp_add_inline_script(
+            'LMAT_TRANSLATIONS_JS',
+            'var lmat_translations = ' . wp_json_encode( $overrides ) . ';',
+            'before'
+        );
+
     }
 
-    add_filter('admin_head', 'lmat_translate_gutenberg_string');
+    // Only load for the block editor, not every admin page.
+    add_action( 'enqueue_block_editor_assets', 'lmat_translate_gutenberg_string' );
 

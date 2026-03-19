@@ -165,6 +165,9 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 				'object_subtype' => 'nav_menu_item',
 				'description'    => __( 'Language switcher settings', 'translate-words' ),
 				'single'         => true,
+				'auth_callback'  => function( $allowed, $meta_key, $post_id ) {
+					return current_user_can( 'edit_theme_options' );
+				},
 				'show_in_rest'   => array(
 					'schema' => array(
 						'type'                 => 'object',
