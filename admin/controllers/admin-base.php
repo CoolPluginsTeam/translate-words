@@ -142,8 +142,6 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	public function add_menus(): void {
 		global $admin_page_hooks;
 
-		global $admin_page_hooks;
-
 		$parent    = '';
 		$first_tab = '';
 
