@@ -108,11 +108,11 @@ class Linguator_Elementor {
 
 		// Return language information
 		return \rest_ensure_response( [
-			'language' => $language,
-			'flag_url' => $language_object->flag_url,
-			'name' => $language_object->name,
-			'locale' => $language_object->locale,
-			'post_id' => $post_id
+			'language' => sanitize_text_field( (string) $language ),
+			'flag_url' => esc_url_raw( (string) $language_object->flag_url ),
+			'name'     => sanitize_text_field( (string) $language_object->name ),
+			'locale'   => sanitize_text_field( (string) $language_object->locale ),
+			'post_id'  => absint( $post_id ),
 		] );
 	}
 

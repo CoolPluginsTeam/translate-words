@@ -137,14 +137,20 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 			}
 		}
 
+		// Final sanitization to ensure flag/name/output content is safe.
+		$output = wp_kses( (string) $output, $this->get_allowed_switcher_html() );
+
 		if ( version_compare( $GLOBALS['wp_version'], '6.5-alpha', '<' ) ) {
 			/*
 			 * Backward compatibility with WordPress < 6.5.
 			 * Since WordPress 6.5, our block is rendered automatically inside the auto-generated `<ul>` wrapper.
 			 */
-			return sprintf(
+			return wp_kses(
+				sprintf(
 				'<ul class="wp-block-navigation__container wp-block-navigation">%s</ul>',
 				$output
+				),
+				$this->get_allowed_switcher_html()
 			);
 		}
 
