@@ -161,11 +161,11 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = Version 2.1.1 | 20 March 2026 =
 
-* Security: Implemented strict REST API permission_callback using current_user_can('edit_posts') for lmat/v1 endpoints.
-* Security: Applied late escaping (esc_html, esc_attr, wp_kses_post) to all render callbacks and shortcode outputs.
-* Improvement: Refactored CSS and JS to use wp_enqueue_style and wp_enqueue_script, removing inline <style> and <script> tags.
-* Improvement: Standardized unique prefixing (linguator_ / lmat_) across functions and classes to prevent conflicts.
-* Bug Fix: Resolved UI logic that hidden string-translation features based on external plugin status.
+* Implemented strict REST API permission_callback using current_user_can('edit_posts') for lmat/v1 endpoints.
+* Applied late escaping (esc_html, esc_attr, wp_kses_post) to all render callbacks and shortcode outputs.
+*  Refactored CSS and JS to use wp_enqueue_style and wp_enqueue_script, removing inline <style> and <script> tags.
+* Standardized unique prefixing (linguator_ ) across functions and classes to prevent conflicts.
+* Resolved UI logic that hidden string-translation features based on external plugin status.
 
 = Version 2.1.0 | 13 March 2026 =
 * Ensured manual string translation functionality remains accessible even when Loco Translate is active.
