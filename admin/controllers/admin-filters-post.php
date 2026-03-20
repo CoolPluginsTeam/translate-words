@@ -44,14 +44,14 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 
 		// Adds actions and filters related to languages when creating, saving or deleting posts and pages
 		add_action( 'load-post.php', array( $this, 'edit_post' ) );
-		add_action( 'load-edit.php', array( $this, 'bulk_edit_posts' ) );
-		add_action( 'wp_ajax_inline-save', array( $this, 'inline_edit_post' ), 0 ); // Before WordPress
+		add_action( 'load-edit.php', array( $this, 'linguator_bulk_edit_posts' ) );
+		add_action( 'wp_ajax_inline-save', array( $this, 'linguator_inline_edit_post' ), 0 ); // Before WordPress
 
 		// Sets the language in Tiny MCE
-		add_filter( 'tiny_mce_before_init', array( $this, 'tiny_mce_before_init' ) );
+		add_filter( 'tiny_mce_before_init', array( $this, 'linguator_tiny_mce_before_init' ) );
 
 		// Add lang parameter to WordPress default edit links
-		add_filter( 'get_edit_post_link', array( $this, 'add_lang_to_edit_post_link' ), 10, 3 );
+		add_filter( 'get_edit_post_link', array( $this, 'linguator_add_lang_to_edit_post_link' ), 10, 3 );
 	}
 
 	/**
@@ -190,7 +190,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 	 *
 	 * @return void
 	 */
-	public function bulk_edit_posts() {
+	public function linguator_bulk_edit_posts() {
 		if ( ! isset( $_GET['bulk_edit'], $_GET['inline_lang_choice'], $_REQUEST['post'], $_REQUEST['_wpnonce'] ) ) {
 			return;
 		}
@@ -232,7 +232,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 	 *
 	 * @return void
 	 */
-	public function inline_edit_post() {
+	public function linguator_inline_edit_post() {
 		if ( ! isset( $_POST['post_ID'], $_POST['inline_lang_choice'], $_REQUEST['_inline_edit'] ) ) {
 			return;
 		}
@@ -267,7 +267,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 	 * @param array $mce_init TinyMCE config.
 	 * @return array
 	 */
-	public function tiny_mce_before_init( $mce_init ) {
+	public function linguator_tiny_mce_before_init( $mce_init ) {
 		if ( ! empty( $this->curlang ) ) {
 			$mce_init['wp_lang_attr'] = $this->curlang->get_locale( 'display' );
 			$mce_init['directionality'] = $this->curlang->is_rtl ? 'rtl' : 'ltr';
@@ -285,7 +285,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 	 * @param string $context The link context.
 	 * @return string
 	 */
-	public function add_lang_to_edit_post_link( $link, $post_id, $context ) {
+	public function linguator_add_lang_to_edit_post_link( $link, $post_id, $context ) {
 		if ( empty( $link ) || ! $this->model->post_types->is_translated( get_post_type( $post_id ) ) ) {
 			return $link;
 		}

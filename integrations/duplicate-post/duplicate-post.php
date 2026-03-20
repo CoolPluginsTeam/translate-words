@@ -20,7 +20,7 @@ class Linguator_Duplicate_Post {
 	 *  
 	 */
 	public function init() {
-		add_filter( 'option_duplicate_post_taxonomies_blacklist', array( $this, 'taxonomies_blacklist' ) );
+		add_filter( 'option_duplicate_post_taxonomies_blacklist', array( $this, 'linguator_taxonomies_blacklist' ) );
 	}
 
 	/**
@@ -31,7 +31,7 @@ class Linguator_Duplicate_Post {
 	 * @param array|string $taxonomies The list of taxonomies not to duplicate.
 	 * @return array
 	 */
-	public function taxonomies_blacklist( $taxonomies ) {
+	public function linguator_taxonomies_blacklist( $taxonomies ) {
 		if ( empty( $taxonomies ) ) {
 			$taxonomies = array(); // As we get an empty string when there is no taxonomy.
 		}

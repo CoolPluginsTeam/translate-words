@@ -60,8 +60,8 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 		add_filter( 'lmat_pre_translation_url', array( $this, 'linguator_pre_translation_url' ), 10, 3 );
 		add_filter( 'lmat_check_canonical_url', array( $this, 'linguator_check_canonical_url' ) );
 
-		add_filter( 'lmat_set_language_from_query', array( $this, 'page_on_front_query' ), 10, 2 );
-		add_filter( 'lmat_set_language_from_query', array( $this, 'page_for_posts_query' ), 10, 2 );
+		add_filter( 'lmat_set_language_from_query', array( $this, 'linguator_page_on_front_query' ), 10, 2 );
+		add_filter( 'lmat_set_language_from_query', array( $this, 'linguator_page_for_posts_query' ), 10, 2 );
 
 		// Specific cases for the customizer.
 		add_action( 'customize_register', array( $this, 'filter_customizer' ) );
@@ -174,7 +174,7 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 	 * @param WP_Query           $query The main WP query.
 	 * @return Linguator_Language|false
 	 */
-	public function page_on_front_query( $lang, $query ) {
+	public function linguator_page_on_front_query( $lang, $query ) {
 		if ( ! empty( $lang ) || ! $this->page_on_front ) {
 			return $lang;
 		}
@@ -235,7 +235,7 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 	 * @param WP_Query           $query The main WP query.
 	 * @return Linguator_Language|false
 	 */
-	public function page_for_posts_query( $lang, $query ) {
+	public function linguator_page_for_posts_query( $lang, $query ) {
 		if ( ! empty( $lang ) || ! $this->page_for_posts ) {
 			return $lang;
 		}
@@ -287,10 +287,10 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 	 * @return void
 	 */
 	public function filter_customizer() {
-		add_filter( 'pre_option_page_on_front', array( $this, 'customize_page' ), 20 ); // After the customizer.
-		add_filter( 'pre_option_page_for_post', array( $this, 'customize_page' ), 20 );
+		add_filter( 'pre_option_page_on_front', array( $this, 'linguator_customize_page' ), 20 ); // After the customizer.
+		add_filter( 'pre_option_page_for_post', array( $this, 'linguator_customize_page' ), 20 );
 
-		add_filter( 'lmat_pre_translation_url', array( $this, 'customize_translation_url' ), 20, 2 ); // After the generic hook in this class.
+		add_filter( 'lmat_pre_translation_url', array( $this, 'linguator_customize_translation_url' ), 20, 2 ); // After the generic hook in this class.
 	}
 
 	/**
@@ -301,7 +301,7 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 	 * @param int|false $pre A page ID if the setting is customized, false otherwise.
 	 * @return int|false
 	 */
-	public function customize_page( $pre ) {
+	public function linguator_customize_page( $pre ) {
 		return is_numeric( $pre ) ? linguator_get_post( (int) $pre ) : $pre;
 	}
 
@@ -314,7 +314,7 @@ class Linguator_Frontend_Static_Pages extends Linguator_Static_Pages {
 	 * @param Linguator_Language $language The language of the translation.
 	 * @return string
 	 */
-	public function customize_translation_url( $url, $language ) {
+	public function linguator_customize_translation_url( $url, $language ) {
 		if ( 'posts' === get_option( 'show_on_front' ) && is_front_page() ) {
 			// When the page on front displays posts, the home URL is the same as the search URL.
 			return $language->get_search_url();

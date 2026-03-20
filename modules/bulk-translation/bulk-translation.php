@@ -23,13 +23,13 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			global $linguator;
 			
 			if ( $linguator instanceof Linguator_Admin ) {
-				add_action( 'current_screen', array( $this, 'bulk_translate_btn' ) );
-				add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_bulk_translate_assets' ) );
+				add_action( 'current_screen', array( $this, 'linguator_bulk_translate_btn' ) );
+				add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_bulk_translate_assets' ) );
 			}
 			
 		}
 
-		public function bulk_translate_btn( $current_screen ) {
+		public function linguator_bulk_translate_btn( $current_screen ) {
 			global $linguator;
 
 			if ( ! $linguator || ! property_exists( $linguator, 'model' ) ) {
@@ -66,7 +66,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 
 			add_filter( "views_{$current_screen->id}", array( $this, 'linguator_bulk_translate_button' ) );
 
-			add_action( 'admin_footer', array( $this, 'bulk_translate_container' ) );
+			add_action( 'admin_footer', array( $this, 'linguator_bulk_translate_container' ) );
 		}
 
 		public function linguator_bulk_translate_button( $views ) {
@@ -88,11 +88,11 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			return $views;
 		}
 
-		public function bulk_translate_container() {
+		public function linguator_bulk_translate_container() {
 			echo "<div id='lmat-bulk-translate-wrapper'></div>";
 		}
 
-		public function enqueue_bulk_translate_assets() {
+		public function linguator_enqueue_bulk_translate_assets() {
 			global $linguator;
         
         if(!$linguator || !property_exists($linguator, 'model')){

@@ -82,7 +82,7 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	 */
 	public function init() {
 		// Use rest_pre_dispatch_filter to get additional parameters for language switcher block.
-		add_filter( 'rest_pre_dispatch', array( $this, 'get_rest_query_params' ), 10, 3 );
+		add_filter( 'rest_pre_dispatch', array( $this, 'linguator_get_rest_query_params' ), 10, 3 );
 
 		// Register language switcher block.
 		add_action( 'init', array( $this, 'register' ) );
@@ -214,7 +214,7 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	 * @template T of WP_REST_Request
 	 * @phpstan-param T $request
 	 */
-	public function get_rest_query_params( $result, $server, $request ) {
+	public function linguator_get_rest_query_params( $result, $server, $request ) {
 		if ( linguator_is_edit_rest_request( $request ) ) {
 			$this->is_edit_context = true;
 

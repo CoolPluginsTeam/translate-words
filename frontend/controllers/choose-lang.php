@@ -77,9 +77,9 @@ abstract class Linguator_Choose_Lang {
 			$this->set_language( empty( $_REQUEST['lmat_lang'] ) ? $this->get_preferred_language() : $this->model->get_language( sanitize_key( wp_unslash( $_REQUEST['lmat_lang'] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
 
-		add_action( 'pre_comment_on_post', array( $this, 'pre_comment_on_post' ) ); // sets the language of comment
+		add_action( 'pre_comment_on_post', array( $this, 'linguator_pre_comment_on_post' ) ); // sets the language of comment
 		add_action( 'parse_query', array( $this, 'parse_main_query' ), 2 ); // sets the language in special cases
-		add_action( 'wp', array( $this, 'maybe_setcookie' ), 7 );
+		add_action( 'wp', array( $this, 'linguator_maybe_setcookie' ), 7 );
 	}
 
 	/**
@@ -133,7 +133,7 @@ abstract class Linguator_Choose_Lang {
 	 *
 	 * @return void
 	 */
-	public function maybe_setcookie() {
+	public function linguator_maybe_setcookie() {
 		// Don't set cookie in javascript when a cache plugin is active.
 		if ( ! linguator_is_cache_active() && ! empty( $this->curlang ) && ! is_404() ) {
 			$args = array(
@@ -151,7 +151,7 @@ abstract class Linguator_Choose_Lang {
 	 *
 	 * @return string|bool The preferred language slug or false.
 	 */
-	public function get_preferred_browser_language() {
+	public function linguator_get_preferred_browser_language() {
 		if ( isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) {
 			$accept_langs = Linguator_Accept_Languages_Collection::from_accept_language_header( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) );
 
@@ -193,7 +193,7 @@ abstract class Linguator_Choose_Lang {
 			$language = sanitize_key( $_COOKIE[ LMAT_COOKIE ] );
 			$cookie   = true;
 		} elseif ( $this->options['browser'] ) {
-			$language = $this->get_preferred_browser_language();
+			$language = $this->linguator_get_preferred_browser_language();
 		}
 
 		/**
@@ -276,7 +276,7 @@ abstract class Linguator_Choose_Lang {
 			 */
 			$redirect = apply_filters( 'lmat_redirect_home', $redirect );
 			if ( $redirect && wp_validate_redirect( $redirect ) ) {
-				$this->maybe_setcookie();
+				$this->linguator_maybe_setcookie();
 				header( 'Vary: Accept-Language' );
 				wp_safe_redirect( $redirect, 302, LINGUATOR );
 				exit;
@@ -292,7 +292,7 @@ abstract class Linguator_Choose_Lang {
 	 * @param int $post_id the post being commented
 	 * @return void
 	 */
-	public function pre_comment_on_post( $post_id ) {
+	public function linguator_pre_comment_on_post( $post_id ) {
 		$this->set_language( $this->model->post->get_language( $post_id ) );
 	}
 
@@ -331,7 +331,7 @@ abstract class Linguator_Choose_Lang {
 			$query->is_archive = false;
 
 			// Filters is_front_page() in case a static front page is not translated in this language.
-			add_filter( 'option_show_on_front', array( $this, 'filter_option_show_on_front' ) );
+			add_filter( 'option_show_on_front', array( $this, 'linguator_filter_option_show_on_front' ) );
 		}
 	}
 
@@ -342,7 +342,7 @@ abstract class Linguator_Choose_Lang {
 	 *
 	 * @return string
 	 */
-	public function filter_option_show_on_front() {
+	public function linguator_filter_option_show_on_front() {
 		return 'posts';
 	}
 

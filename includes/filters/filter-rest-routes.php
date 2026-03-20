@@ -129,7 +129,7 @@ class Linguator_Filter_REST_Routes {
 		$post_types = get_post_types( array( 'show_in_rest' => true ), 'objects' );
 		$taxonomies = get_taxonomies( array( 'show_in_rest' => true ), 'objects' );
 
-		$filtered_entities = $this->extract_filtered_rest_entities(
+		$filtered_entities = $this->linguator_extract_filtered_rest_entities(
 			array_merge( $post_types, $taxonomies ),
 			array_merge( $translatable_post_types, $translatable_taxonomies )
 		);
@@ -178,7 +178,7 @@ class Linguator_Filter_REST_Routes {
 	 * @phpstan-param array<WP_Post_Type|WP_Taxonomy> $rest_entities
 	 * @phpstan-return array<string, string>
 	 */
-	private function extract_filtered_rest_entities( array $rest_entities, array $translatable_entities ) {
+	private function linguator_extract_filtered_rest_entities( array $rest_entities, array $translatable_entities ) {
 		$filtered_entities = array();
 		foreach ( $rest_entities as $rest_entity ) {
 			if ( in_array( $rest_entity->name, $translatable_entities, true ) ) {

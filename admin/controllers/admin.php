@@ -144,8 +144,8 @@ class Linguator_Admin extends Linguator_Admin_Base {
 		parent::__construct( $links_model );
 		
 		// Adds a 'settings' link in the plugins table
-		add_filter( 'plugin_action_links_' . LINGUATOR_BASENAME, array( $this, 'plugin_action_links' ) );
-		add_action( 'in_plugin_update_message-' . LINGUATOR_BASENAME, array( $this, 'plugin_update_message' ), 10, 2 );
+		add_filter( 'plugin_action_links_' . LINGUATOR_BASENAME, array( $this, 'linguator_plugin_action_links' ) );
+		add_action( 'in_plugin_update_message-' . LINGUATOR_BASENAME, array( $this, 'linguator_plugin_update_message' ), 10, 2 );
 	}
 
 	/**
@@ -160,7 +160,7 @@ class Linguator_Admin extends Linguator_Admin_Base {
 		// Setup filters for admin pages
 		// Priority 5 to make sure filters are there before customize_register is fired
 		if ( $this->model->has_languages() ) {
-			add_action( 'wp_loaded', array( $this, 'add_filters' ), 5 );
+			add_action( 'wp_loaded', array( $this, 'linguator_add_filters' ), 5 );
 		}
 	}
 
@@ -172,7 +172,7 @@ class Linguator_Admin extends Linguator_Admin_Base {
 	 * @param string[] $links List of links associated to the plugin.
 	 * @return string[] Modified list of links.
 	 */
-	public function plugin_action_links( $links ) {
+	public function linguator_plugin_action_links( $links ) {
 		array_unshift( $links, '<a href="admin.php?page=lmat_settings">' . __( 'Settings', 'translate-words' ) . '</a>' );
 		array_unshift( $links, '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=plugins_list" target="_blank">' . __( 'Learn More', 'translate-words' ) . '</a>' );
 		return $links;
@@ -187,7 +187,7 @@ class Linguator_Admin extends Linguator_Admin_Base {
 	 * @param object $r           Plugin update data
 	 * @return void
 	 */
-	public function plugin_update_message( $plugin_data, $r ) {
+	public function linguator_plugin_update_message( $plugin_data, $r ) {
 		if ( ! empty( $r->upgrade_notice ) ) {
 			printf( '<p style="margin: 3px 0 0 0; border-top: 1px solid #ddd; padding-top: 3px">%s</p>', esc_html( $r->upgrade_notice ) );
 		}
@@ -200,8 +200,8 @@ class Linguator_Admin extends Linguator_Admin_Base {
 	 *   instantiate a Linguator_Bulk_Translate instance.
 	 * @return void
 	 */
-	public function add_filters() {
-		$this->filters_sanitization = new Linguator_Filters_Sanitization( $this->get_locale_for_sanitization() );
+	public function linguator_add_filters() {
+		$this->filters_sanitization = new Linguator_Filters_Sanitization( $this->linguator_get_locale_for_sanitization() );
 		$this->filters_widgets_options = new Linguator_Admin_Filters_Widgets_Options( $this );
 
 		// All these are separated just for convenience and maintainability
@@ -242,7 +242,7 @@ class Linguator_Admin extends Linguator_Admin_Base {
 	 *
 	 * @return string
 	 */
-	public function get_locale_for_sanitization() {
+	public function linguator_get_locale_for_sanitization() {
 		$locale = get_locale();
 
 		// Fallback to WordPress site language if get_locale() returns null

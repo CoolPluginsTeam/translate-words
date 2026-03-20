@@ -105,8 +105,8 @@ class Linguator_Canonical {
 		}
 
 		if ( ! empty( $wp_query->tax_query ) ) {
-			if ( $this->model->is_translated_taxonomy( $this->get_queried_taxonomy( $wp_query->tax_query ) ) ) {
-				$term_id = $this->get_queried_term_id( $wp_query->tax_query );
+			if ( $this->model->is_translated_taxonomy( $this->linguator_get_queried_taxonomy( $wp_query->tax_query ) ) ) {
+				$term_id = $this->linguator_get_queried_term_id( $wp_query->tax_query );
 				if ( $term_id ) {
 					$language = $this->model->term->get_language( $term_id );
 				}
@@ -177,9 +177,9 @@ class Linguator_Canonical {
 	 * @param WP_Tax_Query $tax_query An instance of WP_Tax_Query.
 	 * @return int
 	 */
-	protected function get_queried_term_id( $tax_query ) {
+	protected function linguator_get_queried_term_id( $tax_query ) {
 		$queried_terms = $tax_query->queried_terms;
-		$taxonomy = $this->get_queried_taxonomy( $tax_query );
+		$taxonomy = $this->linguator_get_queried_taxonomy( $tax_query );
 
 		if ( ! isset( $queried_terms[ $taxonomy ]['terms'] ) || ! is_array( $queried_terms[ $taxonomy ]['terms'] ) ) {
 			return 0;
@@ -242,7 +242,7 @@ class Linguator_Canonical {
 	 * @param WP_Tax_Query $tax_query An instance of WP_Tax_Query.
 	 * @return string A taxonomy slug
 	 */
-	protected function get_queried_taxonomy( $tax_query ) {
+	protected function linguator_get_queried_taxonomy( $tax_query ) {
 		$queried_terms = $tax_query->queried_terms;
 		unset( $queried_terms['lmat_language'] );
 

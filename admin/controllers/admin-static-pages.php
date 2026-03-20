@@ -41,9 +41,9 @@ class Linguator_Admin_Static_Pages extends Linguator_Static_Pages {
 		add_action( 'lmat_save_post', array( $this, 'linguator_save_post' ), 10, 3 );
 
 		// Prevents WP resetting the option
-		add_filter( 'pre_update_option_show_on_front', array( $this, 'update_show_on_front' ), 10, 2 );
+		add_filter( 'pre_update_option_show_on_front', array( $this, 'linguator_update_show_on_front' ), 10, 2 );
 
-		add_action( 'admin_notices', array( $this, 'notice_must_translate' ) );
+		add_action( 'admin_notices', array( $this, 'linguator_notice_must_translate' ) );
 	}
 
 	/**
@@ -92,7 +92,7 @@ class Linguator_Admin_Static_Pages extends Linguator_Static_Pages {
 	 * @param string $old_value The old option value.
 	 * @return string
 	 */
-	public function update_show_on_front( $value, $old_value ) {
+	public function linguator_update_show_on_front( $value, $old_value ) {
 		if ( ! empty( $GLOBALS['pagenow'] ) && 'options-reading.php' === $GLOBALS['pagenow'] && 'posts' === $value && ! get_pages() && get_pages( array( 'lang' => '' ) ) ) {
 			$value = $old_value;
 		}
@@ -108,7 +108,7 @@ class Linguator_Admin_Static_Pages extends Linguator_Static_Pages {
 	 *
 	 * @return void
 	 */
-	public function notice_must_translate() {
+	public function linguator_notice_must_translate() {
 		$screen = get_current_screen();
 
 		if ( ! empty( $screen ) && ( Linguator_Admin_Base::get_screen_id( 'lang' ) === $screen->id || 'edit-page' === $screen->id ) ) {

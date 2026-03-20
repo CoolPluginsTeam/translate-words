@@ -428,7 +428,7 @@ class WPML_Migration {
 	 *
 	 * @return array Migration result.
 	 */
-	public function migrate_language_assignments() {
+	public function linguator_migrate_language_assignments() {
 		global $wpdb;
 
 		$results = array(
@@ -462,7 +462,7 @@ class WPML_Migration {
 				return (int) $item->element_id;
 			}, $posts_with_language );
 			
-			$existing_post_languages = $this->get_existing_post_language_assignments( $post_ids );
+			$existing_post_languages = $this->linguator_get_existing_post_language_assignments( $post_ids );
 
 			// ========== OPTIMIZE: Prepare language term IDs for bulk operations ==========
 			$bulk_assignments = array();
@@ -495,7 +495,7 @@ class WPML_Migration {
 
 			// ========== BULK INSERT post language assignments ==========
 			if ( ! empty( $bulk_assignments ) ) {
-				$results['posts_assigned'] = $this->bulk_insert_term_relationships( $bulk_assignments );
+				$results['posts_assigned'] = $this->linguator_bulk_insert_term_relationships( $bulk_assignments );
 				
 				// Invalidate cache after bulk insert
 				wp_cache_delete( 'last_changed', 'posts' );
@@ -525,7 +525,7 @@ class WPML_Migration {
 				return (int) $item->term_id;
 			}, $terms_with_language );
 			
-			$existing_term_languages = $this->get_existing_term_language_assignments( $term_ids );
+			$existing_term_languages = $this->linguator_get_existing_term_language_assignments( $term_ids );
 
 			// ========== OPTIMIZE: Prepare term language assignments for bulk operations ==========
 			$bulk_term_assignments = array();
@@ -558,7 +558,7 @@ class WPML_Migration {
 
 			// ========== BULK INSERT term language assignments ==========
 			if ( ! empty( $bulk_term_assignments ) ) {
-				$results['terms_assigned'] = $this->bulk_insert_term_relationships( $bulk_term_assignments );
+				$results['terms_assigned'] = $this->linguator_bulk_insert_term_relationships( $bulk_term_assignments );
 				
 				// Invalidate cache after bulk insert
 				wp_cache_delete( 'last_changed', 'terms' );
@@ -718,7 +718,7 @@ class WPML_Migration {
 			// ========== OPTIMIZE: Bulk fetch existing term language assignments ==========
 			$existing_term_languages = array();
 			if ( ! empty( $all_term_ids ) ) {
-				$existing_term_languages = $this->get_existing_term_language_assignments( array_unique( $all_term_ids ) );
+				$existing_term_languages = $this->linguator_get_existing_term_language_assignments( array_unique( $all_term_ids ) );
 			}
 
 			// ========== OPTIMIZE: Prepare bulk term language assignments for terms that need them ==========
@@ -744,7 +744,7 @@ class WPML_Migration {
 
 			// ========== BULK INSERT: Assign all term languages at once ==========
 			if ( ! empty( $bulk_term_language_assignments ) ) {
-				$this->bulk_insert_term_relationships( $bulk_term_language_assignments );
+				$this->linguator_bulk_insert_term_relationships( $bulk_term_language_assignments );
 				wp_cache_delete( 'last_changed', 'terms' );
 			}
 
@@ -869,7 +869,7 @@ class WPML_Migration {
 				}
 			}
 			if ( ! empty( $domains ) ) {
-				$domains = $this->convert_language_slugs_in_array( $domains );
+				$domains = $this->linguator_convert_language_slugs_in_array( $domains );
 				if ( ! empty( $domains ) ) {
 					$this->options->set( 'domains', $domains );
 					$results['migrated'][] = 'domains';
@@ -964,10 +964,10 @@ class WPML_Migration {
 	 * @param array $array Array that may contain language slugs.
 	 * @return array Converted array.
 	 */
-	private function convert_language_slugs_in_array( $array ) {
+	private function linguator_convert_language_slugs_in_array( $array ) {
 		foreach ( $array as $key => $value ) {
 			if ( is_array( $value ) ) {
-				$array[ $key ] = $this->convert_language_slugs_in_array( $value );
+				$array[ $key ] = $this->linguator_convert_language_slugs_in_array( $value );
 			} elseif ( is_string( $key ) ) {
 				// Check if key is a language slug
 				$linguator_lang = $this->model->languages->get( $key );
@@ -1230,7 +1230,7 @@ class WPML_Migration {
 	 * @param array $post_ids Array of post IDs to check.
 	 * @return array Associative array with post_id => language_slug.
 	 */
-	private function get_existing_post_language_assignments( $post_ids ) {
+	private function linguator_get_existing_post_language_assignments( $post_ids ) {
 		global $wpdb;
 
 		if ( empty( $post_ids ) ) {
@@ -1282,7 +1282,7 @@ class WPML_Migration {
 	 * @param array $term_ids Array of term IDs to check.
 	 * @return array Associative array with term_id => language_slug.
 	 */
-	private function get_existing_term_language_assignments( $term_ids ) {
+	private function linguator_get_existing_term_language_assignments( $term_ids ) {
 		global $wpdb;
 
 		if ( empty( $term_ids ) ) {
@@ -1333,7 +1333,7 @@ class WPML_Migration {
 	 * @param array $assignments Array of assignments with 'object_id' and 'term_taxonomy_id'.
 	 * @return int Number of rows inserted.
 	 */
-	private function bulk_insert_term_relationships( $assignments ) {
+	private function linguator_bulk_insert_term_relationships( $assignments ) {
 		global $wpdb;
 
 		if ( empty( $assignments ) ) {

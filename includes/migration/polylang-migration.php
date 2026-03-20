@@ -301,7 +301,7 @@ class Polylang_Migration {
 	 *
 	 * @return array Migration result.
 	 */
-	public function migrate_language_assignments(&$term_count_update_languages) {
+	public function linguator_migrate_language_assignments(&$term_count_update_languages) {
 		global $wpdb;
 		
 		$results = array(
@@ -334,8 +334,8 @@ class Polylang_Migration {
 			return $results;
 		}
 
-		$this->migration_post_language_assignment($results, $lang_map);
-		$this->migration_term_language_assignment($results, $lang_map);
+		$this->linguator_migration_post_language_assignment($results, $lang_map);
+		$this->linguator_migration_term_language_assignment($results, $lang_map);
 
 		$term_count_update_languages=$lang_map;
 
@@ -666,7 +666,7 @@ class Polylang_Migration {
 	}
 	
 
-	public function migration_term_language_assignment(&$results, $lang_map){
+	public function linguator_migration_term_language_assignment(&$results, $lang_map){
 		global $wpdb;
 		
 		$pll_translation_terms = $wpdb->get_results(
@@ -985,7 +985,7 @@ class Polylang_Migration {
 		
 	}
 
-	private function update_term_counts(&$results, $lang_map){
+	private function linguator_update_term_counts(&$results, $lang_map){
 		global $wpdb;
 
 		$post_types = array_unique(
@@ -1162,7 +1162,7 @@ class Polylang_Migration {
 			
 			// Convert language slugs in settings if needed
 			if ( is_array( $value ) ) {
-				$value = $this->convert_language_slugs_in_array( $value );
+				$value = $this->linguator_convert_language_slugs_in_array( $value );
 				// Skip if array became empty after conversion (unless it's a boolean-like array)
 				if ( empty( $value ) && ! in_array( $linguator_key, array( 'sync', 'post_types', 'taxonomies' ), true ) ) {
 					continue;
@@ -1181,7 +1181,7 @@ class Polylang_Migration {
 				$value = (bool) $value;
 			} elseif ( 'domains' === $linguator_key && is_array( $value ) ) {
 				// Domains should be an associative array with language slugs as keys
-				// Already handled by convert_language_slugs_in_array
+				// Already handled by linguator_convert_language_slugs_in_array
 			} elseif ( in_array( $linguator_key, array( 'post_types', 'taxonomies', 'sync' ), true ) && ! is_array( $value ) ) {
 				// These should be arrays
 				if ( empty( $value ) ) {
@@ -1234,10 +1234,10 @@ class Polylang_Migration {
 	 * @param array $array Array that may contain language slugs.
 	 * @return array Converted array.
 	 */
-	private function convert_language_slugs_in_array( $array ) {
+	private function linguator_convert_language_slugs_in_array( $array ) {
 		foreach ( $array as $key => $value ) {
 			if ( is_array( $value ) ) {
-				$array[ $key ] = $this->convert_language_slugs_in_array( $value );
+				$array[ $key ] = $this->linguator_convert_language_slugs_in_array( $value );
 			} elseif ( is_string( $key ) ) {
 				// Check if key is a language slug
 				$linguator_lang = $this->model->languages->get( $key );
@@ -1436,7 +1436,7 @@ class Polylang_Migration {
 	 * @param bool $dry_run If true, do not perform DB updates; return planned changes.
 	 * @return array Migration result.
 	 */
-	public function migrate_menu_switchers( $dry_run = false ) {
+	public function linguator_migrate_menu_switchers( $dry_run = false ) {
 		global $wpdb;
 		
 		$results = array(
@@ -1611,7 +1611,7 @@ class Polylang_Migration {
 		// Always migrate language assignments after languages are migrated
 		// This ensures posts/pages/terms have their correct language assigned
 		if ( $migrate_languages && $results['success'] ) {
-			$assignments_results = $this->migrate_language_assignments($term_count_update_languages);
+			$assignments_results = $this->linguator_migrate_language_assignments($term_count_update_languages);
 			$results['language_assignments'] = $assignments_results;
 			if ( ! $assignments_results['success'] ) {
 				$results['success'] = false;
@@ -1639,7 +1639,7 @@ class Polylang_Migration {
 
 		// Migrate menu switchers after translations are migrated
 		// Menu items are independent so attempt migration regardless of previous step results.
-		$menu_switchers_results = $this->migrate_menu_switchers();
+		$menu_switchers_results = $this->linguator_migrate_menu_switchers();
 		$results['menu_switchers'] = $menu_switchers_results;
 		if ( ! $menu_switchers_results['success'] ) {		
 			$results['success'] = false;
@@ -1647,7 +1647,7 @@ class Polylang_Migration {
 		$results['errors'] = array_merge( $results['errors'], $menu_switchers_results['errors'] );
 
 		if($term_count_update_languages && is_array($term_count_update_languages) && count($term_count_update_languages) > 0) {
-			$this->update_term_counts($results, $term_count_update_languages);
+			$this->linguator_update_term_counts($results, $term_count_update_languages);
 		}
 
 		// Clear caches after migration

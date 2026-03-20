@@ -46,7 +46,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 		/*
 		 * Register our taxonomy as soon as possible.
 		 */
-		$this->register_translations_taxonomy();
+		$this->linguator_register_translations_taxonomy();
 	}
 
 	/**
@@ -56,7 +56,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 	 *
 	 * @return void
 	 */
-	protected function register_translations_taxonomy(): void {
+	protected function linguator_register_translations_taxonomy(): void {
 		register_taxonomy(
 			$this->tax_translations,
 			(array) $this->object_type,

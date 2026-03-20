@@ -46,7 +46,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 	 * @param Linguator_Language $language The language of the new translation.
 	 * @return string
 	 */
-	protected function new_translation_link( string $link, Linguator_Language $language ): string {
+	protected function linguator_new_translation_link( string $link, Linguator_Language $language ): string {
 		if ( empty( $link ) ) {
 			return sprintf(
 				'<span title="%s" class="lmat_icon_add wp-ui-text-icon"></span>',
@@ -74,7 +74,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 	 * @param Linguator_Language $language The language of the translation.
 	 * @return string
 	 */
-	protected function edit_translation_link( string $link, Linguator_Language $language ): string {
+	protected function linguator_edit_translation_link( string $link, Linguator_Language $language ): string {
 		if ( empty( $link ) ) {
 			return sprintf(
 				'<span title="%s" class="lmat_icon_edit wp-ui-text-icon"></span>',
@@ -182,7 +182,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 	 */
 	public function new_post_translation_link( int $post_id, Linguator_Language $language ): string {
 		$link = $this->get_new_post_translation_link( $post_id, $language );
-		return $this->new_translation_link( $link, $language );
+		return $this->linguator_new_translation_link( $link, $language );
 	}
 
 	/**
@@ -202,7 +202,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 		}
 
 		$link = (string) get_edit_post_link( $post_id );
-		return $this->edit_translation_link( $link, $language );
+		return $this->linguator_edit_translation_link( $link, $language );
 	}
 
 	/**
@@ -261,7 +261,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 	 */
 	public function new_term_translation_link( int $term_id, string $taxonomy, string $post_type, Linguator_Language $language ): string {
 		$link = $this->get_new_term_translation_link( $term_id, $taxonomy, $post_type, $language );
-		return $this->new_translation_link( $link, $language );
+		return $this->linguator_new_translation_link( $link, $language );
 	}
 
 	/**
@@ -283,7 +283,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 		}
 
 		$link = (string) get_edit_term_link( $term_id, $taxonomy, $post_type );
-		return $this->edit_translation_link( $link, $language );
+		return $this->linguator_edit_translation_link( $link, $language );
 	}
 
 	/**
@@ -319,7 +319,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 
 		// Capability check already done in post-new.php.
 		check_admin_referer( 'new-post-translation' );
-		return $this->get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_post'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
+		return $this->linguator_get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_post'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
 	}
 
 	/**
@@ -344,7 +344,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 		}
 
 		check_admin_referer( 'translate_media' );
-		return $this->get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_media'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
+		return $this->linguator_get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_media'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
 	}
 
 	/**
@@ -361,7 +361,7 @@ class Linguator_Admin_Links extends Linguator_Links {
 	 *
 	 * @phpstan-return array{}|array{from_post: WP_Post, new_lang: Linguator_Language}|never
 	 */
-	private function get_objects_from_new_post_translation_request( int $post_id, string $lang_slug ): array {
+	private function linguator_get_objects_from_new_post_translation_request( int $post_id, string $lang_slug ): array {
 		if ( $post_id <= 0 || empty( $lang_slug ) ) {
 			return array();
 		}

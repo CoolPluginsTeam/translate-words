@@ -36,7 +36,7 @@ class Linguator_Choose_Lang_Url extends Linguator_Choose_Lang {
 		parent::init();
 
 		if ( ! did_action( 'lmat_language_defined' ) ) {
-			$this->set_language_from_url();
+			$this->linguator_set_language_from_url();
 		}
 
 		add_filter( 'request', array( $this, 'request' ) );
@@ -49,7 +49,7 @@ class Linguator_Choose_Lang_Url extends Linguator_Choose_Lang {
 	 *
 	 * @return void
 	 */
-	public function set_language_from_url() {
+	public function linguator_set_language_from_url() {
 		$host      = str_replace( 'www.', '', (string) wp_parse_url( $this->links_model->home, PHP_URL_HOST ) ); // Remove www. for the comparison
 		$home_path = (string) wp_parse_url( $this->links_model->home, PHP_URL_PATH );
 

@@ -27,8 +27,8 @@ class Linguator_Elementor {
 	 *  
 	 */
 	public function __construct() {
-		self::elementor_compatibility();
-		self::add_rest_routes();
+		self::linguator_elementor_compatibility();
+		self::linguator_add_rest_routes();
 	}
 
     /**
@@ -40,9 +40,9 @@ class Linguator_Elementor {
 	 * @access private
 	 * @static
 	 */
-	private static function elementor_compatibility() {
+	private static function linguator_elementor_compatibility() {
 		// Copy elementor data while linguator creates a translation copy.
-		add_filter( 'lmat_copy_post_metas', [ __CLASS__, 'save_elementor_meta' ], 10, 4 );
+		add_filter( 'lmat_copy_post_metas', [ __CLASS__, 'linguator_save_elementor_meta' ], 10, 4 );
 	}
 
 	/**
@@ -51,8 +51,8 @@ class Linguator_Elementor {
 	 * @access private
 	 * @static
 	 */
-	private static function add_rest_routes() {
-		add_action( 'rest_api_init', [ __CLASS__, 'register_rest_routes' ] );
+	private static function linguator_add_rest_routes() {
+		add_action( 'rest_api_init', [ __CLASS__, 'linguator_register_rest_routes' ] );
 	}
 
 	/**
@@ -61,10 +61,10 @@ class Linguator_Elementor {
 	 * @access public
 	 * @static
 	 */
-	public static function register_rest_routes() {
+	public static function linguator_register_rest_routes() {
 		register_rest_route( 'lmat/v1', '/post-language/(?P<post_id>\d+)', [
 			'methods'             => 'GET',
-			'callback'            => [ __CLASS__, 'get_post_language_rest' ],
+			'callback'            => [ __CLASS__, 'linguator_get_post_language_rest' ],
 			'permission_callback' => '__return_true',
 			'args'                => [
 				'post_id' => [
@@ -85,7 +85,7 @@ class Linguator_Elementor {
 	 * @param WP_REST_Request $request The request object.
 	 * @return WP_REST_Response|WP_Error
 	 */
-	public static function get_post_language_rest( $request ) {
+	public static function linguator_get_post_language_rest( $request ) {
 		$post_id = $request->get_param( 'post_id' );
 		
 		if ( ! $post_id ) {
@@ -134,7 +134,7 @@ class Linguator_Elementor {
 	 *
 	 * @return array List of custom fields names.
 	 */
-	public static function save_elementor_meta( $keys, $sync, $from, $to ) {
+	public static function linguator_save_elementor_meta( $keys, $sync, $from, $to ) {
 		// Copy only for a new post.
 		if ( ! $sync ) {
 			self::copy_elementor_meta( $from, $to );

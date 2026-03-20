@@ -43,9 +43,9 @@ class Linguator_Page_Translation {
 	 */
 	public function __construct( $linguator ) {
 		if ( $linguator instanceof Linguator_Admin ) {
-			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_gutenberg_translate_assets' ) );
-			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_classic_translate_assets' ) );
-			add_action( 'elementor/editor/before_enqueue_scripts', array( $this, 'enqueue_elementor_translate_assets' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_gutenberg_translate_assets' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_classic_translate_assets' ) );
+			add_action( 'elementor/editor/before_enqueue_scripts', array( $this, 'linguator_enqueue_elementor_translate_assets' ) );
 			add_action( 'add_meta_boxes', array( $this, 'linguator_gutenberg_metabox' ) );
 			add_action( 'media_buttons', array( $this, 'linguator_classic_translate_button' ) );
 			add_action( 'add_meta_boxes', array( $this, 'linguator_save_elementor_post_meta' ) );
@@ -210,7 +210,7 @@ class Linguator_Page_Translation {
 	/**
 	 * Register backend assets.
 	 */
-	public function enqueue_gutenberg_translate_assets() {
+	public function linguator_enqueue_gutenberg_translate_assets() {
 		$current_screen = get_current_screen();
 		if (
 			isset( $_GET['from_post'], $_GET['new_lang'], $_GET['_wpnonce'] ) &&
@@ -230,7 +230,7 @@ class Linguator_Page_Translation {
 				$editor = '';
 				if ( 'builder' === get_post_meta( $from_post_id, '_elementor_edit_mode', true ) && defined( 'ELEMENTOR_VERSION' ) ) {
 					$source_lang_name = linguator_get_post_language( $from_post_id, 'slug' );
-					$this->enqueue_elementor_confirm_box_assets( $from_post_id, $lang, $source_lang_name, 'gutenberg' );
+					$this->linguator_enqueue_elementor_confirm_box_assets( $from_post_id, $lang, $source_lang_name, 'gutenberg' );
 					$editor = 'Elementor';
 				}
 				if ( 'on' === get_post_meta( $from_post_id, '_et_pb_use_builder', true ) && defined( 'ET_CORE' ) ) {
@@ -259,13 +259,13 @@ class Linguator_Page_Translation {
 						'parent_post_id'     => $from_post_id,
 					);
 
-					$this->enqueue_automatic_translate_assets( linguator_get_post_language( $from_post_id, 'slug' ), $lang, 'gutenberg', $data );
+					$this->linguator_enqueue_automatic_translate_assets( linguator_get_post_language( $from_post_id, 'slug' ), $lang, 'gutenberg', $data );
 				}
 			}
 		}
 	}
 
-	public function enqueue_classic_translate_assets() {
+	public function linguator_enqueue_classic_translate_assets() {
 		global $post;
 		$current_screen        = get_current_screen();
 		$post_translate_status = isset( $post ) ? get_post_meta( $post->ID, '_lmat_translate_status', true ) : '';
@@ -299,7 +299,7 @@ class Linguator_Page_Translation {
 				
 				if ( 'builder' === get_post_meta( $from_post_id, '_elementor_edit_mode', true ) && defined( 'ELEMENTOR_VERSION' ) ) {
 					$source_lang_name = linguator_get_post_language( $from_post_id, 'slug' );
-					$this->enqueue_elementor_confirm_box_assets( $from_post_id, $lang, $source_lang_name, 'classic' );
+					$this->linguator_enqueue_elementor_confirm_box_assets( $from_post_id, $lang, $source_lang_name, 'classic' );
 					$editor = 'Elementor';
 				}
 				if ( 'on' === get_post_meta( $from_post_id, '_et_pb_use_builder', true ) && defined( 'ET_CORE' ) ) {
@@ -341,13 +341,13 @@ class Linguator_Page_Translation {
 						$data['blockCommentTag'] = 'true';
 					}
 
-					$this->enqueue_automatic_translate_assets( linguator_get_post_language( $from_post_id, 'slug' ), $lang, $editor_type, $data );
+					$this->linguator_enqueue_automatic_translate_assets( linguator_get_post_language( $from_post_id, 'slug' ), $lang, $editor_type, $data );
 				}
 			}
 		}
 	}
 
-	public function enqueue_elementor_translate_assets() {
+	public function linguator_enqueue_elementor_translate_assets() {
 		$page_translated           = get_post_meta( get_the_ID(), '_lmat_elementor_translated', true );
 		$parent_post_language_slug = get_post_meta( get_the_ID(), '_lmat_parent_post_language_slug', true );
 
@@ -378,10 +378,10 @@ class Linguator_Page_Translation {
 		);
 
 		wp_enqueue_style( 'lmat-elementor-translate', plugins_url( 'admin/assets/css/lmat-elementor-translate.min.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
-		$this->enqueue_automatic_translate_assets( $parent_post_language_slug, $post_language_slug, 'elementor', $data );
+		$this->linguator_enqueue_automatic_translate_assets( $parent_post_language_slug, $post_language_slug, 'elementor', $data );
 	}
 
-	public function enqueue_automatic_translate_assets( $source_lang, $target_lang, $editor_type, $extra_data = array() ) {
+	public function linguator_enqueue_automatic_translate_assets( $source_lang, $target_lang, $editor_type, $extra_data = array() ) {
 		wp_register_script( 'lmat-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
 
 		$editor_script_asset = include LINGUATOR_DIR . '/admin/assets/page-translation/index.asset.php';
@@ -485,7 +485,7 @@ class Linguator_Page_Translation {
 		);
 	}
 
-	public function enqueue_elementor_confirm_box_assets( $parent_post_id, $target_lang_name, $source_lang_name, $editor_type='gutenberg' ) {
+	public function linguator_enqueue_elementor_confirm_box_assets( $parent_post_id, $target_lang_name, $source_lang_name, $editor_type='gutenberg' ) {
 		$post_id = get_the_ID();
 
 		$source_lang_name = LMAT()->model->get_language( $source_lang_name );

@@ -43,7 +43,7 @@ class Linguator_Admin_Block_Editor {
 		$this->filter_rest_routes = new Linguator_Filter_REST_Routes( $linguator->model );
 
 		add_filter( 'block_editor_rest_api_preload_paths', array( $this, 'filter_preload_paths' ), 50, 2 );
-		add_action( 'admin_enqueue_scripts', array( $this, 'add_block_editor_inline_script' ), 15 ); // After `Linguator_Admin_Base::admin_enqueue_scripts()` to ensure `linguator_block-editor`script is enqueued.
+		add_action( 'admin_enqueue_scripts', array( $this, 'linguator_add_block_editor_inline_script' ), 15 ); // After `Linguator_Admin_Base::admin_enqueue_scripts()` to ensure `linguator_block-editor`script is enqueued.
 	}
 
 	/**
@@ -92,7 +92,7 @@ class Linguator_Admin_Block_Editor {
 	 *
 	 * @return void
 	 */
-	public function add_block_editor_inline_script() {
+	public function linguator_add_block_editor_inline_script() {
 		$handle = 'lmat_block-editor';
 
 		if ( wp_script_is( $handle, 'enqueued' ) ) {

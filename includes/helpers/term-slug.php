@@ -83,7 +83,7 @@ class Linguator_Term_Slug {
 	 *
 	 * @return bool True if the suffix can be added, false otherwise.
 	 */
-	private function can_add_suffix() {
+	private function linguator_can_add_suffix() {
 		/**
 		 * Filters the subsequently inserted term language.
 		 *
@@ -112,7 +112,7 @@ class Linguator_Term_Slug {
 			 */
 			$this->parent = apply_filters( 'lmat_inserted_term_parent', 0, $this->taxonomy, $this->slug );
 
-			$this->slug .= $this->maybe_get_parent_suffix();
+			$this->slug .= $this->linguator_maybe_get_parent_suffix();
 		}
 
 		if ( ! $this->slug ) {
@@ -140,7 +140,7 @@ class Linguator_Term_Slug {
 	 *
 	 * @return string Parents slugs if they are the same as the child slug, empty string otherwise.
 	 */
-	private function maybe_get_parent_suffix() {
+	private function linguator_maybe_get_parent_suffix() {
 		$parent_suffix = '';
 		$the_parent    = get_term( $this->parent, $this->taxonomy );
 
@@ -175,7 +175,7 @@ class Linguator_Term_Slug {
 	 * @return string The suffixed slug, or not if the lang isn't defined.
 	 */
 	public function get_suffixed_slug( string $separator ): string {
-		if ( ! $this->can_add_suffix() ) {
+		if ( ! $this->linguator_can_add_suffix() ) {
 			return $this->slug;
 		}
 

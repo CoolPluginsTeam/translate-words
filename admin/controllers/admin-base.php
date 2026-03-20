@@ -86,14 +86,14 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	public function __construct( &$links_model ) {
 		parent::__construct( $links_model );
 		// Adds the link to the languages panel in the WordPress admin menu
-		add_action( 'admin_menu', array( $this, 'add_menus' ) );
+		add_action( 'admin_menu', array( $this, 'linguator_add_menus' ) );
 
-		add_action( 'admin_menu', array( $this, 'remove_customize_submenu' ) );
+		add_action( 'admin_menu', array( $this, 'linguator_remove_customize_submenu' ) );
 
 		// Setup js scripts and css styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 0 ); // High priority in case an ajax request is sent by an immediately invoked function
 
-		add_action( 'customize_controls_enqueue_scripts', array( $this, 'customize_controls_enqueue_scripts' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'linguator_customize_controls_enqueue_scripts' ) );
 		// Early instantiated to be able to correctly initialize language properties.
 		$this->static_pages = new Linguator_Admin_Static_Pages( $this );
 		$this->model->set_languages_ready();
@@ -125,7 +125,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 
 		// Filter admin language for users
 		// We must not call user info before WordPress defines user roles in wp-settings.php
-		add_action( 'setup_theme', array( $this, 'init_user' ) );
+		add_action( 'setup_theme', array( $this, 'linguator_init_user' ) );
 		add_filter( 'request', array( $this, 'request' ) );
 
 		// Adds the languages in admin bar
@@ -139,15 +139,15 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function add_menus(): void {
+	public function linguator_add_menus(): void {
 		global $admin_page_hooks;
 
 		$parent    = '';
 		$first_tab = '';
 
-		foreach ( $this->get_menu_items() as $tab => $title ) {
-			$page = self::get_screen_slug( $tab );
-			$capa = $this->get_menu_capability( $tab );
+		foreach ( $this->linguator_get_menu_items() as $tab => $title ) {
+			$page = self::linguator_get_screen_slug( $tab );
+			$capa = $this->linguator_get_menu_capability( $tab );
 
 			if ( empty( $parent ) ) {
 				$parent    = $page;
@@ -255,7 +255,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
 		wp_enqueue_script( 'lmat_admin', plugins_url( "admin/assets/js/build/admin{$suffix}.js", LINGUATOR_ROOT_FILE ), array( 'jquery' ), LINGUATOR_VERSION, true );
-		$inline_script = sprintf( 'let lmat_admin = %s;', wp_json_encode( array( 'ajax_filter' => $this->get_ajax_filter_data() ) ) );
+		$inline_script = sprintf( 'let lmat_admin = %s;', wp_json_encode( array( 'ajax_filter' => $this->linguator_get_ajax_filter_data() ) ) );
 		wp_add_inline_script( 'lmat_admin', $inline_script, 'before' );
 
 		$screen = get_current_screen();
@@ -317,7 +317,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$this->enqueue_linguator_font();
 
 		$this->add_inline_scripts();
-		$this->add_menu_redirect_script();
+		$this->linguator_add_menu_redirect_script();
 	}
 
 	/**
@@ -361,7 +361,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	private function add_menu_redirect_script() {
+	private function linguator_add_menu_redirect_script() {
 		$script = "
 		jQuery(document).ready(function($) {
 			// Find the main Linguator menu link (the one that points to the first submenu)
@@ -399,7 +399,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function customize_controls_enqueue_scripts() {
+	public function linguator_customize_controls_enqueue_scripts() {
 		if ( $this->model->has_languages() ) {
 			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 			wp_enqueue_script( 'lmat_widgets', plugins_url( 'admin/assets/js/build/widgets' . $suffix . '.js', LINGUATOR_ROOT_FILE ), array( 'jquery' ), LINGUATOR_VERSION, true );
@@ -447,7 +447,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return array
 	 */
-	public function get_ajax_filter_data(): array {
+	public function linguator_get_ajax_filter_data(): array {
 		global $post, $tag;
 
 		$params = array( 'lmat_ajax_backend' => 1 );
@@ -476,7 +476,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function set_current_language() {
+	public function linguator_set_current_language() {
 		$this->curlang = $this->filter_lang;
 
 		// Edit Post
@@ -533,7 +533,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function init_user() {
+	public function linguator_init_user() {
 		// Language for admin language filter: may be empty
 		// $_GET['lang'] is numeric when editing a language, not when selecting a new language in the filter
 		// We intentionally don't use a nonce to update the language filter
@@ -559,7 +559,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		 */
 		$this->pref_lang = apply_filters( 'lmat_admin_preferred_language', $this->pref_lang );
 
-		$this->set_current_language();
+		$this->linguator_set_current_language();
 	}
 
 	/**
@@ -608,7 +608,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$all_items = array_merge( array( $all_item ), $this->model->get_languages_list() );
 		$items     = $all_items;
 
-		if ( $this->should_hide_admin_bar_menu() ) {
+		if ( $this->linguator_should_hide_admin_bar_menu() ) {
 			$items = array();
 		}
 
@@ -671,8 +671,8 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function remove_customize_submenu() {
-		if ( ! $this->should_customize_menu_be_removed() ) {
+	public function linguator_remove_customize_submenu() {
+		if ( ! $this->linguator_should_customize_menu_be_removed() ) {
 			return;
 		}
 
@@ -693,7 +693,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @return bool
 	 */
-	public function should_hide_admin_bar_menu(): bool {
+	public function linguator_should_hide_admin_bar_menu(): bool {
 		global $pagenow, $typenow, $taxnow;
 
 		if ( in_array( $pagenow, array( 'post.php', 'post-new.php' ), true ) ) {
@@ -716,7 +716,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 * @return string
 	 */
 	public static function get_screen_id( string $tab ): string {
-		return sprintf( '%s_page_%s', self::SCREEN_PREFIX, self::get_screen_slug( $tab ) );
+		return sprintf( '%s_page_%s', self::SCREEN_PREFIX, self::linguator_get_screen_slug( $tab ) );
 	}
 
 	/**
@@ -727,7 +727,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 * @param string $tab The name of the screen (`lang`, `strings`, `settings`).
 	 * @return string
 	 */
-	public static function get_screen_slug( string $tab ): string {
+	public static function linguator_get_screen_slug( string $tab ): string {
 		return 'lang' === $tab ? 'lmat' : "lmat_$tab";
 	}
 
@@ -740,7 +740,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 *
 	 * @phpstan-return array<non-empty-string, string>
 	 */
-	protected function get_menu_items(): array {
+	protected function linguator_get_menu_items(): array {
 		$tabs = array(
 			'lang' => __( 'Manage Languages', 'translate-words' ),
 		);
@@ -767,7 +767,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 * @param string $menu Menu slug.
 	 * @return string
 	 */
-	protected function get_menu_capability( string $menu ): string {
+	protected function linguator_get_menu_capability( string $menu ): string {
 		switch ( $menu ) {
 			case 'lang':
 				return Capabilities::LANGUAGES;

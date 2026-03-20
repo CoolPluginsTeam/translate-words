@@ -59,7 +59,7 @@ class Linguator_Choose_Lang_Content extends Linguator_Choose_Lang {
 	 *
 	 * @return Linguator_Language|false detected language, false if none was found
 	 */
-	protected function get_language_from_content() {
+	protected function linguator_get_language_from_content() {
 		// No language set for 404
 		if ( is_404() || ( is_attachment() && ! $this->options['media_support'] ) ) {
 			return $this->get_preferred_language();
@@ -156,17 +156,17 @@ class Linguator_Choose_Lang_Content extends Linguator_Choose_Lang {
 	 */
 	public function wp() {
 		// Nothing to do if the language has already been set ( although normally the filter has been removed )
-		if ( empty( $this->curlang ) && $curlang = $this->get_language_from_content() ) {
+		if ( empty( $this->curlang ) && $curlang = $this->linguator_get_language_from_content() ) {
 			parent::set_language( $curlang );
 		}
 	}
 
 	/**
-	 * If no language is found by {@see Linguator_Choose_Lang_Content::get_language_from_content()}, returns the preferred one.
+	 * If no language is found by {@see Linguator_Choose_Lang_Content::linguator_get_language_from_content()}, returns the preferred one.
 	 *
 	 *  
 	 *
-	 * @param Linguator_Language|false $lang Language found by {@see Linguator_Choose_Lang_Content::get_language_from_content()}.
+	 * @param Linguator_Language|false $lang Language found by {@see Linguator_Choose_Lang_Content::linguator_get_language_from_content()}.
 	 * @return Linguator_Language|false
 	 */
 	public function linguator_get_current_language( $lang ) {

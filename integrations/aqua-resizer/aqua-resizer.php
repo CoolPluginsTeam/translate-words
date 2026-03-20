@@ -20,7 +20,7 @@ class Linguator_Aqua_Resizer {
 	 *  
 	 */
 	public function init() {
-		add_filter( 'lmat_home_url_black_list', array( $this, 'home_url_black_list' ) );
+		add_filter( 'lmat_home_url_black_list', array( $this, 'linguator_home_url_black_list' ) );
 	}
 
 	/**
@@ -31,7 +31,7 @@ class Linguator_Aqua_Resizer {
 	 * @param array $arr Home url filter black list.
 	 * @return array
 	 */
-	public function home_url_black_list( $arr ) {
+	public function linguator_home_url_black_list( $arr ) {
 		return array_merge( $arr, array( array( 'function' => 'aq_resize' ) ) );
 	}
 }

@@ -75,7 +75,7 @@ class Linguator_Filters_Links {
 
 		// Keeps the preview post link on default domain when using multiple domains and SSO is not available.
 		if ( 3 === $this->options['force_lang'] && ! class_exists( 'Linguator_Xdata_Domain' ) ) {
-			add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 20 );
+			add_filter( 'preview_post_link', array( $this, 'linguator_preview_post_link' ), 20 );
 		}
 
 		// Rewrites post types archives links to filter them by language.
@@ -185,7 +185,7 @@ class Linguator_Filters_Links {
 	 * @param string $url URL used for the post preview.
 	 * @return string The modified url.
 	 */
-	public function preview_post_link( $url ) {
+	public function linguator_preview_post_link( $url ) {
 		return $this->links_model->remove_language_from_link( $url );
 	}
 

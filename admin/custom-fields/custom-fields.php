@@ -20,7 +20,7 @@ if(!class_exists('Custom_Fields')) {
         }
 
         public function __construct() {
-            add_action('wp_ajax_lmat_update_custom_fields_content', array($this, 'update_custom_fields_content'));
+            add_action('wp_ajax_lmat_update_custom_fields_content', array($this, 'linguator_update_custom_fields_content'));
             add_filter('lmat_frontend_settings_assets', array($this, 'stop_frontend_setting_assets'), 10, 3);
 			add_filter('lmat_admin_settings_assets', array($this, 'linguator_custom_fields_assets'), 10, 3);
 			add_filter('lmat_render_languages_page', array($this, 'linguator_render_custom_fields_page'), 10, 3);
@@ -143,7 +143,7 @@ if(!class_exists('Custom_Fields')) {
         }
 
         public function get_all_meta_fields_table() {
-            $meta_fields=self::get_custom_fields_data();
+            $meta_fields=self::linguator_get_custom_fields_data();
             if($meta_fields && is_array($meta_fields)) {
                 $s_no                        = 1;
                 foreach($meta_fields as $meta_field => $value) { 
@@ -162,7 +162,7 @@ if(!class_exists('Custom_Fields')) {
             }
         }
 
-        public function update_custom_fields_content(){
+        public function linguator_update_custom_fields_content(){
             if ( ! check_ajax_referer( 'lmat_save_custom_fields', 'lmat_nonce', false ) ) {
                 wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ) );
                 wp_die( '0', 400 );
@@ -184,7 +184,7 @@ if(!class_exists('Custom_Fields')) {
                 wp_die( '0', 400 );
             }
 			
-			$allowed_fields=self::get_custom_fields_data();
+			$allowed_fields=self::linguator_get_custom_fields_data();
 
 			if(!$allowed_fields || !is_array($allowed_fields)){
 				wp_send_json_error( __( 'Invalid allowed fields', 'translate-words' ) );
@@ -237,13 +237,13 @@ if(!class_exists('Custom_Fields')) {
 			exit;
         }
 
-        public static function get_custom_fields_data(){
-			$result=self::get_custom_fields_query();
+        public static function linguator_get_custom_fields_data(){
+			$result=self::linguator_get_custom_fields_query();
 
 			$data=array();
 
 			if($result && is_array($result)){
-				$excluded_fields=self::get_excluded_custom_fields_keys();
+				$excluded_fields=self::linguator_get_excluded_custom_fields_keys();
 				$allowed_fields=self::get_allowed_custom_fields();
 
 				foreach($result as $result){
@@ -262,7 +262,7 @@ if(!class_exists('Custom_Fields')) {
 				}
 			}
 
-			$default_allowed_fields=self::get_default_allowed_fields();
+			$default_allowed_fields=self::linguator_get_default_allowed_fields();
 
 			$default_key_diff=array_diff(array_keys($default_allowed_fields), array_keys($data));
 
@@ -279,7 +279,7 @@ if(!class_exists('Custom_Fields')) {
 			return $data;
 		}
 
-		private static function get_custom_fields_query(){
+		private static function linguator_get_custom_fields_query(){
 			global $wpdb;
 
              // Escape LIKE pattern for system meta (_%)
@@ -306,7 +306,7 @@ if(!class_exists('Custom_Fields')) {
 			return $results;
 		}
 
-		private static function get_excluded_custom_fields_keys(){
+		private static function linguator_get_excluded_custom_fields_keys(){
 			$excluded_fields= array(
                 '_edit_last',
                 '_edit_lock',
@@ -332,13 +332,13 @@ if(!class_exists('Custom_Fields')) {
 		}
 
 		public static function get_allowed_custom_fields(){
-			$allowed_custom_fields=self::get_allowed_custom_fields_data();
+			$allowed_custom_fields=self::linguator_get_allowed_custom_fields_data();
 			$allowed_custom_fields=apply_filters('lmat/custom_fields/allowed_fields', $allowed_custom_fields);
 		
 			return $allowed_custom_fields;
 		}
 
-		private static function get_allowed_custom_fields_data(){			
+		private static function linguator_get_allowed_custom_fields_data(){			
 			$allowed_fields=get_option('lmat_allowed_custom_fields', false);
 
             if(!$allowed_fields){
@@ -350,7 +350,7 @@ if(!class_exists('Custom_Fields')) {
 			}
 
 			if(!$allowed_fields || !is_array($allowed_fields)){
-				$default_allowed_fields=self::get_default_allowed_fields();
+				$default_allowed_fields=self::linguator_get_default_allowed_fields();
 
 				foreach($default_allowed_fields as $key => $value){
 					$allowed_fields[$key]=['status'=>true, 'type'=>'string'];
@@ -364,7 +364,7 @@ if(!class_exists('Custom_Fields')) {
 			return $allowed_fields;
 		}
 
-		private static function get_default_allowed_fields(){
+		private static function linguator_get_default_allowed_fields(){
 			$found=false;
 
 			$response = wp_remote_get( esc_url_raw( LINGUATOR_URL . 'modules/page-translation/block-translation-rules/default-allow-metafields.json' ), array(

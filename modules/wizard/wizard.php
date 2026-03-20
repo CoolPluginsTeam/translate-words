@@ -78,7 +78,7 @@ class Linguator_Wizard
 		add_action('admin_menu', array($this, 'add_admin_menu'));
 		
 		// Setup wizard page handling 
-		add_action('admin_init', array($this, 'setup_wizard_page'), 40);
+		add_action('admin_init', array($this, 'linguator_setup_wizard_page'), 40);
 
 		// Add Wizard submenu.
 		add_filter('lmat_settings_tabs', array($this, 'settings_tabs'), 10, 1);
@@ -134,7 +134,7 @@ class Linguator_Wizard
 	 *
 	 * @return void
 	 */
-	public function redirect_to_wizard()
+	public function linguator_redirect_to_wizard()
 	{
 		// Only check for redirect transient on plugins page to avoid unnecessary database queries
 		global $pagenow;
@@ -219,14 +219,14 @@ class Linguator_Wizard
 	 *
 	 * @return void
 	 */
-	public function setup_wizard_page()
+	public function linguator_setup_wizard_page()
 	{
 
 		if (!get_option('lmat_setup_complete')) {
 			Linguator_Admin_Notices::add_notice('wizard', $this->wizard_notice());
 		}
 
-		$this->redirect_to_wizard();
+		$this->linguator_redirect_to_wizard();
 		if (! Linguator::is_wizard()) {
 			return;
 		}

@@ -26,8 +26,8 @@ class Linguator_Display_Conditions {
 	 *  
 	 */
 	public function __construct() {
-		add_action( 'elementor/editor/after_enqueue_styles', [ $this, 'enqueue_conditions_note_style' ] );
-		add_action( 'elementor/editor/after_enqueue_scripts', [ $this, 'enqueue_conditions_note_script' ] );
+		add_action( 'elementor/editor/after_enqueue_styles', [ $this, 'linguator_enqueue_conditions_note_style' ] );
+		add_action( 'elementor/editor/after_enqueue_scripts', [ $this, 'linguator_enqueue_conditions_note_script' ] );
 	}
 
 	/**
@@ -35,7 +35,7 @@ class Linguator_Display_Conditions {
 	 *
 	 * @return array|null Connected post IDs, or null if we should not enqueue.
 	 */
-	private function get_connected_template_ids() {
+	private function linguator_get_connected_template_ids() {
 		global $post;
 		if ( ! $post || 'elementor_library' !== get_post_type( $post->ID ) ) {
 			return null;
@@ -54,8 +54,8 @@ class Linguator_Display_Conditions {
 	 *
 	 * @return void
 	 */
-	public function enqueue_conditions_note_style() {
-		if ( null === $this->get_connected_template_ids() ) {
+	public function linguator_enqueue_conditions_note_style() {
+		if ( null === $this->linguator_get_connected_template_ids() ) {
 			return;
 		}
 		$css = '.lmat-conditions-note{
@@ -77,8 +77,8 @@ class Linguator_Display_Conditions {
 	 *
 	 * @return void
 	 */
-	public function enqueue_conditions_note_script() {
-		$connected_ids = $this->get_connected_template_ids();
+	public function linguator_enqueue_conditions_note_script() {
+		$connected_ids = $this->linguator_get_connected_template_ids();
 		if ( null === $connected_ids ) {
 			return;
 		}
@@ -92,7 +92,7 @@ class Linguator_Display_Conditions {
 		);
 		wp_add_inline_script(
 			'lmat_elementor_conditions_note',
-			$this->get_conditions_note_inline_js(),
+			$this->linguator_get_conditions_note_inline_js(),
 			'after'
 		);
 	}
@@ -102,7 +102,7 @@ class Linguator_Display_Conditions {
 	 *
 	 * @return string
 	 */
-	private function get_conditions_note_inline_js() {
+	private function linguator_get_conditions_note_inline_js() {
 		return <<<'JS'
 			jQuery(function($) {
 				'use strict';

@@ -150,7 +150,7 @@ class Linguator_Frontend extends Linguator_Base {
 		add_action( 'lmat_language_defined', array( $this, 'linguator_language_defined' ), 1 );
 
 		// Avoids the language being the queried object when querying multiple taxonomies
-		add_action( 'parse_tax_query', array( $this, 'parse_tax_query' ), 1 );
+		add_action( 'parse_tax_query', array( $this, 'linguator_parse_tax_query' ), 1 );
 
 		// Filters posts by language
 		add_action( 'parse_query', array( $this, 'parse_query' ), 6 );
@@ -160,7 +160,7 @@ class Linguator_Frontend extends Linguator_Base {
 			add_action( 'template_redirect', array( $this, 'auto_translate' ), 7 );
 		}
 
-		add_action( 'admin_bar_menu', array( $this, 'remove_customize_admin_bar' ), 41 ); // After WP_Admin_Bar::add_menus
+		add_action( 'admin_bar_menu', array( $this, 'linguator_remove_customize_admin_bar' ), 41 ); // After WP_Admin_Bar::add_menus
 
 		/*
 		 * Static front page and page for posts.
@@ -240,7 +240,7 @@ class Linguator_Frontend extends Linguator_Base {
 	 * @param WP_Query $query WP_Query object.
 	 * @return void
 	 */
-	public function parse_tax_query( $query ) {
+	public function linguator_parse_tax_query( $query ) {
 		$linguator_query = new Linguator_Query( $query, $this->model );
 		$queried_taxonomies = $linguator_query->get_queried_taxonomies();
 
@@ -357,8 +357,8 @@ class Linguator_Frontend extends Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function remove_customize_admin_bar() {
-		if ( ! $this->should_customize_menu_be_removed() ) {
+	public function linguator_remove_customize_admin_bar() {
+		if ( ! $this->linguator_should_customize_menu_be_removed() ) {
 			return;
 		}
 
