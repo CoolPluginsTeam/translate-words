@@ -65,7 +65,7 @@ class Linguator_Elementor {
 		register_rest_route( 'lmat/v1', '/post-language/(?P<post_id>\d+)', [
 			'methods'             => 'GET',
 			'callback'            => [ __CLASS__, 'linguator_get_post_language_rest' ],
-			'permission_callback' => '__return_true',
+			'permission_callback' => [ __CLASS__, 'linguator_check_rest_permission' ],
 			'args'                => [
 				'post_id' => [
 					'required'          => true,
@@ -74,6 +74,13 @@ class Linguator_Elementor {
 				],
 			],
 		] );
+	}
+
+	/**
+	 * Proper Permission Check
+	 */
+	public static function linguator_check_rest_permission( $request ) {
+		return is_user_logged_in() && current_user_can( 'edit_posts' );
 	}
 
 	/**
@@ -106,14 +113,17 @@ class Linguator_Elementor {
 			return new WP_Error( 'language_object_not_found', 'Language object not found', [ 'status' => 404 ] );
 		}
 
-		// Return language information
-		return \rest_ensure_response( [
-			'language' => sanitize_text_field( (string) $language ),
-			'flag_url' => esc_url_raw( (string) $language_object->flag_url ),
-			'name'     => sanitize_text_field( (string) $language_object->name ),
-			'locale'   => sanitize_text_field( (string) $language_object->locale ),
-			'post_id'  => absint( $post_id ),
-		] );
+		// Return language information (all fields sanitized for safe JSON output).
+		return new \WP_REST_Response(
+			[
+				'language' => sanitize_text_field( (string) $language ),
+				'flag_url' => esc_url_raw( (string) $language_object->flag_url ),
+				'name'     => sanitize_text_field( (string) $language_object->name ),
+				'locale'   => sanitize_text_field( (string) $language_object->locale ),
+				'post_id'  => absint( $post_id ),
+			],
+			200
+		);
 	}
 
     /**

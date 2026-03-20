@@ -77,6 +77,7 @@ class Linguator_Inline_Translation {
 			$this->linguator_enqueue_inline_translation_assets(
 				'elementor',
 				array(
+					'wp-api-fetch',
 					'backbone-marionette',
 					'elementor-common',
 					'elementor-web-cli',
