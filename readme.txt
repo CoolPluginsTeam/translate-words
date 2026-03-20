@@ -5,7 +5,7 @@ Tags: translation, multilingual, languages, ai translation
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -158,6 +158,14 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
 > The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.1.1 | 20 March 2026 =
+
+* Security: Implemented strict REST API permission_callback using current_user_can('edit_posts') for lmat/v1 endpoints.
+* Security: Applied late escaping (esc_html, esc_attr, wp_kses_post) to all render callbacks and shortcode outputs.
+* Improvement: Refactored CSS and JS to use wp_enqueue_style and wp_enqueue_script, removing inline <style> and <script> tags.
+* Improvement: Standardized unique prefixing (linguator_ / lmat_) across functions and classes to prevent conflicts.
+* Bug Fix: Resolved UI logic that hidden string-translation features based on external plugin status.
 
 = Version 2.1.0 | 13 March 2026 =
 * Ensured manual string translation functionality remains accessible even when Loco Translate is active.
