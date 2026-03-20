@@ -39,7 +39,7 @@ class Linguator_Filters_Widgets_Options {
 		$this->model = $linguator->model;
 
 		add_action( 'in_widget_form', array( $this, 'in_widget_form' ), 10, 3 );
-		add_filter( 'widget_update_callback', array( $this, 'widget_update_callback' ), 10, 2 );
+		add_filter( 'widget_update_callback', array( $this, 'linguator_widget_update_callback' ), 10, 2 );
 	}
 
 	/**
@@ -120,7 +120,7 @@ class Linguator_Filters_Widgets_Options {
 	 * @param array $new_instance The new Widget's options.
 	 * @return array Widget options.
 	 */
-	public function widget_update_callback( $instance, $new_instance ) {
+	public function linguator_widget_update_callback( $instance, $new_instance ) {
 		if ( ! empty( $new_instance['linguator_lang'] ) && $lang = $this->model->get_language( $new_instance['linguator_lang'] ) ) {
 			$instance['linguator_lang'] = $lang->slug;
 		} else {

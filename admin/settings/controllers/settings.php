@@ -123,7 +123,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 
 		
 		if($loco === 'true'){
-			add_action( 'load-' . Linguator_Admin_Base::get_screen_id( 'settings' ), array( $this, 'loco_page_redirect' ) );
+			add_action( 'load-' . Linguator_Admin_Base::get_screen_id( 'settings' ), array( $this, 'linguator_loco_page_redirect' ) );
 		}
 
 		if($this->active_tab === 'lang'){
@@ -149,15 +149,15 @@ class Linguator_Settings extends Linguator_Admin_Base {
 
 		Linguator_Admin_Strings::init();
 
-		add_action( 'admin_init', array( $this, 'register_settings_modules' ) );
+		add_action( 'admin_init', array( $this, 'linguator_register_settings_modules' ) );
 
 		// Adds screen options and the about box in the languages admin panel.
-		add_action( 'load-' . self::get_screen_id( 'lang' ), array( $this, 'load_page' ) );
-		// add_action( 'load-' . self::get_screen_id( 'strings' ), array( $this, 'load_page_strings' ) ); AD pending
+		add_action( 'load-' . self::get_screen_id( 'lang' ), array( $this, 'linguator_load_page' ) );
+		// add_action( 'load-' . self::get_screen_id( 'strings' ), array( $this, 'linguator_load_page_strings' ) ); AD pending
 
 		// Saves the per-page value in screen options.
-		add_filter( 'set_screen_option_lmat_lang_per_page', array( $this, 'set_screen_option' ), 10, 3 );
-		add_filter( 'set_screen_option_lmat_strings_per_page', array( $this, 'set_screen_option' ), 10, 3 );
+		add_filter( 'set_screen_option_lmat_lang_per_page', array( $this, 'linguator_set_screen_option' ), 10, 3 );
+		add_filter( 'set_screen_option_lmat_strings_per_page', array( $this, 'linguator_set_screen_option' ), 10, 3 );
 	}
 
 	/**
@@ -170,7 +170,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
-	public function register_settings_modules() {
+	public function linguator_register_settings_modules() {
 		$modules = array();
 
 		/**
@@ -209,7 +209,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
-	public function load_page() {
+	public function linguator_load_page() {
 		add_screen_option(
 			'per_page',
 			array(
@@ -219,7 +219,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			)
 		);
 
-		add_action( 'admin_notices', array( $this, 'notice_objects_with_no_lang' ) );
+		add_action( 'admin_notices', array( $this, 'linguator_notice_objects_with_no_lang' ) );
 	}
 
 	/**
@@ -229,7 +229,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
-	public function load_page_strings() {
+	public function linguator_load_page_strings() {
 		add_screen_option(
 			'per_page',
 			array(
@@ -283,7 +283,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
-	public function loco_page_redirect() {
+	public function linguator_loco_page_redirect() {
 		if(!function_exists('is_plugin_active')){
 			include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 		}
@@ -305,7 +305,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 * @param int    $value         The new value of the option to save.
 	 * @return int The new value of the option.
 	 */
-	public function set_screen_option( $screen_option, $option, $value ) {
+	public function linguator_set_screen_option( $screen_option, $option, $value ) {
 		return (int) $value;
 	}
 
@@ -317,7 +317,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 * @param string $action The action name.
 	 * @return void
 	 */
-	public function handle_actions( string $action ): void {
+	public function linguator_handle_actions( string $action ): void {
 		switch ( $action ) {
 			case 'add':
 				check_admin_referer( 'add-lang', '_wpnonce_add-lang' );
@@ -477,7 +477,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					$nonce_action = 'lmat_deactivate';
 				}
 				check_admin_referer( $nonce_action );
-				$this->handle_actions( $action );
+				$this->linguator_handle_actions( $action );
 			}
 
 			// Render the React container for settings
@@ -511,7 +511,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			// phpcs:ignore WordPress.Security.NonceVerification, VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 			$edit_lang = $this->model->get_language( $lang_id );
 		} elseif ( ! empty( $action ) ) {
-			$this->handle_actions( $action );
+			$this->linguator_handle_actions( $action );
 		}
 
 		// Displays the page
@@ -528,7 +528,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return array Array of sync options with label and value
 	 */
-	private function get_sync_options() {
+	private function linguator_get_sync_options() {
 		// Use the static method from Linguator_Settings_Sync to get sync options
 		if ( class_exists( 'Linguator\Modules\sync\Linguator_Settings_Sync' ) ) {
 			$sync_metas = \Linguator\Modules\sync\Linguator_Settings_Sync::list_metas_to_sync();
@@ -664,8 +664,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'home_url'       => get_home_url(),
 					'modules'        => ( $this->modules ? array_keys( $this->modules ) : array() ),
 					'active_tab'     => $this->active_tab,
-					'locoai_plugin_status' => $this->get_locoai_plugin_status(),
-					'sync_options'   => $this->get_sync_options(),
+					'locoai_plugin_status' => $this->linguator_get_locoai_plugin_status(),
+					'sync_options'   => $this->linguator_get_sync_options(),
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'translations_data' => $translations_data,
 				)
@@ -770,7 +770,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
-	public function notice_objects_with_no_lang() {
+	public function linguator_notice_objects_with_no_lang() {
 		if ( ! empty( $this->options['default_lang'] ) && $this->model->get_objects_with_no_lang( 1 ) ) {
 			printf(
 				'<div class="error"><p>%s <a href="%s">%s</a></p></div>',
@@ -860,7 +860,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return array Plugin status information
 	 */
-	private function get_locoai_plugin_status() {
+	private function linguator_get_locoai_plugin_status() {
 		// Ensure plugin functions are available
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';

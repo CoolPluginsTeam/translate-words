@@ -39,14 +39,14 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 		add_filter( 'option_sticky_posts', array( $this, 'option_sticky_posts' ) );
 
 		// Rewrites archives links to filter them by language
-		add_filter( 'getarchives_join', array( $this, 'getarchives_join' ), 10, 2 );
-		add_filter( 'getarchives_where', array( $this, 'getarchives_where' ), 10, 2 );
+		add_filter( 'getarchives_join', array( $this, 'linguator_getarchives_join' ), 10, 2 );
+		add_filter( 'getarchives_where', array( $this, 'linguator_getarchives_where' ), 10, 2 );
 
 		// Filters the widgets according to the current language
-		add_filter( 'widget_display_callback', array( $this, 'widget_display_callback' ) );
+		add_filter( 'widget_display_callback', array( $this, 'linguator_widget_display_callback' ) );
 
 		if ( $this->options['media_support'] ) {
-			add_filter( 'widget_media_image_instance', array( $this, 'widget_media_instance' ), 1 ); // Since WP 4.8
+			add_filter( 'widget_media_image_instance', array( $this, 'linguator_widget_media_instance' ), 1 ); // Since WP 4.8
 		}
 
 		// Strings translation ( must be applied before WordPress applies its default formatting filters )
@@ -55,7 +55,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 		}
 
 		// Translates biography
-		add_filter( 'get_user_metadata', array( $this, 'get_user_metadata' ), 10, 4 );
+		add_filter( 'get_user_metadata', array( $this, 'linguator_get_user_metadata' ), 10, 4 );
 
 		if ( Linguator::is_ajax_on_front() ) {
 			add_filter( 'load_textdomain_mofile', array( $this, 'load_textdomain_mofile' ) );
@@ -156,7 +156,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 	 * @param array  $r   wp_get_archives arguments
 	 * @return string modified JOIN clause
 	 */
-	public function getarchives_join( $sql, $r ) {
+	public function linguator_getarchives_join( $sql, $r ) {
 		return ! empty( $r['post_type'] ) && $this->model->is_translated_post_type( $r['post_type'] ) ? $sql . $this->model->post->join_clause() : $sql;
 	}
 
@@ -169,7 +169,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 	 * @param array  $r   wp_get_archives arguments
 	 * @return string modified WHERE clause
 	 */
-	public function getarchives_where( $sql, $r ) {
+	public function linguator_getarchives_where( $sql, $r ) {
 		if ( ! $this->curlang instanceof Linguator_Language ) {
 			return $sql;
 		}
@@ -191,7 +191,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 	 * @param array $instance Widget settings
 	 * @return bool|array false if we hide the widget, unmodified $instance otherwise
 	 */
-	public function widget_display_callback( $instance ) {
+	public function linguator_widget_display_callback( $instance ) {
 		return ! empty( $instance['lmat_lang'] ) && $instance['lmat_lang'] != $this->curlang->slug ? false : $instance;
 	}
 
@@ -203,7 +203,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 	 * @param array $instance Widget instance data
 	 * @return array
 	 */
-	public function widget_media_instance( $instance ) {
+	public function linguator_widget_media_instance( $instance ) {
 		if ( empty( $instance['lmat_lang'] ) && $instance['attachment_id'] && $tr_id = linguator_get_post( $instance['attachment_id'] ) ) {
 			$instance['attachment_id'] = $tr_id;
 			$attachment = get_post( $tr_id );
@@ -234,7 +234,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 	 * @param bool   $single   Whether to return only the first value of the specified $meta_key.
 	 * @return string|null
 	 */
-	public function get_user_metadata( $null, $id, $meta_key, $single ) {
+	public function linguator_get_user_metadata( $null, $id, $meta_key, $single ) {
 		return 'description' === $meta_key && ! empty( $this->curlang ) && ! $this->curlang->is_default ? get_user_meta( $id, 'description_' . $this->curlang->slug, $single ) : $null;
 	}
 

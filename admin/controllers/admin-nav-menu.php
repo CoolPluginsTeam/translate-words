@@ -49,7 +49,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 		// Integration in the WP menu interface
 		add_action( 'admin_init', array( $this, 'admin_init' ) ); // after Linguator upgrade.
-		add_action( 'load-nav-menus.php', array( $this, 'add_meta_box_to_nav_menus' ) );
+		add_action( 'load-nav-menus.php', array( $this, 'linguator_add_meta_box_to_nav_menus' ) );
 	}
 
 	/**
@@ -65,15 +65,15 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		add_action( 'wp_update_nav_menu_item', array( $this, 'wp_update_nav_menu_item' ), 10, 2 );
 
 		// Translation of menus based on chosen locations
-		add_filter( 'pre_update_option_theme_mods_' . $this->theme, array( $this, 'pre_update_option_theme_mods' ) );
+		add_filter( 'pre_update_option_theme_mods_' . $this->theme, array( $this, 'linguator_pre_update_option_theme_mods' ) );
 		add_action( 'delete_nav_menu', array( $this, 'delete_nav_menu' ) );
 		add_action( 'admin_footer', array( $this, 'linguator_nav_menu_language_controls' ), 10 );
 		
 		// Filter menu dropdown list by language
-		add_filter( 'wp_get_nav_menus', array( $this, 'filter_nav_menus_by_language' ), 10, 1 );
-		add_action( 'load-nav-menus.php', array( $this, 'maybe_update_selected_menu' ), 10 );
-		add_action( 'admin_init', array( $this, 'maybe_update_selected_menu_on_init' ), 10 );
-		add_filter( 'wp_redirect', array( $this, 'preserve_lang_param_on_redirect' ), 10, 2 );
+		add_filter( 'wp_get_nav_menus', array( $this, 'linguator_filter_nav_menus_by_language' ), 10, 1 );
+		add_action( 'load-nav-menus.php', array( $this, 'linguator_maybe_update_selected_menu' ), 10 );
+		add_action( 'admin_init', array( $this, 'linguator_maybe_update_selected_menu_on_init' ), 10 );
+		add_filter( 'wp_redirect', array( $this, 'linguator_preserve_lang_param_on_redirect' ), 10, 2 );
 		
 	
 		
@@ -87,7 +87,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 *
 	 * @return void
 	 */
-	public function add_meta_box_to_nav_menus() {
+	public function linguator_add_meta_box_to_nav_menus() {
 		add_meta_box( 'lmat_lang_switch_box', __( 'Language switcher', 'translate-words' ), array( $this, 'lang_switch' ), 'nav-menus', 'side', 'high' );
 	}
 
@@ -223,7 +223,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param array $locations Nav menu locations.
 	 * @return array
 	 */
-	public function update_nav_menu_locations( $locations ) {
+	public function linguator_update_nav_menu_locations( $locations ) {
 		// Extract language and menu from locations.
 		$nav_menus = $this->options->get( 'nav_menus' );
 
@@ -249,7 +249,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param mixed $mods Theme mods.
 	 * @return mixed
 	 */
-	public function pre_update_option_theme_mods( $mods ) {
+	public function linguator_pre_update_option_theme_mods( $mods ) {
 
 		global $wp_customize;
 			if ( ! current_user_can( 'edit_theme_options' ) || ! is_array( $mods ) || ! isset( $mods['nav_menu_locations'] ) || ! is_array( $mods['nav_menu_locations'] ) ) {
@@ -266,7 +266,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			$nav_menus[ $this->theme ] = array();
 			$this->options->set( 'nav_menus', $nav_menus );
 
-			$mods['nav_menu_locations'] = $this->update_nav_menu_locations( $mods['nav_menu_locations'] );
+			$mods['nav_menu_locations'] = $this->linguator_update_nav_menu_locations( $mods['nav_menu_locations'] );
 			return $mods;
 		}
 
@@ -283,7 +283,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			$nav_menus[ $this->theme ] = array();
 			$this->options->set( 'nav_menus', $nav_menus );
 
-			$mods['nav_menu_locations'] = $this->update_nav_menu_locations( $mods['nav_menu_locations'] );
+			$mods['nav_menu_locations'] = $this->linguator_update_nav_menu_locations( $mods['nav_menu_locations'] );
 			return $mods;
 		}
 
@@ -302,7 +302,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 				&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ), $action )
 				&& 'customize_save' == sanitize_key( wp_unslash( $_POST['action'] ) )
 			) {
-				$mods['nav_menu_locations'] = $this->update_nav_menu_locations( $mods['nav_menu_locations'] );
+				$mods['nav_menu_locations'] = $this->linguator_update_nav_menu_locations( $mods['nav_menu_locations'] );
 
 			}
 
@@ -327,7 +327,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 				return $mods; // No modification for nav menu locations
 			}
 
-			$mods['nav_menu_locations'] = $this->update_nav_menu_locations( $mods['nav_menu_locations'] );
+			$mods['nav_menu_locations'] = $this->linguator_update_nav_menu_locations( $mods['nav_menu_locations'] );
 		}
 		return $mods;
 	}
@@ -483,7 +483,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param array $menus Array of nav menu objects.
 	 * @return array Filtered array of nav menus.
 	 */
-	public function filter_nav_menus_by_language( $menus ) {
+	public function linguator_filter_nav_menus_by_language( $menus ) {
 		// Only filter on nav-menus page.
 		$screen = get_current_screen();
 		if ( empty( $screen ) || 'nav-menus' !== $screen->base ) {
@@ -527,7 +527,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 				continue;
 			}
 
-			$show_menu = $this->should_show_menu_for_language( $menu, $current_lang, $selected_lang, $nav_menus[ $theme ] );
+			$show_menu = $this->linguator_should_show_menu_for_language( $menu, $current_lang, $selected_lang, $nav_menus[ $theme ] );
 
 			if ( $show_menu ) {
 				$filtered_menus[] = $menu;
@@ -548,7 +548,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param array  $nav_menus      Nav menu assignments by location.
 	 * @return bool True if menu should be shown, false otherwise.
 	 */
-	private function should_show_menu_for_language( $menu, $current_lang, $selected_lang, $nav_menus ) {
+	private function linguator_should_show_menu_for_language( $menu, $current_lang, $selected_lang, $nav_menus ) {
 		// Check if this menu is assigned to any location for the selected language.
 		foreach ( $nav_menus as $location => $languages ) {
 			if ( isset( $languages[ $current_lang ] ) && $languages[ $current_lang ] === $menu->term_id ) {
@@ -558,7 +558,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 		// For default language, also show menus that don't have specific language assignments.
 		if ( $selected_lang->is_default ) {
-			return ! $this->is_menu_assigned_to_other_language( $menu, $current_lang, $nav_menus );
+			return ! $this->linguator_is_menu_assigned_to_other_language( $menu, $current_lang, $nav_menus );
 		}
 
 		return false;
@@ -574,7 +574,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param array  $nav_menus    Nav menu assignments by location.
 	 * @return bool True if assigned to other language, false otherwise.
 	 */
-	private function is_menu_assigned_to_other_language( $menu, $current_lang, $nav_menus ) {
+	private function linguator_is_menu_assigned_to_other_language( $menu, $current_lang, $nav_menus ) {
 		foreach ( $nav_menus as $location => $languages ) {
 			foreach ( $languages as $lang_slug => $menu_id ) {
 				if ( $menu_id === $menu->term_id && $lang_slug !== $current_lang ) {
@@ -595,7 +595,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 * @param int    $status   The redirect status code.
 	 * @return string Modified redirect location.
 	 */
-	public function preserve_lang_param_on_redirect( $location, $status ) {
+	public function linguator_preserve_lang_param_on_redirect( $location, $status ) {
 		// Only handle redirects on nav-menus admin page.
 		$screen = get_current_screen();
 		if ( empty( $screen ) || 'nav-menus' !== $screen->base ) {
@@ -629,7 +629,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 *
 	 * @return void
 	 */
-	public function maybe_update_selected_menu() {
+	public function linguator_maybe_update_selected_menu() {
 		// Only run on Edit Menus tab, not Manage Locations.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for filtering
 		if ( isset( $_GET['action'] ) && 'locations' === $_GET['action'] ) {
@@ -649,7 +649,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		}
 
 		// Get filtered menus for the current language.
-		$filtered_menus = $this->filter_nav_menus_by_language( wp_get_nav_menus() );
+		$filtered_menus = $this->linguator_filter_nav_menus_by_language( wp_get_nav_menus() );
 		
 		if ( empty( $filtered_menus ) ) {
 			return;
@@ -679,7 +679,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	 *
 	 * @return void
 	 */
-	public function maybe_update_selected_menu_on_init() {
+	public function linguator_maybe_update_selected_menu_on_init() {
 		// Only run on nav-menus page.
 		$screen = get_current_screen();
 		if ( empty( $screen ) || 'nav-menus' !== $screen->base ) {
@@ -705,7 +705,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		}
 
 		// Get filtered menus for the current language.
-		$filtered_menus = $this->filter_nav_menus_by_language( wp_get_nav_menus() );
+		$filtered_menus = $this->linguator_filter_nav_menus_by_language( wp_get_nav_menus() );
 		
 		if ( empty( $filtered_menus ) ) {
 			return;

@@ -113,7 +113,7 @@ abstract class Linguator_Base {
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 		$GLOBALS['l10n_unloaded']['lmat_string'] = true; // Short-circuit _load_textdomain_just_in_time() for 'lmat_string' domain in WP 4.6+
 
-		add_action( 'widgets_init', array( $this, 'widgets_init' ) );
+		add_action( 'widgets_init', array( $this, 'linguator_widgets_init' ) );
 
 		// User defined strings translations
 		add_action( 'lmat_language_defined', array( $this, 'load_strings_translations' ), 5 );
@@ -152,7 +152,7 @@ abstract class Linguator_Base {
 	 *
 	 * @return void
 	 */
-	public function widgets_init() {
+	public function linguator_widgets_init() {
 		if ( linguator_is_switcher_type_enabled( 'default' ) ) {
 			register_widget( Linguator_Widget_Languages::class );
 		}
@@ -230,13 +230,13 @@ abstract class Linguator_Base {
 	 *
 	 * @return bool True if it should be removed, false otherwise.
 	 */
-	public function should_customize_menu_be_removed() {
+	public function linguator_should_customize_menu_be_removed() {
 		// Exit if a block theme isn't activated.
 		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
 			return false;
 		}
 
-		return ! $this->is_customize_register_hooked();
+		return ! $this->linguator_is_customize_register_hooked();
 	}
 
 	/**
@@ -248,7 +248,7 @@ abstract class Linguator_Base {
 	 *
 	 * @return bool True if Linguator's callbacks are hooked, false otherwise.
 	 */
-	protected function is_customize_register_hooked() {
+	protected function linguator_is_customize_register_hooked() {
 		global $wp_filter;
 
 		if ( empty( $wp_filter['customize_register'] ) || ! $wp_filter['customize_register'] instanceof WP_Hook ) {

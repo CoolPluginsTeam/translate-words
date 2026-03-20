@@ -102,6 +102,8 @@ class Linguator_Admin_Site_Health {
 			$fields['taxonomies']['value'] = implode( ', ', $this->model->get_translated_taxonomies() );
 		}
 
+		$fields = $this->normalize_site_health_fields( $fields );
+
 		$debug_info['lmat_options'] = array(
 			/* translators: placeholder is the plugin name */
 			'label'  => sprintf( __( '%s options', 'translate-words' ), LINGUATOR ),
@@ -127,22 +129,20 @@ class Linguator_Admin_Site_Health {
 					continue;
 				}
 
-				if ( empty( $value ) ) {
-					$value = '0';
-				}
-
 				$fields[ $key ]['label'] = $key;
 
 				if ( 'term_props' === $key && is_array( $value ) ) {
 					$fields[ $key ]['value'] = $this->get_info_term_props( $value );
 				} else {
-					$fields[ $key ]['value'] = $value;
+					$fields[ $key ]['value'] = $this->normalize_site_health_value( $value );
 				}
 
 				if ( 'term_group' === $key ) {
 					$fields[ $key ]['label'] = 'order'; // Changed for readability but not translated as other keys are not.
 				}
 			}
+
+			$fields = $this->normalize_site_health_fields( $fields );
 
 			$debug_info[ 'lmat_language_' . $language->slug ] = array(
 				/* translators: %1$s placeholder is the language name, %2$s is the language code */
@@ -154,6 +154,66 @@ class Linguator_Admin_Site_Health {
 		}
 
 		return $debug_info;
+	}
+
+	/**
+	 * Ensures a Site Health "fields" array matches WP expected shape.
+	 *
+	 * Each field must be an array with at least 'label' and 'value' keys.
+	 * If a value isn't an array, it is converted into a field array.
+	 *
+	 * @param array $fields
+	 * @return array
+	 */
+	private function normalize_site_health_fields( array $fields ) {
+		foreach ( $fields as $key => $field ) {
+			if ( ! is_array( $field ) ) {
+				$fields[ $key ] = array(
+					'label' => (string) $key,
+					'value' => $this->normalize_site_health_value( $field ),
+				);
+				continue;
+			}
+
+			if ( ! array_key_exists( 'label', $field ) ) {
+				$fields[ $key ]['label'] = (string) $key;
+			}
+
+			if ( ! array_key_exists( 'value', $field ) ) {
+				$fields[ $key ]['value'] = '';
+			} else {
+				$fields[ $key ]['value'] = $this->normalize_site_health_value( $field['value'] );
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * Normalizes a field value into a scalar/string for Site Health display.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	private function normalize_site_health_value( $value ) {
+		if ( null === $value || false === $value || '' === $value ) {
+			return '0';
+		}
+
+		if ( true === $value ) {
+			return '1';
+		}
+
+		if ( is_scalar( $value ) ) {
+			return (string) $value;
+		}
+
+		if ( is_array( $value ) ) {
+			return $this->format_array_for_site_health_info( $value );
+		}
+
+		// Objects/resources: fall back to JSON-ish string for debug visibility.
+		return (string) wp_json_encode( $value );
 	}
 
 	/**
@@ -181,7 +241,33 @@ class Linguator_Admin_Site_Health {
 				$return_value = array_merge( $return_value, $value );
 			}
 		}
-		return $return_value;
+		return $this->format_array_for_site_health_info( $return_value );
+	}
+
+	/**
+	 * Formats an associative array for Site Health display.
+	 *
+	 * WordPress expects each field to be an array containing at least 'label' and 'value'.
+	 * When a field value itself is an array, it should be formatted as a string to avoid
+	 * WP interpreting it as nested fields.
+	 *
+	 * @param array $array
+	 * @return string
+	 */
+	private function format_array_for_site_health_info( array $array ) {
+		array_walk(
+			$array,
+			function ( &$value, $key ) {
+				if ( is_array( $value ) ) {
+					$ids   = implode( ' , ', $value );
+					$value = "$key: $ids";
+				} else {
+					$value = "$key: $value";
+				}
+			}
+		);
+
+		return implode( ' | ', $array );
 	}
 
 	/**
@@ -193,7 +279,26 @@ class Linguator_Admin_Site_Health {
 	 */
 	protected function get_flag( $language ) {
 		$flag = $language->get_display_flag();
-		return empty( $flag ) ? '<span>' . esc_html__( 'Undefined', 'translate-words' ) . '</span>' : $flag;
+		return empty( $flag )
+			? '<span>' . esc_html__( 'Undefined', 'translate-words' ) . '</span>'
+			: wp_kses(
+				(string) $flag,
+				array(
+					'img'  => array(
+						'src'      => true,
+						'alt'      => true,
+						'class'    => true,
+						'width'    => true,
+						'height'   => true,
+						'style'    => true,
+						'decoding' => true,
+						'loading'  => true,
+						'title'    => true,
+					),
+					'span' => array( 'class' => true, 'style' => true ),
+				),
+				array_merge( wp_allowed_protocols(), array( 'data' ) )
+			);
 	}
 
 	/**
@@ -261,14 +366,14 @@ class Linguator_Admin_Site_Health {
 
 		if ( ! empty( $posts_no_lang ) ) {
 			$fields['post-no-lang']['label'] = __( 'Posts without language', 'translate-words' );
-			$fields['post-no-lang']['value'] = $posts_no_lang;
+			$fields['post-no-lang']['value'] = $this->format_array_for_site_health_info( $posts_no_lang );
 		}
 
 		$terms_no_lang = $this->get_term_ids_without_lang();
 
 		if ( ! empty( $terms_no_lang ) ) {
 			$fields['term-no-lang']['label'] = __( 'Terms without language', 'translate-words' );
-			$fields['term-no-lang']['value'] = $terms_no_lang;
+			$fields['term-no-lang']['value'] = $this->format_array_for_site_health_info( $terms_no_lang );
 		}
 
 		// Multisite

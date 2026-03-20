@@ -62,10 +62,10 @@ class Translation_Term_Model {
 		}
 
 		$source_language = $this->model->term->get_language( $source_term->term_id );
-		$tr_term_name        = $this->get_translated_term_name( $source_term, $entry['data'] );
+		$tr_term_name        = $this->linguator_get_translated_term_name( $source_term, $entry['data'] );
 		$tr_term_description = $this->get_translated_term_description( $source_term, $entry['data'] );
 		$tr_term_id          = $this->model->term->get( $entry['id'], $target_language );
-		$tr_term_slug        = $this->get_translated_term_slug( $source_term, $entry['data'] );
+		$tr_term_slug        = $this->linguator_get_translated_term_slug( $source_term, $entry['data'] );
 
 		$language_link=apply_filters('lmat_bulk_term_language_link', true);
 
@@ -122,7 +122,7 @@ class Translation_Term_Model {
 		 */
 		if($language_link){
 			do_action( 'lmat_save_term', $tr_term_id, $source_term->taxonomy, $this->model->term->get_translations( $tr_term_id ) );
-			$this->assign_parents( [ $entry['id'] ], $target_language );
+			$this->linguator_assign_parents( [ $entry['id'] ], $target_language );
 		}
 
 		return $tr_term_id;
@@ -137,7 +137,7 @@ class Translation_Term_Model {
 	 * @param Translations $translations  Translation data object.
 	 * @return string The translated name.
 	 */
-	private function get_translated_term_name( WP_Term $source_term, Translations $translations ) {
+	private function linguator_get_translated_term_name( WP_Term $source_term, Translations $translations ) {
 		$entry = new Translation_Entry( array( 'singular' => $source_term->name, 'context' => 'name' ) );
 
 		$translated_entry = $translations->translate_entry( $entry );
@@ -175,7 +175,7 @@ class Translation_Term_Model {
 	 * @param Translations $translations  Translation data object.
 	 * @return string The translated slug.
 	 */
-	private function get_translated_term_slug( WP_Term $source_term, Translations $translations ) {
+	private function linguator_get_translated_term_slug( WP_Term $source_term, Translations $translations ) {
 		$entry = new Translation_Entry( array( 'singular' => $source_term->slug, 'context' => 'slug' ) );
 
 		$translated_entry = $translations->translate_entry( $entry );
@@ -194,7 +194,7 @@ class Translation_Term_Model {
 	 * @param Linguator_Language  $target_language Target language object.
 	 * @return void
 	 */
-	public function assign_parents( array $ids, Linguator_Language $target_language ) {
+	public function linguator_assign_parents( array $ids, Linguator_Language $target_language ) {
 		// Get the terms with their parents (or 0).
 		$terms = get_terms(
 			array(

@@ -48,7 +48,7 @@ class Linguator_Switch_Language {
 	public static function init( Linguator_Model $model ): void {
 		self::$model = $model;
 
-		add_action( 'lmat_language_defined', array( static::class, 'set_current_language' ), -1000 );
+		add_action( 'lmat_language_defined', array( static::class, 'linguator_set_current_language' ), -1000 );
 	}
 
 	/**
@@ -59,7 +59,7 @@ class Linguator_Switch_Language {
 	 * @param string $slug Current language slug.
 	 * @return void
 	 */
-	public static function set_current_language( $slug ): void {
+	public static function linguator_set_current_language( $slug ): void {
 		$language = self::$model->languages->get( $slug );
 		self::$current_language = ! empty( $language ) ? $language : null;
 	}

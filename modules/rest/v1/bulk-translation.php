@@ -44,20 +44,19 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		public function __construct( $model ) {
 			$this->namespace = 'lmat/v1';
 			$this->rest_base = 'bulk-translate';
-			add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		}
 
 		/**
 		 * Register the routes
 		 */
-		public function register_routes() {
+		public function register_routes(): void {
 			register_rest_route(
 				$this->namespace,
 				'/' . $this->rest_base . '/(?P<slug>[\w-]+):bulk-translate-entries',
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'bulk_translate_entries' ),
-					'permission_callback' => array( $this, 'permission_only_admins' ),
+					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'ids'        => array(
 							'type'     => 'string',
@@ -83,7 +82,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'bulk_translate_taxonomy_entries' ),
-					'permission_callback' => array( $this, 'permission_only_admins' ),
+					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'taxonomy'   => array(
 							'type'     => 'string',
@@ -112,8 +111,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				'/' . $this->rest_base . '/(?P<post_id>[\w-]+):create-translate-post',
 				array(
 					'methods'             => 'POST',
-					'callback'            => array( $this, 'create_translate_post' ),
-					'permission_callback' => array( $this, 'permission_only_admins' ),
+					'callback'            => array( $this, 'linguator_create_translate_post' ),
+					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'privateKey'      => array(
 							'type'              => 'string',
@@ -160,7 +159,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'create_translate_taxonomy' ),
-					'permission_callback' => array( $this, 'permission_only_admins' ),
+					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'term_id'              => array(
 							'required'          => true,
@@ -211,7 +210,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			);
 		}
 
-		public function permission_only_admins( $request ) {
+		public function linguator_permission_only_admins( $request ) {
 
 			if ( ! is_user_logged_in() ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 401 ) );
@@ -423,7 +422,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 		}
 
-		public function create_translate_post( $params ) {
+		public function linguator_create_translate_post( $params ) {
 			if ( ! isset( $params['source_language'] ) || empty( $params['source_language'] ) ) {
 				wp_send_json_error( 'Invalid source language' );
 			}

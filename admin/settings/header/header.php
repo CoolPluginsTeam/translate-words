@@ -137,14 +137,13 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
             $tabs['glossary'] = array( 'title' => __( 'Glossary', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=glossary' );
         }
         
-        $static_strings_visibility = $this->model->options->get( 'static_strings_visibility' );
-        if(!empty($languages) && $static_strings_visibility){
+       
             $tabs['strings']     = array(
 				'title'        => __( 'Static Strings', 'translate-words' ),
 				'redirect'     => true,
 				'redirect_url' => 'lmat_settings&tab=strings',
 			);
-        }
+        
 
 			if ( $default_url && ! empty( $default_url ) ) {
 				$tabs['general']['redirect']         = true;

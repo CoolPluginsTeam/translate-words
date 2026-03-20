@@ -75,29 +75,29 @@ class Linguator_Admin_Filters_Term {
 
 		foreach ( $this->model->get_translated_taxonomies() as $tax ) {
 			// Adds the language field in the 'Categories' and 'Post Tags' panels
-			add_action( $tax . '_add_form_fields', array( $this, 'add_term_form' ) );
+			add_action( $tax . '_add_form_fields', array( $this, 'linguator_add_term_form' ) );
 
 			// Adds the language field and translations tables in the 'Edit Category' and 'Edit Tag' panels
-			add_action( $tax . '_edit_form_fields', array( $this, 'edit_term_form' ) );
+			add_action( $tax . '_edit_form_fields', array( $this, 'linguator_edit_term_form' ) );
 		}
 
 		// Adds actions related to languages when creating or saving categories and post tags
 		add_filter( 'wp_dropdown_cats', array( $this, 'wp_dropdown_cats' ) );
 		add_action( 'create_term', array( $this, 'save_term' ), 900, 3 );
 		add_action( 'edit_term', array( $this, 'save_term' ), 900, 3 ); // Late as it may conflict with other plugins, see http://wordpress.org/support/topic/linguator-and-wordpress-seo-by-yoast
-		add_action( 'pre_post_update', array( $this, 'pre_post_update' ) );
-		add_filter( 'lmat_inserted_term_language', array( $this, 'get_inserted_term_language' ) );
-		add_filter( 'lmat_inserted_term_parent', array( $this, 'get_inserted_term_parent' ), 10, 2 );
+		add_action( 'pre_post_update', array( $this, 'linguator_pre_post_update' ) );
+		add_filter( 'lmat_inserted_term_language', array( $this, 'linguator_get_inserted_term_language' ) );
+		add_filter( 'lmat_inserted_term_parent', array( $this, 'linguator_get_inserted_term_parent' ), 10, 2 );
 
 		// Ajax response for edit term form
 		add_action( 'wp_ajax_lmat_term_lang_choice', array( $this, 'term_lang_choice' ) );
-		add_action( 'wp_ajax_lmat_terms_not_translated', array( $this, 'ajax_terms_not_translated' ) );
+		add_action( 'wp_ajax_lmat_terms_not_translated', array( $this, 'linguator_ajax_terms_not_translated' ) );
 
 		// Updates the translations term ids when splitting a shared term
 		add_action( 'split_shared_term', array( $this, 'split_shared_term' ), 10, 4 ); // WP 4.2
 
 		// Add lang parameter to WordPress default edit term links
-		add_filter( 'get_edit_term_link', array( $this, 'add_lang_to_edit_term_link' ), 10, 4 );
+		add_filter( 'get_edit_term_link', array( $this, 'linguator_add_lang_to_edit_term_link' ), 10, 4 );
 	}
 
 	/**
@@ -107,7 +107,7 @@ class Linguator_Admin_Filters_Term {
 	 *
 	 * @return void
 	 */
-	public function add_term_form() {
+	public function linguator_add_term_form() {
 		if ( isset( $_GET['taxonomy'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$taxonomy = sanitize_key( wp_unslash( $_GET['taxonomy'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
@@ -204,7 +204,7 @@ class Linguator_Admin_Filters_Term {
 	 * @param WP_Term $tag The term being edited.
 	 * @return void
 	 */
-	public function edit_term_form( $tag ) {
+	public function linguator_edit_term_form( $tag ) {
 		if ( isset( $_REQUEST['post_type'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$post_type = sanitize_key( wp_unslash( $_REQUEST['post_type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 		}
@@ -319,14 +319,14 @@ class Linguator_Admin_Filters_Term {
 	}
 
 	/**
-	 * Stores the current post_id when bulk editing posts for use in save_language and get_inserted_term_language.
+	 * Stores the current post_id when bulk editing posts for use in save_language and linguator_get_inserted_term_language.
 	 *
 	 *  
 	 *
 	 * @param int $post_id Post ID.
 	 * @return void|never
 	 */
-	public function pre_post_update( $post_id ) {
+	public function linguator_pre_post_update( $post_id ) {
 		if ( isset( $_GET['bulk_edit'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$this->post_id = $post_id;
 		}
@@ -585,7 +585,21 @@ class Linguator_Admin_Filters_Term {
 		}
 
 		// Flag
-		$x->Add( array( 'what' => 'flag', 'data' => empty( $lang->flag ) ? esc_html( $lang->slug ) : $lang->flag ) );
+		$x->Add(
+			array(
+				'what' => 'flag',
+				'data' => empty( $lang->flag )
+					? esc_html( $lang->slug )
+					: wp_kses(
+						(string) $lang->flag,
+						array(
+							'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+							'span' => array( 'class' => true, 'style' => true ),
+						),
+						array_merge( wp_allowed_protocols(), array( 'data' ) )
+					),
+			)
+		);
 
 		$x->send();
 	}
@@ -597,7 +611,7 @@ class Linguator_Admin_Filters_Term {
 	 *
 	 * @return void
 	 */
-	public function ajax_terms_not_translated() {
+	public function linguator_ajax_terms_not_translated() {
 		check_ajax_referer( 'lmat_language', '_lmat_nonce' );
 
 		if ( ! isset( $_GET['term'], $_GET['post_type'], $_GET['taxonomy'], $_GET['term_language'], $_GET['translation_language'] ) ) {
@@ -737,7 +751,7 @@ class Linguator_Admin_Filters_Term {
 	 * @param Linguator_Language|null $lang     Term language object if found, null otherwise.
 	 * @return Linguator_Language|null Language object, null if none found.
 	 */
-	public function get_inserted_term_language( $lang ) {
+	public function linguator_get_inserted_term_language( $lang ) {
 		if ( $lang instanceof Linguator_Language ) {
 			return $lang;
 		}
@@ -798,7 +812,7 @@ class Linguator_Admin_Filters_Term {
 	 * @param string $taxonomy Term taxonomy.
 	 * @return int Parent term ID if found, 0 otherwise.
 	 */
-	public function get_inserted_term_parent( $parent, $taxonomy ) {
+	public function linguator_get_inserted_term_parent( $parent, $taxonomy ) {
 		if ( $parent ) {
 			return $parent;
 		}
@@ -823,7 +837,7 @@ class Linguator_Admin_Filters_Term {
 	 * @param string $context  The link context.
 	 * @return string
 	 */
-	public function add_lang_to_edit_term_link( $link, $term_id, $taxonomy, $context ) {
+	public function linguator_add_lang_to_edit_term_link( $link, $term_id, $taxonomy, $context ) {
 		if ( empty( $link ) || ! $this->model->is_translated_taxonomy( $taxonomy ) ) {
 			return $link;
 		}

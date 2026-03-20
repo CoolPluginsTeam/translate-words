@@ -59,17 +59,17 @@ class Linguator_Admin_Classic_Editor {
 		$this->pref_lang = &$linguator->pref_lang;
 		
 		// Adds the Languages box in the 'Edit Post' and 'Edit Page' panels
-		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
+		add_action( 'add_meta_boxes', array( $this, 'linguator_add_meta_boxes' ) );
 
 		// Ajax response for changing the language in the post metabox
 		add_action( 'wp_ajax_lmat_post_lang_choice', array( $this, 'post_lang_choice' ) );
-		add_action( 'wp_ajax_lmat_posts_not_translated', array( $this, 'ajax_posts_not_translated' ) );
+		add_action( 'wp_ajax_lmat_posts_not_translated', array( $this, 'linguator_ajax_posts_not_translated' ) );
 
 		// Filters the pages by language in the parent dropdown list in the page attributes metabox
-		add_filter( 'page_attributes_dropdown_pages_args', array( $this, 'page_attributes_dropdown_pages_args' ), 10, 2 );
+		add_filter( 'page_attributes_dropdown_pages_args', array( $this, 'linguator_page_attributes_dropdown_pages_args' ), 10, 2 );
 
 		// Notice
-		add_action( 'edit_form_top', array( $this, 'edit_form_top' ) );
+		add_action( 'edit_form_top', array( $this, 'linguator_edit_form_top' ) );
 	}
 
 	/**
@@ -80,7 +80,7 @@ class Linguator_Admin_Classic_Editor {
 	 * @param string $post_type Current post type
 	 * @return void
 	 */
-	public function add_meta_boxes( $post_type ) {
+	public function linguator_add_meta_boxes( $post_type ) {
 		if ( $this->model->is_translated_post_type( $post_type ) ) {
 			add_meta_box(
 				'ml_box',
@@ -302,7 +302,21 @@ class Linguator_Admin_Classic_Editor {
 		}
 
 		// Flag
-		$x->Add( array( 'what' => 'flag', 'data' => empty( $lang->flag ) ? esc_html( $lang->slug ) : $lang->flag ) );
+		$x->Add(
+			array(
+				'what' => 'flag',
+				'data' => empty( $lang->flag )
+					? esc_html( $lang->slug )
+					: wp_kses(
+						(string) $lang->flag,
+						array(
+							'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
+							'span' => array( 'class' => true, 'style' => true ),
+						),
+						array_merge( wp_allowed_protocols(), array( 'data' ) )
+					),
+			)
+		);
 
 		// Sample permalink
 		$x->Add( array( 'what' => 'permalink', 'data' => get_sample_permalink_html( $post_ID ) ) );
@@ -317,7 +331,7 @@ class Linguator_Admin_Classic_Editor {
 	 *
 	 * @return void
 	 */
-	public function ajax_posts_not_translated() {
+	public function linguator_ajax_posts_not_translated() {
 		check_ajax_referer( 'lmat_language', '_lmat_nonce' );
 
 		if ( ! isset( $_GET['post_type'], $_GET['post_language'], $_GET['translation_language'], $_GET['term'], $_GET['lmat_post_id'] ) ) {
@@ -376,7 +390,7 @@ class Linguator_Admin_Classic_Editor {
 	 * @param WP_Post $post          The page being edited.
 	 * @return array Modified arguments.
 	 */
-	public function page_attributes_dropdown_pages_args( $dropdown_args, $post ) {
+	public function linguator_page_attributes_dropdown_pages_args( $dropdown_args, $post ) {
 
 		$language = null;
 
@@ -415,7 +429,7 @@ class Linguator_Admin_Classic_Editor {
 	 * @param WP_Post $post the post currently being edited.
 	 * @return void
 	 */
-	public function edit_form_top( $post ) {
+	public function linguator_edit_form_top( $post ) {
 		if ( ! $this->model->post->current_user_can_synchronize( $post->ID ) ) {
 			?>
 			<div class="lmat-notice notice notice-warning">

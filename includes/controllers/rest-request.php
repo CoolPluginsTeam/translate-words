@@ -154,7 +154,7 @@ class Linguator_REST_Request extends Linguator_Base {
 		}
 
 		add_filter( 'rest_pre_dispatch', array( $this, 'set_language' ), 10, 3 );
-		add_filter( 'rest_request_before_callbacks', array( $this, 'set_filters_sanitization' ) );
+		add_filter( 'rest_request_before_callbacks', array( $this, 'linguator_set_filters_sanitization' ) );
 
 													$this->filters_links           = new Linguator_Filters_Links( $this );
 		$this->filters                 = new Linguator_Filters( $this );
@@ -208,7 +208,7 @@ class Linguator_REST_Request extends Linguator_Base {
 	 * @param WP_REST_Response|WP_HTTP_Response|WP_Error|mixed $response Result to send to the client.
 	 * @return WP_REST_Response|WP_HTTP_Response|WP_Error|mixed
 	 */
-	public function set_filters_sanitization( $response ) {
+	public function linguator_set_filters_sanitization( $response ) {
 		$language = $this->request->get_language();
 		if ( empty( $language ) ) {
 			$type     = $this->request->get_object_type();

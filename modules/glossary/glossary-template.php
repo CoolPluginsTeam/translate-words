@@ -113,19 +113,6 @@ $single_language_mode = count($language_codes_with_entries) === 1;
 $single_language_code = $single_language_mode ? $language_codes_with_entries[0] : '';
 ?>
 
-<style>
-<?php // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- $code is already escaped with esc_attr() and used in CSS selectors. ?>
-<?php foreach ($languages as $lang): 
-    $code = esc_attr($lang['code']);
-?>
-.lmat-glossary-table.lmat-hide-lang-<?php echo $code; ?> th[data-lang="<?php echo $code; ?>"],
-.lmat-glossary-table.lmat-hide-lang-<?php echo $code; ?> td[data-lang="<?php echo $code; ?>"] {
-    display: none !important;
-}
-<?php endforeach; ?>
-<?php // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-</style>
-
 <div class="lmat-glossary">
     <div class="lmat-glossary-container">
         <?php wp_nonce_field('lmat_glossary_nonce', 'lmat_glossary_nonce'); ?>
@@ -476,42 +463,6 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                 <div id="lmat-no-results">No glossary entries found.</div>
             <?php endif; ?>
         </div>
-        <!-- Move the template outside the table wrapper so it is always present -->
-        <?php // phpcs:disable Generic.PHP.DisallowAlternativePHPTags -- JavaScript template syntax (Underscore.js), not PHP. ?>
-        <script type="text/template" id="lmat-glossary-edit-row-template">
-            <tr class="lmat-glossary-edit-row">
-                <td>
-                    <textarea class="lmat-edit-term" rows="3" placeholder="<?php esc_attr_e('String Translation', 'translate-words'); ?>"><%= term %></textarea>
-                    <div class="lmat-translation-error"></div>
-                    <textarea class="lmat-edit-desc" rows="4" placeholder="<?php esc_attr_e('Example: The name of the add-on that allows translating strings', 'translate-words'); ?>"><%= desc %></textarea>
-                </td>
-                <td>
-                    <select class="lmat-edit-type">
-                        <option value="general" <%= type === 'general' ? 'selected' : '' %>><?php esc_html_e('General', 'translate-words'); ?></option>
-                        <option value="name" <%= type === 'name' ? 'selected' : '' %>><?php esc_html_e('Name', 'translate-words'); ?></option>
-                    </select>
-                </td>
-                <% for (var i = 0; i < languages.length; i++) { 
-                    if (languages[i].code === source_lang) continue;
-                %>
-                    <td colspan="2">
-                        <textarea class="lmat-edit-translation" data-lang="<%= languages[i].code %>" placeholder="<?php esc_attr_e('Custom Translation', 'translate-words'); ?>" rows="9"><%= translations[languages[i].code] || '' %></textarea>
-                        <div class="lmat-translation-error"><?php esc_html_e('Too long, must be less than 220 characters', 'translate-words'); ?></div>
-                    </td>
-                <% } %>
-                <td colspan="2" class="lmat-actions-cell">
-                    <div class="lmat-action-buttons">
-                        <button type="button" class="lmat-save-edit-btn button button-primary">
-                            <?php esc_html_e('Save', 'translate-words'); ?>
-                        </button>
-                        <button type="button" class="lmat-cancel-edit-btn">
-                            <?php esc_html_e('Cancel', 'translate-words'); ?>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        </script>
-        <?php // phpcs:enable Generic.PHP.DisallowAlternativePHPTags ?>
     </div>
 </div>
 <?php

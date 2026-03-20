@@ -16,6 +16,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 abstract class Linguator_Abstract_Language_Switcher_Block {
 	/**
+	 * Returns the allowed HTML tags/attributes for switcher output.
+	 *
+	 * This is used to sanitize server-rendered block output and any injected
+	 * flag markup (e.g. <img>) before returning it to WordPress for rendering.
+	 *
+	 * @return array
+	 */
+	protected function get_allowed_switcher_html() {
+		return array(
+			'nav'    => array( 'aria-label' => true, 'class' => true, 'role' => true ),
+			'div'    => array( 'class' => true ),
+			'ul'     => array( 'class' => true ),
+			'li'     => array( 'class' => true ),
+			'a'      => array( 'href' => true, 'class' => true, 'title' => true, 'hreflang' => true, 'lang' => true, 'rel' => true, 'target' => true ),
+			'span'   => array( 'class' => true, 'style' => true ),
+			'img'    => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'loading' => true, 'decoding' => true ),
+			'label'  => array( 'for' => true, 'class' => true ),
+			'select' => array( 'id' => true, 'name' => true, 'class' => true, 'aria-label' => true ),
+			'option' => array( 'value' => true, 'selected' => true ),
+		);
+	}
+
+	/**
 	 * @var Linguator_Links
 	 */
 	protected $links;
@@ -59,7 +82,7 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	 */
 	public function init() {
 		// Use rest_pre_dispatch_filter to get additional parameters for language switcher block.
-		add_filter( 'rest_pre_dispatch', array( $this, 'get_rest_query_params' ), 10, 3 );
+		add_filter( 'rest_pre_dispatch', array( $this, 'linguator_get_rest_query_params' ), 10, 3 );
 
 		// Register language switcher block.
 		add_action( 'init', array( $this, 'register' ) );
@@ -191,7 +214,7 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	 * @template T of WP_REST_Request
 	 * @phpstan-param T $request
 	 */
-	public function get_rest_query_params( $result, $server, $request ) {
+	public function linguator_get_rest_query_params( $result, $server, $request ) {
 		if ( linguator_is_edit_rest_request( $request ) ) {
 			$this->is_edit_context = true;
 

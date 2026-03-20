@@ -270,7 +270,25 @@ class Linguator_Template_Translation {
                 }
 
                 // Get the flag HTML for the language
-                $flag_html = method_exists($lang, 'get_display_flag') ? $lang->get_display_flag('no-alt') : '';
+                $flag_html = method_exists( $lang, 'get_display_flag' ) ? $lang->get_display_flag( 'no-alt' ) : '';
+                $flag_html = wp_kses(
+                    (string) $flag_html,
+                    array(
+                        'img'  => array(
+                            'src'      => true,
+                            'alt'      => true,
+                            'class'    => true,
+                            'width'    => true,
+                            'height'   => true,
+                            'style'    => true,
+                            'decoding' => true,
+                            'loading'  => true,
+                            'title'    => true,
+                        ),
+                        'span' => array( 'class' => true, 'style' => true ),
+                    ),
+                    array_merge( wp_allowed_protocols(), array( 'data' ) )
+                );
 
                 $document->add_control(
                     "lmat_elementor_edit_lang_{$lang_slug}",
@@ -295,7 +313,25 @@ class Linguator_Template_Translation {
                 ], admin_url('post-new.php'));
 
                 // Get the flag HTML for the language
-                $flag_html = method_exists($lang, 'get_display_flag') ? $lang->get_display_flag('no-alt') : '';
+                $flag_html = method_exists( $lang, 'get_display_flag' ) ? $lang->get_display_flag( 'no-alt' ) : '';
+                $flag_html = wp_kses(
+                    (string) $flag_html,
+                    array(
+                        'img'  => array(
+                            'src'      => true,
+                            'alt'      => true,
+                            'class'    => true,
+                            'width'    => true,
+                            'height'   => true,
+                            'style'    => true,
+                            'decoding' => true,
+                            'loading'  => true,
+                            'title'    => true,
+                        ),
+                        'span' => array( 'class' => true, 'style' => true ),
+                    ),
+                    array_merge( wp_allowed_protocols(), array( 'data' ) )
+                );
 
                 $document->add_control(
                     "lmat_elementor_add_lang_{$lang_slug}",

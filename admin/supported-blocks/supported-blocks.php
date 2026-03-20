@@ -221,7 +221,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 				$linguator_supported_blocks       = isset($linguator_block_parse_rules['LmatBlockParseRules']) ? $linguator_block_parse_rules['LmatBlockParseRules'] : array();
 				$linguator_supported_blocks_names = array_keys( $linguator_supported_blocks );
 				$s_no                        = 1;
-				$linguator_post_id                = self::get_custom_block_post_id();
+				$linguator_post_id                = self::linguator_get_custom_block_post_id();
 
 				$filter_blocks_data=$blocks_data;
 
@@ -261,7 +261,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			return $block_name;
 		}
 
-		private static function get_custom_block_post_id()
+		private static function linguator_get_custom_block_post_id()
 		{
 			$first_post_id = null;
 
@@ -301,12 +301,12 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 */
 		public function block_parsing_rules() {
 			$this->custom_block_data_array = array();
-			$block_parse_rules = $this->get_block_parse_rules();
+			$block_parse_rules = $this->linguator_get_block_parse_rules();
 			
 			return $block_parse_rules;
 		}
 
-		public function get_block_parse_rules() {
+		public function linguator_get_block_parse_rules() {
 			$path_url = plugins_url( '/modules/page-translation/block-translation-rules/block-rules.json', LINGUATOR_ROOT_FILE );
 			$response = wp_remote_get(
 				esc_url_raw( $path_url ),
@@ -348,7 +348,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			if ( ! empty( $custom_block_translation ) && is_array( $custom_block_translation ) ) {
 				foreach ( $custom_block_translation as $key => $block_data ) {
 					$block_rules = isset( $block_translation_rules['LmatBlockParseRules'][ $key ] ) ? $block_translation_rules['LmatBlockParseRules'][ $key ] : null;
-					$this->filter_custom_block_rules( array( $key ), $block_data, $block_rules );
+					$this->linguator_filter_custom_block_rules( array( $key ), $block_data, $block_rules );
 				}
 			}
 
@@ -357,29 +357,29 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			return $block_translation_rules;
 		}
 
-		private function filter_custom_block_rules( array $id_keys, $value, $block_rules, $attr_key = false ) {
+		private function linguator_filter_custom_block_rules( array $id_keys, $value, $block_rules, $attr_key = false ) {
 			$block_rules = is_object( $block_rules ) ? json_decode( json_encode( $block_rules ) ) : $block_rules;
 
 			if ( ! isset( $block_rules ) ) {
-				return $this->merge_nested_attribute( $id_keys, $value );
+				return $this->linguator_merge_nested_attribute( $id_keys, $value );
 			}
 			if ( is_object( $value ) && isset( $block_rules ) ) {
 				foreach ( $value as $key => $item ) {
 					if ( isset( $block_rules[ $key ] ) && is_object( $item ) ) {
-						$this->filter_custom_block_rules( array_merge( $id_keys, array( $key ) ), $item, $block_rules[ $key ], false );
+						$this->linguator_filter_custom_block_rules( array_merge( $id_keys, array( $key ) ), $item, $block_rules[ $key ], false );
 						continue;
 					} elseif ( ! isset( $block_rules[ $key ] ) && true === $item ) {
-						$this->merge_nested_attribute( array_merge( $id_keys, array( $key ) ), true );
+						$this->linguator_merge_nested_attribute( array_merge( $id_keys, array( $key ) ), true );
 						continue;
 					} elseif ( ! isset( $block_rules[ $key ] ) && is_object( $item ) ) {
-						$this->merge_nested_attribute( array_merge( $id_keys, array( $key ) ), $item );
+						$this->linguator_merge_nested_attribute( array_merge( $id_keys, array( $key ) ), $item );
 						continue;
 					}
 				}
 			}
 		}
 
-		private function merge_nested_attribute( array $id_keys, $value ) {
+		private function linguator_merge_nested_attribute( array $id_keys, $value ) {
 			$value = is_object( $value ) ? json_decode( json_encode( $value ), true ) : $value;
 
 			$current_array = &$this->custom_block_data_array;
@@ -413,7 +413,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					}
 
 					foreach ( $updated_blocks_data as $key => $block_data ) {
-						$this->filter_custom_block_rules( array( $key ), $block_data, $block_parse_rules['LmatBlockParseRules'][ $key ] );
+						$this->linguator_filter_custom_block_rules( array( $key ), $block_data, $block_parse_rules['LmatBlockParseRules'][ $key ] );
 					}
 
 					if ( count( $this->custom_block_data_array ) > 0 ) {

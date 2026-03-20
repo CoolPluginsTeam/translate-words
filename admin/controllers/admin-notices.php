@@ -45,11 +45,11 @@ class Linguator_Admin_Notices {
 	public function __construct( $linguator ) {
 		$this->options = &$linguator->options;
 
-		add_action( 'admin_init', array( $this, 'hide_notice' ) );
-		add_action( 'admin_notices', array( $this, 'display_notices' ) );
+		add_action( 'admin_init', array( $this, 'linguator_hide_notice' ) );
+		add_action( 'admin_notices', array( $this, 'linguator_display_notices' ) );
 		
 		// Add inline CSS and JS for notice positioning on ?page=lmat
-		add_action( 'admin_enqueue_scripts', array( $this, 'add_notice_positioning_inline' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'linguator_add_notice_positioning_inline' ) );
 	}
 
 	/**
@@ -72,7 +72,7 @@ class Linguator_Admin_Notices {
 	 *
 	 * @return string[]
 	 */
-	public static function get_notices() {
+	public static function linguator_get_notices() {
 		return self::$notices;
 	}
 
@@ -84,7 +84,7 @@ class Linguator_Admin_Notices {
 	 * @param string $notice Notice name
 	 * @return bool
 	 */
-	public static function is_dismissed( $notice ) {
+	public static function linguator_is_dismissed( $notice ) {
 		$dismissed = get_option( 'lmat_dismissed_notices', array() );
 
 		// Handle legacy user meta
@@ -164,7 +164,7 @@ class Linguator_Admin_Notices {
 	 *
 	 * @return void
 	 */
-	public function hide_notice() {
+	public function linguator_hide_notice() {
 		if ( isset( $_GET['lmat-hide-notice'], $_GET['_lmat_notice_nonce'] ) ) {
 			$notice = sanitize_key( wp_unslash( $_GET['lmat-hide-notice'] ) );
 			check_admin_referer( $notice, '_lmat_notice_nonce' );
@@ -186,7 +186,7 @@ class Linguator_Admin_Notices {
 	 *
 	 * @return void
 	 */
-	public function display_notices() {
+	public function linguator_display_notices() {
 		// Check if we're on the specific ?page=lmat page and should suppress notices
 		if ( current_user_can( 'manage_options' ) ) {
 			
@@ -198,12 +198,12 @@ class Linguator_Admin_Notices {
 			}
 
 			// Custom notices
-			foreach ( static::get_notices() as $notice => $html ) {
-				if ( $this->can_display_notice( $notice ) && ! static::is_dismissed( $notice ) ) {
+			foreach ( static::linguator_get_notices() as $notice => $html ) {
+				if ( $this->can_display_notice( $notice ) && ! static::linguator_is_dismissed( $notice ) ) {
 					?>
 					<div class="lmat-notice notice notice-info">
 						<?php
-						$this->dismiss_button( $notice );
+						$this->linguator_dismiss_button( $notice );
 						echo wp_kses_post( $html );
 						?>
 					</div>
@@ -211,7 +211,7 @@ class Linguator_Admin_Notices {
 				}
 			}
 		}
-		if ( $this->is_lmat_page() ) {
+		if ( $this->linguator_is_lmat_page() ) {
 			// Don't display notices here, they will be captured and displayed later
 			return;
 		}
@@ -225,7 +225,7 @@ class Linguator_Admin_Notices {
 	 * @param string $name Notice name
 	 * @return void
 	 */
-	public function dismiss_button( $name ) {
+	public function linguator_dismiss_button( $name ) {
 		printf(
 			'<a class="notice-dismiss" href="%s"><span class="screen-reader-text">%s</span></a>',
 			esc_url( wp_nonce_url( add_query_arg( 'lmat-hide-notice', $name ), $name, '_lmat_notice_nonce' ) ),
@@ -241,7 +241,7 @@ class Linguator_Admin_Notices {
 	 *
 	 * @return bool
 	 */
-	private function is_lmat_page() {
+	private function linguator_is_lmat_page() {
 		$screen = get_current_screen();
 		if ( empty( $screen ) ) {
 			return false;
@@ -257,8 +257,8 @@ class Linguator_Admin_Notices {
 	 *
 	 * @return void
 	 */
-	public function add_notice_positioning_inline() {
-		if ( ! $this->is_lmat_page() ) {
+	public function linguator_add_notice_positioning_inline() {
+		if ( ! $this->linguator_is_lmat_page() ) {
 			return;
 		}
 

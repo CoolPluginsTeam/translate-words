@@ -91,7 +91,7 @@ class Linguator_Frontend_Links extends Linguator_Links {
 			}
 
 			elseif ( is_search() ) {
-				$url = $this->get_archive_url( $language );
+				$url = $this->linguator_get_archive_url( $language );
 
 				// Special case for search filtered by translated taxonomies: taxonomy terms are translated in the translation url
 				if ( ! empty( $wp_query->tax_query->queries ) ) {
@@ -158,7 +158,7 @@ class Linguator_Frontend_Links extends Linguator_Links {
 
 					/** This filter is documented in frontend/frontend-links.php */
 					if ( ! apply_filters( 'lmat_hide_archive_translation_url', ! $count, $language->slug, $args ) ) {
-						$url = $this->get_archive_url( $language );
+						$url = $this->linguator_get_archive_url( $language );
 					}
 				}
 			}
@@ -172,7 +172,7 @@ class Linguator_Frontend_Links extends Linguator_Links {
 
 				/** This filter is documented in frontend/frontend-links.php */
 				if ( ! apply_filters( 'lmat_hide_archive_translation_url', ! $count, $language->slug, $args ) ) {
-					$url = $this->get_archive_url( $language );
+					$url = $this->linguator_get_archive_url( $language );
 				}
 			}
 
@@ -211,7 +211,7 @@ class Linguator_Frontend_Links extends Linguator_Links {
 	 * @param Linguator_Language $language An object representing a language.
 	 * @return string
 	 */
-	public function get_archive_url( $language ) {
+	public function linguator_get_archive_url( $language ) {
 		$url = linguator_get_requested_url();
 		$url = $this->links_model->switch_language_in_link( $url, $language );
 		$url = $this->links_model->remove_paged_from_link( $url );

@@ -23,12 +23,12 @@ class Linguator_Cache_Compat {
 	 */
 	public function init() {
 		if ( LMAT_COOKIE ) {
-			add_action( 'wp_enqueue_scripts', array( $this, 'add_cookie_script' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'linguator_add_cookie_script' ) );
 		}
 
 		// Since version 3.0.5, WP Rocket does not serve the cached page if our cookie is not set
 		if ( ! defined( 'WP_ROCKET_VERSION' ) || version_compare( WP_ROCKET_VERSION, '3.0.5', '<' ) ) {
-			add_action( 'wp', array( $this, 'do_not_cache_site_home' ) );
+			add_action( 'wp', array( $this, 'linguator_do_not_cache_site_home' ) );
 		}
 
 		add_action( 'clean_post_cache', array( $this, 'clean_post_cache' ), 1 );
@@ -43,7 +43,7 @@ class Linguator_Cache_Compat {
 	 *
 	 * @return void
 	 */
-	public function add_cookie_script() {
+	public function linguator_add_cookie_script() {
 		// Embeds should not set the cookie.
 		if ( is_embed() ) {
 			return;
@@ -88,7 +88,7 @@ class Linguator_Cache_Compat {
 	 *
 	 *  
 	 */
-	public function do_not_cache_site_home() {
+	public function linguator_do_not_cache_site_home() {
 		if ( ! defined( 'DONOTCACHEPAGE' ) && LMAT()->options['browser'] && LMAT()->options['hide_default'] && is_front_page() && linguator_current_language() === linguator_default_language() ) {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
 			define( 'DONOTCACHEPAGE', true );
