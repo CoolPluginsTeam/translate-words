@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Services\Translation\Translation_Term_Model;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
@@ -260,7 +261,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return true;
 			}
 
-			if ( ! current_user_can( 'edit_posts' ) ) {
+			if ( ! current_user_can( Capabilities::TRANSLATIONS ) ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 			return true;
@@ -283,7 +284,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( ! is_user_logged_in() ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
-			if ( ! current_user_can( 'edit_posts' ) ) {
+			if ( ! current_user_can( Capabilities::TRANSLATIONS ) ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
 
@@ -573,7 +574,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( ! is_user_logged_in() ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
-			if ( ! current_user_can( 'edit_posts' ) ) {
+			if ( ! current_user_can( Capabilities::TRANSLATIONS ) ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
 

@@ -59,7 +59,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         add_options_page(
             esc_html__('Translate Words', 'translate-words'),
             esc_html__('Translate Words', 'translate-words'),
-            'administrator',
+            'manage_options',
             LMAT_PAGE,
             'linguator_setting_page'
         );
@@ -93,7 +93,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         }
 
         wp_enqueue_script(
-            'LMAT_TRANSLATIONS_ADMIN',
+            'lmat_translations_admin',
             LMAT_PLUGINS_DIR . 'js/main.js',
             ['jquery'],
             '1.0.1',
@@ -108,7 +108,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         );
 
         wp_localize_script(
-            'LMAT_TRANSLATIONS_ADMIN',
+            'lmat_translations_admin',
             'lmat_properties',
             [
                 'template'      => LMAT_NEW_STRING_TEMPLATE,
@@ -119,7 +119,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         // Add inline script for notice dismissal
         wp_add_inline_script(
-            'LMAT_TRANSLATIONS_ADMIN',
+            'lmat_translations_admin',
             "
 		jQuery(document).ready(function($) {
 			$(document).on('click', '.tww-deprecation-notice .notice-dismiss', function() {
@@ -226,7 +226,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         $message = '<h3 style="margin-top: 0;">' . esc_html__('⚠️ Important Update: Translate Words is Evolving to a New AI Multilingual Solution', 'translate-words') . '</h3>';
         $message .= '<p>' . sprintf(
             // translators: %1$s: AI Multilingual, %2$s: Linguator
-            __('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words'),
+            esc_html__('We are working on a new and more powerful %1$s solution called %2$s, and Translate Words will gradually transition to this new plugin.', 'translate-words'),
             '<strong>AI Multilingual</strong>',
             '<strong>Linguator</strong>'
         ) . '</p>';
@@ -267,7 +267,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         // Store dismissal with timestamp for tracking purposes
         $dismissal_data = [
             'dismissed'    => true,
-            'timestamp'    => current_time('timestamp'),
+            'timestamp'    => time(),
             'dismissed_by' => get_current_user_id(),
         ];
 
@@ -383,7 +383,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         // Enqueue editor scripts.
         wp_enqueue_script(
-            'LMAT_TRANSLATIONS_JS',
+            'lmat_translations_js',
             LMAT_PLUGINS_DIR . 'js/gb_i18n.js',
             ['jquery'],
             '1.0.0',
@@ -392,7 +392,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         // Provide translations data without printing raw <script> tags in admin markup.
         wp_add_inline_script(
-            'LMAT_TRANSLATIONS_JS',
+            'lmat_translations_js',
             'var lmat_translations = ' . wp_json_encode( $overrides ) . ';',
             'before'
         );

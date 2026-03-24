@@ -247,7 +247,7 @@ class Linguator_Admin_Feedback {
 				)
 			);
 
-			die( json_encode( array( 'response' => $response ) ) );
+			wp_send_json( array( 'response' => $response ) );
 		}
 
 	}

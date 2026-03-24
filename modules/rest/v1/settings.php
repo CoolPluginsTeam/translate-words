@@ -105,7 +105,7 @@ class Settings extends Abstract_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_item' ),
-					'permission_callback' => array( $this, 'update_item_permissions_check' ),
+					'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
@@ -655,6 +655,24 @@ class Settings extends Abstract_Controller {
 		$nonce_check = $this->verify_nonce( $request );
 		if ( is_wp_error( $nonce_check ) ) {
 			return $nonce_check;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if a given request has access to read the options.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has access to read options, WP_Error object otherwise.
+	 */
+	public function get_item_permissions_check( $request ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error(
+				'rest_forbidden_context',
+				__( 'Sorry, you are not allowed to view options.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
 		}
 
 		return true;

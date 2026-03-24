@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Linguator\Frontend\Controllers\Linguator_Frontend;
+use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Other\Linguator_Model;
 use WP_Error;
 use WP_REST_Request;
@@ -80,7 +81,16 @@ class Linguator_Elementor {
 	 * Proper Permission Check
 	 */
 	public static function linguator_check_rest_permission( $request ) {
-		return is_user_logged_in() && current_user_can( 'edit_posts' );
+		if ( ! is_user_logged_in() || ! current_user_can( Capabilities::TRANSLATIONS ) ) {
+			return false;
+		}
+
+		$post_id = absint( $request->get_param( 'post_id' ) );
+		if ( $post_id > 0 && ! current_user_can( 'edit_post', $post_id ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

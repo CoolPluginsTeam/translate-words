@@ -273,7 +273,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		
 
 		wp_enqueue_script('lmat-loco-redirect-script', plugins_url('admin/assets/js/loco-redirect-script.js', LINGUATOR_ROOT_FILE), array('jquery'), LINGUATOR_VERSION, true);
-		wp_localize_script('lmat-loco-redirect-script', 'lmat_loco_redirect_script', array('admin_' => esc_url(admin_url('admin.php?page=lmat_settings')), 'loco_iframe_page_url' => array("url" => $plugin_info_url, "title" => esc_js( __( 'Plugin: Loco Translate', 'translate-words' ) )), 'loco_install' => $loco_install));
+		wp_localize_script('lmat-loco-redirect-script', 'lmat_loco_redirect_script', array('admin_' => esc_url(admin_url('admin.php?page=lmat_settings')), 'loco_iframe_page_url' => array("url" => esc_url( $plugin_info_url ), "title" => esc_js( __( 'Plugin: Loco Translate', 'translate-words' ) )), 'loco_install' => $loco_install));
 	}
 
 	/**

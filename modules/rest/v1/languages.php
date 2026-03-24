@@ -1101,10 +1101,10 @@ class Languages extends Abstract_Controller {
 	 * @phpstan-param WP_REST_Request<T> $request
 	 */
 	public function get_items_permissions_check( $request ) {
-		if ( 'edit' === $request['context'] && ! $this->check_update_permission() ) {
+		if ( ! is_user_logged_in() || ! $this->check_update_permission() ) {
 			return new WP_Error(
 				'rest_forbidden_context',
-				__( 'Sorry, you are not allowed to edit languages.', 'translate-words' ),
+				__( 'Sorry, you are not allowed to view languages.', 'translate-words' ),
 				array( 'status' => rest_authorization_required_code() )
 			);
 		}

@@ -123,30 +123,6 @@ add_action( 'init', function() {
 	}
 }, 1 );
 
-
-
-// Display admin notice when linguator plugin is deactivated
-add_action('admin_notices', function() {
-    $linguator_plugin = 'linguator-multilingual-ai-translation/linguator-multilingual-ai-translation.php';
-        if ( is_plugin_active( $linguator_plugin ) ) {
-            deactivate_plugins( $linguator_plugin );
-            ?>
-            <div class="notice notice-info is-dismissible">
-                <p>
-                <?php
-                printf(
-                    /* translators: %1$s: link to Linguator plugin, %2$s: link to Translate Words plugin */
-                    wp_kses_post( __( 'The <a href="%1$s" target="_blank">Linguator – Multilingual AI Translation</a> plugin has been automatically deactivated because all its functionality is now available in <a href="%2$s" target="_blank">Linguator AI – Auto Translate & Create Multilingual Sites</a>.', 'translate-words' ) ),
-                    esc_url( 'https://wordpress.org/plugins/linguator-multilingual-ai-translation/' ),
-                    esc_url( 'https://wordpress.org/plugins/translate-words/' )
-                );
-                ?>
-                </p>
-            </div>
-            <?php
-        }
-});
-
 // Handle redirect after activation and language switcher visibility
 add_action('admin_init', function() {
 	// Don't redirect to wizard if Polylang is detected
