@@ -602,7 +602,14 @@ class Settings extends Abstract_Controller {
 		// Ping all URLs to make sure they are accessible - moved from Domains.php
 		$failed_urls = array();
 		foreach ( array_filter( $domains ) as $url ) {
-			$test_url = add_query_arg( 'deactivate-linguator', 1, $url );
+			$ping_token = wp_hash( 'lmat_domain_ping|' . gmdate( 'YmdH' ) );
+			$test_url   = add_query_arg(
+				array(
+					'deactivate-linguator' => 1,
+					'lmat_ping_token'      => $ping_token,
+				),
+				$url
+			);
 			// Don't redefine vip_safe_wp_remote_get() as it has not the same signature as wp_remote_get().
 			$response = function_exists( 'vip_safe_wp_remote_get' ) ? vip_safe_wp_remote_get( $test_url ) : wp_remote_get( $test_url );
 

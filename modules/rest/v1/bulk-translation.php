@@ -61,12 +61,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'ids'        => array(
-							'type'     => 'string',
-							'required' => true,
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => array( $this, 'sanitize_lmat_json_ids' ),
 						),
 						'lang'       => array(
-							'type'     => 'string',
-							'required' => true,
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => array( $this, 'sanitize_lmat_json_langs' ),
 						),
 						'privateKey' => array(
 							'type'              => 'string',
@@ -164,7 +166,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'term_id'              => array(
-							'required'          => true,
 							'type'              => 'integer',
 							'required'          => true,
 							'sanitize_callback' => 'absint',
@@ -176,19 +177,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'validate_callback' => array( $this, 'validate_lmat_create_term_nonce' ),
 						),
 						'target_language'      => array(
-							'required'          => true,
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'source_language'      => array(
-							'required'          => true,
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'taxonomy'             => array(
-							'required'          => true,
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
@@ -279,6 +277,45 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			return wp_verify_nonce( $value, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
+		/**
+		 * Sanitizes JSON-encoded post IDs payload.
+		 *
+		 * @param mixed $value Raw request value.
+		 * @return string
+		 */
+		public function sanitize_lmat_json_ids( $value ) {
+			$decoded = json_decode( (string) $value, true );
+			if ( ! is_array( $decoded ) ) {
+				return wp_json_encode( array() );
+			}
+
+			$ids = array_values( array_filter( array_map( 'absint', $decoded ) ) );
+			return wp_json_encode( $ids );
+		}
+
+		/**
+		 * Sanitizes JSON-encoded language slugs payload.
+		 *
+		 * @param mixed $value Raw request value.
+		 * @return string
+		 */
+		public function sanitize_lmat_json_langs( $value ) {
+			$decoded = json_decode( (string) $value, true );
+			if ( ! is_array( $decoded ) ) {
+				return wp_json_encode( array() );
+			}
+
+			$langs = array();
+			foreach ( $decoded as $lang ) {
+				$sanitized_lang = sanitize_key( (string) $lang );
+				if ( '' !== $sanitized_lang ) {
+					$langs[] = $sanitized_lang;
+				}
+			}
+
+			return wp_json_encode( array_values( $langs ) );
+		}
+
 		public function bulk_translate_entries( $params ) {
 			// Check if the user is logged in and has the necessary capabilities
 			if ( ! is_user_logged_in() ) {
@@ -296,9 +333,24 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			global $linguator;
 
 			// check language exists or not
-			$translate_lang = json_decode( $params['lang'] );
+			$translate_lang = json_decode( $params['lang'], true );
+			$translate_lang = is_array( $translate_lang )
+				? array_values(
+					array_filter(
+						array_map(
+							static function ( $lang ) {
+								return sanitize_key( (string) $lang );
+							},
+							$translate_lang
+						)
+					)
+				)
+				: array();
 
-			$post_ids        = json_decode( $params['ids'] );
+			$post_ids = json_decode( $params['ids'], true );
+			$post_ids = is_array( $post_ids )
+				? array_values( array_filter( array_map( 'absint', $post_ids ) ) )
+				: array();
 			$posts_translate = array();
 			$gutenberg_block = false;
 

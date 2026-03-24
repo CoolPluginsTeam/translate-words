@@ -295,19 +295,25 @@ if (!class_exists('Glossary')) {
             if ( empty( $_FILES['csv_file']['tmp_name'] ) ) {
                 wp_send_json_error('No file uploaded');
             }
-            if ( ! isset( $_FILES['csv_file']['type'] ) || ! isset( $_FILES['csv_file']['name'] ) ) {
+            if ( ! isset( $_FILES['csv_file']['name'] ) || ! isset( $_FILES['csv_file']['tmp_name'] ) ) {
                 wp_send_json_error('Invalid file data');
             }
             $file_name = sanitize_file_name( wp_unslash( $_FILES['csv_file']['name'] ) );
-            $file_type = sanitize_mime_type( wp_unslash( $_FILES['csv_file']['type'] ) );
-            if ( 'text/csv' !== $file_type && pathinfo( $file_name, PATHINFO_EXTENSION ) !== 'csv' ) {
+            $csv_path  = sanitize_text_field( wp_unslash( $_FILES['csv_file']['tmp_name'] ) );
+            $file_type = wp_check_filetype_and_ext( $csv_path, $file_name );
+
+            if (
+                empty( $file_type['ext'] ) ||
+                empty( $file_type['type'] ) ||
+                'csv' !== strtolower( (string) $file_type['ext'] ) ||
+                'text/csv' !== strtolower( (string) $file_type['type'] )
+            ) {
                 wp_send_json_error('Invalid file type');
             }
             $file_size = isset( $_FILES['csv_file']['size'] ) ? absint( wp_unslash( $_FILES['csv_file']['size'] ) ) : 0;
             if ( ! $file_size || $file_size > 2 * 1024 * 1024 ) { // 2MB limit
                 wp_send_json_error('File too large');
             }
-            $csv_path = isset( $_FILES['csv_file']['tmp_name'] ) ? sanitize_text_field( wp_unslash( $_FILES['csv_file']['tmp_name'] ) ) : '';
             if (empty($csv_path)) {
                 wp_send_json_error('Invalid file path');
             }

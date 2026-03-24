@@ -503,18 +503,6 @@ class Linguator_Wizard
 		}
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
 	/**
 	 * Create home page translations for each language defined.
 	 *
