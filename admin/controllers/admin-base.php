@@ -305,7 +305,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 			if ( in_array( $screen->base, $v[0] ) && ( $v[2] || $this->model->has_languages() ) ) {
 				wp_enqueue_script( "lmat_{$script}", plugins_url( "admin/assets/js/build/{$script}{$suffix}.js", LINGUATOR_ROOT_FILE ), $v[1], LINGUATOR_VERSION, $v[3] );
 				if ( 'classic-editor' === $script || 'block-editor' === $script ) {
-					wp_set_script_translations( "lmat_{$script}", 'linguator' );
+					wp_set_script_translations( "lmat_{$script}", 'translate-words' );
 				}
 			}
 		}
