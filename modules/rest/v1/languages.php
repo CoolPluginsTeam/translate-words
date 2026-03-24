@@ -177,6 +177,8 @@ class Languages extends Abstract_Controller {
 						'description' => __( 'Locale of the language to assign.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => true,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_required_slug_param' ),
 					),
 				),
 			)
@@ -194,16 +196,22 @@ class Languages extends Abstract_Controller {
 						'description' => __( 'ID of the source post (current).', 'translate-words' ),
 						'type'        => 'integer',
 						'required'    => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 					'target_id' => array(
 						'description' => __( 'ID of the existing page to link.', 'translate-words' ),
 						'type'        => 'integer',
 						'required'    => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 					'target_lang' => array(
 						'description' => __( 'Language slug of the target page.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => true,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_required_slug_param' ),
 					),
 				),
 			)
@@ -251,21 +259,29 @@ class Languages extends Abstract_Controller {
 						'description' => __( 'ID of the source post (current).', 'translate-words' ),
 						'type'        => 'integer',
 						'required'    => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 					'target_lang' => array(
 						'description' => __( 'Language slug for the new translation.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => true,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_required_slug_param' ),
 					),
 					'title' => array(
 						'description' => __( 'Title for the new translation post.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => true,
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => array( $this, 'validate_required_text_param' ),
 					),
 					'post_type' => array(
 						'description' => __( 'Post type for the new translation (default page).', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => false,
+						'sanitize_callback' => array( $this, 'sanitize_post_type_param' ),
+						'validate_callback' => array( $this, 'validate_post_type_param' ),
 					),
 				),
 			)
@@ -283,11 +299,15 @@ class Languages extends Abstract_Controller {
 						'description' => __( 'ID of the post to update.', 'translate-words' ),
 						'type'        => 'integer',
 						'required'    => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 					'lang' => array(
 						'description' => __( 'Language slug to assign to the post.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => true,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_required_slug_param' ),
 					),
 				),
 			)
@@ -306,7 +326,7 @@ class Languages extends Abstract_Controller {
 		$response = array();
 
 		// Get language filter from request
-		$lang_slug = $request->get_param( 'lang' );
+		$lang_slug = sanitize_key( (string) $request->get_param( 'lang' ) );
 		$filter_language = null;
 		
 		if ( ! empty( $lang_slug ) ) {
@@ -963,7 +983,7 @@ class Languages extends Abstract_Controller {
 
 		return rest_ensure_response( array(
 			'success' => true,
-			'post_id' => $post_id,
+			'post_id' => absint( $post_id ),
 			'language' => $updated_lang ? $updated_lang->to_array() : null,
 		) );
 	}
@@ -1120,6 +1140,65 @@ class Languages extends Abstract_Controller {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Validates integer parameters that must be positive.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_positive_int_param( $value ) {
+		return is_numeric( $value ) && absint( $value ) > 0;
+	}
+
+	/**
+	 * Validates required slug/locale-style parameters.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_required_slug_param( $value ) {
+		return is_scalar( $value ) && '' !== sanitize_key( (string) $value );
+	}
+
+	/**
+	 * Validates required text parameters.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_required_text_param( $value ) {
+		return is_scalar( $value ) && '' !== sanitize_text_field( (string) $value );
+	}
+
+	/**
+	 * Sanitizes post type request parameter.
+	 *
+	 * @param mixed $value Raw request value.
+	 * @return string
+	 */
+	public function sanitize_post_type_param( $value ) {
+		if ( null === $value || '' === $value ) {
+			return 'page';
+		}
+
+		return sanitize_key( (string) $value );
+	}
+
+	/**
+	 * Validates post type request parameter.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_post_type_param( $value ) {
+		if ( null === $value || '' === $value ) {
+			return true;
+		}
+
+		$post_type = sanitize_key( (string) $value );
+		return '' !== $post_type && post_type_exists( $post_type );
 	}
 
 	/**

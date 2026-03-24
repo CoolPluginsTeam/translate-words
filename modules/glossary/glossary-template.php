@@ -182,7 +182,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                                         <label>
                                             <div class="lmat-translation-label-row">
                                                 <?php if (!empty($lang['img'])): ?>
-                                                    <img src="<?php echo esc_attr($lang['img']); ?>" alt="<?php echo esc_attr($lang['alt']); ?>" class="lmat-lang-flag">
+                                                    <img src="<?php echo esc_url($lang['img']); ?>" alt="<?php echo esc_attr($lang['alt']); ?>" class="lmat-lang-flag">
                                                 <?php endif; ?>
                                                 <span class="lmat-lang-name"><?php echo esc_html($lang['alt']); ?></span>
                                                 <span class="lmat-lang-translation-label"><?php esc_html_e('Translation', 'translate-words'); ?></span>

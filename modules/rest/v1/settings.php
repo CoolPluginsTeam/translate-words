@@ -129,8 +129,10 @@ class Settings extends Abstract_Controller {
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
 						'status' => array(
-							'required' => true,
-							'type'     => 'boolean',
+							'required'          => true,
+							'type'              => 'boolean',
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 					),
 				),
@@ -148,8 +150,10 @@ class Settings extends Abstract_Controller {
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
 						'complete' => array(
-							'required' => true,
-							'type'     => 'boolean',
+							'required'          => true,
+							'type'              => 'boolean',
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 					),
 				),
@@ -167,8 +171,10 @@ class Settings extends Abstract_Controller {
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
 						'completed' => array(
-							'required' => true,
-							'type'     => 'boolean',
+							'required'          => true,
+							'type'              => 'boolean',
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 					),
 				),
@@ -186,9 +192,11 @@ class Settings extends Abstract_Controller {
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
 						'plugin' => array(
-							'required' => true,
-							'type'     => 'string',
-							'enum'     => array( 'polylang', 'wpml' ),
+							'required'          => true,
+							'type'              => 'string',
+							'enum'              => array( 'polylang', 'wpml' ),
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_migration_plugin_param' ),
 						),
 					),
 				),
@@ -205,34 +213,74 @@ class Settings extends Abstract_Controller {
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
 					'args'                => array(
 						'plugin' => array(
-							'required' => true,
-							'type'     => 'string',
-							'enum'     => array( 'polylang', 'wpml' ),
+							'required'          => true,
+							'type'              => 'string',
+							'enum'              => array( 'polylang', 'wpml' ),
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_migration_plugin_param' ),
 						),
 						'migrate_languages'    => array(
-							'required' => false,
-							'type'     => 'boolean',
-							'default'  => true,
+							'required'          => false,
+							'type'              => 'boolean',
+							'default'           => true,
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 						'migrate_translations' => array(
-							'required' => false,
-							'type'     => 'boolean',
-							'default'  => true,
+							'required'          => false,
+							'type'              => 'boolean',
+							'default'           => true,
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 						'migrate_settings'     => array(
-							'required' => false,
-							'type'     => 'boolean',
-							'default'  => true,
+							'required'          => false,
+							'type'              => 'boolean',
+							'default'           => true,
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 						'migrate_strings'     => array(
-							'required' => false,
-							'type'     => 'boolean',
-							'default'  => true,
+							'required'          => false,
+							'type'              => 'boolean',
+							'default'           => true,
+							'sanitize_callback' => array( $this, 'sanitize_boolean_param' ),
+							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 					),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Sanitizes boolean-like request values.
+	 *
+	 * @param mixed $value Raw request value.
+	 * @return bool
+	 */
+	public function sanitize_boolean_param( $value ) {
+		return rest_sanitize_boolean( $value );
+	}
+
+	/**
+	 * Validates boolean-like request values.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_boolean_param( $value ) {
+		return null !== rest_validate_boolean( $value );
+	}
+
+	/**
+	 * Validates migration plugin identifier.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_migration_plugin_param( $value ) {
+		return in_array( sanitize_key( (string) $value ), array( 'polylang', 'wpml' ), true );
 	}
 
 	/**

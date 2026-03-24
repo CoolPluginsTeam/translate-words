@@ -85,37 +85,37 @@
         {},
         wp.element.createElement(
           PanelBody,
-          { title: __('Language switcher settings', 'linguator') },
+          { title: __('Language switcher settings', 'translate-words') },
           wp.element.createElement(ToggleControl, {
-            label: __('Display as dropdown', 'linguator'),
+            label: __('Display as dropdown', 'translate-words'),
             checked: !!dropdown,
             onChange: (v) => update({ dropdown: !!v }),
           }),
           (!dropdown || showHideCurrentEvenInDropdown) &&
             wp.element.createElement(ToggleControl, {
-              label: __('Show language names', 'linguator'),
+              label: __('Show language names', 'translate-words'),
               checked: !!show_names,
               onChange: (v) => update({ show_names: !!v }),
             }),
           (!dropdown || showHideCurrentEvenInDropdown) &&
             wp.element.createElement(ToggleControl, {
-              label: __('Show flags', 'linguator'),
+              label: __('Show flags', 'translate-words'),
               checked: !!show_flags,
               onChange: (v) => update({ show_flags: !!v }),
             }),
           wp.element.createElement(ToggleControl, {
-            label: __('Force switch to homepage', 'linguator'),
+            label: __('Force switch to homepage', 'translate-words'),
             checked: !!force_home,
             onChange: (v) => update({ force_home: !!v }),
           }),
           !attributes.dropdown &&
             wp.element.createElement(ToggleControl, {
-              label: __('Hide current language', 'linguator'),
+              label: __('Hide current language', 'translate-words'),
               checked: !!hide_current,
               onChange: (v) => update({ hide_current: !!v }),
             }),
           wp.element.createElement(ToggleControl, {
-            label: __('Hide languages without translation', 'linguator'),
+            label: __('Hide languages without translation', 'translate-words'),
             checked: !!hide_if_no_translation,
             onChange: (v) => update({ hide_if_no_translation: !!v }),
           })
@@ -127,8 +127,8 @@
     // Regular block: linguator/language-switcher
     // ---------------------------------------------------------------------------
     registerBlockType('linguator/language-switcher', {
-      title: __('Language switcher', 'linguator'),
-      description: __('Add a language switcher so visitors can select their preferred language.', 'linguator'),
+      title: __('Language switcher', 'translate-words'),
+      description: __('Add a language switcher so visitors can select their preferred language.', 'translate-words'),
       icon: TranslationIcon,
       category: 'widgets',
       attributes: { ...sharedAttributes },
@@ -149,7 +149,7 @@
                   block: 'linguator/language-switcher',
                   attributes: props.attributes,
                 })
-              : wp.element.createElement('div', blockProps, __('Language Switcher preview (SSR not available).', 'linguator'))
+              : wp.element.createElement('div', blockProps, __('Language Switcher preview (SSR not available).', 'translate-words'))
           )
         );
       },
@@ -161,8 +161,8 @@
     // ---------------------------------------------------------------------------
     const NAV_BLOCK = 'linguator/navigation-language-switcher';
     registerBlockType(NAV_BLOCK, {
-      title: __('Language switcher', 'linguator'),
-      description: __('Add a language switcher to the Navigation block.', 'linguator'),
+      title: __('Language switcher', 'translate-words'),
+      description: __('Add a language switcher to the Navigation block.', 'translate-words'),
       icon: TranslationIcon,
       category: 'widgets',
       parent: ['core/navigation'],
@@ -222,7 +222,7 @@
                     attributes,
                     className: 'wp-block-navigation__container block-editor-block-list__layout',
                   })
-                : wp.element.createElement('div', {}, __('Language Switcher (Navigation) preview (SSR not available).', 'linguator')),
+                : wp.element.createElement('div', {}, __('Language Switcher (Navigation) preview (SSR not available).', 'translate-words')),
               maybeSubmenuIcon
             )
           )

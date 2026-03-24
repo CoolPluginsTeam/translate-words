@@ -89,12 +89,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'permission_callback' => array( $this, 'linguator_permission_only_admins' ),
 					'args'                => array(
 						'taxonomy'   => array(
-							'type'     => 'string',
-							'required' => true,
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_taxonomy_param' ),
 						),
 						'lang'       => array(
-							'type'     => 'string',
-							'required' => true,
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => array( $this, 'sanitize_lmat_json_langs' ),
+							'validate_callback' => array( $this, 'validate_lmat_json_langs' ),
 						),
 						'privateKey' => array(
 							'type'              => 'string',
@@ -103,8 +107,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'validate_callback' => array( $this, 'validate_lmat_bulk_nonce' ),
 						),
 						'ids'        => array(
-							'type'     => 'string',
-							'required' => true,
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => array( $this, 'sanitize_lmat_json_ids' ),
+							'validate_callback' => array( $this, 'validate_lmat_json_ids' ),
 						),
 					),
 				)
@@ -128,11 +134,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'type'              => 'integer',
 							'required'          => true,
 							'sanitize_callback' => 'absint',
+							'validate_callback' => array( $this, 'validate_positive_int_param' ),
 						),
 						'target_language' => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_text_field',
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_required_slug_param' ),
 						),
 						'editor_type'     => array(
 							'type'              => 'string',
@@ -142,7 +150,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						'source_language' => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_text_field',
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_required_slug_param' ),
 						),
 						'post_title'      => array(
 							'type'              => 'string',
@@ -169,6 +178,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'type'              => 'integer',
 							'required'          => true,
 							'sanitize_callback' => 'absint',
+							'validate_callback' => array( $this, 'validate_positive_int_param' ),
 						),
 						'privateKey'           => array(
 							'type'              => 'string',
@@ -179,17 +189,20 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						'target_language'      => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_text_field',
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_required_slug_param' ),
 						),
 						'source_language'      => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_text_field',
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_required_slug_param' ),
 						),
 						'taxonomy'             => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_text_field',
+							'sanitize_callback' => 'sanitize_key',
+							'validate_callback' => array( $this, 'validate_taxonomy_param' ),
 						),
 						'taxonomy_name'        => array(
 							'required'          => true,
@@ -275,6 +288,79 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 		public function validate_lmat_create_term_nonce( $value, $request, $param ) {
 			return wp_verify_nonce( $value, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+		}
+
+		/**
+		 * Validate positive integer request values.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_positive_int_param( $value ) {
+			return is_numeric( $value ) && absint( $value ) > 0;
+		}
+
+		/**
+		 * Validate required slug-like values.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_required_slug_param( $value ) {
+			return is_scalar( $value ) && '' !== sanitize_key( (string) $value );
+		}
+
+		/**
+		 * Validate taxonomy parameter.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_taxonomy_param( $value ) {
+			$taxonomy = sanitize_key( (string) $value );
+			return '' !== $taxonomy && taxonomy_exists( $taxonomy );
+		}
+
+		/**
+		 * Validate JSON-encoded IDs payload.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_lmat_json_ids( $value ) {
+			$decoded = json_decode( (string) $value, true );
+			if ( ! is_array( $decoded ) || empty( $decoded ) ) {
+				return false;
+			}
+
+			foreach ( $decoded as $id ) {
+				if ( ! is_numeric( $id ) || absint( $id ) <= 0 ) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		/**
+		 * Validate JSON-encoded language slugs payload.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_lmat_json_langs( $value ) {
+			$decoded = json_decode( (string) $value, true );
+			if ( ! is_array( $decoded ) || empty( $decoded ) ) {
+				return false;
+			}
+
+			foreach ( $decoded as $lang ) {
+				if ( '' === sanitize_key( (string) $lang ) ) {
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		/**
