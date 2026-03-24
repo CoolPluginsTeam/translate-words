@@ -82,12 +82,28 @@ class Linguator_Elementor {
 	 */
 	public static function linguator_check_rest_permission( $request ) {
 		if ( ! is_user_logged_in() || ! current_user_can( Capabilities::TRANSLATIONS ) ) {
-			return false;
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to access this resource.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
 		}
 
 		$post_id = absint( $request->get_param( 'post_id' ) );
-		if ( $post_id > 0 && ! current_user_can( 'edit_post', $post_id ) ) {
-			return false;
+		if ( $post_id <= 0 ) {
+			return new WP_Error(
+				'invalid_post_id',
+				__( 'Invalid post ID.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) && ! current_user_can( 'read_post', $post_id ) ) {
+			return new WP_Error(
+				'rest_forbidden_post',
+				__( 'Sorry, you are not allowed to access this post.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
 		}
 
 		return true;
