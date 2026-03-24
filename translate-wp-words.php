@@ -77,7 +77,7 @@ if ( ! defined( 'LINGUATOR' ) ) {
 if ( isset( $_GET['deactivate-linguator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 	$linguator_deactivate_linguator = sanitize_key( wp_unslash( $_GET['deactivate-linguator'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 
-	if ( ! empty( $linguator_deactivate_linguator ) ) {
+	if ( ! empty( $linguator_deactivate_linguator ) && is_admin() && current_user_can( 'manage_options' ) ) {
 		return;
 	}
 }

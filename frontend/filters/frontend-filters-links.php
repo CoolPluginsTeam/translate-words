@@ -279,7 +279,6 @@ class Linguator_Frontend_Filters_Links extends Linguator_Filters_Links {
 		// We *want* to filter the home url in these cases
 		if ( empty( $this->white_list ) ) {
 			// On Windows get_theme_root() mixes / and \
-			// We want only \ for the comparison with debug_backtrace
 			$theme_root = get_theme_root();
 			$theme_root = ( false === strpos( $theme_root, '\\' ) ) ? $theme_root : str_replace( '/', '\\', $theme_root );
 
@@ -327,26 +326,19 @@ class Linguator_Frontend_Filters_Links extends Linguator_Filters_Links {
 			$this->black_list = apply_filters( 'lmat_home_url_black_list', $black_list );
 		}
 
-		$traces = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
-		unset( $traces[0], $traces[1] ); // We don't need the last 2 calls: this function + call_user_func_array (or apply_filters on PHP7+)
-
-		foreach ( $traces as $trace ) {
-			// Black list first
-			foreach ( $this->black_list as $v ) {
-				if ( ( isset( $trace['file'], $v['file'] ) && false !== strpos( $trace['file'], $v['file'] ) ) || ( ! empty( $v['function'] ) && $trace['function'] === $v['function'] ) ) {
-					return $url;
-				}
-			}
-
-			foreach ( $this->white_list as $v ) {
-				if ( ( ! empty( $v['function'] ) && $trace['function'] === $v['function'] ) ||
-					( isset( $trace['file'], $v['file'] ) && false !== strpos( $trace['file'], $v['file'] ) && in_array( $trace['function'], array( 'home_url', 'get_home_url', 'bloginfo', 'get_bloginfo' ) ) ) ) {
-					$ok = true;
-				}
-			}
+		/**
+		 * Allows opting out of home_url language rewriting without stack inspection.
+		 *
+		 * @param bool   $should_rewrite Whether to rewrite the URL.
+		 * @param string $url            The current home URL.
+		 * @param string $path           Path relative to home URL.
+		 */
+		$should_rewrite = (bool) apply_filters( 'lmat_should_rewrite_home_url', true, $url, $path );
+		if ( ! $should_rewrite ) {
+			return $url;
 		}
 
-		return empty( $ok ) ? $url : ( empty( $path ) ? rtrim( $this->links->get_home_url( $this->curlang ), '/' ) : $this->links->get_home_url( $this->curlang ) );
+		return empty( $path ) ? rtrim( $this->links->get_home_url( $this->curlang ), '/' ) : $this->links->get_home_url( $this->curlang );
 	}
 
 	/**
