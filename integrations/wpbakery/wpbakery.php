@@ -1151,24 +1151,28 @@ class Linguator_WPBakery {
 	 * @access private
 	 * @static
 	 *
-	 * @param string $content Post content with protected tokens.
+	 * @param string $content            Post content with protected tokens.
+	 * @param bool   $escape_for_display When true (e.g. the_content), escape decoded values for safe HTML attributes. When false (save/translation pipeline), return raw restored values.
 	 * @return string Content with original attribute values restored.
 	 */
-	private static function linguator_restore_protected_attributes( $content ) {
+	private static function linguator_restore_protected_attributes( $content, $escape_for_display = false ) {
 		// Pattern: ___LMAT_PROTECTED_{base64}___
 		// Find all protected tokens and decode them
 		// Base64 strings can contain A-Z, a-z, 0-9, +, /, and = (for padding)
 		// Handle both complete tokens (___LMAT_PROTECTED_...___) and potentially truncated ones
 		$content = preg_replace_callback(
 			'/___LMAT_PROTECTED_([A-Za-z0-9+\/=]+)(?:___|__|$)/',
-			function( $matches ) {
+			function( $matches ) use ( $escape_for_display ) {
 				$encoded_value = $matches[1];
 				// Decode the base64 value
 				$original_value = base64_decode( $encoded_value, true );
 				// If decoding fails, return empty string to remove the broken token
 				// This prevents broken tokens from appearing in the content
-				if ( false === $original_value || empty( $original_value ) ) {
+				if ( false === $original_value || '' === $original_value ) {
 					return '';
+				}
+				if ( $escape_for_display ) {
+					return esc_attr( $original_value );
 				}
 				return $original_value;
 			},
@@ -1416,7 +1420,7 @@ class Linguator_WPBakery {
 		
 		// Restore any protected attributes that might still be tokenized
 		if ( false !== strpos( $content, '___LMAT_PROTECTED_' ) ) {
-			$content = self::linguator_restore_protected_attributes( $content );
+			$content = self::linguator_restore_protected_attributes( $content, true );
 		}
 		
 		// Remove standalone LMAT tokens that weren't properly replaced

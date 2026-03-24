@@ -12,6 +12,7 @@ use Linguator\Custom_Fields\Custom_Fields;
 use Translation_Entry;
 use Translations;
 use WP_Error;
+use WP_REST_Request;
 
 if ( ! class_exists( 'Bulk_Translation' ) ) :
 	/**
@@ -235,6 +236,30 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return true;
 			}
 
+			// Creating a translated post: must edit source and be allowed to create new content of that post type.
+			$post_id_param = $request->get_param( 'post_id' );
+			if ( null !== $post_id_param && '' !== $post_id_param ) {
+				$post_id = absint( $post_id_param );
+				if ( $post_id <= 0 ) {
+					return new \WP_Error( 'rest_invalid_param', __( 'Invalid post ID.', 'translate-words' ), array( 'status' => 400 ) );
+				}
+				$post = get_post( $post_id );
+				if ( ! $post ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				if ( ! current_user_can( 'edit_post', $post_id ) ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				$post_type_object = get_post_type_object( $post->post_type );
+				if ( ! $post_type_object || empty( $post_type_object->cap->create_posts ) ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				if ( ! current_user_can( $post_type_object->cap->create_posts ) ) {
+					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+				}
+				return true;
+			}
+
 			if ( ! current_user_can( 'edit_posts' ) ) {
 				return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
@@ -422,49 +447,50 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 		}
 
-		public function linguator_create_translate_post( $params ) {
-			if ( ! isset( $params['source_language'] ) || empty( $params['source_language'] ) ) {
-				wp_send_json_error( 'Invalid source language' );
+		/**
+		 * Create a translated copy of a post (capabilities verified in permission_callback).
+		 *
+		 * @param WP_REST_Request $request Request.
+		 * @return \WP_REST_Response|WP_Error
+		 */
+		public function linguator_create_translate_post( WP_REST_Request $request ) {
+			$params = $request->get_params();
+
+			if ( empty( $params['source_language'] ) ) {
+				return new WP_Error( 'invalid_source_language', __( 'Invalid source language', 'translate-words' ), array( 'status' => 400 ) );
 			}
+
 			if ( ! isset( $params['post_id'] ) || ! isset( $params['target_language'] ) || ( ! isset( $params['post_title'] ) && ! isset( $params['post_content'] ) ) ) {
-				wp_send_json_error( 'Invalid request' );
+				return new WP_Error( 'invalid_request', __( 'Invalid request', 'translate-words' ), array( 'status' => 400 ) );
 			}
-			if ( ! isset( $params['target_language'] ) && empty( $params['target_language'] ) ) {
-				wp_send_json_error( 'Invalid target language' );
+
+			if ( empty( $params['target_language'] ) ) {
+				return new WP_Error( 'invalid_target_language', __( 'Invalid target language', 'translate-words' ), array( 'status' => 400 ) );
 			}
-			if ( ! wp_verify_nonce( $params['privateKey'], 'lmat_create_translate_post_nonce' ) ) {
-				wp_send_json_error( 'You are not authorized to perform this action.' );
+
+			if ( empty( $params['privateKey'] ) || ! wp_verify_nonce( $params['privateKey'], 'lmat_create_translate_post_nonce' ) ) {
+				return new WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
+
 			if ( empty( $params['post_title'] ) && empty( $params['post_content'] ) ) {
-				wp_send_json_error( 'Invalid request content & title empty' );
+				return new WP_Error( 'empty_content', __( 'Invalid request content & title empty', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$params = $params->get_params();
-
-			$post_id         = intval( sanitize_text_field( $params['post_id'] ) );
-			$target_language = sanitize_text_field( $params['target_language'] );
-			$editor_type     = sanitize_text_field( $params['editor_type'] );
-			$source_language = sanitize_text_field( $params['source_language'] );
-
-			$title = isset( $params['post_title'] ) ? sanitize_text_field( $params['post_title'] ) : '';
-
-			$slug = isset( $params['post_name'] ) && ! empty( $params['post_name'] ) ? sanitize_text_field( $params['post_name'] ) : false;
-
-			$excerpt = isset( $params['post_excerpt'] ) ? sanitize_text_field( $params['post_excerpt'] ) : '';
-
-			$content = isset( $params['post_content'] ) ? $params['post_content'] : '';
-
+			$source_post_id   = absint( $params['post_id'] );
+			$target_language  = sanitize_text_field( $params['target_language'] );
+			$editor_type      = isset( $params['editor_type'] ) ? sanitize_text_field( $params['editor_type'] ) : '';
+			$source_language  = sanitize_text_field( $params['source_language'] );
+			$title            = isset( $params['post_title'] ) ? sanitize_text_field( $params['post_title'] ) : '';
+			$slug             = isset( $params['post_name'] ) && ! empty( $params['post_name'] ) ? sanitize_text_field( $params['post_name'] ) : false;
+			$excerpt          = isset( $params['post_excerpt'] ) ? sanitize_text_field( $params['post_excerpt'] ) : '';
+			$content          = isset( $params['post_content'] ) ? $params['post_content'] : '';
 			$slug_translation_option = 'title_translate';
 
-			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
+			if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['slug_translation_option'] ) ) {
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
 
 			$meta_fields = isset( $params['post_meta_fields'] ) ? $params['post_meta_fields'] : '';
-
-			if ( ! current_user_can( 'edit_post', $post_id ) ) {
-				wp_send_json_error( 'You are not authorized to perform this action.' );
-			}
 
 			$post_data = array(
 				'post_title'   => sanitize_text_field( $title ),
@@ -482,45 +508,51 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
 				$post_data['post_name'] = sanitize_title( $slug );
 			} elseif ( $slug_translation_option === 'slug_keep' ) {
-				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $post_id ) );
+				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
 			} else {
 				$post_data['post_name'] = sanitize_title( $title );
 			}
 
-			if ( $editor_type === 'elementor' ) {
+			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields']['_elementor_data'] = $content;
 				unset( $post_data['post_content'] );
-			} elseif ( $editor_type === 'block' ) {
+			} elseif ( 'block' === $editor_type ) {
 				$post_data['post_content'] = serialize_blocks( json_decode( $post_data['post_content'], true ) );
-			} else{
-                if($editor_type === 'classic'){
-                    $post_data['post_content']=json_decode($params['post_content'], true);
-                }
-            }
+			} elseif ( 'classic' === $editor_type ) {
+				$post_data['post_content'] = json_decode( $params['post_content'], true );
+			}
 
 			global $linguator;
-			$post_clone = new \Linguator_Sync_Post_Model( $linguator );
-			$post_id    = $post_clone->copy_post( $post_id, $source_language, $target_language, false, $post_data, $editor_type );
+			$post_clone   = new \Linguator_Sync_Post_Model( $linguator );
+			$new_post_id  = $post_clone->copy_post( $source_post_id, $source_language, $target_language, false, $post_data, $editor_type );
 
-			if ( ! $post_id ) {
-				wp_send_json_error( 'Unable to create the translated post for parent post ID ' . $post_id . ' in ' . $target_language . '.' );
-			} else {
-
-				$post_link      = html_entity_decode( get_the_permalink( $post_id ) );
-				$post_title     = html_entity_decode( get_the_title( $post_id ) );
-				$post_edit_link = html_entity_decode( get_edit_post_link( $post_id ) );
-
-				wp_send_json_success(
-					array(
-						'post_id'                     => $post_id,
-						'target_language'             => $target_language,
-						'post_link'                   => $post_link,
-						'post_title'                  => $post_title,
-						'post_edit_link'              => $post_edit_link,
-						'update_translate_data_nonce' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
-					)
+			if ( ! $new_post_id ) {
+				return new WP_Error(
+					'create_failed',
+					sprintf(
+						/* translators: 1: source post ID, 2: language slug */
+						__( 'Unable to create the translated post for parent post ID %1$s in %2$s.', 'translate-words' ),
+						(string) $source_post_id,
+						$target_language
+					),
+					array( 'status' => 500 )
 				);
 			}
+
+			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
+			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
+			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
+
+			return rest_ensure_response(
+				array(
+					'post_id'                     => $new_post_id,
+					'target_language'             => $target_language,
+					'post_link'                   => $post_link,
+					'post_title'                  => $post_title_out,
+					'post_edit_link'              => $post_edit_link,
+					'update_translate_data_nonce' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
+				)
+			);
 		}
 
 		public function bulk_translate_taxonomy_entries( $params ) {
