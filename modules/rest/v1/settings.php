@@ -653,8 +653,7 @@ class Settings extends Abstract_Controller {
 			$ping_token = wp_hash( 'lmat_domain_ping|' . gmdate( 'YmdH' ) );
 			$test_url   = add_query_arg(
 				array(
-					'deactivate-linguator' => 1,
-					'lmat_ping_token'      => $ping_token,
+					'lmat_ping_token' => $ping_token,
 				),
 				$url
 			);

@@ -42,7 +42,7 @@ class Linguator_Domain_Mapping {
 	 *  
 	 */
 	public function dm_redirect_to_mapped_domain() {
-		// Don't go further if we stopped loading the plugin early (for example when deactivate-linguator=1).
+		// Don't go further if the plugin bootstrap is unavailable.
 		if ( ! function_exists( 'LMAT' ) ) {
 			// Rely on MU Domain Mapping.
 			redirect_to_mapped_domain();

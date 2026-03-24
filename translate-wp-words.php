@@ -73,16 +73,6 @@ if ( ! defined( 'LINGUATOR' ) ) {
 	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
 }
 
-// Initialize the plugin
-if ( isset( $_GET['deactivate-linguator'] ) ) { 
-	$linguator_deactivate_linguator = sanitize_key( wp_unslash( $_GET['deactivate-linguator'] ) ); 
-
-	if ( ! empty( $linguator_deactivate_linguator ) && is_admin() && current_user_can( 'manage_options' ) ) {
-		return;
-	}
-}
-
-
 // Load legacy Translate Words functionality only for legacy users
 add_action( 'init', function() {
 
