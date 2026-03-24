@@ -62,8 +62,26 @@ function linguator_apply_translate_string( $translated_string ) {
 
 }
 
-add_filter( 'gettext', 'linguator_apply_translate_string', 20 );
-add_filter( 'ngettext', 'linguator_apply_translate_string', 20 );
+/**
+ * Register legacy gettext filters only where needed.
+ *
+ * @return void
+ */
+function linguator_register_legacy_gettext_filters() {
+	if ( is_admin() ) {
+		return;
+	}
+
+	$overrides = get_option( LMAT_TRANSLATIONS_LINES );
+	if ( ! is_array( $overrides ) || empty( $overrides ) ) {
+		return;
+	}
+
+	add_filter( 'gettext', 'linguator_apply_translate_string', 20 );
+	add_filter( 'ngettext', 'linguator_apply_translate_string', 20 );
+}
+
+add_action( 'init', 'linguator_register_legacy_gettext_filters', 20 );
 
 
 /**
