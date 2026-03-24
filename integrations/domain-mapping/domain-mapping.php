@@ -56,7 +56,7 @@ class Linguator_Domain_Mapping {
 			}
 
 			// Don't redirect post previews
-			if ( isset( $_GET['preview'] ) && 'true' === $_GET['preview'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			if ( isset( $_GET['preview'] ) && 'true' === sanitize_text_field( wp_unslash( $_GET['preview'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				return;
 			}
 

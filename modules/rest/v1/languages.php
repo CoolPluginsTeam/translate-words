@@ -105,6 +105,8 @@ class Languages extends Abstract_Controller {
 						'description' => __( 'Language slug to filter pages by.', 'translate-words' ),
 						'type'        => 'string',
 						'required'    => false,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_optional_slug_param' ),
 					),
 				),
 			)
@@ -118,6 +120,8 @@ class Languages extends Abstract_Controller {
 					'term_id' => array(
 						'description' => __( 'Unique identifier for the language.', 'translate-words' ),
 						'type'        => 'integer',
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 				),
 				array(
@@ -151,6 +155,8 @@ class Languages extends Abstract_Controller {
 					'slug'    => array(
 						'description' => __( 'Language code - preferably 2-letters ISO 639-1 (for example: en).', 'translate-words' ),
 						'type'        => 'string',
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => array( $this, 'validate_required_slug_param' ),
 					),
 				),
 				array(
@@ -1160,6 +1166,20 @@ class Languages extends Abstract_Controller {
 	 */
 	public function validate_required_slug_param( $value ) {
 		return is_scalar( $value ) && '' !== sanitize_key( (string) $value );
+	}
+
+	/**
+	 * Validates optional slug-style parameters.
+	 *
+	 * @param mixed $value Request value.
+	 * @return bool
+	 */
+	public function validate_optional_slug_param( $value ) {
+		if ( null === $value || '' === $value ) {
+			return true;
+		}
+
+		return $this->validate_required_slug_param( $value );
 	}
 
 	/**

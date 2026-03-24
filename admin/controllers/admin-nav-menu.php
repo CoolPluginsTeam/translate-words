@@ -258,7 +258,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 
 			// Manage Locations tab in Appearance -> Menus
-			if ( isset( $_GET['action'] ) && 'locations' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			if ( isset( $_GET['action'] ) && 'locations' === sanitize_text_field( wp_unslash( $_GET['action'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				check_admin_referer( 'save-menu-locations' );
 
 
@@ -632,7 +632,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 	public function linguator_maybe_update_selected_menu() {
 		// Only run on Edit Menus tab, not Manage Locations.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for filtering
-		if ( isset( $_GET['action'] ) && 'locations' === $_GET['action'] ) {
+		if ( isset( $_GET['action'] ) && 'locations' === sanitize_text_field( wp_unslash( $_GET['action'] ) ) ) {
 			return;
 		}
 
@@ -688,7 +688,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 
 		// Only run on Edit Menus tab, not Manage Locations.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for filtering
-		if ( isset( $_GET['action'] ) && 'locations' === $_GET['action'] ) {
+		if ( isset( $_GET['action'] ) && 'locations' === sanitize_text_field( wp_unslash( $_GET['action'] ) ) ) {
 			return;
 		}
 
