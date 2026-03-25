@@ -428,6 +428,10 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 					$all_url_args['action'] = $current_action;
 				}
 				$all_url = 'all' !== $current_lang ? add_query_arg( $all_url_args, $base_url ) : '';
+				// Language links must include nonce so admin language filter can update user meta safely.
+				if ( ! empty( $all_url ) ) {
+					$all_url = wp_nonce_url( $all_url, 'lmat_set_admin_filter_lang', '_lmat_lang_nonce' );
+				}
 				// Get total count directly from database - count nav menu terms
 				$total_menus = wp_count_terms( array( 'taxonomy' => 'nav_menu' ) );
 				?>
@@ -447,6 +451,10 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 						$lang_url_args['action'] = $current_action;
 					}
 					$lang_url = $lang->slug !== $current_lang ? add_query_arg( $lang_url_args, $base_url ) : '';
+					// Language links must include nonce so admin language filter can update user meta safely.
+					if ( ! empty( $lang_url ) ) {
+						$lang_url = wp_nonce_url( $lang_url, 'lmat_set_admin_filter_lang', '_lmat_lang_nonce' );
+					}
 					$flag_url = isset( $lang->flag_url ) ? $lang->flag_url : '';
 					
 					$menu_count = 0;

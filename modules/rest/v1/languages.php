@@ -235,12 +235,14 @@ class Languages extends Abstract_Controller {
 						'type'              => 'integer',
 						'required'          => true,
 						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int_param' ),
 					),
 					'title'     => array(
 						'description'       => __( 'Base title for generated translations.', 'translate-words' ),
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => array( $this, 'validate_required_text_param' ),
 					),
 					'languages' => array(
 						'description'       => __( 'List of target languages.', 'translate-words' ),

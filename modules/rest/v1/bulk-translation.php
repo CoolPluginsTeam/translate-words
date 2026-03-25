@@ -64,11 +64,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => array( $this, 'sanitize_lmat_json_ids' ),
+							'validate_callback' => array( $this, 'validate_lmat_json_ids' ),
 						),
 						'lang'       => array(
 							'type'              => 'string',
 							'required'          => true,
 							'sanitize_callback' => array( $this, 'sanitize_lmat_json_langs' ),
+							'validate_callback' => array( $this, 'validate_lmat_json_langs' ),
 						),
 						'privateKey' => array(
 							'type'              => 'string',
@@ -146,6 +148,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'type'              => 'string',
 							'required'          => false,
 							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => array( $this, 'validate_editor_type_param' ),
 						),
 						'source_language' => array(
 							'type'              => 'string',
@@ -157,10 +160,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'type'              => 'string',
 							'required'          => false,
 							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 						'post_content'    => array(
 							'type'     => 'string',
 							'required' => false,
+							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 					),
 				)
@@ -208,15 +213,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'required'          => true,
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => array( $this, 'validate_required_text_param' ),
 						),
 						'taxonomy_slug'        => array(
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 						'taxonomy_description' => array(
 							'required'          => true,
 							'type'              => 'string',
 							'sanitize_callback' => 'wp_kses_post',
+							'validate_callback' => array( $this, 'validate_required_text_param' ),
 						),
 					),
 				)
@@ -319,6 +327,55 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		public function validate_taxonomy_param( $value ) {
 			$taxonomy = sanitize_key( (string) $value );
 			return '' !== $taxonomy && taxonomy_exists( $taxonomy );
+		}
+
+		/**
+		 * Validates editor type payload.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_editor_type_param( $value ) {
+			// Allow empty/missing editor type (handler handles defaults).
+			if ( null === $value ) {
+				return true;
+			}
+
+			$editor_type = sanitize_text_field( (string) $value );
+			if ( '' === $editor_type ) {
+				return true;
+			}
+
+			return in_array( $editor_type, array( 'elementor', 'block', 'classic' ), true );
+		}
+
+		/**
+		 * Validates an optional string-like parameter.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_optional_string_param( $value ) {
+			// Optional args can be empty. Ensure we only accept scalar inputs.
+			if ( null === $value ) {
+				return true;
+			}
+
+			return is_scalar( $value );
+		}
+
+		/**
+		 * Validates a required non-empty text parameter.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_required_text_param( $value ) {
+			if ( ! is_scalar( $value ) ) {
+				return false;
+			}
+
+			return '' !== sanitize_text_field( (string) $value );
 		}
 
 		/**
