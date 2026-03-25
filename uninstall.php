@@ -31,10 +31,8 @@ class Linguator_Uninstall {
 
 		// Check if it is a multisite uninstall - if so, run the uninstall function for each blog id.
 		if ( is_multisite() ) {
-			// Direct DB query is required here because WordPress core does not provide any efficient or native way to fetch all blog IDs in a multisite network.
-			// Use $wpdb->prepare() to comply with PHPCS and ensure the query is treated as prepared by code-quality tools.
-			$sql = $wpdb->prepare( 'SELECT blog_id FROM ' . $wpdb->blogs );
-			foreach ( $wpdb->get_col( $sql ) as $blog_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DB query is required here because WordPress core does not provide any efficient or native way to fetch all blog IDs in a multisite network. This raw query is necessary for performance and compatibility.
+			foreach ( $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" ) as $blog_id ) {
 				switch_to_blog( $blog_id );
 				$this->uninstall();
 			}

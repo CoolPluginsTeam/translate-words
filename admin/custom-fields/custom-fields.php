@@ -175,6 +175,7 @@ if(!class_exists('Custom_Fields')) {
             }
             
 			// Decode first to avoid corrupting valid JSON payloads.
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw JSON payload; validated via json_decode() + type checks below.
 			$raw_json = isset( $_POST['save_custom_fields_data'] ) ? wp_unslash( $_POST['save_custom_fields_data'] ) : '';
 			$raw_json = is_string( $raw_json ) ? $raw_json : '';
             $updated_custom_fields_data = json_decode( $raw_json, true );
