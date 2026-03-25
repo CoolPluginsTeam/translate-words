@@ -128,7 +128,11 @@ class Linguator_WP_Import extends WP_Import {
 
 		foreach ( $terms as $term ) {
 			$translations = maybe_unserialize( $term['term_description'] );
+			if ( ! is_array( $translations ) ) {
+				continue;
+			}
 			foreach ( $translations as $slug => $old_id ) {
+				$slug = sanitize_key( (string) $slug );
 				if ( $old_id && ! empty( $this->processed_terms[ $old_id ] ) && $lang = LMAT()->model->get_language( $slug ) ) {
 					$object_id = $this->processed_terms[ $old_id ];
 					
@@ -153,15 +157,8 @@ class Linguator_WP_Import extends WP_Import {
 				// Get existing terms to append to them instead of replacing
 				$existing_terms = wp_get_object_terms( $object_id, $taxonomy, array( 'fields' => 'ids' ) );
 				$all_terms = array_unique( array_merge( $existing_terms, $term_ids ) );
-				
-				$result = wp_set_object_terms( $object_id, $all_terms, $taxonomy, false );
-				
-				if ( is_wp_error( $result ) ) {
-					if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-						// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Legitimate error logging for import failures, only when debug logging is enabled
-						error_log( sprintf( 'Linguator Import: Failed to set %s terms for object %d: %s', $taxonomy, $object_id, $result->get_error_message() ) );
-					}
-				}
+
+				wp_set_object_terms( $object_id, $all_terms, $taxonomy, false );
 			}
 		}
 	}
@@ -181,9 +178,13 @@ class Linguator_WP_Import extends WP_Import {
 
 		foreach ( $terms as $term ) {
 			$translations = maybe_unserialize( $term['term_description'] );
+			if ( ! is_array( $translations ) ) {
+				continue;
+			}
 			$new_translations = array();
 
 			foreach ( $translations as $slug => $old_id ) {
+				$slug = sanitize_key( (string) $slug );
 				if ( $old_id && ! empty( $processed_objects[ $old_id ] ) ) {
 					$new_translations[ $slug ] = $processed_objects[ $old_id ];
 				}

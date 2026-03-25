@@ -233,7 +233,6 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					$status      = ! in_array( $block_name, $linguator_supported_blocks_names ) ? 'Unsupported' : 'Supported'; // You can modify this logic based on your requirements
 					$modify_text = ! in_array( $block_name, $linguator_supported_blocks_names ) ? esc_html__( 'Add', 'translate-words' ) : esc_html__( 'Edit', 'translate-words' );
 					$modify_link = '<a href="' . esc_url( admin_url( 'post.php?post=' . esc_attr( $linguator_post_id ) . '&action=edit&lmat_new_block=' ) . esc_attr( $block_name ) ) . '">' . $modify_text . '</a>'; // Modify link
-					$modify_link = '<a href="' . esc_url( admin_url( 'post.php?post=' . esc_attr( $linguator_post_id ) . '&action=edit&lmat_new_block=' ) . esc_attr( $block_name ) ) . '">' . $modify_text . '</a>'; // Modify link
 
 					echo '<tr data-block-name="' . esc_attr( strtolower( $block_name ) ) . '" data-block-status="' . esc_attr( strtolower( $status ) ) . '" >';
 					echo '<td>' . esc_html($s_no++) . '</td>';

@@ -657,8 +657,7 @@ class Settings extends Abstract_Controller {
 				),
 				$url
 			);
-			// Don't redefine vip_safe_wp_remote_get() as it has not the same signature as wp_remote_get().
-			$response = function_exists( 'vip_safe_wp_remote_get' ) ? vip_safe_wp_remote_get( $test_url ) : wp_remote_get( $test_url );
+			$response = wp_remote_get( sanitize_url( $test_url ) );
 
 			if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
 				$failed_urls[] = $url;

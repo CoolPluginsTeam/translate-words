@@ -68,8 +68,28 @@ class Linguator_WPBakery {
 		
 		// Filter post content before saving to re-encode WPBakery attributes
 		add_filter( 'wp_insert_post_data', [ __CLASS__, 'linguator_encode_wpbakery_content_before_save' ], 10, 2 );
-		
-		// Clean up page translation placeholders on frontend display (priority 5 - before shortcodes)
+
+		// Clean up translation markers on frontend output only (not wp-admin).
+		add_action( 'wp', [ __CLASS__, 'linguator_register_frontend_the_content_cleanup' ], 0 );
+	}
+
+	/**
+	 * Attach `the_content` cleanup only on public requests.
+	 *
+	 * Avoids registering a global `the_content` filter while wp-admin is loading.
+	 * The callback still returns unchanged content unless markers are present
+	 * (`#lmat_page_translation*`, `[lmat_val`, `___LMAT_`), so non-WPBakery posts
+	 * pay only a few strpos checks per `the_content` run (singular, archives, feeds).
+	 *
+	 * @since 1.0.10
+	 *
+	 * @return void
+	 */
+	public static function linguator_register_frontend_the_content_cleanup() {
+		if ( is_admin() ) {
+			return;
+		}
+		// Priority 5: before shortcodes so stray markers never reach VC parsing.
 		add_filter( 'the_content', [ __CLASS__, 'linguator_cleanup_content_on_frontend' ], 5 );
 	}
 

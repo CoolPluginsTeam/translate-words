@@ -307,11 +307,17 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                     }
                     $lang = $language_map[$code];
                     ?>
-                    <button class="lmat-lang-filter-btn<?php echo $i === 0 ? ' active' : ''; ?>" data-lang="<?php echo esc_attr($code); ?>">
+                    <button class="lmat-lang-filter-btn<?php echo esc_attr( 0 === $i ? ' active' : '' ); ?>" data-lang="<?php echo esc_attr( $code ); ?>">
                         <?php if (!empty($lang['img'])): ?>
                             <img src="<?php echo esc_url($lang['img']); ?>" alt="<?php echo esc_attr($lang['alt']); ?>" />
                         <?php endif; ?>
-                        <?php echo esc_html($lang['alt']) . ' Terms'; ?>
+                        <?php
+                        printf(
+                            '%s %s',
+                            esc_html( $lang['alt'] ),
+                            esc_html__( 'Terms', 'translate-words' )
+                        );
+                        ?>
                     </button>
                 <?php endforeach; ?>
             </div>
@@ -337,11 +343,11 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                             <?php endforeach; ?>
                             <th class="lmat-actions-cell">
                                 <div class="lmat-action-buttons-header">
-                                    <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-left" title="Scroll Left">
+                                    <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-left" title="<?php esc_attr_e( 'Scroll left', 'translate-words' ); ?>">
                                         <?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plugins_url() returns a safe URL. ?>
                                         <img src="<?php echo esc_url(plugins_url('assets/images/arrow-left.svg', LINGUATOR_ROOT_FILE)); ?>" />
                                     </button>
-                                    <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-right" title="Scroll Right">
+                                    <button class="lmat-actions-header-btn" id="lmat-actions-header-btn-right" title="<?php esc_attr_e( 'Scroll right', 'translate-words' ); ?>">
                                         <?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- plugins_url() returns a safe URL. ?>
                                         <img src="<?php echo esc_url(plugins_url('assets/images/arrow-right.svg', LINGUATOR_ROOT_FILE)); ?>" />
                                     </button>
@@ -460,7 +466,7 @@ $single_language_code = $single_language_mode ? $language_codes_with_entries[0] 
                     </tbody>
                 </table>
             <?php else: ?>
-                <div id="lmat-no-results">No glossary entries found.</div>
+                <div id="lmat-no-results"><?php esc_html_e( 'No glossary entries found.', 'translate-words' ); ?></div>
             <?php endif; ?>
         </div>
     </div>

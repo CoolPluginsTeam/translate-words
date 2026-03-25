@@ -60,11 +60,6 @@ function linguator_get_requested_url() {
 		return $home_url;
 	}
 
-	if ( WP_DEBUG ) {
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions
-		trigger_error( '$_SERVER[\'HTTP_HOST\'] or $_SERVER[\'REQUEST_URI\'] are required but not set.' );
-	}
-
 	return '';
 }
 

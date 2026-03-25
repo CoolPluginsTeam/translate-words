@@ -188,7 +188,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 				wp_die( '0', 400 );
 			}
 
-			if(!current_user_can('edit_posts')){
+			if(!current_user_can('manage_options')){
 				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
 				wp_die( '0', 403 );
 			}

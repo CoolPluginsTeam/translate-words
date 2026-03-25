@@ -344,7 +344,7 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 				// Any posts today?
 				$date_format = gmdate( _x( 'F j, Y', 'daily archives date format', 'translate-words' ), strtotime( "{$thisyear}-{$thismonth}-{$day}" ) );
 				/* translators: Post calendar label. %s: Date. */
-				$label            = sprintf( __( 'Posts published on %s','translate-words' ), $date_format ); // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
+				$label            = sprintf( __( 'Posts published on %s','translate-words' ), $date_format );
 				$calendar_output .= sprintf(
 					'<a href="%s" aria-label="%s">%s</a>',
 					get_day_link( $thisyear, $thismonth, $day ),
@@ -371,7 +371,6 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 
 		$calendar_output .= "\n\t</table>";
 
-		// phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- This is a default WordPress text domain.
 		$calendar_output .= '<nav aria-label="' . __( 'Previous and next months', 'translate-words' ) . '" class="wp-calendar-nav">';
 
 		if ( $previous ) {
