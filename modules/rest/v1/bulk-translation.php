@@ -163,8 +163,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 						'post_content'    => array(
-							'type'     => 'string',
-							'required' => false,
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => array( $this, 'sanitize_post_content_for_builders' ),
 							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 					),
@@ -457,6 +458,38 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return wp_json_encode( array_values( $langs ) );
+		}
+
+		/**
+		 * Sanitizes post_content for create-translate-post depending on the page builder/editor.
+		 *
+		 * - classic/wpbakery: allow safe HTML via wp_kses_post().
+		 * - block/elementor: expect JSON payload; validate JSON but don't run HTML sanitization on it.
+		 *
+		 * @param mixed           $value   Raw incoming value.
+		 * @param WP_REST_Request $request Request object.
+		 * @param string          $param   Parameter name.
+		 * @return string Sanitized content (empty string if invalid).
+		 */
+		public function sanitize_post_content_for_builders( $value, $request, $param ) {
+			$value = is_string( $value ) ? $value : '';
+
+			$editor_type = '';
+			if ( $request instanceof WP_REST_Request ) {
+				$editor_type = sanitize_key( (string) $request->get_param( 'editor_type' ) );
+			}
+
+			// JSON builders: validate JSON and return it as-is (so downstream json_decode() works).
+			if ( in_array( $editor_type, array( 'block', 'elementor' ), true ) ) {
+				if ( '' === $value ) {
+					return '';
+				}
+				json_decode( $value, true );
+				return ( JSON_ERROR_NONE === json_last_error() ) ? $value : '';
+			}
+
+			// Default: sanitize as post content HTML.
+			return wp_kses_post( $value );
 		}
 
 		public function bulk_translate_entries( $params ) {

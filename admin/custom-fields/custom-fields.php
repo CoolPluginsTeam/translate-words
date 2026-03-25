@@ -370,37 +370,24 @@ if(!class_exists('Custom_Fields')) {
 		}
 
 		private static function linguator_get_default_allowed_fields(){
-			$found=false;
+			global $wp_filesystem;
 
-			$response = wp_remote_get( esc_url_raw( LINGUATOR_URL . 'modules/page-translation/block-translation-rules/default-allow-metafields.json' ), array(
-				'timeout' => 15,
-			) );
-
-			if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-				global $wp_filesystem;
-
-				// Initialize the WordPress filesystem
-				if ( ! function_exists( 'WP_Filesystem' ) ) {
-					require_once ABSPATH . 'wp-admin/includes/file.php';
-				}
-
-				WP_Filesystem();
-
-				$local_path = LINGUATOR_DIR . '/modules/page-translation/block-translation-rules/default-allow-metafields.json';
-				if($wp_filesystem->exists($local_path) && $wp_filesystem->is_readable( $local_path )){
-					$found=true;
-					$default_allowed_fields = $wp_filesystem->get_contents( $local_path );
-				}
-			}else{
-				$found=true;
-				$default_allowed_fields = wp_remote_retrieve_body( $response );
+			// Initialize the WordPress filesystem.
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
 			}
 
-			if(!$found){
+			WP_Filesystem();
+
+			$local_path = trailingslashit( LINGUATOR_DIR ) . 'modules/page-translation/block-translation-rules/default-allow-metafields.json';
+			if ( $wp_filesystem && $wp_filesystem->exists( $local_path ) && $wp_filesystem->is_readable( $local_path ) ) {
+				$default_allowed_fields = $wp_filesystem->get_contents( $local_path );
+			} else {
 				return array();
 			}
 
-			return json_decode($default_allowed_fields, true)	;
+			$decoded = json_decode( (string) $default_allowed_fields, true );
+			return is_array( $decoded ) ? $decoded : array();
 		}
     }
 }
