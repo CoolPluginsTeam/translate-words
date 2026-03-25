@@ -72,6 +72,7 @@ class Linguator_Elementor {
 					'required'          => true,
 					'type'              => 'integer',
 					'sanitize_callback' => 'absint',
+					'validate_callback' => [ __CLASS__, 'linguator_validate_post_id_param' ],
 				],
 			],
 		] );
@@ -107,6 +108,16 @@ class Linguator_Elementor {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Validates the REST route `post_id` param.
+	 *
+	 * @param mixed $value
+	 * @return bool
+	 */
+	public static function linguator_validate_post_id_param( $value ): bool {
+		return is_numeric( $value ) && absint( $value ) > 0;
 	}
 
 	/**
