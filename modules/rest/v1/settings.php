@@ -260,7 +260,31 @@ class Settings extends Abstract_Controller {
 	 * @return bool
 	 */
 	public function sanitize_boolean_param( $value ) {
-		return rest_sanitize_boolean( $value );
+		if ( function_exists( 'rest_sanitize_boolean' ) ) {
+			return \rest_sanitize_boolean( $value );
+		}
+
+		// Fallback for WP installs that don't provide rest_sanitize_boolean().
+		if ( function_exists( 'wp_validate_boolean' ) ) {
+			// wp_validate_boolean() returns bool on valid values, null on invalid.
+			$validated = wp_validate_boolean( $value );
+			return null !== $validated ? (bool) $validated : false;
+		}
+
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+
+		if ( is_numeric( $value ) ) {
+			return (int) $value === 1;
+		}
+
+		if ( ! is_string( $value ) ) {
+			return false;
+		}
+
+		$v = strtolower( trim( $value ) );
+		return in_array( $v, array( '1', 'true', 'yes', 'on' ), true );
 	}
 
 	/**
@@ -270,7 +294,25 @@ class Settings extends Abstract_Controller {
 	 * @return bool
 	 */
 	public function validate_boolean_param( $value ) {
-		return null !== rest_validate_boolean( $value );
+		if ( function_exists( 'wp_validate_boolean' ) ) {
+			return null !== wp_validate_boolean( $value );
+		}
+
+		if ( is_bool( $value ) ) {
+			return true;
+		}
+
+		if ( is_numeric( $value ) ) {
+			$n = (int) $value;
+			return (string) $n === (string) (int) $value && ( $n === 0 || $n === 1 );
+		}
+
+		if ( ! is_string( $value ) ) {
+			return false;
+		}
+
+		$v = strtolower( trim( $value ) );
+		return in_array( $v, array( '1', '0', 'true', 'false', 'yes', 'no', 'on', 'off' ), true );
 	}
 
 	/**

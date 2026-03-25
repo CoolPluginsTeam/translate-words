@@ -135,7 +135,14 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
             'Accept': 'application/json',
         }
     }).then(async response=>{
-        const data=await response.json();
+        // Some server/proxy errors return HTML (e.g. 502/504). Don't blindly JSON.parse.
+        const raw = await response.text();
+        let data;
+        try {
+            data = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            data = { success: false, code: response.status, message: raw };
+        }
         
         let updateData={};
 
@@ -347,7 +354,13 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
     
                     });
     
-                    const responseData = await response.json();
+                    const rawGlossary = await response.text();
+                    let responseData;
+                    try {
+                        responseData = rawGlossary ? JSON.parse( rawGlossary ) : {};
+                    } catch (e) {
+                        responseData = { success: false, code: response.status, message: rawGlossary };
+                    }
 
                     if(responseData.success && responseData.data.terms){
                         storeDispatch(updateGlossaryTerms({sourceLanguage: sourceLanauges, translations: Object.values(responseData.data.terms)}));

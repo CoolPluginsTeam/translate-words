@@ -698,7 +698,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			if ( $meta_fields && ! empty( $meta_fields ) ) {
-				$post_data['post_meta_fields'] = json_decode( $meta_fields, true );
+				$decoded_meta_fields = json_decode( $meta_fields, true );
+				if ( null === $decoded_meta_fields && json_last_error() !== JSON_ERROR_NONE ) {
+					return new WP_Error(
+						'invalid_post_meta_fields',
+						__( 'Invalid post_meta_fields JSON payload.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+				$post_data['post_meta_fields'] = $decoded_meta_fields;
 			}
 
 			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
@@ -710,17 +718,50 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			if ( 'elementor' === $editor_type ) {
+				$post_data['meta_fields'] = array();
 				$post_data['meta_fields']['_elementor_data'] = $content;
 				unset( $post_data['post_content'] );
 			} elseif ( 'block' === $editor_type ) {
-				$post_data['post_content'] = serialize_blocks( json_decode( $post_data['post_content'], true ) );
+				$decoded_blocks = json_decode( $post_data['post_content'], true );
+				if ( null === $decoded_blocks && json_last_error() !== JSON_ERROR_NONE ) {
+					return new WP_Error(
+						'invalid_block_content',
+						__( 'Invalid block post_content JSON payload.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+				if ( ! is_array( $decoded_blocks ) ) {
+					return new WP_Error(
+						'invalid_block_content_type',
+						__( 'Block post_content must decode to an array.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
 			} elseif ( 'classic' === $editor_type ) {
-				$post_data['post_content'] = json_decode( $params['post_content'], true );
+				$decoded_classic = json_decode( $params['post_content'], true );
+				if ( null === $decoded_classic && json_last_error() !== JSON_ERROR_NONE ) {
+					return new WP_Error(
+						'invalid_classic_content',
+						__( 'Invalid classic post_content JSON payload.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+				$post_data['post_content'] = $decoded_classic;
 			}
 
 			global $linguator;
 			$post_clone   = new \Linguator_Sync_Post_Model( $linguator );
-			$new_post_id  = $post_clone->copy_post( $source_post_id, $source_language, $target_language, false, $post_data, $editor_type );
+			try {
+				$new_post_id = $post_clone->copy_post( $source_post_id, $source_language, $target_language, false, $post_data, $editor_type );
+			} catch ( \Throwable $e ) {
+				return new WP_Error(
+					'create_failed_exception',
+					// Avoid exposing too much, but keep message for debugging.
+					(string) $e->getMessage(),
+					array( 'status' => 500 )
+				);
+			}
 
 			if ( ! $new_post_id ) {
 				return new WP_Error(
