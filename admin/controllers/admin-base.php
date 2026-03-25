@@ -252,7 +252,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 			return;
 		}
 
-		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+		$suffix = '.min';
 
 		wp_enqueue_script( 'lmat_admin', plugins_url( "admin/assets/js/build/admin{$suffix}.js", LINGUATOR_ROOT_FILE ), array( 'jquery' ), LINGUATOR_VERSION, true );
 		$inline_script = sprintf( 'let lmat_admin = %s;', wp_json_encode( array( 'ajax_filter' => $this->linguator_get_ajax_filter_data() ) ) );
@@ -401,7 +401,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	 */
 	public function linguator_customize_controls_enqueue_scripts() {
 		if ( $this->model->has_languages() ) {
-			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+			$suffix = '.min';
 			wp_enqueue_script( 'lmat_widgets', plugins_url( 'admin/assets/js/build/widgets' . $suffix . '.js', LINGUATOR_ROOT_FILE ), array( 'jquery' ), LINGUATOR_VERSION, true );
 			$this->add_inline_scripts();
 		}

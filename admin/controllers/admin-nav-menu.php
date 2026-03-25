@@ -139,7 +139,7 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			return;
 		}
 
-		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+		$suffix = '.min';
 		wp_enqueue_script( 'lmat_nav_menu', plugins_url( "admin/assets/js/build/nav-menu{$suffix}.js", LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, false );
 		wp_enqueue_style( 'lmat_nav_menu_filter', plugins_url( "admin/assets/css/admin-nav-menu-filter.css", LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
 		wp_enqueue_script( 'lmat_nav_menu_filter_js', plugins_url( "admin/assets/js/admin-nav-menu-filter.js", LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, false );
