@@ -464,7 +464,10 @@ class Linguator_Table_String extends WP_List_Table {
 			$args['paged'] = absint( wp_unslash( $_GET['paged'] ) ); // Don't rely on $_REQUEST['paged'] or $_POST['paged'].
 		}
 		if ( ! empty( $args['s'] ) ) {
-			$args['s'] = urlencode( $args['s'] ); // Searched string needs to be encoded as it comes from $_POST
+			$args['s'] = urlencode( sanitize_text_field( $args['s'] ) ); // Searched string needs to be encoded as it comes from $_POST.
+		}
+		if ( ! empty( $args['group'] ) ) {
+			$args['group'] = sanitize_key( $args['group'] );
 		}
 		Linguator_Settings::redirect( $args );
 	}
