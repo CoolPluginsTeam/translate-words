@@ -240,7 +240,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			$nonce = $request->get_header( 'X-WP-Nonce' );
 
-			if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			$nonce = sanitize_text_field( wp_unslash( (string) $nonce ) );
+
+			if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
 				return new WP_Error( 'rest_forbidden', __( 'Invalid nonce.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 
@@ -288,15 +290,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		public function validate_lmat_bulk_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_bulk_translate_entries_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+			$nonce = sanitize_text_field( wp_unslash( (string) $value ) );
+			return wp_verify_nonce( $nonce, 'lmat_bulk_translate_entries_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		public function validate_lmat_create_post_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_create_translate_post_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+			$nonce = sanitize_text_field( wp_unslash( (string) $value ) );
+			return wp_verify_nonce( $nonce, 'lmat_create_translate_post_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		public function validate_lmat_create_term_nonce( $value, $request, $param ) {
-			return wp_verify_nonce( $value, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
+			$nonce = sanitize_text_field( wp_unslash( (string) $value ) );
+			return wp_verify_nonce( $nonce, 'lmat_create_translate_taxonomy_nonce' ) ? true : new \WP_Error( 'rest_invalid_param', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 		}
 
 		/**
@@ -502,7 +507,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			// Verify the nonce
-			if ( ! wp_verify_nonce( $params['privateKey'], 'lmat_bulk_translate_entries_nonce' ) ) {
+			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
+			if ( '' === $private_key || ! wp_verify_nonce( $private_key, 'lmat_bulk_translate_entries_nonce' ) ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
 
@@ -697,7 +703,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'invalid_target_language', __( 'Invalid target language', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			if ( empty( $params['privateKey'] ) || ! wp_verify_nonce( $params['privateKey'], 'lmat_create_translate_post_nonce' ) ) {
+			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
+			if ( '' === $private_key || ! wp_verify_nonce( $private_key, 'lmat_create_translate_post_nonce' ) ) {
 				return new WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 			}
 
@@ -772,15 +779,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
 			} elseif ( 'classic' === $editor_type ) {
-				$decoded_classic = json_decode( $params['post_content'], true );
-				if ( null === $decoded_classic && json_last_error() !== JSON_ERROR_NONE ) {
-					return new WP_Error(
-						'invalid_classic_content',
-						__( 'Invalid classic post_content JSON payload.', 'translate-words' ),
-						array( 'status' => 400 )
-					);
+				// Classic editor content is plain HTML, not JSON.
+				// Some clients may still send JSON-encoded strings; tolerate that without failing the request.
+				$raw_classic = isset( $params['post_content'] ) ? (string) $params['post_content'] : '';
+				$decoded     = json_decode( $raw_classic, true );
+				if ( JSON_ERROR_NONE === json_last_error() && is_string( $decoded ) ) {
+					$post_data['post_content'] = wp_kses_post( $decoded );
+				} else {
+					// Use already-sanitized `post_content` from args sanitizer.
+					$post_data['post_content'] = isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : '';
 				}
-				$post_data['post_content'] = $decoded_classic;
 			}
 
 			global $linguator;
@@ -850,7 +858,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$params                  = $params->get_params();
 
 			// Verify the nonce
-			if ( ! wp_verify_nonce( $params['privateKey'], 'lmat_bulk_translate_entries_nonce' ) ) {
+			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
+			if ( '' === $private_key || ! wp_verify_nonce( $private_key, 'lmat_bulk_translate_entries_nonce' ) ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
 
@@ -946,7 +955,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( ! isset( $params['source_language'] ) || empty( $params['source_language'] ) ) {
 				wp_send_json_error( 'Invalid source language' );
 			}
-			if ( ! wp_verify_nonce( $params['privateKey'], 'lmat_create_translate_taxonomy_nonce' ) ) {
+			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
+			if ( '' === $private_key || ! wp_verify_nonce( $private_key, 'lmat_create_translate_taxonomy_nonce' ) ) {
 				wp_send_json_error( 'You are not authorized to perform this action.' );
 			}
 

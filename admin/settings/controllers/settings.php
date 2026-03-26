@@ -292,6 +292,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 
 		if($loco_plugin_active){
 			wp_safe_redirect(admin_url('admin.php?page=loco'));
+			exit;
 		};
 	}
 

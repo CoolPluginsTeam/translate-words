@@ -1448,8 +1448,8 @@ class Linguator_WPBakery {
 		
 		// Remove page translation placeholders
 		$content = self::linguator_remove_page_translation_placeholders( $content );
-		
-		return $content;
+
+		return wp_kses_post( $content );
 	}
 }
 
