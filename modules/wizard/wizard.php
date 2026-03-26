@@ -460,16 +460,13 @@ class Linguator_Wizard
 	}
 
 	/**
-	 * Get the suffix to enqueue non minified files in a Debug context
+	 * Get the suffix used for built assets.
 	 *
-	 *  
-	 *
-	 * @return string Empty when SCRIPT_DEBUG equal to true
-	 *                otherwise .min
+	 * @return string Always '.min' (minified assets).
 	 */
 	public function get_suffix()
 	{
-		return defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
+		return '.min';
 	}
 
 	/**
@@ -502,18 +499,6 @@ class Linguator_Wizard
 			update_option('lmat_rewrite_rules_flushed', 'yes');
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 	/**
 	 * Create home page translations for each language defined.

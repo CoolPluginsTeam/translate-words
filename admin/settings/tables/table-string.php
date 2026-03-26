@@ -246,9 +246,11 @@ class Linguator_Table_String extends WP_List_Table {
 	protected function usort_reorder( $a, $b ) {
 		if ( ! empty( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			$orderby = sanitize_key( wp_unslash( $_GET['orderby'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$order   = ! empty( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : 'asc'; // phpcs:ignore WordPress.Security.NonceVerification
+			$order   = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'asc';
 			if ( isset( $a[ $orderby ], $b[ $orderby ] ) ) {
 				$result = strcmp( $a[ $orderby ], $b[ $orderby ] ); // Determine sort order
-				return ( empty( $_GET['order'] ) || 'asc' === $_GET['order'] ) ? $result : -$result; // phpcs:ignore WordPress.Security.NonceVerification
+				return ( 'asc' === $order ) ? $result : -$result;
 			}
 		}
 
@@ -462,7 +464,10 @@ class Linguator_Table_String extends WP_List_Table {
 			$args['paged'] = absint( wp_unslash( $_GET['paged'] ) ); // Don't rely on $_REQUEST['paged'] or $_POST['paged'].
 		}
 		if ( ! empty( $args['s'] ) ) {
-			$args['s'] = urlencode( $args['s'] ); // Searched string needs to be encoded as it comes from $_POST
+			$args['s'] = urlencode( sanitize_text_field( $args['s'] ) ); // Searched string needs to be encoded as it comes from $_POST.
+		}
+		if ( ! empty( $args['group'] ) ) {
+			$args['group'] = sanitize_key( $args['group'] );
 		}
 		Linguator_Settings::redirect( $args );
 	}
