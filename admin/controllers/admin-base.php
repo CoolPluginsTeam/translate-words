@@ -540,7 +540,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		// Don't update global filter when editing posts or terms (post.php, term.php)
 		$is_edit_page = in_array( $GLOBALS['pagenow'], array( 'post.php', 'term.php' ) );
 		
-		$has_valid_lang_nonce = isset( $_GET['_lmat_lang_nonce'] ) && false !== wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_lmat_lang_nonce'] ) ), 'lmat_set_admin_filter_lang' ); // phpcs:ignore WordPress.Security.NonceVerification
+		$has_valid_lang_nonce = isset( $_GET['_lmat_lang_nonce'] ) && false !== wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_lmat_lang_nonce'] ) ), 'lmat_set_admin_filter_lang' );
 
 		if ( ! wp_doing_ajax() && ! empty( $_GET['lang'] ) && ! is_numeric( sanitize_key( wp_unslash( $_GET['lang'] ) ) ) && ! $is_edit_page && $has_valid_lang_nonce && current_user_can( 'edit_user', $user_id = get_current_user_id() ) ) {
 			update_user_meta( $user_id, 'lmat_filter_content', ( $lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['lang'] ) ) ) ) ? $lang->slug : '' ); 
