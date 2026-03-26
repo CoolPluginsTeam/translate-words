@@ -5,7 +5,7 @@ Tags: translation, multilingual, languages, ai translation
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 2.1.1
+Stable tag: 2.1.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -158,6 +158,12 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
 > The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.1.2 | 26 March 2026 =
+
+* Fixed Sanitization and security issues.
+* Fixed REST API issues.
+* Minor code improvements.
 
 = Version 2.1.1 | 20 March 2026 =
 
