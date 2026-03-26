@@ -161,9 +161,12 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = Version 2.1.2 | 26 March 2026 =
 
-* Fixed Sanitization and security issues.
-* Fixed REST API issues.
-* Minor code improvements.
+* Removed usage of HEREDOC/NOWDOC syntax and replaced with safer string handling methods.
+* Improved plugin path and URL handling by replacing hardcoded paths with WordPress standard functions like plugin_dir_path() and plugin_dir_url().
+* Strengthened REST API permission checks by adding proper capability validation for post creation actions.
+* Fixed unescaped output in content filters, ensuring all dynamic data is properly escaped to prevent XSS vulnerabilities.
+* Added missing nonce verification for user input handling to prevent CSRF attacks.
+* Improved code quality and security by implementing proper input validation and sanitization.
 
 = Version 2.1.1 | 20 March 2026 =
 
