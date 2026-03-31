@@ -1,6 +1,6 @@
 (function($){
     $(document).ready(function(){
-        let plugin_name = 'translate-words';
+        let plugin_name = 'linguator-ai-auto-translate-create-multilingual-sites';
 		let plugin_slug = 'twlmat';
         
         $target = $('#the-list').find('[data-slug="'+plugin_name+'"] span.deactivate a');
