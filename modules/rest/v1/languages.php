@@ -746,7 +746,7 @@ class Languages extends Abstract_Controller {
 	 */
 	public function assign_language_in_mass( $request ) {
 		
-		$lang = sanitize_text_field( $request['slug'] );
+		$lang = sanitize_text_field( $request['locale'] );
 		$language = $this->model->get_language( $lang );
 		if ( ! ( $language instanceof Linguator_Language ) ) {
 			return new WP_Error(
