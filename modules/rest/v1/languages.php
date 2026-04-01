@@ -449,7 +449,7 @@ class Languages extends Abstract_Controller {
 	 * @return true|WP_Error
 	 */
 	public function get_all_post_data_permissions_check( $request ) {
-		if ( ! current_user_can( Capabilities::TRANSLATIONS ) ) {
+		if ( !is_user_logged_in() || ! current_user_can( Capabilities::TRANSLATIONS ) ) {
 			return new WP_Error(
 				'rest_forbidden',
 				__( 'Sorry, you are not allowed to view posts data.', 'translate-words' ),
@@ -1117,11 +1117,13 @@ class Languages extends Abstract_Controller {
 			}
 		}
 		
-		return [
-			'success' => true,
-			'pages' => $created_pages,
-			'translations' => $all_translations // Include for debugging
-		];
+		return rest_ensure_response(
+			array(
+				'success'      => true,
+				'pages'        => $created_pages,
+				'translations' => ( current_user_can( 'manage_options' ) ) ? $all_translations : null,
+			)
+		);
 	}
 
 	/**
@@ -1133,10 +1135,77 @@ class Languages extends Abstract_Controller {
 	 * @return true|WP_Error True if the request has access to create a home page translation, WP_Error object otherwise.
 	 */
 	public function create_home_page_translation_permissions_check( $request ) {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you must be logged in to create a home page translation.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		// Plugin-level capability gate.
 		if ( ! $this->check_update_permission() ) {
 			return new WP_Error(
 				'rest_cannot_create',
 				__( 'Sorry, you are not allowed to create a home page translation.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		$source_id = absint( $request->get_param( 'source_id' ) );
+		if ( $source_id <= 0 ) {
+			return new WP_Error(
+				'rest_invalid_param',
+				__( 'Invalid source post ID.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$source = get_post( $source_id );
+		if ( ! $source ) {
+			return new WP_Error(
+				'rest_post_invalid_id',
+				__( 'Source post not found.', 'translate-words' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		// This endpoint creates translations derived from the source, so require edit access to the source.
+		if ( ! current_user_can( 'edit_post', $source_id ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to create translations for this source post.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		// This endpoint creates *published* pages. Require the relevant capabilities.
+		$pto = get_post_type_object( 'page' );
+		if ( ! $pto || empty( $pto->cap ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, pages cannot be created on this site.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		$create_cap = ! empty( $pto->cap->create_posts )
+			? $pto->cap->create_posts
+			: ( ! empty( $pto->cap->edit_posts ) ? $pto->cap->edit_posts : 'edit_posts' );
+
+		if ( ! current_user_can( $create_cap ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to create pages.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		$publish_cap = ! empty( $pto->cap->publish_posts ) ? $pto->cap->publish_posts : 'publish_posts';
+		if ( ! current_user_can( $publish_cap ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to publish pages.', 'translate-words' ),
 				array( 'status' => rest_authorization_required_code() )
 			);
 		}
@@ -1417,7 +1486,7 @@ class Languages extends Abstract_Controller {
 	 */
 	public function assign_language_permissions_check( $request ) {
 		// Check user capabilities first
-		if ( ! $this->check_update_permission() ) {
+		if ( !is_user_logged_in() || ! $this->check_update_permission() ) {
 			return new WP_Error(
 				'rest_cannot_assign',
 				__( 'Sorry, you are not allowed to assign languages.', 'translate-words' ),

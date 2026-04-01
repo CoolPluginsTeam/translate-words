@@ -256,6 +256,31 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( ! current_user_can( $tax_obj->cap->manage_terms ) ) {
 					return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to perform this action.', 'translate-words' ), array( 'status' => 403 ) );
 				}
+
+				// Object-level checks: if a term (or list of terms) is provided, require edit capability for it.
+				$term_id_param = $request->get_param( 'term_id' );
+				if ( null !== $term_id_param && '' !== $term_id_param ) {
+					$term_id = absint( $term_id_param );
+					if ( $term_id <= 0 ) {
+						return new \WP_Error( 'rest_invalid_param', __( 'Invalid term id.', 'translate-words' ), array( 'status' => 400 ) );
+					}
+					if ( ! current_user_can( 'edit_term', $term_id ) ) {
+						return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to edit this term.', 'translate-words' ), array( 'status' => 403 ) );
+					}
+				}
+
+				$ids_param = $request->get_param( 'ids' );
+				if ( null !== $ids_param && '' !== $ids_param ) {
+					$decoded_ids = json_decode( (string) $ids_param, true );
+					if ( is_array( $decoded_ids ) ) {
+						foreach ( $decoded_ids as $maybe_id ) {
+							$term_id = absint( $maybe_id );
+							if ( $term_id > 0 && ! current_user_can( 'edit_term', $term_id ) ) {
+								return new \WP_Error( 'rest_forbidden', __( 'You are not authorized to edit one or more requested terms.', 'translate-words' ), array( 'status' => 403 ) );
+							}
+						}
+					}
+				}
 				return true;
 			}
 
@@ -798,8 +823,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			} catch ( \Throwable $e ) {
 				return new WP_Error(
 					'create_failed_exception',
-					// Avoid exposing too much, but keep message for debugging.
-					(string) $e->getMessage(),
+					__( 'Failed to create the translated post.', 'translate-words' ),
 					array( 'status' => 500 )
 				);
 			}
