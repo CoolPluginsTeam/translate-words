@@ -31,12 +31,6 @@ if (
  * @param string $translated_string The string being translated.
  * @return string
  */
-/**
- * Process the translated text.
- *
- * @param string $translated_string The string being translated.
- * @return string
- */
 function linguator_apply_translate_string( $translated_string ) {
 
 	static $cached_overrides = null;

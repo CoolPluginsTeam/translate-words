@@ -112,7 +112,7 @@ return array(
     'Linguator\\Includes\\Options\\Primitive\\Abstract_Boolean' => $baseDir . '/includes/options/primitive/abstract-boolean.php',
     'Linguator\\Includes\\Options\\Primitive\\Abstract_List' => $baseDir . '/includes/options/primitive/abstract-list.php',
     'Linguator\\Includes\\Options\\Primitive\\Abstract_String' => $baseDir . '/includes/options/primitive/abstract-string.php',
-    'Linguator\\Includes\\Options\\Registry' => $baseDir . '/includes/options/resgistry.php',
+    'Linguator\\Includes\\Options\\Registry' => $baseDir . '/includes/options/registry.php',
     'Linguator\\Includes\\Other\\Linguator_Language' => $baseDir . '/includes/other/language.php',
     'Linguator\\Includes\\Other\\Linguator_Language_Factory' => $baseDir . '/includes/other/language-factory.php',
     'Linguator\\Includes\\Other\\Linguator_Model' => $baseDir . '/includes/other/model.php',

@@ -168,6 +168,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'sanitize_callback' => array( $this, 'sanitize_post_content_for_builders' ),
 							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
+						'post_meta_fields' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => array( $this, 'sanitize_post_meta_fields_param' ),
+							'validate_callback' => array( $this, 'validate_post_meta_fields_param' ),
+						),
 					),
 				)
 			);
@@ -455,6 +461,44 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return is_scalar( $value );
+		}
+
+		/**
+		 * Validates optional JSON payload for post meta fields.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_post_meta_fields_param( $value ) {
+			if ( null === $value || '' === $value ) {
+				return true;
+			}
+
+			if ( ! is_string( $value ) ) {
+				return false;
+			}
+
+			$decoded = json_decode( $value, true );
+			return JSON_ERROR_NONE === json_last_error() && is_array( $decoded );
+		}
+
+		/**
+		 * Sanitizes optional JSON payload for post meta fields.
+		 *
+		 * @param mixed $value Raw request value.
+		 * @return string
+		 */
+		public function sanitize_post_meta_fields_param( $value ) {
+			if ( null === $value || '' === $value || ! is_string( $value ) ) {
+				return '';
+			}
+
+			$decoded = json_decode( $value, true );
+			if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+				return '';
+			}
+
+			return wp_json_encode( $decoded );
 		}
 
 		/**

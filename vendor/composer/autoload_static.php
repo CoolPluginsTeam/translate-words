@@ -163,7 +163,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Includes\\Options\\Primitive\\Abstract_Boolean' => __DIR__ . '/../..' . '/includes/options/primitive/abstract-boolean.php',
         'Linguator\\Includes\\Options\\Primitive\\Abstract_List' => __DIR__ . '/../..' . '/includes/options/primitive/abstract-list.php',
         'Linguator\\Includes\\Options\\Primitive\\Abstract_String' => __DIR__ . '/../..' . '/includes/options/primitive/abstract-string.php',
-        'Linguator\\Includes\\Options\\Registry' => __DIR__ . '/../..' . '/includes/options/resgistry.php',
+        'Linguator\\Includes\\Options\\Registry' => __DIR__ . '/../..' . '/includes/options/registry.php',
         'Linguator\\Includes\\Other\\Linguator_Language' => __DIR__ . '/../..' . '/includes/other/language.php',
         'Linguator\\Includes\\Other\\Linguator_Language_Factory' => __DIR__ . '/../..' . '/includes/other/language-factory.php',
         'Linguator\\Includes\\Other\\Linguator_Model' => __DIR__ . '/../..' . '/includes/other/model.php',

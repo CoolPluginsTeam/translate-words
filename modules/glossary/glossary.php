@@ -425,7 +425,7 @@ if (!class_exists('Glossary')) {
                 wp_send_json_error('Permission denied');
             }
 
-            $raw_data = isset( $_POST['data'] ) ? wp_unslash( $_POST['data'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- wp_unslash() applied.
+            $raw_data = isset( $_POST['data'] ) ? wp_unslash( $_POST['data'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wp_unslash() applied; payload is sanitized field-by-field below.
             $data     = is_array( $raw_data ) ? $raw_data : array();
 
             // Sanitize expected fields at the boundary.

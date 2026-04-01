@@ -66,8 +66,14 @@ if ( is_readable( $lmat_config_file ) ) {
 	}
 }
 
-// Raw JSON config; `lmat_local_config` filter runs on plugins_loaded (see Linguator constructor).
-$GLOBALS['lmat_local_config'] = $lmat_config;
+/**
+ * Raw JSON config loaded from `LMAT_LOCAL_DIR/lmat-config.json`.
+ *
+ * Allow third parties to adjust/augment the local config.
+ *
+ * @param array<string,mixed> $lmat_config Local config array.
+ */
+$GLOBALS['lmat_local_config'] = apply_filters( 'lmat_local_config', $lmat_config );
 
 /**
  * Controls the plugin, as well as activation, and deactivation

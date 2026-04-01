@@ -48,14 +48,6 @@ if ( ! defined( 'ABSPATH' ) ) {
      */
     function linguator_add_admin_menu()
     {
-
-        // Check if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        $translations = get_option(LMAT_TRANSLATIONS_LINES);
-
         add_options_page(
             esc_html__('Translate Words', 'translate-words'),
             esc_html__('Translate Words', 'translate-words'),
@@ -191,12 +183,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             }
 
         }
-        // Check if Loco Translate is active and all data was removed
-        if (empty($update_translations)) {
-            if (! function_exists('is_plugin_active')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-        }
         return $update_translations;
     }
 
@@ -211,10 +197,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         $screen = get_current_screen();
         if (! $screen || 'settings_page_' . LMAT_PAGE !== $screen->id) {
             return;
-        }
-        // Don't show notice if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         // Check if notice has been dismissed site-wide
@@ -290,11 +272,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     {
 
         $translations = get_option(LMAT_TRANSLATIONS_LINES);
-
-        // Check if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
 
     ?>
 	<div class="wrap">

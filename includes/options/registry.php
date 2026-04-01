@@ -60,3 +60,4 @@ class Registry {
 		array_map( array( $options, 'register' ), static::OPTIONS );
 	}
 }
+
