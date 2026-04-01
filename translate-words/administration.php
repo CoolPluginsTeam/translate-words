@@ -314,8 +314,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<a
 									href="#"
 									class="submitdelete submitDeleteTranslation"
-									aria-lable="<?php esc_attr_e('Remove this translation', 'translate-words'); ?>"
-									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e('Remove', 'translate-words'); ?></span>
+									aria-label="<?php esc_attr_e( 'Remove this translation', 'translate-words' ); ?>"
+									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e( 'Remove', 'translate-words' ); ?></a>
 							</span>
 						</td>
 					</tr>
