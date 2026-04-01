@@ -19,39 +19,11 @@ import {
     Button
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { useMemo, useState, useRef, useCallback, useEffect } from '@wordpress/element';
+import { useMemo, useState, useCallback, useEffect } from '@wordpress/element';
 import { select } from '@wordpress/data';
 import { CirclePlus, SquarePen } from 'lucide-react';
 
 const SIDEBAR_NAME = 'lmat-post-sidebar';
-
-/**
- * Simple debounce hook
- */
-const useDebouncedCallback = (callback, delay = 2000) => {
-    const timer = useRef(null);
-    const cbRef = useRef(callback);
-    cbRef.current = callback;
-
-    const debounced = useCallback((...args) => {
-        if (timer.current) {
-            clearTimeout(timer.current);
-        }
-        timer.current = setTimeout(() => {
-            cbRef.current(...args);
-        }, delay);
-    }, [delay]);
-
-    // optional: clear on unmount
-    const cancel = useCallback(() => {
-        if (timer.current) {
-            clearTimeout(timer.current);
-            timer.current = null;
-        }
-    }, []);
-
-    return [debounced, cancel];
-};
 
 const getSettings = () => {
     // Provided by PHP in Abstract_Screen::enqueue via wp_add_inline_script
@@ -253,7 +225,6 @@ const TranslationRow = ( { row } ) => {
     const { lang, translated_post, links } = row;
     const initialTitle = translated_post?.title || '';
     const [title, setTitle] = useState(initialTitle);
-    const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [allPages, setAllPages] = useState([]);
     const [loadingPages, setLoadingPages] = useState(false);
@@ -262,36 +233,6 @@ const TranslationRow = ( { row } ) => {
     const [linking, setLinking] = useState(false);
 
     const editable = !initialTitle; // editable only if there is no value initially
-
-    // Debounced save
-    const [debouncedSave] = useDebouncedCallback(async (nextTitle) => {
-        // Guard: don’t send empty or whitespace-only titles
-        const clean = (nextTitle || '').trim();
-        if (!clean) return;
-
-        try {
-            setSaving(true);
-            setError('');
-
-            // Example payload — adjust to match your PHP route/handler.
-            // Expect your server to create/update a placeholder translation record’s title.
-            await apiFetch({
-                path: '/lmat/v1/translation-title',
-                method: 'POST',
-                data: {
-                    postId: translated_post?.id || null, // if you have it
-                    lang: lang?.slug,
-                    title: clean,
-                },
-            });
-
-            setSaving(false);
-        } catch (e) {
-            setSaving(false);
-            setError( __( 'Failed to save title. Please try again.', 'translate-words' ) );
-            // Optional: console.error(e);
-        }
-    }, 2000);
 
     const hasEdit = !! links?.edit_link;
     const hasAdd = !! links?.add_link;
@@ -418,10 +359,7 @@ const TranslationRow = ( { row } ) => {
                         disabled={ !editable }
                         help={
                             editable
-                                ? ( saving
-                                    ? __( 'Saving…', 'translate-words' )
-                                    : __( 'Type title to save translation.', 'translate-words' )
-                                  )
+                                ? __( 'Type a title to search pages to link, or use + to create a translation.', 'translate-words' )
                                 : __( 'Modify title via Edit.', 'translate-words' )
                         }
                     />
@@ -451,7 +389,7 @@ const TranslationRow = ( { row } ) => {
                             ) : null
                         )
                     ) }
-                    { saving || linking ? <Spinner style={{ marginLeft: 8 }} /> : null }
+                    { loadingPages || linking ? <Spinner style={{ marginLeft: 8 }} /> : null }
                 </FlexItem>
             </Flex>
             { editable && suggestions.length > 0 ? (

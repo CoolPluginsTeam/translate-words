@@ -48,14 +48,6 @@ if ( ! defined( 'ABSPATH' ) ) {
      */
     function linguator_add_admin_menu()
     {
-
-        // Check if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        $translations = get_option(LMAT_TRANSLATIONS_LINES);
-
         add_options_page(
             esc_html__('Translate Words', 'translate-words'),
             esc_html__('Translate Words', 'translate-words'),
@@ -191,12 +183,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             }
 
         }
-        // Check if Loco Translate is active and all data was removed
-        if (empty($update_translations)) {
-            if (! function_exists('is_plugin_active')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-        }
         return $update_translations;
     }
 
@@ -211,10 +197,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         $screen = get_current_screen();
         if (! $screen || 'settings_page_' . LMAT_PAGE !== $screen->id) {
             return;
-        }
-        // Don't show notice if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         // Check if notice has been dismissed site-wide
@@ -291,11 +273,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         $translations = get_option(LMAT_TRANSLATIONS_LINES);
 
-        // Check if Loco Translate is active
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
     ?>
 	<div class="wrap">
 
@@ -326,19 +303,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 				?>
 					<tr valign="top" id="row_id_<?php echo esc_attr($key); ?>_translate">
 						<td style="white-space: nowrap">
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_textarea($original); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_attr($original); ?>" />
 							&rarr;
 						</td>
 						<td>
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_textarea($value['overwrite']); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_attr($overwrite); ?>" />
 						</td>
 						<td class="action">
 							<span class="trash">
 								<a
 									href="#"
 									class="submitdelete submitDeleteTranslation"
-									aria-lable="<?php esc_attr_e('Remove this translation', 'translate-words'); ?>"
-									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e('Remove', 'translate-words'); ?></span>
+									aria-label="<?php esc_attr_e( 'Remove this translation', 'translate-words' ); ?>"
+									id="row_id_<?php echo esc_attr($key); ?>"><?php esc_html_e( 'Remove', 'translate-words' ); ?></a>
 							</span>
 						</td>
 					</tr>
