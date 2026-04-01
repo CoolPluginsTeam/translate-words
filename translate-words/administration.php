@@ -326,11 +326,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 				?>
 					<tr valign="top" id="row_id_<?php echo esc_attr($key); ?>_translate">
 						<td style="white-space: nowrap">
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_textarea($original); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[original][]" value="<?php echo esc_attr($original); ?>" />
 							&rarr;
 						</td>
 						<td>
-							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_textarea($value['overwrite']); ?>" />
+							<input type="text" style="width:100%;" name="<?php echo esc_attr(LMAT_TRANSLATIONS_LINES); ?>[overwrite][]" value="<?php echo esc_attr($overwrite); ?>" />
 						</td>
 						<td class="action">
 							<span class="trash">
