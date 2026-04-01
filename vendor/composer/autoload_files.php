@@ -6,8 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    '6124b4c8570aa390c21fafd04a26c69f' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
-    'ec07570ca5a812141189b1fa81503674' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
     'a09b5c289ab49d54ed98870947f5cfc1' => $baseDir . '/includes/helpers/functions.php',
     '93d97684e2329aa3a1115835abc2b0a3' => $baseDir . '/includes/api/language-api.php',
     '1d3d25f3c1ac932cc7bbd70af4c9977f' => $baseDir . '/includes/sync-menu/menu-sync-integration.php',
