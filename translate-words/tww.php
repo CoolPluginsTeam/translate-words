@@ -33,7 +33,6 @@ if (
 define( 'LMAT_TRANSLATIONS', 'tww_options' );
 define( 'LMAT_PAGE', 'tww_settings' );
 define( 'LMAT_TRANSLATIONS_LINES', 'tww_options_lines' );
-define( 'LMAT_NONCE_KEY', 'tww-save-translations' );
 define( 'LMAT_PLUGINS_DIR', plugin_dir_url( __FILE__ ) );
 
 

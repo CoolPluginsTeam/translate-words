@@ -210,7 +210,11 @@ class Linguator {
 		}
 		
 		$in = isset( $_REQUEST['action'] ) && in_array( sanitize_key( wp_unslash( $_REQUEST['action'] ) ), $excluded_actions ); // phpcs:ignore WordPress.Security.NonceVerification
-		$is_ajax_on_front = wp_doing_ajax() && empty( $_REQUEST['lmat_ajax_backend'] ) && ! $in; // phpcs:ignore WordPress.Security.NonceVerification
+		// Treat presence of lmat_ajax_backend as "backend" ajax.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only routing flag.
+		$lmat_ajax_backend = isset( $_REQUEST['lmat_ajax_backend'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['lmat_ajax_backend'] ) ) : '';
+
+		$is_ajax_on_front = wp_doing_ajax() && '' === $lmat_ajax_backend && ! $in;
 
 		/**
 		 * Filters whether the current request is an ajax request on front.
