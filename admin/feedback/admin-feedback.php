@@ -195,16 +195,6 @@ class Linguator_Admin_Feedback {
 		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), '_cool-plugins_deactivate_feedback_nonce' ) ) {
 			wp_send_json_error();
 		} else {
-			$agree_to_terms = isset( $_POST['agree_to_terms'] ) ? sanitize_text_field( wp_unslash( $_POST['agree_to_terms'] ) ) : '';
-			if ( '1' !== $agree_to_terms ) {
-				wp_send_json_error(
-					array(
-						'message' => __( 'Consent is required before submitting feedback.', 'translate-words' ),
-					),
-					403
-				);
-			}
-
 			$reason             = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
 			$deactivate_reasons = array(
 				'didnt_work_as_expected'         => array(
