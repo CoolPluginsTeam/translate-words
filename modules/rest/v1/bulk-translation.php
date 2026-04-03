@@ -228,10 +228,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 						'taxonomy_description' => array(
-							'required'          => true,
+							'required'          => false,
 							'type'              => 'string',
-							'sanitize_callback' => 'wp_kses_post',
-							'validate_callback' => array( $this, 'validate_required_text_param' ),
+							'default'           => '',
+							'sanitize_callback' => array( $this, 'sanitize_taxonomy_description_param' ),
+							'validate_callback' => array( $this, 'validate_optional_string_param' ),
 						),
 					),
 				)
@@ -501,6 +502,19 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			return wp_json_encode( $decoded );
 		}
 
+		/**
+		 * Sanitize taxonomy term description for REST (allowed post HTML).
+		 *
+		 * @param mixed $value Raw request value.
+		 * @return string
+		 */
+		public function sanitize_taxonomy_description_param( $value ) {
+			if ( null === $value || false === $value ) {
+				return '';
+			}
+			return wp_kses_post( is_string( $value ) ? $value : (string) $value );
+		}
+		
 		/**
 		 * Validates a required non-empty text parameter.
 		 *

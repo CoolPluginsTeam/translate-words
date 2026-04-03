@@ -195,15 +195,6 @@ class Linguator_Admin_Feedback {
 		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), '_cool-plugins_deactivate_feedback_nonce' ) ) {
 			wp_send_json_error();
 		} else {
-			$agree_to_terms = isset( $_POST['agree_to_terms'] ) ? sanitize_text_field( wp_unslash( $_POST['agree_to_terms'] ) ) : '';
-			if ( '1' !== $agree_to_terms ) {
-				wp_send_json_error(
-					array(
-						'message' => __( 'Consent is required before submitting feedback.', 'translate-words' ),
-					),
-					403
-				);
-			}
 
 			$reason             = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
 			$deactivate_reasons = array(
@@ -244,8 +235,8 @@ class Linguator_Admin_Feedback {
 				array(
 					'timeout' => 30,
 					'body'    => array(
-						'server_info' => wp_json_encode( $user_info['server_info'] ),
-						'extra_details' => wp_json_encode( $user_info['extra_details'] ),
+						'server_info' => serialize($this->cpfm_get_user_info()['server_info']), 
+						'extra_details' => serialize($this->cpfm_get_user_info()['extra_details']),
 						'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
 						'plugin_version' => sanitize_text_field($this->plugin_version),
 						'plugin_name'    => sanitize_text_field($this->plugin_name),
@@ -258,7 +249,7 @@ class Linguator_Admin_Feedback {
 				)
 			);
 
-			wp_send_json( array( 'response' => $response ) );
+			die( json_encode( array( 'response' => $response ) ) );
 		}
 
 	}
