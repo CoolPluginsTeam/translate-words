@@ -164,9 +164,6 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Fixed an issue with the Quick Edit page for unassigned languages.
 * Minor fixes.
 
-* Remove unused code.
-* Improve code quality and security.
-
 = Version 2.1.3 | 1 April 2026 =
 
 * Remove unused code.

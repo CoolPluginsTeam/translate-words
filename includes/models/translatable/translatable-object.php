@@ -256,45 +256,30 @@ abstract class Linguator_Translatable_Object {
 	}
 
 	/**
-	 * Wraps `wp_get_object_terms()` to cache it and return only one object.
-	 * Inspired by the WordPress function `get_the_terms()`.
+	 * Wraps `wp_get_object_terms()` to cache it for multiple objects.
 	 *
-	 *  @since 0.0.8
+	 * @since 0.0.8
 	 *
-	 * @param int[]    $object_ids Array of object IDs.
-	 * @param string $taxonomy Linguator taxonomy depending if we are looking for a post (or term, or else) language.
-	 * @return WP_Term|false The term associated to the object in the requested taxonomy if it exists, `false` otherwise.
+	 * @param int[]  $object_ids Array of object IDs.
+	 * @param string $taxonomy   Taxonomy name.
+	 * @return array<int,WP_Term> Array of terms with object ID as key.
 	 */
 	protected function get_object_terms( array $object_ids, string $taxonomy ) {
-		$object_ids = linguator_sanitize_ids( $object_ids );
+		$object_ids = $this->linguator_sanitize_ids( $object_ids );
 		if ( empty( $object_ids ) ) {
 			return array();
 		}
 
 		$cached_values = $this->get_from_object_term_cache( $object_ids, $taxonomy );
 
-		// Flatten the array to prime the terms cache.
-		$all_term_ids = array();
-		if ( is_array( $cached_values ) ) {
-			foreach ( $cached_values as $term_ids ) {
-				if ( is_array( $term_ids ) ) {
-					$all_term_ids = array_merge( $all_term_ids, $term_ids );
-				}
-			}
-		}
+		$all_term_ids = array_values( $cached_values );
 		_prime_term_caches( $all_term_ids, false );
 
 		$terms = array();
-		if ( is_array( $cached_values ) ) {
-			foreach ( $cached_values as $object_id => $term_ids ) {
-				if ( ! empty( $term_ids ) && is_array( $term_ids ) ) {
-					$term_id = reset( $term_ids ); // There is only one term for language or translation groups.
-
-					/** @var WP_Term $term */
-					$term                = get_term( $term_id );
-					$terms[ $object_id ] = $term;
-				}
-			}
+		foreach ( $cached_values as $object_id => $term_id ) {
+			/** @var WP_Term $term */
+			$term                = get_term( $term_id );
+			$terms[ $object_id ] = $term;
 		}
 
 		return $terms;
@@ -307,16 +292,16 @@ abstract class Linguator_Translatable_Object {
 	 *
 	 * @param int[] $object_ids Array of object IDs.
 	 *
-	 * @return void
+	 * @return int[][][]
 	 */
-	protected function prime_object_term_cache( array $object_ids ) {
+	protected function update_object_term_cache( array $object_ids ) {
 		$non_cached_ids = array();
 		foreach ( $this->tax_to_cache as $tax ) {
 			$non_cached_ids = array_merge( $non_cached_ids, _get_non_cached_ids( $object_ids, "{$tax}_relationships" ) );
 		}
 
 		if ( empty( $non_cached_ids ) ) {
-			return;
+			return array();
 		}
 
 		$terms = wp_get_object_terms(
@@ -329,7 +314,7 @@ abstract class Linguator_Translatable_Object {
 		);
 
 		if ( ! is_array( $terms ) ) {
-			return;
+			return array();
 		}
 
 		$object_terms = array();
@@ -348,6 +333,7 @@ abstract class Linguator_Translatable_Object {
 		foreach ( $object_terms as $tax => $data ) {
 			wp_cache_add_multiple( $data, "{$tax}_relationships" );
 		}
+		return $object_terms;
 	}
 
 	/**
@@ -360,9 +346,30 @@ abstract class Linguator_Translatable_Object {
 	 *
 	 * @return int[][]
 	 */
-	protected function get_from_object_term_cache( array $object_ids, string $taxonomy ) {
-		$this->prime_object_term_cache( $object_ids );
-		return wp_cache_get_multiple( $object_ids, "{$taxonomy}_relationships" );
+	protected function get_from_object_term_cache( array $object_ids, string $taxonomy ): array {
+		$values = wp_cache_get_multiple( $object_ids, "{$taxonomy}_relationships" );
+
+		// If values are missing, then update the cache and replace missed values by freshly cached ones.
+		$object_terms = $this->update_object_term_cache( $object_ids );
+		if ( isset( $object_terms[ $taxonomy ] ) ) {
+			$values = array_replace( $values, $object_terms[ $taxonomy ] );
+		}
+
+		$sanitized_values = array();
+		foreach ( $values as $object_id => $term_ids ) {
+			if ( ! is_array( $term_ids ) ) {
+				continue;
+			}
+
+			$id = reset( $term_ids );
+			if ( ! is_numeric( $id ) || empty( $id ) ) {
+				continue;
+			}
+
+			$sanitized_values[ $object_id ] = (int) $id;
+		}
+
+		return $sanitized_values;
 	}
 
 	/**
@@ -500,6 +507,41 @@ abstract class Linguator_Translatable_Object {
 		$this->set_to_cache( $key, $object_ids );
 
 		return $object_ids;
+	}
+
+	/**
+	 * Sanitizes an array of IDs as positive integers.
+	 * `0` values are removed.
+	 *
+	 * @since 0.0.8
+	 *
+	 * @param mixed $ids An array of numeric IDs.
+	 * @return int[]
+	 *
+	 * @phpstan-return array<positive-int>
+	 */
+	public function linguator_sanitize_ids( $ids ) {
+		if ( empty( $ids ) || ! is_array( $ids ) ) {
+			return array();
+		}
+
+		$ids = array_map( array( $this, 'linguator_sanitize_id' ), $ids );
+
+		return array_filter( $ids );
+	}
+
+	/**
+	 * Sanitizes an ID as positive integer.
+	 *
+	 * @since 0.0.8
+	 *
+	 * @param mixed $id A supposedly numeric ID.
+	 * @return int A positive integer. `0` for non numeric values and negative integers.
+	 *
+	 * @phpstan-return positive-int
+	 */
+	public function linguator_sanitize_id( $id ) {
+		return is_numeric( $id ) && $id >= 1 ? abs( (int) $id ) : 0;
 	}
 
 	/**

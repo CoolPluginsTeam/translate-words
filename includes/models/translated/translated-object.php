@@ -161,7 +161,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 			return array();
 		}
 
-		$this->prime_object_term_cache( array_merge( array( $id ), $translations ) );
+		$this->update_object_term_cache( array_merge( array( $id ), $translations ) );
 
 		$lang = $this->get_language( $id );
 
