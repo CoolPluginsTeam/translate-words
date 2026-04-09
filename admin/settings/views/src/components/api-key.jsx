@@ -1,0 +1,308 @@
+import React, { useEffect, useRef, useState } from 'react'
+import { Button, Container, Input, Label } from '@bsf/force-ui'
+import apiFetch from "@wordpress/api-fetch"
+import { toast } from 'sonner'
+import { __ } from '@wordpress/i18n'
+import { getNonce } from '../utils'
+import { GeminiIcon } from '../../../../../assets/logo/gemini'
+import { OpenAIIcon } from '../../../../../assets/logo/openai'
+import { AnthropicIcon } from '../../../../../assets/logo/anthropic'
+
+const RESET_SENTINEL = '__RESET__'
+
+const providerIcons = {
+    gemini: GeminiIcon,
+    openai: OpenAIIcon,
+    anthropic: AnthropicIcon,
+}
+
+const providerMeta = [
+  {
+    key: 'gemini',
+    modelKey: 'gemini_model',
+    heading: __('Add Gemini API key', 'translate-words'),
+    modelHeading: __('Select Gemini Model', 'translate-words'),
+    placeholder: 'AIza…',
+    models: [
+      { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
+      { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro' },
+      { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash' },
+      { value: 'gemini-2.0-pro', label: 'gemini-2.0-pro' },
+    ],
+  },
+  {
+    key: 'openai',
+    modelKey: 'openai_model',
+    heading: __('Add OpenAI API key', 'translate-words'),
+    modelHeading: __('Select OpenAI Model', 'translate-words'),
+    placeholder: 'sk-…',
+    models: [
+      { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+      { value: 'gpt-4o', label: 'gpt-4o' },
+      { value: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
+      { value: 'gpt-4.1', label: 'gpt-4.1' },
+    ],
+  },
+  {
+    key: 'anthropic',
+    modelKey: 'anthropic_model',
+    heading: __('Add Anthropic API key', 'translate-words'),
+    modelHeading: __('Select Anthropic Model', 'translate-words'),
+    placeholder: 'sk-ant-…',
+    models: [
+      { value: 'claude-3-5-sonnet-latest', label: 'claude-3-5-sonnet-latest' },
+      { value: 'claude-3-5-haiku-latest', label: 'claude-3-5-haiku-latest' },
+      { value: 'claude-3-opus-latest', label: 'claude-3-opus-latest' },
+    ],
+  },
+]
+
+const ApiKey = ({ data, setData }) => {
+  const [loading, setLoading] = useState(true)
+  const [masked, setMasked] = useState({ openai: '', gemini: '', anthropic: '' })
+  const [configured, setConfigured] = useState({ openai: false, gemini: false, anthropic: false })
+  const [keyDrafts, setKeyDrafts] = useState({ openai: '', gemini: '', anthropic: '' })
+  const [models, setModels] = useState({
+    openai_model: 'gpt-4o-mini',
+    gemini_model: 'gemini-1.5-flash',
+    anthropic_model: 'claude-3-5-sonnet-latest',
+  })
+  const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
+  const initialModelsRef = useRef({
+    openai_model: 'gpt-4o-mini',
+    gemini_model: 'gemini-1.5-flash',
+    anthropic_model: 'claude-3-5-sonnet-latest',
+  })
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const resp = await apiFetch({
+          path: 'lmat/v1/api-keys',
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': getNonce(),
+          },
+        })
+
+        const keys = resp?.keys || {}
+        const m = resp?.models || {}
+
+        const nextMasked = {
+          openai: keys?.openai || '',
+          gemini: keys?.gemini || '',
+          anthropic: keys?.anthropic || '',
+        }
+
+        setMasked(nextMasked)
+        setConfigured({
+          openai: Boolean(nextMasked.openai),
+          gemini: Boolean(nextMasked.gemini),
+          anthropic: Boolean(nextMasked.anthropic),
+        })
+        const nextModels = {
+          openai_model: m?.openai_model || 'gpt-4o-mini',
+          gemini_model: m?.gemini_model || 'gemini-1.5-flash',
+          anthropic_model: m?.anthropic_model || 'claude-3-5-sonnet-latest',
+        }
+        setModels(nextModels)
+        initialModelsRef.current = nextModels
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [])
+
+  useEffect(() => {
+    const hasKeyChanges = Object.values(keyDrafts).some((v) => (v || '').trim() !== '')
+    const initial = initialModelsRef.current || {}
+    const hasModelChanges =
+      (models.openai_model || '') !== (initial.openai_model || '') ||
+      (models.gemini_model || '') !== (initial.gemini_model || '') ||
+      (models.anthropic_model || '') !== (initial.anthropic_model || '')
+
+    setHandleButtonDisabled(!(hasKeyChanges || hasModelChanges))
+  }, [keyDrafts, models, configured.openai, configured.gemini, configured.anthropic])
+
+  async function SaveSettings({ resetProvider } = {}) {
+    try {
+      const keys = {}
+      const modelsBody = {
+        openai_model: models.openai_model,
+        gemini_model: models.gemini_model,
+        anthropic_model: models.anthropic_model,
+      }
+
+      for (const { key } of providerMeta) {
+        const draft = (keyDrafts[key] || '').trim()
+
+        if (resetProvider === key) {
+          keys[key] = ''
+          continue
+        }
+
+        if (draft !== '') {
+          keys[key] = draft
+        }
+      }
+
+      const apiBody = { keys, models: modelsBody }
+
+      const response = apiFetch({
+        path: 'lmat/v1/api-keys',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': getNonce(),
+        },
+        body: JSON.stringify(apiBody),
+      })
+        .then((resp) => {
+          const nextMasked = {
+            openai: resp?.keys?.openai || '',
+            gemini: resp?.keys?.gemini || '',
+            anthropic: resp?.keys?.anthropic || '',
+          }
+          setMasked(nextMasked)
+          setConfigured({
+            openai: Boolean(nextMasked.openai),
+            gemini: Boolean(nextMasked.gemini),
+            anthropic: Boolean(nextMasked.anthropic),
+          })
+          const m = resp?.models || {}
+          const nextModels = {
+            openai_model: m?.openai_model || models.openai_model,
+            gemini_model: m?.gemini_model || models.gemini_model,
+            anthropic_model: m?.anthropic_model || models.anthropic_model,
+          }
+          setModels(nextModels)
+          initialModelsRef.current = nextModels
+          setKeyDrafts({ openai: '', gemini: '', anthropic: '' })
+          setHandleButtonDisabled(true)
+          return resp
+        })
+        .catch((error) => {
+          if (error?.message) {
+            throw new Error(error.message)
+          }
+          throw new Error(__("Something went wrong", 'translate-words'))
+        })
+
+      toast.promise(response, {
+        loading: __('Saving Settings', 'translate-words'),
+        success: __('Settings Saved', 'translate-words'),
+        error: (error) => error.message,
+      })
+    } catch (error) {
+      toast.error(error?.message || __("Something went wrong", "translate-words"))
+    }
+  }
+
+  // Keep provider visibility in sync with Translation Config + Wizard toggles (both persist to ai_translation_configuration.provider)
+  const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available)
+  const providerConfig = data?.ai_translation_configuration?.provider
+  const visibleProviders = providerMeta.filter((p) => {
+    if (!wpAiClientAvailable) return false
+    // If provider settings aren't present yet, default to showing the inputs.
+    if (!providerConfig) return true
+    // If provider settings exist, show only the providers that are explicitly enabled.
+    return providerConfig[p.key] === true
+  })
+
+  return (
+    <Container className='bg-white p-10 rounded-lg shadow-sm' cols="1" containerType='grid'>
+      <Container.Item className="flex items-start justify-between gap-6">
+        <div>
+          <h2 className="m-0 text-lg font-semibold">{__('AI API Keys & Models', 'translate-words')}</h2>
+          <p className="mt-1 mb-0 text-sm text-gray-600">{__('Configure your API keys and models for the AI translation providers.', 'translate-words')}</p>
+        </div>
+        <Button
+          disabled={handleButtonDisabled}
+          size="md"
+          tag="button"
+          type="button"
+          onClick={() => SaveSettings()}
+          variant="primary"
+        >
+          {loading ? __('Loading…', 'translate-words') : __('Save', 'translate-words')}
+        </Button>
+      </Container.Item>
+
+      <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />
+
+      <Container cols="1" containerType="grid" className="gap-8">
+        {visibleProviders.map((p) => {
+          const isConfigured = configured[p.key]
+          const draft = keyDrafts[p.key] || ''
+          const displayValue = draft === '' && isConfigured ? (masked[p.key] || '') : draft
+          const Icon = providerIcons[p.key]
+
+          return (
+            <Container.Item
+              key={p.key}
+              className="p-6 rounded-lg bg-white"
+              style={{ border: "1px solid #e5e7eb" }}
+            >
+              {Icon ? (
+                <h3 className="flex items-center gap-2 m-0 text-base font-semibold mb-3">
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {p.heading}
+                </h3>
+              ) : null}
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Input
+                    aria-label={`${p.key}-api-key`}
+                    id={`${p.key}-api-key`}
+                    size="md"
+                    type="text"
+                    placeholder={p.placeholder}
+                    value={displayValue}
+                    onChange={(v) => setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))}
+                  />
+                </div>
+
+                <div className="flex-shrink-0">
+                  <Button
+                    size="md"
+                    tag="button"
+                    type="button"
+                    variant="primary"
+                    onClick={() => SaveSettings({ resetProvider: p.key })}
+                    disabled={!isConfigured}
+                  >
+                    {__('Reset', 'translate-words')}
+                  </Button>
+                </div>
+              </div>
+
+              {isConfigured ? (
+                <div className="mt-8">
+                  <Label size="sm" className="font-medium mb-2 block">{p.modelHeading}</Label>
+                  <div className="mt-0" style={{ maxWidth: 320 }}>
+                    <select
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      value={models[p.modelKey] || ''}
+                      onChange={(e) => setModels((prev) => ({ ...prev, [p.modelKey]: e.target.value }))}
+                    >
+                      <option value="">{__('Select model…', 'translate-words')}</option>
+                      {p.models.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : null}
+            </Container.Item>
+          )
+        })}
+      </Container>
+    </Container>
+  )
+}
+
+export default ApiKey

@@ -8,8 +8,9 @@ import React from 'react'
 import { Switch } from '@bsf/force-ui'
 import {ChromeIcon} from "../../../../assets/logo/chrome"
 import {GoogleIcon} from "../../../../assets/logo/google"
-
-
+import {GeminiIcon} from "../../../../assets/logo/gemini"
+import {OpenAIIcon} from "../../../../assets/logo/openai"
+import {AnthropicIcon} from "../../../../assets/logo/anthropic"
 
 const ChromeLocalAINotice = () => {
     const [showBrowserNotice, setShowBrowserNotice] = React.useState(false);
@@ -109,9 +110,13 @@ const AiTranslation = () => {
     const { setSetupProgress, data, setData } = React.useContext(setupContext) // get the context
     const aiTranslation = data?.ai_translation_configuration; //store the media option
     const provider = aiTranslation?.provider;
+    const wpAiClientAvailable = Boolean(window?.lmat_setup?.wp_ai_client_available);
     const [googleMachineTranslation, setGoogleMachineTranslation] = React.useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = React.useState(provider?.chrome_local_ai)
-    const [lastUpdatedValue, setLastUpdatedValue] = React.useState({googleMachineTranslation,chromeLocalAITranslation})
+    const [geminiTranslation, setGeminiTranslation] = React.useState(provider?.gemini)
+    const [openAITranslation, setOpenAITranslation] = React.useState(provider?.openai)
+    const [anthropicTranslation, setAnthropicTranslation] = React.useState(provider?.anthropic)
+    const [lastUpdatedValue, setLastUpdatedValue] = React.useState({googleMachineTranslation,chromeLocalAITranslation,geminiTranslation,openAITranslation,anthropicTranslation})
 
     const handleBack = () => {
        if (window.lmat_setup.media == "1") {
@@ -126,7 +131,13 @@ const AiTranslation = () => {
     async function saveAITranslation() {
         try {
             //handle if there are changes then make api call and save to databse or else no api call
-            if (aiTranslation && (lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation || lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation)) {
+            if (aiTranslation && (
+                lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
+                lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
+                (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                (wpAiClientAvailable && lastUpdatedValue.openAITranslation !== openAITranslation) ||
+                (wpAiClientAvailable && lastUpdatedValue.anthropicTranslation !== anthropicTranslation)
+            )) {
                 const AITranslationResponse = await apiFetch({
                     path: 'lmat/v1/settings',
                     method: 'POST',
@@ -138,12 +149,17 @@ const AiTranslation = () => {
                         ai_translation_configuration: {
                             provider: {
                                 chrome_local_ai: chromeLocalAITranslation,
-                                google: googleMachineTranslation
+                                google: googleMachineTranslation,
+                                ...(wpAiClientAvailable ? {
+                                    gemini: geminiTranslation,
+                                    openai: openAITranslation,
+                                    anthropic: anthropicTranslation,
+                                } : {})
                             }
                         }
                     })
                 })
-                setLastUpdatedValue({googleMachineTranslation,chromeLocalAITranslation})
+                setLastUpdatedValue({googleMachineTranslation,chromeLocalAITranslation,geminiTranslation,openAITranslation,anthropicTranslation})
                 setData(AITranslationResponse)
             }
 
@@ -191,6 +207,50 @@ const AiTranslation = () => {
                     </div>
                     {chromeLocalAITranslation && <ChromeLocalAINotice />}
                 </div>
+
+                {wpAiClientAvailable && (
+                    <>
+                        <div className='flex justify-between items-center p-6 rounded-lg' style={{ border: "1px solid #e5e7eb", marginTop: "10px" }}>
+                            <div className="flex items-center gap-2">
+                                <GeminiIcon className="w-4 h-4" />
+                                <p className="text-sm/6">{__('Gemini', 'translate-words')}</p>
+                            </div>
+                            <Switch
+                                aria-label="Gemini"
+                                id="gemini-translation"
+                                onChange={() => { setGeminiTranslation(!geminiTranslation) }}
+                                value={geminiTranslation}
+                                size="sm"
+                            />
+                        </div>
+                        <div className='flex justify-between items-center p-6 rounded-lg' style={{ border: "1px solid #e5e7eb", marginTop: "10px" }}>
+                            <div className="flex items-center gap-2">
+                                <OpenAIIcon className="w-4 h-4" />
+                                <p className="text-sm/6">{__('OpenAI', 'translate-words')}</p>
+                            </div>
+                            <Switch
+                                aria-label="OpenAI"
+                                id="openai-translation"
+                                onChange={() => { setOpenAITranslation(!openAITranslation) }}
+                                value={openAITranslation}
+                                size="sm"
+                            />
+                        </div>
+                        <div className='flex justify-between items-center p-6 rounded-lg' style={{ border: "1px solid #e5e7eb", marginTop: "10px" }}>
+                            <div className="flex items-center gap-2">
+                                <AnthropicIcon className="w-4 h-4" />
+                                <p className="text-sm/6">{__('Anthropic', 'translate-words')}</p>
+                            </div>
+                            <Switch
+                                aria-label="Anthropic"
+                                id="anthropic-translation"
+                                onChange={() => { setAnthropicTranslation(!anthropicTranslation) }}
+                                value={anthropicTranslation}
+                                size="sm"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
             <div className='flex justify-between ' style={{ marginTop: "14px" }}>
                 <SetupBackButton handleClick={handleBack} />

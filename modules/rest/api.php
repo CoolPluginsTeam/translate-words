@@ -41,6 +41,13 @@ class API {
 	public $bulk_translate;
 
 	/**
+	 * REST API keys.
+	 *
+	 * @var V1\Api_Keys|null
+	 */
+	public $api_keys;
+
+	/**
 	 * @var Linguator_Model
 	 */
 	private $model;
@@ -72,5 +79,11 @@ class API {
 
 		$this->bulk_translate = new V1\Bulk_Translation( $this->model );
 		$this->bulk_translate->register_routes();
+
+		// Only register API Keys endpoint when WP AI Client exists.
+		if ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+			$this->api_keys = new V1\Api_Keys( $this->model );
+			$this->api_keys->register_routes();
+		}
 	}
 }
