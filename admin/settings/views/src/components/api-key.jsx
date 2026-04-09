@@ -23,12 +23,6 @@ const providerMeta = [
     heading: __('Add Gemini API key', 'translate-words'),
     modelHeading: __('Select Gemini Model', 'translate-words'),
     placeholder: 'AIza…',
-    models: [
-      { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
-      { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro' },
-      { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash' },
-      { value: 'gemini-2.0-pro', label: 'gemini-2.0-pro' },
-    ],
   },
   {
     key: 'openai',
@@ -36,12 +30,6 @@ const providerMeta = [
     heading: __('Add OpenAI API key', 'translate-words'),
     modelHeading: __('Select OpenAI Model', 'translate-words'),
     placeholder: 'sk-…',
-    models: [
-      { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
-      { value: 'gpt-4o', label: 'gpt-4o' },
-      { value: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
-      { value: 'gpt-4.1', label: 'gpt-4.1' },
-    ],
   },
   {
     key: 'anthropic',
@@ -49,11 +37,6 @@ const providerMeta = [
     heading: __('Add Anthropic API key', 'translate-words'),
     modelHeading: __('Select Anthropic Model', 'translate-words'),
     placeholder: 'sk-ant-…',
-    models: [
-      { value: 'claude-3-5-sonnet-latest', label: 'claude-3-5-sonnet-latest' },
-      { value: 'claude-3-5-haiku-latest', label: 'claude-3-5-haiku-latest' },
-      { value: 'claude-3-opus-latest', label: 'claude-3-opus-latest' },
-    ],
   },
 ]
 
@@ -62,6 +45,7 @@ const ApiKey = ({ data, setData }) => {
   const [masked, setMasked] = useState({ openai: '', gemini: '', anthropic: '' })
   const [configured, setConfigured] = useState({ openai: false, gemini: false, anthropic: false })
   const [keyDrafts, setKeyDrafts] = useState({ openai: '', gemini: '', anthropic: '' })
+  const [availableModels, setAvailableModels] = useState({ openai: [], gemini: [], anthropic: [] })
   const [models, setModels] = useState({
     openai_model: 'gpt-4o-mini',
     gemini_model: 'gemini-1.5-flash',
@@ -88,6 +72,7 @@ const ApiKey = ({ data, setData }) => {
 
         const keys = resp?.keys || {}
         const m = resp?.models || {}
+        const discovered = resp?.available_models || {}
 
         const nextMasked = {
           openai: keys?.openai || '',
@@ -108,6 +93,11 @@ const ApiKey = ({ data, setData }) => {
         }
         setModels(nextModels)
         initialModelsRef.current = nextModels
+        setAvailableModels({
+          openai: Array.isArray(discovered?.openai) ? discovered.openai : [],
+          gemini: Array.isArray(discovered?.gemini) ? discovered.gemini : [],
+          anthropic: Array.isArray(discovered?.anthropic) ? discovered.anthropic : [],
+        })
       } finally {
         setLoading(false)
       }
@@ -180,6 +170,12 @@ const ApiKey = ({ data, setData }) => {
           }
           setModels(nextModels)
           initialModelsRef.current = nextModels
+          const discovered = resp?.available_models || {}
+          setAvailableModels({
+            openai: Array.isArray(discovered?.openai) ? discovered.openai : [],
+            gemini: Array.isArray(discovered?.gemini) ? discovered.gemini : [],
+            anthropic: Array.isArray(discovered?.anthropic) ? discovered.anthropic : [],
+          })
           setKeyDrafts({ openai: '', gemini: '', anthropic: '' })
           setHandleButtonDisabled(true)
           return resp
@@ -209,7 +205,10 @@ const ApiKey = ({ data, setData }) => {
     // If provider settings aren't present yet, default to showing the inputs.
     if (!providerConfig) return true
     // If provider settings exist, show only the providers that are explicitly enabled.
-    return providerConfig[p.key] === true
+    if (p.key === 'gemini') {
+      return Boolean(providerConfig?.gemini || providerConfig?.google)
+    }
+    return Boolean(providerConfig?.[p.key])
   })
 
   return (
@@ -239,6 +238,12 @@ const ApiKey = ({ data, setData }) => {
           const draft = keyDrafts[p.key] || ''
           const displayValue = draft === '' && isConfigured ? (masked[p.key] || '') : draft
           const Icon = providerIcons[p.key]
+          const selectedModel = (models?.[p.modelKey] || '').trim()
+          const listFromApi = Array.isArray(availableModels?.[p.key]) ? availableModels[p.key] : []
+          const providerModelList = [
+            ...listFromApi,
+            ...(selectedModel && !listFromApi.includes(selectedModel) ? [selectedModel] : []),
+          ]
 
           return (
             <Container.Item
@@ -290,8 +295,8 @@ const ApiKey = ({ data, setData }) => {
                       onChange={(e) => setModels((prev) => ({ ...prev, [p.modelKey]: e.target.value }))}
                     >
                       <option value="">{__('Select model…', 'translate-words')}</option>
-                      {p.models.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
+                      {providerModelList.map((id) => (
+                        <option key={id} value={id}>{id}</option>
                       ))}
                     </select>
                   </div>

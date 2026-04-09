@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Other\Linguator_Model;
+use Linguator\Includes\Options\Business\Api_Keys as Api_Keys_Option;
 use Linguator\Modules\REST\Abstract_Controller;
 use WP_Error;
 use WP_REST_Server;
@@ -320,10 +321,13 @@ class Api_Keys extends Abstract_Controller {
 			$models = array();
 		}
 
+		$available_models = Api_Keys_Option::discover_provider_models();
+
 		return rest_ensure_response(
 			array(
 				'keys'             => $keys,
 				'models'           => $models,
+				'available_models' => $available_models,
 			)
 		);
 	}

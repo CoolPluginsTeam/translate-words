@@ -83,6 +83,136 @@ class Api_Keys extends Abstract_Option {
 	}
 
 	/**
+	 * Discover available text-generation models for supported providers via WP AI Client.
+	 *
+	 * Notes:
+	 * - This mirrors the model discovery approach used in the TranslatePress AI settings UI.
+	 * - Provider API keys are stored in WP options (connectors_ai_{provider}_key). When WP AI
+	 *   Client is available, it typically reads those connector settings to configure providers.
+	 *
+	 * @return array{openai:list<string>,gemini:list<string>,anthropic:list<string>}
+	 */
+	public static function discover_provider_models(): array {
+		$result = array(
+			'openai'     => array(),
+			'gemini'     => array(),
+			'anthropic'  => array(),
+		);
+
+		// Only attempt discovery when WP AI Client is present.
+		if (
+			! class_exists( '\WordPress\AiClient\AiClient' ) ||
+			! class_exists( '\WordPress\AiClient\Providers\Models\DTO\ModelRequirements' ) ||
+			! class_exists( '\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum' )
+		) {
+			return $result;
+		}
+
+		// Only attempt discovery when a provider key exists.
+		$get_provider_key = static function ( string $provider ): string {
+			$opt = 'connectors_ai_' . strtolower( $provider ) . '_key';
+			return trim( (string) get_option( $opt, '' ) );
+		};
+
+		try {
+			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+			if ( ! $registry || ! method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
+				return $result;
+			}
+
+			// Ensure the registry is authenticated using our stored connector options.
+			// Without this, model listing can work right after "test" calls but fail after page reload.
+			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
+			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
+				$openai_key    = $get_provider_key( 'openai' );
+				$gemini_key    = $get_provider_key( 'gemini' );
+				$anthropic_key = $get_provider_key( 'anthropic' );
+
+				if ( '' !== $openai_key ) {
+					$registry->setProviderRequestAuthentication( 'openai', new $auth_class( $openai_key ) );
+				}
+				if ( '' !== $gemini_key ) {
+					// WP AI Client provider id is "google" for Gemini.
+					$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
+				}
+				if ( '' !== $anthropic_key ) {
+					$registry->setProviderRequestAuthentication( 'anthropic', new $auth_class( $anthropic_key ) );
+				}
+			}
+
+			$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+				array( \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration() ),
+				array()
+			);
+
+			$excluded_patterns = array(
+				'audio',
+				'transcribe',
+				'search',
+				'vision',
+				'embedding',
+				'image',
+				'code',
+				'whisper',
+				'tts',
+			);
+
+			$load_models = static function ( string $provider_id ) use ( $registry, $requirements, $excluded_patterns ): array {
+				try {
+					$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
+					$ids             = array();
+
+					if ( is_array( $models_metadata ) ) {
+						foreach ( $models_metadata as $model ) {
+							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
+								$ids[] = (string) $model->getId();
+							}
+						}
+					}
+
+					if ( empty( $ids ) ) {
+						return array();
+					}
+
+					$filtered = array();
+					foreach ( $ids as $id ) {
+						$lower = strtolower( $id );
+						$skip  = false;
+						foreach ( $excluded_patterns as $pattern ) {
+							if ( false !== strpos( $lower, $pattern ) ) {
+								$skip = true;
+								break;
+							}
+						}
+						if ( ! $skip ) {
+							$filtered[] = $id;
+						}
+					}
+
+					return array_values( array_unique( $filtered ) );
+				} catch ( \Throwable $e ) {
+					return array();
+				}
+			};
+
+			// WP AI Client provider ids: openai, google, anthropic.
+			if ( '' !== $get_provider_key( 'openai' ) ) {
+				$result['openai'] = $load_models( 'openai' );
+			}
+			if ( '' !== $get_provider_key( 'gemini' ) ) {
+				$result['gemini'] = $load_models( 'google' );
+			}
+			if ( '' !== $get_provider_key( 'anthropic' ) ) {
+				$result['anthropic'] = $load_models( 'anthropic' );
+			}
+		} catch ( \Throwable $e ) {
+			return $result;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * @return string
 	 */
 	protected function get_description(): string {
