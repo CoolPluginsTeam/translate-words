@@ -13,6 +13,7 @@ use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Includes\Options\Business\Api_Keys as Api_Keys_Option;
 use Linguator\Modules\REST\Abstract_Controller;
 use WP_Error;
+use WP_REST_Request;
 use WP_REST_Server;
 
 /**
@@ -58,10 +59,20 @@ class Api_Keys extends Abstract_Controller {
 						'keys' => array(
 							'required' => false,
 							'type'     => 'object',
+							'properties' => array(
+								'openai'     => array( 'type' => 'string' ),
+								'gemini'     => array( 'type' => 'string' ),
+								'anthropic'  => array( 'type' => 'string' ),
+							),
 						),
 						'models' => array(
 							'required' => false,
 							'type'     => 'object',
+							'properties' => array(
+								'openai_model'    => array( 'type' => 'string' ),
+								'gemini_model'    => array( 'type' => 'string' ),
+								'anthropic_model' => array( 'type' => 'string' ),
+							),
 						),
 					),
 				),
@@ -69,6 +80,10 @@ class Api_Keys extends Abstract_Controller {
 		);
 	}
 
+	/**
+	 * @param WP_REST_Request $request REST request.
+	 * @return true|WP_Error
+	 */
 	public function get_item_permissions_check( $request ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error(
@@ -81,6 +96,10 @@ class Api_Keys extends Abstract_Controller {
 		return true;
 	}
 
+	/**
+	 * @param WP_REST_Request $request REST request.
+	 * @return true|WP_Error
+	 */
 	public function update_item_permissions_check( $request ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error(
@@ -144,7 +163,7 @@ class Api_Keys extends Abstract_Controller {
 	 * @return true|WP_Error
 	 */
 	private function validate_provider_api_key( string $provider, string $api_key ) {
-		$provider = strtolower( trim( $provider ) );
+		$provider    = strtolower( trim( $provider ) );
 		$key_trimmed = trim( $api_key );
 
 		if ( '' === $provider || '' === $key_trimmed ) {
@@ -199,10 +218,10 @@ class Api_Keys extends Abstract_Controller {
 		}
 
 		// Map UI provider slug to WP AI Client provider id.
-		$provider_id = $provider;
+		$provider_id    = $provider;
 		$provider_label = $provider;
 		if ( 'gemini' === $provider ) {
-			$provider_id = 'google';
+			$provider_id    = 'google';
 			$provider_label = 'Gemini';
 		} elseif ( 'openai' === $provider ) {
 			$provider_label = 'OpenAI';
@@ -307,6 +326,10 @@ class Api_Keys extends Abstract_Controller {
 		return true;
 	}
 
+	/**
+	 * @param WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response
+	 */
 	public function get_item( $request ) {
 		$providers = array( 'openai', 'gemini', 'anthropic' );
 		$keys      = array();
@@ -332,6 +355,10 @@ class Api_Keys extends Abstract_Controller {
 		);
 	}
 
+	/**
+	 * @param WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|WP_Error
+	 */
 	public function update_item( $request ) {
 		$params = $request->get_json_params();
 		if ( ! is_array( $params ) ) {
@@ -356,6 +383,7 @@ class Api_Keys extends Abstract_Controller {
 			// Skip provider validation unless the key actually changed.
 			$is_unchanged = ( '' !== $v && '' !== $current_trim && hash_equals( $current_trim, $v ) );
 			$did_change   = ( $v !== $current_trim );
+			unset( $did_change );
 
 			// Validate only when setting a non-empty key AND it differs from the stored one.
 			// Empty string is allowed for reset.

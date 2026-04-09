@@ -17,6 +17,8 @@ use Linguator\Includes\Options\Options;
  */
 class Api_Keys extends Abstract_Option {
 	/**
+	 * Returns option key.
+	 *
 	 * @return string
 	 */
 	public static function key(): string {
@@ -31,29 +33,33 @@ class Api_Keys extends Abstract_Option {
 	 */
 	protected function get_default() {
 		return array(
-			'openai_model' => 'gpt-4o-mini',
-			'gemini_model' => 'gemini-1.5-flash',
+			'openai_model'    => 'gpt-4o-mini',
+			'gemini_model'    => 'gemini-1.5-flash',
 			'anthropic_model' => 'claude-3-5-sonnet-latest',
 		);
 	}
 
 	/**
+	 * Returns JSON schema structure for this option.
+	 *
 	 * @return array
 	 */
 	protected function get_data_structure(): array {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'openai_model' => array( 'type' => 'string' ),
-				'gemini_model' => array( 'type' => 'string' ),
+				'openai_model'    => array( 'type' => 'string' ),
+				'gemini_model'    => array( 'type' => 'string' ),
 				'anthropic_model' => array( 'type' => 'string' ),
 			),
 		);
 	}
 
 	/**
-	 * @param mixed   $value
-	 * @param Options $options
+	 * Sanitizes models while preserving existing values for unknown keys.
+	 *
+	 * @param mixed   $value   Incoming value.
+	 * @param Options $options Options registry instance.
 	 * @return array
 	 */
 	protected function sanitize( $value, Options $options ) {
@@ -75,7 +81,12 @@ class Api_Keys extends Abstract_Option {
 					$filtered[ $k ] = '';
 					continue;
 				}
-				$filtered[ $k ] = sanitize_text_field( (string) $v );
+
+				if ( is_scalar( $v ) ) {
+					$filtered[ $k ] = sanitize_text_field( (string) $v );
+				} else {
+					$filtered[ $k ] = '';
+				}
 			}
 		}
 
@@ -213,6 +224,8 @@ class Api_Keys extends Abstract_Option {
 	}
 
 	/**
+	 * Returns option description.
+	 *
 	 * @return string
 	 */
 	protected function get_description(): string {
