@@ -109,12 +109,209 @@ class Api_Keys extends Abstract_Controller {
 		return '••••••••' . $tail;
 	}
 
+	/**
+	 * Sanitize provider exceptions for safe UI display.
+	 *
+	 * @param string $message Raw exception message.
+	 * @param string $api_key Raw API key (to redact if present).
+	 * @return string
+	 */
+	private function sanitize_provider_error_message( string $message, string $api_key ): string {
+		$msg = trim( (string) $message );
+		if ( '' === $msg ) {
+			return __( 'Provider returned an unknown error.', 'translate-words' );
+		}
+
+		$key_trimmed = trim( (string) $api_key );
+		if ( '' !== $key_trimmed ) {
+			$msg = str_replace( $key_trimmed, '[redacted]', $msg );
+		}
+
+		// Keep responses reasonably small for REST/UI.
+		if ( strlen( $msg ) > 500 ) {
+			$msg = substr( $msg, 0, 500 ) . '…';
+		}
+
+		return $msg;
+	}
+
+	/**
+	 * Validate provider API key before saving.
+	 *
+	 * @param string $provider Provider slug used by this endpoint (openai|gemini|anthropic).
+	 * @param string $api_key  Raw API key.
+	 * @return true|WP_Error
+	 */
+	private function validate_provider_api_key( string $provider, string $api_key ) {
+		$provider = strtolower( trim( $provider ) );
+		$key_trimmed = trim( $api_key );
+
+		if ( '' === $provider || '' === $key_trimmed ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Provider and API key are required.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Basic format validation - reject obviously invalid keys before provider validation.
+		if ( strlen( $key_trimmed ) < 10 ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'API key appears to be invalid or too short.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Reject keys with HTML/script characters or obvious junk.
+		if ( preg_match( '/[<>"\']/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Provider-specific format hints.
+		if ( 'openai' === $provider && ! preg_match( '/^sk-[a-zA-Z0-9_-]{20,}$/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'OpenAI API keys must start with sk- and be in the correct format.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( 'anthropic' === $provider && ! preg_match( '/^sk-ant-[a-zA-Z0-9_-]{20,}$/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Anthropic API keys must start with sk-ant- and be in the correct format.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( 'gemini' === $provider && ! preg_match( '/^AIza[0-9A-Za-z\-_]{20,}$/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Gemini API keys must start with AIza and be in the correct format.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Map UI provider slug to WP AI Client provider id.
+		$provider_id = $provider;
+		$provider_label = $provider;
+		if ( 'gemini' === $provider ) {
+			$provider_id = 'google';
+			$provider_label = 'Gemini';
+		} elseif ( 'openai' === $provider ) {
+			$provider_label = 'OpenAI';
+		} elseif ( 'anthropic' === $provider ) {
+			$provider_label = 'Anthropic';
+		}
+
+		if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+			return new WP_Error(
+				'lmat_ai_client_missing',
+				__( 'AI client is not available.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+		if ( ! $registry || ! method_exists( $registry, 'hasProvider' ) || ! $registry->hasProvider( $provider_id ) ) {
+			return new WP_Error(
+				'lmat_ai_provider_invalid',
+				__( 'Invalid AI provider.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$is_gemini = ( 'google' === $provider_id ) || ( false !== strpos( $provider_id, 'gemini' ) );
+		$cooldown  = $is_gemini ? 60 : 5;
+		$lock_key  = 'lmat_ai_test_lock_' . md5( $provider_id . '|' . $key_trimmed );
+
+		if ( get_transient( $lock_key ) ) {
+			return new WP_Error(
+				'lmat_ai_provider_rate_limited',
+				$is_gemini
+					? __( 'Gemini rate limit reached. Please wait a minute and try again.', 'translate-words' )
+					: __( 'Please wait a few seconds before testing again.', 'translate-words' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		// Inject the test API key into the registry (same as the REST controller does).
+		$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
+		if ( ! class_exists( $auth_class ) ) {
+			return new WP_Error(
+				'lmat_ai_client_missing',
+				__( 'AI client is not available.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$registry->setProviderRequestAuthentication( $provider_id, new $auth_class( $key_trimmed ) );
+		set_transient( $lock_key, 1, $cooldown );
+
+		try {
+			$provider_classname = $registry->getProviderClassName( $provider_id );
+			if ( ! $provider_classname || ! class_exists( $provider_classname ) ) {
+				return new WP_Error(
+					'lmat_ai_provider_invalid',
+					__( 'Invalid AI provider.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			if ( method_exists( $provider_classname, 'availability' ) ) {
+				$provider_availability = $provider_classname::availability();
+				if ( is_object( $provider_availability ) && method_exists( $provider_availability, 'isConfigured' ) && ! $provider_availability->isConfigured() ) {
+					return new WP_Error(
+						'lmat_api_key_invalid',
+						sprintf(
+							/* translators: %s: AI provider name (e.g. OpenAI, Gemini, Anthropic). */
+							__( 'API key is not configured for %s.', 'translate-words' ),
+							$provider_label
+						),
+						array( 'status' => 400 )
+					);
+				}
+			}
+
+			if ( method_exists( $provider_classname, 'modelMetadataDirectory' ) ) {
+				$model_metadata_directory = $provider_classname::modelMetadataDirectory();
+				if ( is_object( $model_metadata_directory ) && method_exists( $model_metadata_directory, 'listModelMetadata' ) ) {
+					$model_metadata_directory->listModelMetadata(); // throws on invalid key.
+				}
+			}
+		} catch ( \Exception $e ) {
+			$msg = strtolower( (string) $e->getMessage() );
+			if ( false !== strpos( $msg, '429' ) ) {
+				return new WP_Error(
+					'lmat_ai_provider_rate_limited',
+					$is_gemini
+						? __( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' )
+						: __( 'Rate limit exceeded. Please try again later.', 'translate-words' ),
+					array( 'status' => 429 )
+				);
+			}
+
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				$this->sanitize_provider_error_message( (string) $e->getMessage(), $key_trimmed ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return true;
+	}
+
 	public function get_item( $request ) {
 		$providers = array( 'openai', 'gemini', 'anthropic' );
 		$keys      = array();
 
 		foreach ( $providers as $provider ) {
-			$raw          = (string) get_option( $this->option_name_for_provider( $provider ), '' );
+			$raw              = (string) get_option( $this->option_name_for_provider( $provider ), '' );
 			$keys[ $provider ] = $this->mask_key( $raw );
 		}
 
@@ -125,8 +322,8 @@ class Api_Keys extends Abstract_Controller {
 
 		return rest_ensure_response(
 			array(
-				'keys'   => $keys,
-				'models' => $models,
+				'keys'             => $keys,
+				'models'           => $models,
 			)
 		);
 	}
@@ -147,7 +344,25 @@ class Api_Keys extends Abstract_Controller {
 			}
 			$v = $incoming_keys[ $provider ];
 			$v = is_string( $v ) ? trim( $v ) : '';
-			update_option( $this->option_name_for_provider( $provider ), $v );
+
+			$option_name  = $this->option_name_for_provider( $provider );
+			$current_raw  = (string) get_option( $option_name, '' );
+			$current_trim = trim( $current_raw );
+
+			// Skip provider validation unless the key actually changed.
+			$is_unchanged = ( '' !== $v && '' !== $current_trim && hash_equals( $current_trim, $v ) );
+			$did_change   = ( $v !== $current_trim );
+
+			// Validate only when setting a non-empty key AND it differs from the stored one.
+			// Empty string is allowed for reset.
+			if ( '' !== $v && ! $is_unchanged ) {
+				$validation = $this->validate_provider_api_key( $provider, $v );
+				if ( is_wp_error( $validation ) ) {
+					return $validation;
+				}
+			}
+
+			update_option( $option_name, $v );
 		}
 
 		// Save models into Linguator option `api_keys`.
