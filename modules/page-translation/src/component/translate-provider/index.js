@@ -1,5 +1,6 @@
 import GoogleTranslater from "./google/index.js";
 import localAiTranslator from "./local-ai-translator/index.js";
+import createAiLlmPageTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
 import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
 import { GoogleIcon } from "../../../../../assets/logo/google.js";
@@ -43,7 +44,7 @@ export default (props) => {
             Logo: <ChromeIcon className="icon-size"/>
         },
         openai: {
-            Provider: () => null,
+            Provider: createAiLlmPageTranslator("openai"),
             title: "OpenAI",
             SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.openai ? "Translate" : "Add API Key",
             serviceLabel: "OpenAI",
@@ -55,7 +56,7 @@ export default (props) => {
             Logo: <OpenAIIcon className="icon-size" />
         },
         anthropic: {
-            Provider: () => null,
+            Provider: createAiLlmPageTranslator("anthropic"),
             title: "Anthropic",
             SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.anthropic ? "Translate" : "Add API Key",
             serviceLabel: "Anthropic",
@@ -67,7 +68,7 @@ export default (props) => {
             Logo: <AnthropicIcon className="icon-size" />
         },
         gemini: {
-            Provider: () => null,
+            Provider: createAiLlmPageTranslator("gemini"),
             title: "Google Gemini",
             SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.gemini ? "Translate" : "Add API Key",
             serviceLabel: "Gemini",

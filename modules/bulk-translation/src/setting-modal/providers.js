@@ -27,7 +27,7 @@ const Providers = (props) => {
               onClick={props.startTranslationHandler}
               className={`${prefix}-service-btn button button-primary`}
               data-service={service}
-              data-service-label={ActiveService.ServiceLabel}
+              data-service-label={ActiveService.serviceLabel}
             >
               {ActiveService.SettingBtnText}
             </button>

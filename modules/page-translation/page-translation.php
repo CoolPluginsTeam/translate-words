@@ -499,6 +499,8 @@ class Linguator_Page_Translation {
 				'get_meta_fields'          => 'lmat_fetch_post_meta_fields',
 				'meta_fields_key'          => wp_create_nonce( 'lmat_fetch_post_meta_fields' ),
 				'slug_translation_option'  => $slug_translation_option,
+				'rest_nonce'               => wp_create_nonce( 'wp_rest' ),
+				'ai_batch_translate_url'   => get_rest_url( null, 'lmat/v1/page-translate/ai-translate-batch' ),
 			),
 			$extra_data
 		);

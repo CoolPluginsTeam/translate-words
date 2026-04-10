@@ -1,6 +1,7 @@
 // import YandexTranslater from "./yandex";
 import localAiTranslator from "./local-ai/index.js";
 import GoogleTranslater from "./google/index.js";
+import AiLlmBulkTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
 import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
 import { GoogleIcon } from "../../../../../assets/logo/google.js";
@@ -48,7 +49,7 @@ export default (props) => {
             filterHtmlContent: true
         },
         openai: {
-            Provider: () => null,
+            Provider: AiLlmBulkTranslator,
             title: "OpenAI",
             SettingBtnText: window.lmatBulkTranslationGlobal.api_keys_status?.openai ? "Translate" : "Add API Key",
             serviceLabel: "OpenAI",
@@ -61,7 +62,7 @@ export default (props) => {
             filterHtmlContent: true
         },
         anthropic: {
-            Provider: () => null,
+            Provider: AiLlmBulkTranslator,
             title: "Anthropic",
             SettingBtnText: window.lmatBulkTranslationGlobal.api_keys_status?.anthropic ? "Translate" : "Add API Key",
             serviceLabel: "Anthropic",
@@ -74,7 +75,7 @@ export default (props) => {
             filterHtmlContent: true
         },
         gemini: {
-            Provider: () => null,
+            Provider: AiLlmBulkTranslator,
             title: "Google Gemini",
             SettingBtnText: window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? "Translate" : "Add API Key",
             serviceLabel: "Gemini",

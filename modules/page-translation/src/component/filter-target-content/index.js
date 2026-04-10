@@ -459,11 +459,11 @@ const FilterTargetContent = (props, storeUpdateContent) => {
      * The content to be filtered based on the service type.
      * If the service is 'google' & 'localAiTranslator' the content is filtered using filterSourceData function, otherwise, the content remains unchanged.
      */
-    const content = ['google', 'localAiTranslator'].includes(props.service) ? filterSourceData(props.content) : props.content;
+    const content = ['google', 'localAiTranslator', 'openai', 'gemini', 'anthropic'].includes(props.service) ? filterSourceData(props.content) : props.content;
 
     return (
         <>
-            {['localAiTranslator', 'google'].includes(props.service) ?
+            {['localAiTranslator', 'google', 'openai', 'gemini', 'anthropic'].includes(props.service) ?
                 content.map((data, index) => {
                     const notTranslate = notTranslatePattern.test(data);
                     if (notTranslate) {
