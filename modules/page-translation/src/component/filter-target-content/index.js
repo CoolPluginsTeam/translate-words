@@ -435,7 +435,8 @@ const FilterTargetContent = (props, storeUpdateContent) => {
     }
 
     const getFilteredString=()=>{
-        if(saveFilteredString && item && item.id && item.type && item.source && !item.filteredString){
+        const shouldFilterForService = ['google', 'localAiTranslator'].includes(props.service);
+        if(shouldFilterForService && saveFilteredString && item && item.id && item.type && item.source && !item.filteredString){
             const filteredString = filterSourceData(item.source);
 
             const filteredStringContent = filteredString.map((data, index) => {
@@ -457,13 +458,14 @@ const FilterTargetContent = (props, storeUpdateContent) => {
 
     /**
      * The content to be filtered based on the service type.
-     * If the service is 'google' & 'localAiTranslator' the content is filtered using filterSourceData function, otherwise, the content remains unchanged.
+     * If the service is 'google' or 'localAiTranslator', the content is filtered
+     * using filterSourceData; otherwise, the content remains unchanged.
      */
-    const content = ['google', 'localAiTranslator', 'openai', 'gemini', 'anthropic'].includes(props.service) ? filterSourceData(props.content) : props.content;
+    const content = ['google', 'localAiTranslator'].includes(props.service) ? filterSourceData(props.content) : props.content;
 
     return (
         <>
-            {['localAiTranslator', 'google', 'openai', 'gemini', 'anthropic'].includes(props.service) ?
+            {['localAiTranslator', 'google'].includes(props.service) ?
                 content.map((data, index) => {
                     const notTranslate = notTranslatePattern.test(data);
                     if (notTranslate) {
