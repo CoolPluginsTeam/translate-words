@@ -186,6 +186,7 @@ return array(
     'Linguator\\Modules\\REST\\V1\\Api_Keys' => $baseDir . '/modules/rest/v1/api-keys.php',
     'Linguator\\Modules\\REST\\V1\\Bulk_Translation' => $baseDir . '/modules/rest/v1/bulk-translation.php',
     'Linguator\\Modules\\REST\\V1\\Languages' => $baseDir . '/modules/rest/v1/languages.php',
+    'Linguator\\Modules\\REST\\V1\\Page_Translation' => $baseDir . '/modules/rest/v1/page-translation.php',
     'Linguator\\Modules\\REST\\V1\\Settings' => $baseDir . '/modules/rest/v1/settings.php',
     'Linguator\\Modules\\Wizard\\Linguator_Wizard' => $baseDir . '/modules/wizard/wizard.php',
     'Linguator\\Modules\\sync\\Linguator_Settings_Sync' => $baseDir . '/modules/sync/settings-sync.php',

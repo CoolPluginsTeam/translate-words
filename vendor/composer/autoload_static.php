@@ -237,6 +237,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Modules\\REST\\V1\\Api_Keys' => __DIR__ . '/../..' . '/modules/rest/v1/api-keys.php',
         'Linguator\\Modules\\REST\\V1\\Bulk_Translation' => __DIR__ . '/../..' . '/modules/rest/v1/bulk-translation.php',
         'Linguator\\Modules\\REST\\V1\\Languages' => __DIR__ . '/../..' . '/modules/rest/v1/languages.php',
+        'Linguator\\Modules\\REST\\V1\\Page_Translation' => __DIR__ . '/../..' . '/modules/rest/v1/page-translation.php',
         'Linguator\\Modules\\REST\\V1\\Settings' => __DIR__ . '/../..' . '/modules/rest/v1/settings.php',
         'Linguator\\Modules\\Wizard\\Linguator_Wizard' => __DIR__ . '/../..' . '/modules/wizard/wizard.php',
         'Linguator\\Modules\\sync\\Linguator_Settings_Sync' => __DIR__ . '/../..' . '/modules/sync/settings-sync.php',
