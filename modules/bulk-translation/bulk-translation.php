@@ -200,10 +200,15 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 
 		$active_providers=array();
 
-		foreach($providers as $provider => $value){
-			if($value){
-				$provdername = $provider==='chrome_local_ai' ? 'localAiTranslator' : $provider;
-				$active_providers[] = $provdername;
+		foreach ( $providers as $provider => $value ) {
+			if ( ! $value ) {
+				continue;
+			}
+			// Bulk UI only implements Google Translate and Chrome built-in AI (not LLM API keys).
+			if ( 'chrome_local_ai' === $provider ) {
+				$active_providers[] = 'localAiTranslator';
+			} elseif ( 'google' === $provider ) {
+				$active_providers[] = 'google';
 			}
 		}
 

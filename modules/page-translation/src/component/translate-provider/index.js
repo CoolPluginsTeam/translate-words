@@ -43,8 +43,10 @@ export default (props) => {
 
     const validServices={};
 
-    providers.forEach(provider=>{
-        validServices[provider]=Services[provider];
+    providers.forEach((provider) => {
+        if (Services[provider]) {
+            validServices[provider] = Services[provider];
+        }
     });
 
     if (!Service) {
