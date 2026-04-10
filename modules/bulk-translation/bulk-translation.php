@@ -209,6 +209,25 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				$active_providers[] = 'localAiTranslator';
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
+			} elseif ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+				if ( in_array( $provider, array( 'openai', 'anthropic', 'gemini' ) ) ) {
+					$active_providers[] = $provider;
+				}
+			}
+		}
+
+		$api_keys_status = array(
+			'openai'    => false,
+			'anthropic' => false,
+			'gemini'    => false,
+		);
+
+		if ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+			foreach ( $api_keys_status as $key => $status ) {
+				$api_key = get_option( 'connectors_ai_' . $key . '_key', '' );
+				if ( ! empty( $api_key ) ) {
+					$api_keys_status[ $key ] = true;
+				}
 			}
 		}
 
@@ -245,6 +264,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 'slug_translation_option' => $slug_translation_option,
                 'taxonomy_page' => $taxonomy_page,
 				'providers'                => $active_providers,
+				'api_keys_status'          => $api_keys_status,
 				'default_language_slug' => $default_language_slug,
             ), $extra_data)
         );

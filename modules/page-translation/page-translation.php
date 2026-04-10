@@ -412,6 +412,25 @@ class Linguator_Page_Translation {
 				$active_providers[] = 'localAiTranslator';
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
+			} elseif ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+				if ( in_array( $provider, array( 'openai', 'anthropic', 'gemini' ) ) ) {
+					$active_providers[] = $provider;
+				}
+			}
+		}
+
+		$api_keys_status = array(
+			'openai'    => false,
+			'anthropic' => false,
+			'gemini'    => false,
+		);
+
+		if ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+			foreach ( $api_keys_status as $key => $status ) {
+				$api_key = get_option( 'connectors_ai_' . $key . '_key', '' );
+				if ( ! empty( $api_key ) ) {
+					$api_keys_status[ $key ] = true;
+				}
 			}
 		}
 
@@ -476,6 +495,7 @@ class Linguator_Page_Translation {
 				'editor_type'              => $editor_type,
 				'current_post_id'          => $post_id,
 				'providers'                => $active_providers,
+				'api_keys_status'          => $api_keys_status,
 				'get_meta_fields'          => 'lmat_fetch_post_meta_fields',
 				'meta_fields_key'          => wp_create_nonce( 'lmat_fetch_post_meta_fields' ),
 				'slug_translation_option'  => $slug_translation_option,

@@ -11,9 +11,9 @@ import { AnthropicIcon } from '../../../../../assets/logo/anthropic'
 const RESET_SENTINEL = '__RESET__'
 
 const providerIcons = {
-    gemini: GeminiIcon,
-    openai: OpenAIIcon,
-    anthropic: AnthropicIcon,
+  gemini: GeminiIcon,
+  openai: OpenAIIcon,
+  anthropic: AnthropicIcon,
 }
 
 const providerMeta = [
@@ -205,9 +205,6 @@ const ApiKey = ({ data, setData }) => {
     // If provider settings aren't present yet, default to showing the inputs.
     if (!providerConfig) return true
     // If provider settings exist, show only the providers that are explicitly enabled.
-    if (p.key === 'gemini') {
-      return Boolean(providerConfig?.gemini || providerConfig?.google)
-    }
     return Boolean(providerConfig?.[p.key])
   })
 
