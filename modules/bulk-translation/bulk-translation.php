@@ -266,6 +266,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'providers'                => $active_providers,
 				'api_keys_status'          => $api_keys_status,
 				'default_language_slug' => $default_language_slug,
+				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
             ), $extra_data)
         );
 		}

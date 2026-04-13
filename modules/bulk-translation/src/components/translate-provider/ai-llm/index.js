@@ -83,6 +83,12 @@ class AiLlmBulkTranslator {
 
             try {
                 const chunks = chunkStringMap(this.textContentObject);
+                const p = this.serviceProvider;
+                const modelKey = p === "gemini" ? "gemini_model" : p === "anthropic" ? "anthropic_model" : "openai_model";
+                const selectedModel =
+                    lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
+                        ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
+                        : "";
                 let done = 0;
                 for (const chunk of chunks) {
                     if (this.stopTranslation) {
@@ -95,6 +101,7 @@ class AiLlmBulkTranslator {
                         sourceLang: this.sourceLang,
                         targetLang,
                         strings: chunk,
+                        model: selectedModel,
                         restUrl: this.getRestUrl(),
                         nonce: lmatBulkTranslationGlobal.nonce,
                     });
