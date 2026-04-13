@@ -496,6 +496,7 @@ class Linguator_Page_Translation {
 				'current_post_id'          => $post_id,
 				'providers'                => $active_providers,
 				'api_keys_status'          => $api_keys_status,
+				'ai_models'               => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
 				'get_meta_fields'          => 'lmat_fetch_post_meta_fields',
 				'meta_fields_key'          => wp_create_nonce( 'lmat_fetch_post_meta_fields' ),
 				'slug_translation_option'  => $slug_translation_option,

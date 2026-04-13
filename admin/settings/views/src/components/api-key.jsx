@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Button, Container, Input, Label } from '@bsf/force-ui'
 import apiFetch from "@wordpress/api-fetch"
 import { toast } from 'sonner'
-import { __ } from '@wordpress/i18n'
+import { __, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 import { GeminiIcon } from '../../../../../assets/logo/gemini'
 import { OpenAIIcon } from '../../../../../assets/logo/openai'
@@ -14,6 +14,18 @@ const providerIcons = {
   gemini: GeminiIcon,
   openai: OpenAIIcon,
   anthropic: AnthropicIcon,
+}
+
+const providerKeyLinks = {
+  gemini: 'https://aistudio.google.com/app/api-keys',
+  openai: 'https://platform.openai.com/api-keys',
+  anthropic: 'https://platform.claude.com/',
+}
+
+const providerKeyLabels = {
+  gemini: 'Gemini',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
 }
 
 const providerMeta = [
@@ -48,13 +60,13 @@ const ApiKey = ({ data, setData }) => {
   const [availableModels, setAvailableModels] = useState({ openai: [], gemini: [], anthropic: [] })
   const [models, setModels] = useState({
     openai_model: 'gpt-4o-mini',
-    gemini_model: 'gemini-1.5-flash',
+    gemini_model: 'gemini-2.0-flash',
     anthropic_model: 'claude-3-5-sonnet-latest',
   })
   const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
   const initialModelsRef = useRef({
     openai_model: 'gpt-4o-mini',
-    gemini_model: 'gemini-1.5-flash',
+    gemini_model: 'gemini-2.0-flash',
     anthropic_model: 'claude-3-5-sonnet-latest',
   })
 
@@ -88,7 +100,7 @@ const ApiKey = ({ data, setData }) => {
         })
         const nextModels = {
           openai_model: m?.openai_model || 'gpt-4o-mini',
-          gemini_model: m?.gemini_model || 'gemini-1.5-flash',
+          gemini_model: m?.gemini_model || 'gemini-2.0-flash',
           anthropic_model: m?.anthropic_model || 'claude-3-5-sonnet-latest',
         }
         setModels(nextModels)
@@ -266,6 +278,14 @@ const ApiKey = ({ data, setData }) => {
                     value={displayValue}
                     onChange={(v) => setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))}
                   />
+                  {providerKeyLinks[p.key] ? (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {sprintf(__('Get your %s API key from ', 'translate-words'), providerKeyLabels[p.key] || p.key)}{' '}
+                      <a href={providerKeyLinks[p.key]} target="_blank" rel="noopener noreferrer">
+                        {__('here', 'translate-words')}
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="flex-shrink-0">

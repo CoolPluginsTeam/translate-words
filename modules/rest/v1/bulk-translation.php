@@ -298,6 +298,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$target_lang = isset( $params['target_lang'] ) ? sanitize_key( (string) $params['target_lang'] ) : '';
 			$strings     = isset( $params['strings'] ) && is_array( $params['strings'] ) ? $params['strings'] : array();
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
+			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
 			if ( ! in_array( $provider, array( 'openai', 'gemini', 'anthropic' ), true ) ) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
@@ -353,7 +354,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$lang_names['source_name'],
 				$lang_names['target_name'],
 				$sanitized_strings,
-				$api_key
+				$api_key,
+				$model
 			);
 
 			if ( is_wp_error( $result ) ) {
@@ -443,7 +445,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @param array<string,string> $strings      Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
-		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, string $source_label, string $target_label, array $strings, string $api_key ) {
+		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, string $source_label, string $target_label, array $strings, string $api_key, string $model_override = '' ) {
 			$models = array();
 			$ai_config = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
@@ -464,7 +466,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			} elseif ( 'anthropic' === $provider ) {
 				$model_key = 'anthropic_model';
 			}
-			$model_id = isset( $models[ $model_key ] ) ? trim( (string) $models[ $model_key ] ) : '';
+			$model_id = trim( $model_override );
+			if ( '' === $model_id ) {
+				$model_id = isset( $models[ $model_key ] ) ? trim( (string) $models[ $model_key ] ) : '';
+			}
 
 			// Ensure the selected provider is actually configured in the WP AI Client registry.
 			$provider_id = ( 'gemini' === $provider ) ? 'google' : $provider;

@@ -32,8 +32,56 @@ const StringPopUpBody = (props) => {
     const [selectedSourceText, setSelectedSourceText] = useState('');
     const [activePopupCell, setActivePopupCell] = useState(null);
     const [savedValues, setSavedValues] = useState({});
+    const [translationError, setTranslationError] = useState(null);
     const showGlossary = activePopupType === 'glossary';
     const showAddGlossary = activePopupType === 'add-glossary';
+
+    useEffect(() => {
+        const onTranslationError = (e) => {
+            const msg = e?.detail?.message;
+            if (typeof msg === 'string' && msg.trim() !== '') {
+                setTranslationError(msg);
+            }
+        };
+        const onTranslationErrorClear = () => setTranslationError(null);
+
+        document.addEventListener('lmat-page-translation:translation-error', onTranslationError);
+        document.addEventListener('lmat-page-translation:translation-error-clear', onTranslationErrorClear);
+
+        return () => {
+            document.removeEventListener('lmat-page-translation:translation-error', onTranslationError);
+            document.removeEventListener('lmat-page-translation:translation-error-clear', onTranslationErrorClear);
+        };
+    }, []);
+
+    useEffect(() => {
+        setTranslationError(null);
+    }, [props.modalRender]);
+
+    /** While an error is shown, disable provider translate buttons (e.g. “Translate by Gemini”). */
+    useEffect(() => {
+        if (!translationError) {
+            return undefined;
+        }
+        const root = document.getElementById(`lmat_page_translation_${props.service}_translate_element`);
+        if (!root) {
+            return undefined;
+        }
+        const disableButtons = () => {
+            root.querySelectorAll('button').forEach((el) => {
+                el.disabled = true;
+            });
+        };
+        disableButtons();
+        const observer = new MutationObserver(() => disableButtons());
+        observer.observe(root, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+            root.querySelectorAll('button').forEach((el) => {
+                el.disabled = false;
+            });
+        };
+    }, [translationError, props.service]);
 
     const saveFilteredString = (type, id, filteredString) => {
         const action = `${type}SaveFiltered`;
@@ -636,7 +684,21 @@ const StringPopUpBody = (props) => {
                             {__("Please do not leave this window or browser tab while translation is in progress...", 'translate-words')}
                         </div>
                     )}
-                    <div className={`translator-widget ${service}`} style={{ display: 'flex' }}>
+                    {translationError && (
+                        <div
+                            className="lmat_page_translation_error_popup_overlay"
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-labelledby="lmat_page_translation_error_popup_title"
+                        >
+                            <div className="lmat_page_translation_error_popup_card notice notice-error">
+                                <p id="lmat_page_translation_error_popup_title" className="lmat_page_translation_error_popup_message">
+                                    {translationError}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    <div className={`translator-widget ${service}`} style={{ display: 'flex', alignItems: 'center' }}>
                         <h3 className="choose-lang">{TranslateService({ Service: props.service }).heading} <span className="dashicons-before dashicons-translation"></span></h3>
 
                         <div className={`lmat_page_translation_translate_element_wrapper ${props.translateStatus ? 'translate-completed' : ''}`}>
@@ -644,16 +706,17 @@ const StringPopUpBody = (props) => {
                         </div>
                     </div>
 
-                    <div className="lmat_page_translation_string_container">
-                        <table className="scrolldown" id="stringTemplate" ref={tableRef}>
-                            <thead>
-                                <tr>
-                                    <th className="notranslate">{__("S.No", 'translate-words')}</th>
-                                    <th className="notranslate">{__("Source Text", 'translate-words')}</th>
-                                    <th className="notranslate">{__("Translation", 'translate-words')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div className="lmat_page_translation_string_section">
+                        <div className="lmat_page_translation_string_container">
+                            <table className="scrolldown" id="stringTemplate" ref={tableRef}>
+                                <thead>
+                                    <tr>
+                                        <th className="notranslate">{__("S.No", 'translate-words')}</th>
+                                        <th className="notranslate">{__("Source Text", 'translate-words')}</th>
+                                        <th className="notranslate">{__("Translation", 'translate-words')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                 {props.postDataFetchStatus &&
                                     <>
                                         {translateContent.map((data, index) => {
@@ -720,8 +783,9 @@ const StringPopUpBody = (props) => {
                                         })}
                                     </>
                                 }
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </> :
                 props.postDataFetchStatus ?

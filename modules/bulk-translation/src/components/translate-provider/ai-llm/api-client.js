@@ -8,11 +8,12 @@
  * @param {string} opts.sourceLang
  * @param {string} opts.targetLang
  * @param {Record<string,string>} opts.strings
+ * @param {string} [opts.model] Optional model id override
  * @param {string} opts.restUrl Full REST URL (…/bulk-translate/ai-translate-batch)
  * @param {string} opts.nonce wp_rest nonce
  * @returns {Promise<Record<string,string>>}
  */
-export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, restUrl, nonce }) {
+export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce }) {
     const maxRetries = 3;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -31,6 +32,7 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
                     object_type: objectType,
                     source_lang: sourceLang,
                     target_lang: targetLang,
+                    model: model || '',
                     strings,
                 }),
             });
