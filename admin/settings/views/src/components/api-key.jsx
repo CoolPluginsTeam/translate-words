@@ -267,7 +267,7 @@ const ApiKey = ({ data, setData }) => {
                 </h3>
               ) : null}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <Input
                     aria-label={`${p.key}-api-key`}
