@@ -4,6 +4,13 @@
  * @param {HTMLElement} container - The container element for translation.
  */
 const AddProgressBar = (provider) => {
+    console.log(provider);
+    const providerName = {
+        openai: "OpenAI",
+        gemini: "Gemini",
+        anthropic: "Anthropic",
+        google: "Google",
+    }
 
     const progressBarSelector = "#lmat_page_translation_strings_model .lmat_page_translation_translate_progress";
 
@@ -17,7 +24,7 @@ const AddProgressBar = (provider) => {
                     Wahooo! You have saved your valuable time via auto translating 
                     <strong class="totalChars"></strong> characters using 
                     <strong>
-                        ${provider} Translator
+                        ${providerName[provider]} Translator
                     </strong>
                 </div>
             </div>

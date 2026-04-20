@@ -94,6 +94,7 @@ class AiLlmBulkTranslator {
                     if (this.stopTranslation) {
                         break;
                     }
+                    console.log(selectedModel);
                     const translations = await requestAiBatch({
                         provider: this.serviceProvider,
                         postId: this.postId,

@@ -34,9 +34,9 @@ export default function createAiLlmPageTranslator(providerId) {
         }
 
         const buttonTextMap = {
-            openai: __("Translate by OpenAI", "translate-words"),
-            gemini: __("Translate by Gemini", "translate-words"),
-            anthropic: __("Translate by Anthropic", "translate-words"),
+            openai: __("Translate with OpenAI", "translate-words"),
+            gemini: __("Translate with Gemini", "translate-words"),
+            anthropic: __("Translate with Anthropic", "translate-words"),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -45,7 +45,7 @@ export default function createAiLlmPageTranslator(providerId) {
         btn.type = "button";
         // Reuse Chrome AI button classes for identical styling
         btn.className = "local_ai_translator_btn button button-primary";
-        btn.textContent = buttonTextMap[providerId] || sprintf(__("Translate by %s", "translate-words"), providerId);
+        btn.textContent = buttonTextMap[providerId] || sprintf(__("Translate with %s", "translate-words"), providerId);
         if (translateStatus) {
             btn.disabled = true;
         }
@@ -117,6 +117,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 for (const chunk of chunks) {
                     const modelKey = providerId === 'gemini' ? 'gemini_model' : providerId === 'anthropic' ? 'anthropic_model' : 'openai_model';
                     const selectedModel = (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]) ? String(lmatPageTranslationGlobal.ai_models[modelKey]) : '';
+                    console.log(selectedModel);
                     const translations = await requestAiBatch({
                         provider: providerId,
                         postId,

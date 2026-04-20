@@ -14,6 +14,7 @@
  * @returns {Promise<Record<string,string>>}
  */
 export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce }) {
+    console.log(model);
     const maxRetries = 3;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {

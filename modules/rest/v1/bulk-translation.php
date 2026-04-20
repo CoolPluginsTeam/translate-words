@@ -466,9 +466,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			} elseif ( 'anthropic' === $provider ) {
 				$model_key = 'anthropic_model';
 			}
+			$model_defaults = array(
+				'openai_model'    => 'gpt-4o-mini',
+				'gemini_model'    => 'gemini-2.5-flash',
+				'anthropic_model' => 'claude-3-5-sonnet-latest',
+			);
 			$model_id = trim( $model_override );
 			if ( '' === $model_id ) {
 				$model_id = isset( $models[ $model_key ] ) ? trim( (string) $models[ $model_key ] ) : '';
+			}
+			if ( '' === $model_id && isset( $model_defaults[ $model_key ] ) ) {
+				$model_id = $model_defaults[ $model_key ];
 			}
 
 			// Ensure the selected provider is actually configured in the WP AI Client registry.
