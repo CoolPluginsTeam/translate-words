@@ -58,7 +58,7 @@ class AiLlmBulkTranslator {
     };
 
     async createLlmTranslator(targetLang, index) {
-        if (this.stopTranslation) {
+        if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
             return;
         }
 
@@ -91,10 +91,9 @@ class AiLlmBulkTranslator {
                         : "";
                 let done = 0;
                 for (const chunk of chunks) {
-                    if (this.stopTranslation) {
+                    if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
                         break;
                     }
-                    console.log(selectedModel);
                     const translations = await requestAiBatch({
                         provider: this.serviceProvider,
                         postId: this.postId,
@@ -132,6 +131,13 @@ class AiLlmBulkTranslator {
                 }
             } catch (err) {
                 const msg = err && err.message ? err.message : __("Translation failed.", "translate-words");
+                const isQuotaError = err?.code === "LLM_QUOTA_EXCEEDED";
+
+                if (isQuotaError) {
+                    this.stopTranslation = true;
+                    window.lmatBulkTranslationQuotaExceeded = true;
+                }
+
                 this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
                 this.storeDispatch(
@@ -147,7 +153,7 @@ class AiLlmBulkTranslator {
             }
         }
 
-        if (index < this.targetLangs.length - 1 && !this.stopTranslation) {
+        if (index < this.targetLangs.length - 1 && !this.stopTranslation && !window.lmatBulkTranslationQuotaExceeded) {
             await this.createLlmTranslator(this.targetLangs[index + 1], index + 1);
         }
     }

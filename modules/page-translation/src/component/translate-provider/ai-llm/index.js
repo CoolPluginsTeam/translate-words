@@ -117,7 +117,6 @@ export default function createAiLlmPageTranslator(providerId) {
                 for (const chunk of chunks) {
                     const modelKey = providerId === 'gemini' ? 'gemini_model' : providerId === 'anthropic' ? 'anthropic_model' : 'openai_model';
                     const selectedModel = (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]) ? String(lmatPageTranslationGlobal.ai_models[modelKey]) : '';
-                    console.log(selectedModel);
                     const translations = await requestAiBatch({
                         provider: providerId,
                         postId,
