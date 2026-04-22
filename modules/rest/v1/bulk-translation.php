@@ -469,7 +469,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$model_defaults = array(
 				'openai_model'    => 'gpt-4o-mini',
 				'gemini_model'    => 'gemini-2.5-flash',
-				'anthropic_model' => 'claude-3-5-sonnet-latest',
+				'anthropic_model' => 'claude-3-haiku',
 			);
 			$model_id = trim( $model_override );
 			if ( '' === $model_id ) {

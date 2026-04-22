@@ -61,13 +61,13 @@ const ApiKey = ({ data, setData }) => {
   const [models, setModels] = useState({
     openai_model: 'gpt-4o-mini',
     gemini_model: 'gemini-2.5-flash',
-    anthropic_model: 'claude-3-5-sonnet-latest',
+    anthropic_model: 'claude-3-haiku',
   })
   const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
   const initialModelsRef = useRef({
     openai_model: 'gpt-4o-mini',
     gemini_model: 'gemini-2.5-flash',
-    anthropic_model: 'claude-3-5-sonnet-latest',
+    anthropic_model: 'claude-3-haiku',
   })
 
   useEffect(() => {
@@ -101,7 +101,7 @@ const ApiKey = ({ data, setData }) => {
         const nextModels = {
           openai_model: m?.openai_model || 'gpt-4o-mini',
           gemini_model: m?.gemini_model || 'gemini-2.5-flash',
-          anthropic_model: m?.anthropic_model || 'claude-3-5-sonnet-latest',
+          anthropic_model: m?.anthropic_model || 'claude-3-haiku',
         }
         setModels(nextModels)
         initialModelsRef.current = nextModels
@@ -275,8 +275,12 @@ const ApiKey = ({ data, setData }) => {
                     size="md"
                     type="text"
                     placeholder={p.placeholder}
+                    disabled={isConfigured}
                     value={displayValue}
-                    onChange={(v) => setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))}
+                    onChange={(v) => {
+                      if (isConfigured) return
+                      setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))
+                    }}
                   />
                   {providerKeyLinks[p.key] ? (
                     <div className="mt-2 text-sm text-gray-600">
