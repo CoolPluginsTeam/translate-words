@@ -5,7 +5,7 @@ Tags: translation, multilingual, languages, ai translation
 Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 2.2.0
+Stable tag: 2.1.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -159,7 +159,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
-= Version 2.2.0 | 23 April 2026 =
+= Version 2.1.5 | 23 April 2026 =
 * Added Google Gemini AI provider for WP 7.0
 
 = Version 2.1.4 | 3 April 2026 =
