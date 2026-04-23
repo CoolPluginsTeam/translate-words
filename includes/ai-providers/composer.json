@@ -1,0 +1,5 @@
+{
+    "require": {
+        "wordpress/ai-provider-for-google": "^1.0"
+    }
+}

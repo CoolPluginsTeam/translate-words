@@ -8,6 +8,7 @@ import { getNonce } from '../utils'
 import { toast } from 'sonner'
 import { ChromeIcon } from '../../../../../assets/logo/chrome';
 import { GoogleIcon } from '../../../../../assets/logo/google';
+import { GeminiIcon } from '../../../../../assets/logo/gemini';
 
 
 
@@ -109,9 +110,11 @@ const TranslationConfig = ({ data, setData }) => {
 
     const aiTranslation = data?.ai_translation_configuration; //store the media option
     const provider = aiTranslation?.provider;
+    const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available);
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation })
+    const [geminiTranslation, setGeminiTranslation] = useState(provider?.gemini)
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -120,6 +123,7 @@ const TranslationConfig = ({ data, setData }) => {
         let sameChecker = {
             googleMachineTranslation: true,
             chromeLocalAITranslation: true,
+            geminiTranslation: true,
             bulkTranslationPostStatus: true,
             slugTranslationOption: true,
         }
@@ -131,6 +135,10 @@ const TranslationConfig = ({ data, setData }) => {
 
         if (chromeLocalAITranslation !== provider?.chrome_local_ai) {
             sameChecker.chromeLocalAITranslation = false
+        }
+        
+        if (wpAiClientAvailable && geminiTranslation !== provider?.gemini) {
+            sameChecker.geminiTranslation = false
         }
 
         if (bulkTranslationPostStatus !== aiTranslation?.bulk_translation_post_status) {
@@ -152,7 +160,7 @@ const TranslationConfig = ({ data, setData }) => {
         if (flag) {
             setHandleButtonDisabled(true)
         }
-    }, [chromeLocalAITranslation, googleMachineTranslation, bulkTranslationPostStatus, slugTranslationOption])
+    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption])
 
 
     //Save Setting Function 
@@ -165,14 +173,23 @@ const TranslationConfig = ({ data, setData }) => {
                     provider: {
                         google: googleMachineTranslation,
                         chrome_local_ai: chromeLocalAITranslation,
+                        ...(wpAiClientAvailable ? {
+                            gemini: geminiTranslation,
+                        } : {}),
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption
                 }
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, bulkTranslationPostStatus, slugTranslationOption })
-            if (aiTranslation && (lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation || lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation || lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus || lastUpdatedValue.slugTranslationOption !== slugTranslationOption)) {
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            if (aiTranslation && (
+                lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
+                lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
+                (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
+                lastUpdatedValue.slugTranslationOption !== slugTranslationOption
+            )) {
                 setData(prev => ({
                     ...prev,
                     ...apiBody
@@ -320,6 +337,34 @@ const TranslationConfig = ({ data, setData }) => {
                         </div>
                         {chromeLocalAITranslation && <ChromeLocalAINotice />}
                     </div>
+                    {wpAiClientAvailable && (
+                        <>
+                            <div style={{ backgroundColor: "#fbfbfb" }}>
+                                <div className='switcher p-6 rounded-lg'>
+                                    <Container.Item>
+                                        <h3 className='flex items-center gap-2'>
+                                            <GeminiIcon className='w-5 h-5' />
+                                            {__('Gemini', 'translate-words')}
+                                        </h3>
+                                        <p>
+                                            {__('Gemini uses your configured API key to translate text.', 'translate-words')}
+                                        </p>
+                                    </Container.Item>
+                                    <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                        <Switch
+                                            aria-label="Switch Element"
+                                            id="gemini-translation"
+                                            onChange={() => {
+                                                setGeminiTranslation(!geminiTranslation)
+                                            }}
+                                            value={geminiTranslation}
+                                            size="sm"
+                                        />
+                                    </Container.Item>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </Container.Item>
             <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />

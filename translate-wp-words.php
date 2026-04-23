@@ -69,6 +69,39 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
+if(function_exists('wp_ai_client_prompt') && class_exists('WordPress\AiClient\AiClient')){
+	require_once __DIR__ . '/includes/ai-providers/vendor/autoload.php';
+
+	// Register bundled AI providers (when installed as composer packages they don't auto-register).
+	add_action(
+		'init',
+		static function () {
+			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+				return;
+			}
+
+			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+			if ( ! $registry || ! method_exists( $registry, 'registerProvider' ) || ! method_exists( $registry, 'hasProvider' ) ) {
+				return;
+			}
+
+			$providers = array(
+				'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
+			);
+
+			foreach ( $providers as $provider_id => $provider_class ) {
+				if ( $registry->hasProvider( $provider_id ) ) {
+					continue;
+				}
+				if ( class_exists( $provider_class ) ) {
+					$registry->registerProvider( $provider_class );
+				}
+			}
+		},
+		9
+	);
+}
+
 if ( ! defined( 'LINGUATOR' ) ) {
 	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
 }

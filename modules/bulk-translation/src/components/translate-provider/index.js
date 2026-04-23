@@ -1,9 +1,11 @@
 // import YandexTranslater from "./yandex";
 import localAiTranslator from "./local-ai/index.js";
 import GoogleTranslater from "./google/index.js";
+import AiLlmBulkTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
 import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
 import { GoogleIcon } from "../../../../../assets/logo/google.js";
+import { GeminiIcon } from "../../../../../assets/logo/gemini.js";
 
 /**
  * Provides translation services using Yandex Translate.
@@ -43,13 +45,28 @@ export default (props) => {
             ErrorMessage: props.localAiTranslatorButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.localAiTranslatorButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
             Logo: <ChromeIcon className="icon-size"  />,
             filterHtmlContent: true
+        },
+        gemini: {
+            Provider: AiLlmBulkTranslator,
+            title: "Google Gemini",
+            SettingBtnText: window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? "Translate" : "Add API Key",
+            serviceLabel: "Gemini",
+            heading: __("Translate Using Gemini", "translate-words"),
+            Docs: "https://docs.coolplugins.net/doc/gemini-translation-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs",
+            BetaEnabled: false,
+            ButtonDisabled: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini,
+            ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=api-keys`} target="_blank" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
+            Logo: <GeminiIcon className="icon-size" />,
+            filterHtmlContent: true
         }
     };
 
     const validServices={};
 
-    providers.forEach(provider=>{
-        validServices[provider]=Services[provider];
+    providers.forEach((provider) => {
+        if (Services[provider]) {
+            validServices[provider] = Services[provider];
+        }
     });
 
     if (!Service) {

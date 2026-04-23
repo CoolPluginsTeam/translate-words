@@ -769,6 +769,53 @@ button.lmat-page-translation-setting-close:hover {
     margin-bottom: 25px;
 }
 
+#lmat_page_translation_strings_model .lmat_page_translation_string_section {
+    position: relative;
+    width: 100%;
+}
+
+/* Same footprint as .lmat_page_translation_translate_progress (modal overlay area). */
+#lmat_page_translation_strings_model .lmat_page_translation_error_popup_overlay {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 92px;
+    left: 10px;
+    width: calc(100% - 22px);
+    height: calc(100% - 164px);
+    z-index: 100;
+    box-sizing: border-box;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 3px;
+    overflow: auto;
+    cursor: default;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_error_popup_card {
+    position: relative;
+    max-width: 560px;
+    width: 100%;
+    max-height: 100%;
+    margin-top: 0;
+    padding: 14px 16px 14px 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+    background-color: white;
+    border-radius: 6px;
+    border-left-width: 4px;
+    cursor: default;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_error_popup_card p.lmat_page_translation_error_popup_message {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 #lmat_page_translation_strings_model .lmat_page_translation_string_container {
     overflow-y: auto;
     overflow-x: hidden;
@@ -823,6 +870,7 @@ button.lmat-page-translation-setting-close:hover {
     margin: 0px !important;
     padding: 0px !important;
     font-size: 16px;
+    color: #ffffff;
 }
 
 #lmat_page_translation_strings_model table {
@@ -1095,7 +1143,7 @@ body>div.skiptranslate iframe.skiptranslate[frameborder][src][style="visibility:
     }
 }
 
-:where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal) .translator-widget {
+:where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .translator-widget {
     justify-content: space-between;
     align-items: center;
 }
@@ -1108,7 +1156,7 @@ body>div.skiptranslate iframe.skiptranslate[frameborder][src][style="visibility:
     width: 100% !important;
 }
 
-#lmat_page_translation_strings_model :where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal) .lmat_page_translation_string_container {
+#lmat_page_translation_strings_model :where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .lmat_page_translation_string_container {
     max-height: calc(100vh - 300px - var(--lmat-page-translation-notice-wrapper-height, 0px));
     box-shadow: 0 -1px 4px #0000005e inset;
 }
