@@ -6,9 +6,7 @@
 const AddProgressBar = (provider) => {
     console.log(provider);
     const providerName = {
-        openai: "OpenAI",
         gemini: "Gemini",
-        anthropic: "Anthropic",
         google: "Google",
     }
 

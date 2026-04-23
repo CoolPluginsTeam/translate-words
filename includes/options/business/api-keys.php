@@ -29,13 +29,11 @@ class Api_Keys extends Abstract_Option {
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
 	 * connectors_ai_{provider}_key.
 	 *
-	 * @return array{openai_model:string, gemini_model:string, anthropic_model:string}
+	 * @return array{gemini_model:string}
 	 */
 	protected function get_default() {
 		return array(
-			'openai_model'    => 'gpt-4o-mini',
-			'gemini_model'    => 'gemini-2.5-flash',
-			'anthropic_model' => 'claude-3-5-sonnet-latest',
+			'gemini_model' => 'gemini-2.5-flash',
 		);
 	}
 
@@ -48,15 +46,13 @@ class Api_Keys extends Abstract_Option {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'openai_model'    => array( 'type' => 'string' ),
-				'gemini_model'    => array( 'type' => 'string' ),
-				'anthropic_model' => array( 'type' => 'string' ),
+				'gemini_model' => array( 'type' => 'string' ),
 			),
 		);
 	}
 
 	/**
-	 * Sanitizes models while preserving existing values for unknown keys.
+	 * Sanitizes stored Gemini model id.
 	 *
 	 * @param mixed   $value   Incoming value.
 	 * @param Options $options Options registry instance.
@@ -65,32 +61,28 @@ class Api_Keys extends Abstract_Option {
 	protected function sanitize( $value, Options $options ) {
 		$current = $options->get( self::key() );
 		if ( ! is_array( $current ) ) {
-			$current = $this->get_default();
+			$current = array();
 		}
 
-		if ( ! is_array( $value ) ) {
-			return $current;
-		}
+		$default = $this->get_default();
+		$gemini  = isset( $current['gemini_model'] ) && is_scalar( $current['gemini_model'] )
+			? sanitize_text_field( (string) $current['gemini_model'] )
+			: $default['gemini_model'];
 
-		$filtered = $current;
-
-		foreach ( array( 'openai_model', 'gemini_model', 'anthropic_model' ) as $k ) {
-			if ( array_key_exists( $k, $value ) ) {
-				$v = $value[ $k ];
-				if ( null === $v ) {
-					$filtered[ $k ] = '';
-					continue;
-				}
-
-				if ( is_scalar( $v ) ) {
-					$filtered[ $k ] = sanitize_text_field( (string) $v );
-				} else {
-					$filtered[ $k ] = '';
-				}
+		if ( is_array( $value ) && array_key_exists( 'gemini_model', $value ) ) {
+			$v = $value['gemini_model'];
+			if ( null === $v ) {
+				$gemini = '';
+			} elseif ( is_scalar( $v ) ) {
+				$gemini = sanitize_text_field( (string) $v );
+			} else {
+				$gemini = '';
 			}
 		}
 
-		return $filtered;
+		return array(
+			'gemini_model' => $gemini,
+		);
 	}
 
 	/**
@@ -101,13 +93,11 @@ class Api_Keys extends Abstract_Option {
 	 * - Provider API keys are stored in WP options (connectors_ai_{provider}_key). When WP AI
 	 *   Client is available, it typically reads those connector settings to configure providers.
 	 *
-	 * @return array{openai:list<string>,gemini:list<string>,anthropic:list<string>}
+	 * @return array{gemini:list<string>}
 	 */
 	public static function discover_provider_models(): array {
 		$result = array(
-			'openai'     => array(),
-			'gemini'     => array(),
-			'anthropic'  => array(),
+			'gemini' => array(),
 		);
 
 		// Only attempt discovery when WP AI Client is present.
@@ -135,19 +125,11 @@ class Api_Keys extends Abstract_Option {
 			// Without this, model listing can work right after "test" calls but fail after page reload.
 			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
 			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-				$openai_key    = $get_provider_key( 'openai' );
-				$gemini_key    = $get_provider_key( 'gemini' );
-				$anthropic_key = $get_provider_key( 'anthropic' );
+				$gemini_key = $get_provider_key( 'gemini' );
 
-				if ( '' !== $openai_key ) {
-					$registry->setProviderRequestAuthentication( 'openai', new $auth_class( $openai_key ) );
-				}
 				if ( '' !== $gemini_key ) {
 					// WP AI Client provider id is "google" for Gemini.
 					$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
-				}
-				if ( '' !== $anthropic_key ) {
-					$registry->setProviderRequestAuthentication( 'anthropic', new $auth_class( $anthropic_key ) );
 				}
 			}
 
@@ -206,15 +188,8 @@ class Api_Keys extends Abstract_Option {
 				}
 			};
 
-			// WP AI Client provider ids: openai, google, anthropic.
-			if ( '' !== $get_provider_key( 'openai' ) ) {
-				$result['openai'] = $load_models( 'openai' );
-			}
 			if ( '' !== $get_provider_key( 'gemini' ) ) {
 				$result['gemini'] = $load_models( 'google' );
-			}
-			if ( '' !== $get_provider_key( 'anthropic' ) ) {
-				$result['anthropic'] = $load_models( 'anthropic' );
 			}
 		} catch ( \Throwable $e ) {
 			return $result;
