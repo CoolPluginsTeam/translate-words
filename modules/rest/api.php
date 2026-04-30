@@ -83,7 +83,5 @@ class API {
 
 		$this->page_translate = new V1\Page_Translation( $this->model );
 		$this->page_translate->register_routes();
-
-		// API keys are handled via the Settings endpoint (`lmat/v1/settings`).
 	}
 }

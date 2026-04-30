@@ -162,7 +162,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
     const apiBody = { keys, models: modelsBody }
 
-    // Save via Settings route (no separate save endpoint).
+    // Save via Settings route
     const resp = await apiFetch({
       path: 'lmat/v1/settings',
       method: 'POST',
@@ -173,7 +173,6 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       body: JSON.stringify(apiBody),
     })
 
-    // Update local UI state without relying on a different route response.
     const nextModels = {
       gemini_model: modelsBody.gemini_model,
     }
@@ -196,7 +195,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
     setKeyDrafts({ gemini: '' })
     setHandleButtonDisabled(true)
 
-    // Update discovered models directly from the save response (no extra GET).
+    // Update models directly from the save response
     const config = resp?.api_keys_configuration || {}
     const discovered = config?.available_models || {}
     setAvailableModels({

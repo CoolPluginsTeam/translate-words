@@ -631,7 +631,7 @@ class Settings extends Abstract_Controller {
 				if ( is_object( $provider_availability ) && method_exists( $provider_availability, 'isConfigured' ) && ! $provider_availability->isConfigured() ) {
 					return new WP_Error(
 						'lmat_api_key_invalid',
-						__( 'API key is not valid for Gemini. Please check your API key.', 'translate-words' ),
+						__( 'Invalid API key. Please check API key and try again.', 'translate-words' ),
 						array( 'status' => 400 )
 					);
 				}
