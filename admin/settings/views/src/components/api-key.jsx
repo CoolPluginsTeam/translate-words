@@ -371,7 +371,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
                   ) : null}
                 </div>
 
-                <div className="flex-shrink-0">
+                <div
+                  className="flex-shrink-0"
+                  style={embedded ? { paddingRight: '3em' } : undefined}
+                >
                   <Button
                     size="md"
                     tag="button"

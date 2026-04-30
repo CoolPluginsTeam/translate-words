@@ -561,10 +561,26 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		if ( ! preg_match( '/^AIza[0-9A-Za-z\-_]{20,}$/', $key_trimmed ) ) {
+		if ( 0 !== strpos( $key_trimmed, 'AIza' ) ) {
 			return new WP_Error(
 				'lmat_api_key_invalid',
-				__( 'Gemini API keys must start with AIza and be at least 20 characters long.', 'translate-words' ),
+				__( 'Gemini API keys must start with AIza.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( strlen( $key_trimmed ) < 20 ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Gemini API keys must be at least 20 characters long.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ! preg_match( '/^AIza[0-9A-Za-z\-_]+$/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
 				array( 'status' => 400 )
 			);
 		}
