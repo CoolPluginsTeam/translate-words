@@ -608,14 +608,14 @@ class Settings extends Abstract_Controller {
 		}
 
 		// Cooldown lock to avoid repeated provider validation calls (rate-limit protection).
-		$is_gemini = ( 'google' === $provider_id ) || ( false !== strpos( $provider_id, 'gemini' ) );
-		$cooldown  = $is_gemini ? 60 : 5;
-		$lock_key  = 'lmat_ai_test_lock_' . md5( $provider_id . '|' . $key_trimmed );
+		// This validator is Gemini-specific (WP AI Client provider id: "google").
+		$cooldown = 30;
+		$lock_key = 'lmat_ai_test_lock_google_' . md5( $key_trimmed );
 
 		if ( get_transient( $lock_key ) ) {
 			return new WP_Error(
 				'lmat_ai_provider_rate_limited',
-				__( 'Please wait a few seconds before testing again.', 'translate-words' ),
+				__( 'Gemini rate limit reached. Please wait a minute and try again.', 'translate-words' ),
 				array( 'status' => 429 )
 			);
 		}
