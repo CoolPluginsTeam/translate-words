@@ -494,16 +494,27 @@ class Settings extends Abstract_Controller {
 			$models = array();
 		}
 
+		// Lazy-load provider model discovery only when AI translation is enabled and a key exists.
+		$ai_config  = $this->options->get( 'ai_translation_configuration' );
+		$providers  = isset( $ai_config['provider'] ) && is_array( $ai_config['provider'] ) ? $ai_config['provider'] : array();
+		$gemini_on  = ! empty( $providers['gemini'] );
+		$has_key    = ( '' !== $gemini_raw );
+		$available_models = array(
+			'gemini' => array()
+		);
+		if ( $gemini_on && $has_key ) {
+			$available_models = Api_Keys_Option::discover_provider_models();
+		}
+
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
 				'gemini' => $gemini_masked,
 			),
 			'models'           => $models,
-			'available_models' => Api_Keys_Option::discover_provider_models(),
+			'available_models' => $available_models,
 		);
 		
 		return $response;
-		// return $this->prepare_item_for_response( $this->options->get_all(), $request);
 	}
 
 	/**
@@ -544,15 +555,6 @@ class Settings extends Abstract_Controller {
 			return true;
 		}
 
-		// Basic format validation (fail fast).
-		if ( strlen( $key_trimmed ) < 10 ) {
-			return new WP_Error(
-				'lmat_api_key_invalid',
-				__( 'API key appears to be invalid or too short.', 'translate-words' ),
-				array( 'status' => 400 )
-			);
-		}
-
 		if ( preg_match( '/[<>"\']/', $key_trimmed ) ) {
 			return new WP_Error(
 				'lmat_api_key_invalid',
@@ -577,7 +579,9 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		if ( ! preg_match( '/^AIza[0-9A-Za-z\-_]+$/', $key_trimmed ) ) {
+		// Only validate allowed characters after the AIza prefix.
+		$rest = substr( $key_trimmed, 4 );
+		if ( '' === $rest || ! preg_match( '/^[0-9A-Za-z\-_]+$/', $rest ) ) {
 			return new WP_Error(
 				'lmat_api_key_invalid',
 				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
@@ -603,6 +607,19 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
+		// Cooldown lock to avoid repeated provider validation calls (rate-limit protection).
+		$is_gemini = ( 'google' === $provider_id ) || ( false !== strpos( $provider_id, 'gemini' ) );
+		$cooldown  = $is_gemini ? 60 : 5;
+		$lock_key  = 'lmat_ai_test_lock_' . md5( $provider_id . '|' . $key_trimmed );
+
+		if ( get_transient( $lock_key ) ) {
+			return new WP_Error(
+				'lmat_ai_provider_rate_limited',
+				__( 'Please wait a few seconds before testing again.', 'translate-words' ),
+				array( 'status' => 429 )
+			);
+		}
+
 		$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
 		if ( ! class_exists( $auth_class ) ) {
 			return new WP_Error(
@@ -614,6 +631,7 @@ class Settings extends Abstract_Controller {
 
 		if ( method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
 			$registry->setProviderRequestAuthentication( 'google', new $auth_class( $key_trimmed ) );
+			set_transient( $lock_key, 1, $cooldown );
 		}
 
 		try {
@@ -652,6 +670,7 @@ class Settings extends Abstract_Controller {
 				( false !== strpos( $msg, 'ratelimit' ) );
 
 			if ( $is_rate_limited ) {
+				set_transient( $lock_key, 1, $cooldown );
 				return new WP_Error(
 					'lmat_ai_provider_rate_limited',
 					__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
@@ -666,6 +685,8 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
+		// Only start cooldown after a successful validation.
+		set_transient( $lock_key, 1, $cooldown );
 		return true;
 	}
 
@@ -725,7 +746,7 @@ class Settings extends Abstract_Controller {
 			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
 				$options['api_keys'] = array();
 			}
-			$options['api_keys']['gemini_model'] = $incoming_models['gemini_model'];
+			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
 		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)
