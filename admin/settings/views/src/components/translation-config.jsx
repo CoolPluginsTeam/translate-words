@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button, Checkbox, Container, Input, Label, RadioButton, Switch, Badge } from '@bsf/force-ui'
 import { Languages, Link } from 'lucide-react';
 import { RiDraftLine } from "react-icons/ri";
@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { ChromeIcon } from '../../../../../assets/logo/chrome';
 import { GoogleIcon } from '../../../../../assets/logo/google';
 import { GeminiIcon } from '../../../../../assets/logo/gemini';
+import ApiKey from './api-key';
 
 
 
@@ -118,6 +119,15 @@ const TranslationConfig = ({ data, setData }) => {
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [apiKeyDirty, setApiKeyDirty] = useState(false)
+    const geminiApiKeyRef = useRef(null)
+
+    useEffect(() => {
+        if (!geminiTranslation) {
+            setApiKeyDirty(false)
+        }
+    }, [geminiTranslation])
 
     useEffect(() => {
         let sameChecker = {
@@ -153,20 +163,24 @@ const TranslationConfig = ({ data, setData }) => {
         for (const key in sameChecker) {
             if (!sameChecker[key]) {
                 flag = false;
-                setHandleButtonDisabled(false)
                 break;
             }
         }
-        if (flag) {
-            setHandleButtonDisabled(true)
-        }
-    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption])
+        const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
+        setHandleButtonDisabled(flag && !(geminiSectionOpen && apiKeyDirty))
+    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
     async function SaveSettings() {
         try {
+            if (isSaving) return
+            setIsSaving(true)
             let apiBody;
+            const apiKeyPayload =
+                wpAiClientAvailable && geminiTranslation && geminiApiKeyRef.current?.getPendingPayload
+                    ? geminiApiKeyRef.current.getPendingPayload()
+                    : null;
 
             apiBody = {
                 ai_translation_configuration: {
@@ -180,6 +194,12 @@ const TranslationConfig = ({ data, setData }) => {
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption
                 }
+            }
+            if (apiKeyPayload?.keys) {
+                apiBody.keys = apiKeyPayload.keys
+            }
+            if (apiKeyPayload?.models) {
+                apiBody.models = apiKeyPayload.models
             }
 
             setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
@@ -195,7 +215,7 @@ const TranslationConfig = ({ data, setData }) => {
                     ...apiBody
                 }))
             }
-            //API Call
+            //API Call (single settings request includes Gemini keys/models when present)
             const response = apiFetch({
                 path: 'lmat/v1/settings',
                 method: 'POST',
@@ -205,8 +225,16 @@ const TranslationConfig = ({ data, setData }) => {
                 },
                 body: JSON.stringify(apiBody)
             })
-                .then((response) => {
-                    setData(prev => ({ ...prev, ...response }))
+                .then((settingsResponse) => {
+                    setData(prev => ({ ...prev, ...settingsResponse }))
+                    if (apiKeyPayload && geminiApiKeyRef.current?.syncAfterParentSave) {
+                        geminiApiKeyRef.current.syncAfterParentSave({
+                            keys: apiBody.keys,
+                            models: apiBody.models,
+                        }, settingsResponse)
+                        setApiKeyDirty(false)
+                    }
+                    return settingsResponse
                 })
                 .catch(error => {
                     // Handle general API errors
@@ -221,9 +249,18 @@ const TranslationConfig = ({ data, setData }) => {
                 success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message
             })
-            setHandleButtonDisabled(true)
+            await response
+                .then(() => {
+                    setHandleButtonDisabled(true)
+                })
+                // Avoid double notifications: toast.promise already shows the error message.
+                .catch(() => { })
+                .finally(() => {
+                    setIsSaving(false)
+                })
 
         } catch (error) {
+            setIsSaving(false)
             // Handle domain validation errors
             if (error.message.includes(__("Linguator was unable to access", "translate-words"))) {
                 toast.error(error.message);
@@ -265,7 +302,7 @@ const TranslationConfig = ({ data, setData }) => {
                 <Container.Item className='flex w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Translation Settings', 'translate-words')}</h1>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"
@@ -338,32 +375,43 @@ const TranslationConfig = ({ data, setData }) => {
                         {chromeLocalAITranslation && <ChromeLocalAINotice />}
                     </div>
                     {wpAiClientAvailable && (
-                        <>
-                            <div style={{ backgroundColor: "#fbfbfb" }}>
-                                <div className='switcher p-6 rounded-lg'>
-                                    <Container.Item>
-                                        <h3 className='flex items-center gap-2'>
-                                            <GeminiIcon className='w-5 h-5' />
-                                            {__('Gemini', 'translate-words')}
-                                        </h3>
-                                        <p>
-                                            {__('Gemini uses your configured API key to translate text.', 'translate-words')}
-                                        </p>
-                                    </Container.Item>
-                                    <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
-                                        <Switch
-                                            aria-label="Switch Element"
-                                            id="gemini-translation"
-                                            onChange={() => {
-                                                setGeminiTranslation(!geminiTranslation)
-                                            }}
-                                            value={geminiTranslation}
-                                            size="sm"
-                                        />
-                                    </Container.Item>
-                                </div>
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <GeminiIcon className='w-5 h-5' />
+                                        {__('Gemini', 'translate-words')}
+                                    </h3>
+                                    <p className="m-0">
+                                        {__('Gemini uses your configured API key to translate text.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="gemini-translation"
+                                        onChange={() => {
+                                            setGeminiTranslation(!geminiTranslation)
+                                        }}
+                                        value={geminiTranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
                             </div>
-                        </>
+                            {geminiTranslation && (
+                                <div
+                                    className="px-6 pb-6 pt-0"
+                                >
+                                    <ApiKey
+                                        ref={geminiApiKeyRef}
+                                        data={data}
+                                        setData={setData}
+                                        embedded
+                                        onPendingChange={setApiKeyDirty}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </Container.Item>
@@ -429,7 +477,7 @@ const TranslationConfig = ({ data, setData }) => {
             <Container className='flex items-center justify-end'>
                 <Container.Item className='flex gap-6'>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"

@@ -55,7 +55,7 @@ export default (props) => {
             Docs: "https://docs.coolplugins.net/doc/gemini-translation-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs",
             BetaEnabled: false,
             ButtonDisabled: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini,
-            ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=api-keys`} target="_blank" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
+            ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />,
             filterHtmlContent: true
         }

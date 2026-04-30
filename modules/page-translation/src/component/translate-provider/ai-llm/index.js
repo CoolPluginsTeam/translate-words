@@ -77,8 +77,6 @@ export default function createAiLlmPageTranslator(providerId) {
                 btn.disabled = false;
                 return;
             }
-
-            // Chrome-like: show overlay + auto-scroll + percent bar
             AddProgressBar(providerId);
 
             if (stringContainer[0] && stringContainer[0].scrollHeight > 100) {
@@ -94,8 +92,12 @@ export default function createAiLlmPageTranslator(providerId) {
             /** When true, translation finished without error — keep translate button disabled. */
             let translationSucceeded = false;
 
-            const finish = () => {
-                progressBar.fadeOut("slow");
+            const finish = ({ hideProgress } = {}) => {
+                if (hideProgress) {
+                    progressBar.fadeOut("slow");
+                } else {
+                    progressBar.show();
+                }
                 translateStatusHandler(false);
                 if (!translationSucceeded) {
                     btn.disabled = false;
@@ -183,8 +185,12 @@ export default function createAiLlmPageTranslator(providerId) {
                 showErrorNotice(errorMessage);
             }
 
-            // Keep the progress overlay visible briefly, similar to other providers
-            setTimeout(finish, 4000);
+            // UX: hide progress only when translation succeeds.
+            if (translationSucceeded) {
+                setTimeout(() => finish({ hideProgress: true }), 800);
+            } else {
+                finish({ hideProgress: false });
+            }
         };
 
         btn.addEventListener("click", runTranslation);

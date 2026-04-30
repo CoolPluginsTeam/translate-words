@@ -47,12 +47,6 @@ class API {
 	 */
 	public $page_translate;
 
-	/**
-	 * REST API keys.
-	 *
-	 * @var V1\Api_Keys|null
-	 */
-	public $api_keys;
 
 	/**
 	 * @var Linguator_Model
@@ -90,10 +84,6 @@ class API {
 		$this->page_translate = new V1\Page_Translation( $this->model );
 		$this->page_translate->register_routes();
 
-		// Only register API Keys endpoint when WP AI Client exists.
-		if ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
-			$this->api_keys = new V1\Api_Keys( $this->model );
-			$this->api_keys->register_routes();
-		}
+		// API keys are handled via the Settings endpoint (`lmat/v1/settings`).
 	}
 }

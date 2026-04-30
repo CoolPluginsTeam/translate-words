@@ -17,6 +17,44 @@ use Linguator\Includes\Options\Options;
  */
 class Api_Keys extends Abstract_Option {
 	/**
+	 * Filter and label preferred models for a provider.
+	 *
+	 * @param string $provider_id Provider id used by WP AI Client (e.g. google).
+	 * @param array  $models      Discovered model ids (list<string>).
+	 * @return array<string,string> Map of model_id => label.
+	 */
+	private static function filtered_specific_models( string $provider_id, array $models ): array {
+		$provider_id = is_string( $provider_id ) ? strtolower( trim( $provider_id ) ) : '';
+		$models      = is_array( $models ) ? $models : array();
+
+		$preferred = array();
+		if ( 'google' === $provider_id ) {
+			// Gemini models (labels shown in UI). We only show these if the provider reports them.
+			$preferred = array(
+				'gemini-3.1-pro-preview'        => __( 'gemini-3.1-pro-preview (Best Quality)', 'translate-words' ),
+				'gemini-3.1-flash-lite-preview' => __( 'gemini-3.1-flash-lite-preview (Fast & Cheap)', 'translate-words' ),
+				'gemma-3n-e4b-it'               => __( 'gemma-3n-e4b-it (Cheapest)', 'translate-words' ),
+				'gemini-2.5-pro'                => __( 'gemini-2.5-pro (Best Overall)', 'translate-words' ),
+				'gemini-2.5-flash'              => __( 'gemini-2.5-flash (Balanced)', 'translate-words' ),
+				'gemini-3-flash-preview'        => __( 'gemini-3-flash-preview (Recommended)', 'translate-words' ),
+				'gemini-2.5-pro-preview-tts'    => __( 'gemini-2.5-pro-preview-tts (High Accuracy)', 'translate-words' ),
+			);
+		}
+
+		if ( empty( $preferred ) ) {
+			return array();
+		}
+
+		if ( ! empty( $models ) ) {
+			$preferred = array_intersect_key(
+				$preferred,
+				array_flip( array_values( $models ) )
+			);
+		}
+
+		return $preferred;
+	}
+	/**
 	 * Returns option key.
 	 *
 	 * @return string
@@ -124,13 +162,11 @@ class Api_Keys extends Abstract_Option {
 			// Ensure the registry is authenticated using our stored connector options.
 			// Without this, model listing can work right after "test" calls but fail after page reload.
 			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
-			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-				$gemini_key = $get_provider_key( 'gemini' );
+			$gemini_key = $get_provider_key( 'gemini' );
 
-				if ( '' !== $gemini_key ) {
-					// WP AI Client provider id is "google" for Gemini.
-					$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
-				}
+			if ( '' !== $gemini_key && class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
+				// WP AI Client provider id is "google" for Gemini.
+				$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
 			}
 
 			$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
@@ -150,8 +186,20 @@ class Api_Keys extends Abstract_Option {
 				'tts',
 			);
 
-			$load_models = static function ( string $provider_id ) use ( $registry, $requirements, $excluded_patterns ): array {
+			$load_models = static function ( string $provider_id, string $api_key ) use ( $registry, $requirements, $excluded_patterns ): array {
 				try {
+					$api_key = trim( (string) $api_key );
+					if ( '' === $api_key ) {
+						return array();
+					}
+
+					// Cache model lists for 24 hours to avoid repeated provider calls.
+					$transient_key = 'lmat_ai_models_' . strtolower( $provider_id ) . '_' . md5( $api_key );
+					$cached        = get_transient( $transient_key );
+					if ( is_array( $cached ) ) {
+						return $cached;
+					}
+
 					$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
 					$ids             = array();
 
@@ -182,14 +230,19 @@ class Api_Keys extends Abstract_Option {
 						}
 					}
 
-					return array_values( array_unique( $filtered ) );
+					$final = array_values( array_unique( $filtered ) );
+					set_transient( $transient_key, $final, DAY_IN_SECONDS );
+					return $final;
 				} catch ( \Throwable $e ) {
 					return array();
 				}
 			};
 
-			if ( '' !== $get_provider_key( 'gemini' ) ) {
-				$result['gemini'] = $load_models( 'google' );
+			if ( '' !== $gemini_key ) {
+				$models = $load_models( 'google', $gemini_key );
+				$filtered = self::filtered_specific_models( 'google', $models );
+				// Prefer a curated + labeled subset when available; otherwise return the raw list.
+				$result['gemini'] = ! empty( $filtered ) ? $filtered : $models;
 			}
 		} catch ( \Throwable $e ) {
 			return $result;
