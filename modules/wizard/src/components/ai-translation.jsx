@@ -305,6 +305,23 @@ const AiTranslation = () => {
 								value={ geminiTranslation }
 							/>
 						</div>
+						{ geminiTranslation && (
+								<p>
+									{ __(
+										'Gemini requires an API key. After finishing setup, you can add your Gemini API key in the ',
+										'translate-words'
+									) }
+									<a
+										className="underline"
+										href={ `${ window?.lmat_setup?.admin_url || '' }admin.php?page=lmat_settings&tab=translation` }
+										target="_blank"
+										rel="noreferrer noopener"
+									>
+										{ __( 'Settings panel', 'translate-words' ) }
+									</a>
+									{ __( '.', 'translate-words' ) }
+								</p>
+						) }
 					</>
 				) }
 			</div>
