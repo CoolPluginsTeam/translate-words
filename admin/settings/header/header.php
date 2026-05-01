@@ -106,7 +106,7 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 		$tabs = array(
 			'general'     => array( 'title' => __( 'General Settings', 'translate-words' ) ),
 			'lang'   => array( 'title' => __( 'Manage Languages', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat' ),
-			'translation' => array( 'title' => __( 'Translation Settings', 'translate-words' ) ),
+			'translation' => array( 'title' => __( 'AI Translation', 'translate-words' ) ),
 			'switcher'    => array( 'title' => __( 'Language Switcher', 'translate-words' ) ),
 			'supported-blocks' => array( 'title' => __( 'Supported Blocks', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=supported-blocks' ),
 			'custom-fields' => array( 'title' => __( 'Custom Fields', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=custom-fields' ),
