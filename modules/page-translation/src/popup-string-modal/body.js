@@ -40,7 +40,10 @@ const StringPopUpBody = (props) => {
         const onTranslationError = (e) => {
             const msg = e?.detail?.message;
             if (typeof msg === 'string' && msg.trim() !== '') {
-                setTranslationError(msg);
+                setTranslationError({
+                    message: msg,
+                    link: e?.detail?.link || null,
+                });
             }
         };
         const onTranslationErrorClear = () => setTranslationError(null);
@@ -693,7 +696,15 @@ const StringPopUpBody = (props) => {
                         >
                             <div className="lmat_page_translation_error_popup_card notice notice-error">
                                 <p id="lmat_page_translation_error_popup_title" className="lmat_page_translation_error_popup_message">
-                                    {translationError}
+                                    {translationError?.message || ""}
+                                    {translationError?.link?.href && (
+                                        <>
+                                            {" "}
+                                            <a href={translationError.link.href} target="_blank" rel="noreferrer">
+                                                {translationError?.link?.text || translationError.link.href}
+                                            </a>
+                                        </>
+                                    )}
                                 </p>
                             </div>
                         </div>

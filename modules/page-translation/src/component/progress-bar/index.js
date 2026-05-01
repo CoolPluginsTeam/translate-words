@@ -6,8 +6,8 @@
 const AddProgressBar = (provider) => {
     console.log(provider);
     const providerName = {
-        gemini: "Gemini",
-        google: "Google",
+        gemini: "Google Gemini",
+        google: "Google Translate",
     }
 
     const progressBarSelector = "#lmat_page_translation_strings_model .lmat_page_translation_translate_progress";
@@ -22,7 +22,7 @@ const AddProgressBar = (provider) => {
                     Wahooo! You have saved your valuable time via auto translating 
                     <strong class="totalChars"></strong> characters using 
                     <strong>
-                        ${providerName[provider]} Translator
+                        ${providerName[provider]}
                     </strong>
                 </div>
             </div>

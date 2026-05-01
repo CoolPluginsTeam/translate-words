@@ -242,12 +242,6 @@ const AiTranslation = () => {
 				<h2>{ __( 'Translation Configuration', 'translate-words' ) }</h2>
 				<p className="text-justify text-sm/6">
 					{ __(
-						'Linguator lets you translate content using AI. You can translate the content of your website using AI.',
-						'translate-words'
-					) }
-				</p>
-				<p className="text-justify text-sm/6">
-					{ __(
 						'Turn on AI translation if you need to translate the content of your website using AI. If not, you can leave it off.',
 						'translate-words'
 					) }
@@ -295,10 +289,10 @@ const AiTranslation = () => {
 						>
 							<div className="flex items-center gap-2">
 								<GeminiIcon className="w-4 h-4" />
-								<p className="text-sm/6">{ __( 'Gemini', 'translate-words' ) }</p>
+								<p className="text-sm/6">{ __( 'Google Gemini AI', 'translate-words' ) }</p>
 							</div>
 							<Switch
-								aria-label={ __( 'Gemini', 'translate-words' ) }
+								aria-label={ __( 'Google Gemini AI', 'translate-words' ) }
 								id="gemini-translation"
 								onChange={ () => setGeminiTranslation( ( prev ) => ! prev ) }
 								size="sm"
@@ -308,7 +302,7 @@ const AiTranslation = () => {
 						{ geminiTranslation && (
 								<p>
 									{ __(
-										'Gemini requires an API key. After finishing setup, you can add your Gemini API key in the ',
+										'Google Gemini AI requires an API key. After finishing setup, you can add your Gemini API key in the ',
 										'translate-words'
 									) }
 									<a

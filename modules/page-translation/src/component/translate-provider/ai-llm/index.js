@@ -19,11 +19,15 @@ export default function createAiLlmPageTranslator(providerId) {
             document.dispatchEvent(new CustomEvent("lmat-page-translation:translation-error-clear", { bubbles: true }));
         };
 
-        const showErrorNotice = (message) => {
+        const showErrorNotice = (messageOrDetail) => {
+            const detail =
+                messageOrDetail && typeof messageOrDetail === "object"
+                    ? messageOrDetail
+                    : { message: String(messageOrDetail || "") };
             document.dispatchEvent(
                 new CustomEvent("lmat-page-translation:translation-error", {
                     bubbles: true,
-                    detail: { message: String(message || "") },
+                    detail,
                 })
             );
         };
@@ -182,7 +186,26 @@ export default function createAiLlmPageTranslator(providerId) {
             } catch (e) {
                 StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
                 const errorMessage = e?.message || __("Translation failed. Please try again.", "translate-words");
-                showErrorNotice(errorMessage);
+
+                // When Gemini quota/billing is exceeded, guide users to the usage page.
+                const lower = String(errorMessage || "").toLowerCase();
+                const isQuota =
+                    lower.includes("429") ||
+                    lower.includes("quota") ||
+                    lower.includes("rate limit") ||
+                    lower.includes("resource has been exhausted");
+
+                if (providerId === "gemini" && isQuota) {
+                    showErrorNotice({
+                        message: errorMessage,
+                        link: {
+                            href: "https://aistudio.google.com/app/usage",
+                            text: __("View usage.", "translate-words"),
+                        },
+                    });
+                } else {
+                    showErrorNotice(errorMessage);
+                }
             }
 
             // UX: hide progress only when translation succeeds.

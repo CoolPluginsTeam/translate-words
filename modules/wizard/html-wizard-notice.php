@@ -38,7 +38,7 @@
 		esc_html_e( 'You&lsquo;re almost ready to translate your contents!', 'translate-words' );
 		?>
 	</p>
-	<p class="buttons">
+	<p class="buttons" style="margin-top: 20px;">
 		<a
 			href="<?php echo esc_url( $wizard_url ); ?>"
 			class="button button-primary"

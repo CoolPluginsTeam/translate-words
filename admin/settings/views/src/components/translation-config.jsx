@@ -183,6 +183,15 @@ const TranslationConfig = ({ data, setData }) => {
                     ? geminiApiKeyRef.current.getPendingPayload()
                     : null;
 
+            // Require Gemini API key when enabling Gemini.
+            if (wpAiClientAvailable && geminiTranslation) {
+                const pendingGeminiKey = (apiKeyPayload?.keys?.gemini || '').toString().trim()
+                const hasConfiguredGeminiKey = Boolean(geminiApiKeyRef.current?.hasConfiguredKey?.('gemini'))
+                if (!hasConfiguredGeminiKey && pendingGeminiKey === '') {
+                    throw new Error(__('Please add a Gemini API key to continue.', 'translate-words'))
+                }
+            }
+
             apiBody = {
                 ai_translation_configuration: {
                     provider: {
@@ -381,10 +390,10 @@ const TranslationConfig = ({ data, setData }) => {
                                 <Container.Item>
                                     <h3 className='flex items-center gap-2'>
                                         <GeminiIcon className='w-5 h-5' />
-                                        {__('Gemini', 'translate-words')}
+                                        {__('Google Gemini AI', 'translate-words')}
                                     </h3>
                                     <p className="m-0">
-                                        {__('Gemini uses your configured API key to translate text.', 'translate-words')}
+                                        {__('Google Gemini AI uses Google Gemini API to translate your content.', 'translate-words')}
                                     </p>
                                 </Container.Item>
                                 <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>

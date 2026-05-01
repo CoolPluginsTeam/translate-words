@@ -207,6 +207,13 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
   }, [keyDrafts, models])
 
   useImperativeHandle(ref, () => ({
+    hasConfiguredKey: (provider) => {
+      const key = typeof provider === 'string' ? provider : ''
+      if (!key) return false
+      if (configured?.[key]) return true
+      const m = (masked?.[key] || '').toString().trim()
+      return m !== ''
+    },
     getPendingPayload: () => {
       const hasKeyChanges = Object.values(keyDrafts).some((v) => (v || '').trim() !== '')
       const initial = initialModelsRef.current || {}
@@ -296,7 +303,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
   }
 
   // Keep provider visibility in sync with Translation Config + Wizard toggles (both persist to ai_translation_configuration.provider)
-  const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available)
+  const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available || window?.lmat_setup?.wp_ai_client_available)
   const providerConfig = data?.ai_translation_configuration?.provider
   const visibleProviders = providerMeta.filter((p) => {
     if (!wpAiClientAvailable) return false

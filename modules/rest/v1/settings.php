@@ -363,13 +363,14 @@ class Settings extends Abstract_Controller {
 	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
 	 */
 	public function update_setup_complete( $request ) {
-		$complete = $request->get_param( 'complete' );
+		$complete = (bool) $request->get_param( 'complete' );
 		
 		$result = update_option( 'lmat_setup_complete', $complete );
 		// Verify the option was set correctly by checking the stored value
 		$stored_value = get_option( 'lmat_setup_complete' );
 		
-		if ( $result !== false || $stored_value == $complete ) {
+		$stored_bool = $this->sanitize_boolean_param( $stored_value );
+		if ( $result !== false || $stored_bool === $complete ) {
 			return rest_ensure_response( array(
 				'success' => true,
 				'lmat_setup_complete' => $complete,
@@ -470,6 +471,7 @@ class Settings extends Abstract_Controller {
 		$response['disabled_post_types'] = $disabled_post_types;
 		$response['lmat_video_status'] = get_option('lmat_video_status');
 		$response['lmat_migration_completed'] = get_option('lmat_migration_completed', false);
+		$response['lmat_setup_complete'] = $this->sanitize_boolean_param( get_option( 'lmat_setup_complete', false ) );
 		// Check if CPFM opt-in choice exists for LMAT
 		$cpfm_opt_in_choice = get_option( 'cpfm_opt_in_choice_lmat' );
 		
