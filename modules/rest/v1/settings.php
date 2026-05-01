@@ -719,7 +719,7 @@ class Settings extends Abstract_Controller {
 			$v = is_string( $v ) ? trim( $v ) : '';
 
 			$current_raw  = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
-			$is_unchanged = ( '' !== $v && '' !== $current_raw && hash_equals( $current_raw, $v ) );
+			$is_unchanged = ( '' !== $v && '' !== $current_raw && $current_raw === $v );
 
 			// Validate only when setting a non-empty key AND it differs from the stored one.
 			// Empty string is allowed for reset.
@@ -731,6 +731,9 @@ class Settings extends Abstract_Controller {
 			}
 
 			update_option( 'connectors_ai_gemini_key', $v );
+			if ( '' === $v && '' !== $current_raw ) {
+				delete_transient( 'lmat_ai_models_google_' . md5( $current_raw ) );
+			}
 		}
 
 		$errors  = new WP_Error();

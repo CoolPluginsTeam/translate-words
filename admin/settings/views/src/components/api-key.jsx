@@ -279,8 +279,12 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       const showToast = !embedded || resetProvider
       if (showToast) {
         toast.promise(run, {
-          loading: __('Saving Settings', 'translate-words'),
-          success: __('Settings Saved', 'translate-words'),
+          loading: resetProvider
+            ? __('API key resetting…', 'translate-words')
+            : __('Saving Settings', 'translate-words'),
+          success: resetProvider
+            ? __('API key reset', 'translate-words')
+            : __('Settings Saved', 'translate-words'),
           error: (error) => error.message,
         })
       } else {

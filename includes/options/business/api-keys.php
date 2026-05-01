@@ -157,14 +157,10 @@ class Api_Keys extends Abstract_Option {
 			if ( ! $registry || ! method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
 				return $result;
 			}
-
-			// Ensure the registry is authenticated using our stored connector options.
-			// Without this, model listing can work right after "test" calls but fail after page reload.
 			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
 			$gemini_key = $get_provider_key( 'gemini' );
 
 			if ( '' !== $gemini_key && class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-				// WP AI Client provider id is "google" for Gemini.
 				$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
 			}
 
@@ -192,21 +188,40 @@ class Api_Keys extends Abstract_Option {
 						return array();
 					}
 
-					// Cache model lists for 24 hours to avoid repeated provider calls.
 					$transient_key = 'lmat_ai_models_' . strtolower( $provider_id ) . '_' . md5( $api_key );
 					$cached        = get_transient( $transient_key );
 					if ( is_array( $cached ) ) {
 						return $cached;
 					}
-
-					$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
-					$ids             = array();
-
-					if ( is_array( $models_metadata ) ) {
+	
+					/*
+					 * Add scoped timeout safety ONLY for provider HTTP calls.
+					 */
+					$timeout_filter = static function ( array $args ): array {
+						$args['timeout'] = isset( $args['timeout'] )
+							? min( (float) $args['timeout'], 4.0 )
+							: 4.0;
+					
+						return $args;
+					};
+	
+					add_filter( 'http_request_args', $timeout_filter, 10, 2 );
+	
+					try {
+						$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
+					} finally {
+						// Always remove filter to avoid side effects
+						remove_filter( 'http_request_args', $timeout_filter, 10 );
+					}
+	
+					if ( ! is_array( $models_metadata ) ) {
+						return array();
+					}
+	
+					$ids = array();
 						foreach ( $models_metadata as $model ) {
 							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
 								$ids[] = (string) $model->getId();
-							}
 						}
 					}
 
@@ -240,7 +255,6 @@ class Api_Keys extends Abstract_Option {
 			if ( '' !== $gemini_key ) {
 				$models = $load_models( 'google', $gemini_key );
 				$filtered = self::filtered_specific_models( 'google', $models );
-				// Prefer a curated + labeled subset when available; otherwise return the raw list.
 				$result['gemini'] = ! empty( $filtered ) ? $filtered : $models;
 			}
 		} catch ( \Throwable $e ) {

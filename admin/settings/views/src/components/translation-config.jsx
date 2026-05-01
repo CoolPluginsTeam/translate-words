@@ -10,6 +10,7 @@ import { ChromeIcon } from '../../../../../assets/logo/chrome';
 import { GoogleIcon } from '../../../../../assets/logo/google';
 import { GeminiIcon } from '../../../../../assets/logo/gemini';
 import ApiKey from './api-key';
+import DOMPurify from 'dompurify';
 
 
 
@@ -101,7 +102,7 @@ const ChromeLocalAINotice = () => {
         >
             <div className="text-red-600 text-sm leading-6">
                 <h3 className="font-semibold">{heading}</h3>
-                <div dangerouslySetInnerHTML={{ __html: message }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message) }} />
             </div>
         </div>
     );
