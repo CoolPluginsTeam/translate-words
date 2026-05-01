@@ -64,15 +64,15 @@ const Switcher = ({ data, setData }) => {
                     if (error?.message) {
                         throw new Error(error.message)
                     }
-                    throw new Error(__("Something went wrong", 'linguator-multilingual-ai-translation'))
+                    throw new Error(__("Something went wrong", 'translate-words'))
                 })
                 .finally(() => {
                     setIsSaving(false)
                 })
 
             toast.promise(response, {
-                loading: __('Saving Settings', 'linguator-multilingual-ai-translation'),
-                success: __('Settings Saved', 'linguator-multilingual-ai-translation'),
+                loading: __('Saving Settings', 'translate-words'),
+                success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message,
             })
         } catch (error) {
@@ -141,7 +141,7 @@ const Switcher = ({ data, setData }) => {
             <Container className='flex items-center justify-end'>
                 <Container.Item className='flex gap-6'>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"

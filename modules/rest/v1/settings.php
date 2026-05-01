@@ -631,7 +631,6 @@ class Settings extends Abstract_Controller {
 
 		if ( method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
 			$registry->setProviderRequestAuthentication( 'google', new $auth_class( $key_trimmed ) );
-			set_transient( $lock_key, 1, $cooldown );
 		}
 
 		try {

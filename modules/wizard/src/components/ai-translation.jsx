@@ -317,9 +317,8 @@ const AiTranslation = () => {
 										target="_blank"
 										rel="noreferrer noopener"
 									>
-										{ __( 'Settings panel', 'translate-words' ) }
+										{ __( 'Settings panel.', 'translate-words' ) }
 									</a>
-									{ __( '.', 'translate-words' ) }
 								</p>
 						) }
 					</>

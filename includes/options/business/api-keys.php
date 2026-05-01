@@ -24,8 +24,7 @@ class Api_Keys extends Abstract_Option {
 	 * @return array<string,string> Map of model_id => label.
 	 */
 	private static function filtered_specific_models( string $provider_id, array $models ): array {
-		$provider_id = is_string( $provider_id ) ? strtolower( trim( $provider_id ) ) : '';
-		$models      = is_array( $models ) ? $models : array();
+		$provider_id = strtolower( trim( $provider_id ) );
 
 		$preferred = array();
 		if ( 'google' === $provider_id ) {
