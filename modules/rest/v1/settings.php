@@ -72,6 +72,12 @@ class Settings extends Abstract_Controller {
 	 */
 	private $disabled_taxonomies;
 
+	/**
+	 * True when update_item saved a new non-empty Gemini key; get_item runs discovery once then clears this.
+	 *
+	 * @var bool
+	 */
+	private $ai_gemini_model_refresh_needed = false;
 
 	protected $namespace;
 	protected $rest_base;
@@ -495,8 +501,6 @@ class Settings extends Abstract_Controller {
 		if ( ! is_array( $models ) ) {
 			$models = array();
 		}
-
-		// Lazy-load provider model discovery only when AI translation is enabled and a key exists.
 		$ai_config  = $this->options->get( 'ai_translation_configuration' );
 		$providers  = isset( $ai_config['provider'] ) && is_array( $ai_config['provider'] ) ? $ai_config['provider'] : array();
 		$gemini_on  = ! empty( $providers['gemini'] );
@@ -505,8 +509,14 @@ class Settings extends Abstract_Controller {
 			'gemini' => array()
 		);
 		if ( $gemini_on && $has_key ) {
-			$available_models = Api_Keys_Option::discover_provider_models();
+			if ( $this->should_run_ai_model_discovery() ) {
+				$available_models = Api_Keys_Option::discover_provider_models();
+			} else {
+				$available_models = Api_Keys_Option::get_stored_provider_models();
+			}
 		}
+
+		$this->ai_gemini_model_refresh_needed = false;
 
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
@@ -517,6 +527,15 @@ class Settings extends Abstract_Controller {
 		);
 		
 		return $response;
+	}
+
+	/**
+	 * Whether get_item should call the Gemini provider API for model discovery (~4s cap).
+	 *
+	 * @return bool
+	 */
+	private function should_run_ai_model_discovery(): bool {
+		return $this->ai_gemini_model_refresh_needed;
 	}
 
 	/**
@@ -704,6 +723,8 @@ class Settings extends Abstract_Controller {
 	 * @phpstan-param WP_REST_Request<T> $request
 	 */
 	public function update_item( $request ) {
+		$this->ai_gemini_model_refresh_needed = false;
+
 		// Support saving AI provider keys/models via the Settings route.
 		// Keys are stored in dedicated WP options `connectors_ai_{provider}_key`,
 		// while models are stored in the `api_keys` option (see Business\\Api_Keys).
@@ -734,7 +755,9 @@ class Settings extends Abstract_Controller {
 
 			update_option( 'connectors_ai_gemini_key', $v );
 			if ( '' === $v && '' !== $current_raw ) {
-				delete_transient( 'lmat_ai_models_google_' . md5( $current_raw ) );
+				Api_Keys_Option::clear_gemini_models_list();
+			} elseif ( '' !== $v && ! $is_unchanged ) {
+				$this->ai_gemini_model_refresh_needed = true;
 			}
 		}
 
