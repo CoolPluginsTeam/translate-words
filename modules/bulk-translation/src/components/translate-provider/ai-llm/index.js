@@ -5,6 +5,20 @@ import storeTranslateString from "../../store-translate-strings/index.js";
 import { __ } from "@wordpress/i18n";
 import { requestAiBatch, chunkStringMap } from "./api-client.js";
 
+function escapeHtml(text) {
+    return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+/** Match page translation: exact message plus Google AI Studio usage link. */
+function geminiQuotaErrorHtml(message) {
+    const view = __("View usage.", "translate-words");
+    return `${escapeHtml(message)} <a href="https://aistudio.google.com/app/usage" target="_blank" rel="noopener noreferrer">${escapeHtml(view)}</a>`;
+}
+
 class AiLlmBulkTranslator {
     constructor({ sourceLang = "en", targetLangs = false, updateContent, totalPosts, storeDispatch, postId, prefix, updateDestoryHandler }) {
         this.textContentObject = selectTargetContent(store.getState(), postId);
@@ -132,11 +146,19 @@ class AiLlmBulkTranslator {
             } catch (err) {
                 const msg = err && err.message ? err.message : __("Translation failed.", "translate-words");
                 const isQuotaError = err?.code === "LLM_QUOTA_EXCEEDED";
+                const isGeminiQuotaByMessage =
+                    this.serviceProvider === "gemini" &&
+                    /429|quota exceeded|rate limit|resource has been exhausted|too many requests/i.test(String(msg));
+                const haltForQuota = isQuotaError || isGeminiQuotaByMessage;
+                const showGeminiUsageLink = this.serviceProvider === "gemini" && (isQuotaError || isGeminiQuotaByMessage);
 
-                if (isQuotaError) {
+                if (haltForQuota) {
                     this.stopTranslation = true;
                     window.lmatBulkTranslationQuotaExceeded = true;
                 }
+
+                const errorAllowHtml = showGeminiUsageLink;
+                const errorMessage = errorAllowHtml ? geminiQuotaErrorHtml(msg) : msg;
 
                 this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
@@ -145,8 +167,9 @@ class AiLlmBulkTranslator {
                         [`${this.postId}_${targetLang}`]: {
                             status: "error",
                             messageClass: "error",
-                            errorMessage: msg,
+                            errorMessage,
                             errorHtml: false,
+                            errorAllowHtml,
                         },
                     })
                 );
