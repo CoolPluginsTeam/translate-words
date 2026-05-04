@@ -10,103 +10,7 @@ import { ChromeIcon } from '../../../../../assets/logo/chrome';
 import { GoogleIcon } from '../../../../../assets/logo/google';
 import { GeminiIcon } from '../../../../../assets/logo/gemini';
 import ApiKey from './api-key';
-import DOMPurify from 'dompurify';
-
-
-
-const ChromeLocalAINotice = () => {
-    const [showBrowserNotice, setShowBrowserNotice] = React.useState(false);
-    const [showSecureNotice, setShowSecureNotice] = React.useState(false);
-    const [showApiNotice, setShowApiNotice] = React.useState(false);
-
-    React.useEffect(() => {
-        const safeBrowser = window?.location?.protocol === "https:";
-        const browserContentSecure = window?.isSecureContext;
-        // Secure connection + API availability check
-        const apiAvailable =
-            ("translation" in window?.self &&
-                "createTranslator" in window?.self?.translation) ||
-            ("ai" in window?.self && "translator" in window?.self?.ai) ||
-            ("Translator" in window?.self && "create" in window?.self?.Translator);
-
-        // Browser check (must be Chrome, not Edge or others)
-        if (
-            !window?.hasOwnProperty("chrome") ||
-            !navigator?.userAgent?.includes("Chrome") ||
-            navigator?.userAgent?.includes("Edg")
-        ) {
-            setShowBrowserNotice(true);
-        } else if (!apiAvailable && !safeBrowser && !browserContentSecure) {
-            setShowSecureNotice(true);
-        } else if (!apiAvailable) {
-            setShowApiNotice(true);
-        }
-    }, []);
-
-    if (!showBrowserNotice && !showSecureNotice && !showApiNotice) {
-        return null; // no notice needed
-    }
-
-    let message = '';
-    let heading = '';
-
-    if (showBrowserNotice) {
-        heading = __('⚠️ Important Notice: Browser Compatibility', 'translate-words');
-        message = `<ul className="list-disc ml-5 mt-2"><li>
-                ${sprintf(__('The %sTranslator API%s, which uses Chrome Local AI Models, is designed exclusively for use with the %sChrome browser%s.', 'translate-words'), '<strong>', '</strong>', '<strong>', '</strong>')}
-              </li>
-              <li>
-                ${sprintf(__('If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.', 'translate-words'))}
-              </li>
-              <li>
-                ${sprintf(__('Learn more in the %sofficial documentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank" rel="noreferrer" class="underline text-blue-600">', '</a>')}
-              </li>
-      </ul>`;
-    } else if (showSecureNotice) {
-        heading = __('⚠️ Important Notice: Secure Connection Required', 'translate-words');
-        message = `<ul className="list-disc ml-5 mt-2">
-              <li>
-                ${sprintf(__('The %sTranslator API%s requires a secure (HTTPS) connection to function properly.', 'translate-words'), '<strong>', '</strong>')}
-              </li>
-              <li>
-                ${__('If you are on an insecure connection (HTTP), the API will not work.', 'translate-words')}
-              </li>
-            </ul>
-            <p className="mt-2">${__('👉 How to Fix This:', 'translate-words')}</p>
-            <ol className="list-decimal ml-5 mt-2">
-              <li>${sprintf(__('Switch to a secure connection by using %s.', 'translate-words'), '<strong><code>https://</code></strong>')}
-              </li>
-              <li>
-                ${sprintf(__('Alternatively, add this URL to Chrome’s list of insecure origins treated as secure: %s.', 'translate-words'), '<strong><code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></strong>')}
-                <br />
-                ${__('Copy the URL and then open a new window and paste this URL to access the settings.', 'translate-words')}
-              </li>
-            </ol>`;
-    } else if (showApiNotice) {
-        heading = __('⚠️ Important Notice: API Availability', 'translate-words');
-        message = `<ol>
-                    <li>${sprintf(__('Open this URL in a new Chrome tab: %s. Copy this URL and then open a new window and paste this URL to access the settings.', 'translate-words'), '<strong><code>chrome://flags/#translation-api</code></strong>')}</li>
-                    <li>${sprintf(__('Ensure that the %sExperimental translation API%s option is set to <strong>Enabled</strong>.', 'translate-words'), '<strong>', '</strong>')}</li>
-                    <li>${sprintf(__('After change the setting, Click on the %sRelaunch%s button to apply the changes.', 'translate-words'), '<strong>', '</strong>')}</li>
-                    <li>${__('The Translator AI modal should now be enabled and ready for use.', 'translate-words')}</li>
-                </ol>
-                <p>${sprintf(__('For more information, please refer to the %sdocumentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">', '</a>')}</p>   
-                <p>${__('If the issue persists, please ensure that your browser is up to date and restart your browser.', 'translate-words')}</p>
-                <p>${sprintf(__('If you continue to experience issues after following the above steps, please %sopen a support ticket%s with our team. We are here to help you resolve any problems and ensure a smooth translation experience.', 'translate-words'), '<a href="https://my.coolplugins.net/account/support-tickets/" target="_blank" rel="noopener">', '</a>')}</p>`;
-    }
-
-    return (
-        <div
-            className="flex flex-col gap-4 p-6 rounded-lg"
-            style={{ border: "1px solid #e5e7eb", background: "#fff5f5", margin: "0 1.5rem 1.5rem 1.5rem" }}
-        >
-            <div className="text-red-600 text-sm leading-6">
-                <h3 className="font-semibold">{heading}</h3>
-                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message) }} />
-            </div>
-        </div>
-    );
-};
+import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 
 const TranslationConfig = ({ data, setData }) => {
 
@@ -382,7 +286,9 @@ const TranslationConfig = ({ data, setData }) => {
                                 />
                             </Container.Item>
                         </div>
-                        {chromeLocalAITranslation && <ChromeLocalAINotice />}
+                        {chromeLocalAITranslation && (
+                            <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
+                        )}
                     </div>
                     {wpAiClientAvailable && (
                         <div style={{ backgroundColor: "#fbfbfb" }}>
