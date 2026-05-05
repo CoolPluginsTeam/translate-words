@@ -634,6 +634,10 @@
   margin-top: 0.625rem;
 }
 
+.lmat-styles .mt-4 {
+  margin-top: 1rem;
+}
+
 .lmat-styles .mt-8 {
   margin-top: 2rem;
 }
@@ -2539,6 +2543,11 @@
 .lmat-styles .text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
+}
+
+.lmat-styles .text-xs\/5 {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
 }
 
 .lmat-styles .font-bold {
