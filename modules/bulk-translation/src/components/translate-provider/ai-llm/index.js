@@ -71,6 +71,38 @@ class AiLlmBulkTranslator {
         }
     };
 
+    getBatchConfig = () => {
+        const maxTokens = Number(lmatBulkTranslationGlobal?.AIRequestMaxTokens);
+        const batchSize = Number(lmatBulkTranslationGlobal?.AIRequestBatchSize);
+        return {
+            maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
+            concurrency: Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5,
+        };
+    };
+
+    runWithConcurrency = async (items, concurrency, handler) => {
+        const limit = Math.min(Math.max(1, concurrency), Math.max(1, items.length));
+        let idx = 0;
+        let firstError = null;
+
+        const worker = async () => {
+            while (idx < items.length) {
+                if (firstError) return;
+                const currentIndex = idx++;
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    await handler(items[currentIndex], currentIndex);
+                } catch (e) {
+                    firstError = e;
+                    return;
+                }
+            }
+        };
+
+        await Promise.all(Array.from({ length: limit }, () => worker()));
+        if (firstError) throw firstError;
+    };
+
     async createLlmTranslator(targetLang, index) {
         if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
             return;
@@ -96,7 +128,8 @@ class AiLlmBulkTranslator {
             this.startTime = new Date();
 
             try {
-                const chunks = chunkStringMap(this.textContentObject);
+                const { maxTokens, concurrency } = this.getBatchConfig();
+                const chunks = chunkStringMap(this.textContentObject, { maxTokens });
                 const p = this.serviceProvider;
                 const modelKey = "gemini_model";
                 const selectedModel =
@@ -104,10 +137,11 @@ class AiLlmBulkTranslator {
                         ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
                         : "";
                 let done = 0;
-                for (const chunk of chunks) {
+                await this.runWithConcurrency(chunks, concurrency, async (chunk) => {
                     if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
-                        break;
+                        return;
                     }
+
                     const translations = await requestAiBatch({
                         provider: this.serviceProvider,
                         postId: this.postId,
@@ -128,7 +162,7 @@ class AiLlmBulkTranslator {
                         done++;
                     }
                     this.updateProgressForChunk(done, targetLang);
-                }
+                });
 
                 if (!this.stopTranslation) {
                     this.storeDispatch(updateProgressStatus(100 / this.totalPosts));

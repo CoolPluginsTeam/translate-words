@@ -40,8 +40,23 @@ class Post extends Abstract_Object {
 	 * @return Linguator_Language The selected language to assign to the post.
 	 */
 	public function get_language( User $user, int $id = 0 ): Linguator_Language {
-		/** Get the default language from the system as a final fallback. */
+		/**
+		 * Get the default language from the system as a final fallback.
+		 *
+		 * `Linguator_Model::get_default_language()` can return `false` (eg: languages not initialized yet),
+		 * but this method has a strict return type.
+		 */
 		$default_language = $this->model->get_default_language();
+		if ( ! $default_language instanceof Linguator_Language ) {
+			$languages = $this->model->get_languages_list();
+			$first     = is_array( $languages ) ? reset( $languages ) : false;
+
+			if ( $first instanceof Linguator_Language ) {
+				$default_language = $first;
+			} else {
+				throw new \RuntimeException( 'Linguator: no languages available to determine a default post language.' );
+			}
+		}
 
 		// 1. If a language is directly picked in admin (in GET['new_lang']), use it.
 		if ( ! empty( $_GET['new_lang'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification

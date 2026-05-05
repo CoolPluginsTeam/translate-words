@@ -1063,6 +1063,15 @@ button.lmat-page-translation-setting-close:hover {
     animation: lmat-page-translation-progress-stripes 1.25s linear infinite reverse;
 }
 
+@keyframes lmat-page-translation-progress-stripes {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 60px 0;
+    }
+}
+
 #lmat_page_translation_strings_model .lmat-page-translation-translate-progress-bar [class$="-translator_progress"] {
     position: relative;
     z-index: 1;

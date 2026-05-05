@@ -53,6 +53,38 @@ export default function createAiLlmPageTranslator(providerId) {
         }
         targetEl.appendChild(btn);
 
+        const getBatchConfig = () => {
+            const maxTokens = Number(lmatPageTranslationGlobal?.AIRequestMaxTokens);
+            const batchSize = Number(lmatPageTranslationGlobal?.AIRequestBatchSize);
+            return {
+                maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
+                concurrency: Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5,
+            };
+        };
+
+        const runWithConcurrency = async (items, concurrency, handler) => {
+            const limit = Math.min(Math.max(1, concurrency), Math.max(1, items.length));
+            let idx = 0;
+            let firstError = null;
+
+            const worker = async () => {
+                while (idx < items.length) {
+                    if (firstError) return;
+                    const currentIndex = idx++;
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        await handler(items[currentIndex], currentIndex);
+                    } catch (e) {
+                        firstError = e;
+                        return;
+                    }
+                }
+            };
+
+            await Promise.all(Array.from({ length: limit }, () => worker()));
+            if (firstError) throw firstError;
+        };
+
         const runTranslation = async () => {
             if (btn.disabled) {
                 return;
@@ -113,19 +145,22 @@ export default function createAiLlmPageTranslator(providerId) {
             try {
                 clearErrorNotice();
                 btn.setAttribute("aria-busy", "true");
-                const chunks = chunkStringMap(strings);
+                const { maxTokens, concurrency } = getBatchConfig();
+                const chunks = chunkStringMap(strings, { maxTokens });
                 const totalKeys = Math.max(1, Object.keys(strings).length);
                 let doneKeys = 0;
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                for (const chunk of chunks) {
-                    const modelKey = 'gemini_model';
-                    const selectedModel = (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]) ? String(lmatPageTranslationGlobal.ai_models[modelKey]) : '';
-                    startWaitUi();
-                    let translations;
-                    try {
-                        translations = await requestAiBatch({
+                const modelKey = 'gemini_model';
+                const selectedModel =
+                    (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey])
+                        ? String(lmatPageTranslationGlobal.ai_models[modelKey])
+                        : '';
+
+                try {
+                    await runWithConcurrency(chunks, concurrency, async (chunk) => {
+                        const translations = await requestAiBatch({
                             provider: providerId,
                             postId,
                             objectType,
@@ -136,43 +171,41 @@ export default function createAiLlmPageTranslator(providerId) {
                             restUrl,
                             nonce,
                         });
-                    } finally {
-                        clearWaitUi();
-                    }
 
-                    if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
-                        throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
-                    }
-
-                    for (const key of Object.keys(chunk)) {
-                        const row = entryById[key];
-                        if (!row) {
-                            continue;
+                        if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
+                            throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
                         }
-                        const t = translations[key] !== undefined ? translations[key] : chunk[key];
-                        SaveTranslation({
-                            type: row.type,
-                            key: row.id,
-                            translateContent: t,
-                            source: row.source,
-                            provider: providerId,
-                            AllowedMetaFields,
-                        });
-                        const src = row.source || "";
-                        totalChars += src.trim().length;
-                        totalStrings += src.trim().split(/(?<=[.!?]+)\s+/).filter(Boolean).length;
-                        doneKeys++;
-                    }
 
-                    const pct = Math.min(100, Math.round((doneKeys / totalKeys) * 100));
-                    jQuery(`.${providerId}-translator_progress`).css("width", `${pct}%`).text(`${pct}%`);
+                        for (const key of Object.keys(chunk)) {
+                            const row = entryById[key];
+                            if (!row) continue;
 
-                    // Keep the strings container scrolling while work is happening
-                    const el = stringContainer && stringContainer[0] ? stringContainer[0] : null;
-                    if (el && el.scrollHeight > el.clientHeight) {
-                        const maxScroll = el.scrollHeight - el.clientHeight;
-                        el.scrollTop = Math.round((pct / 100) * maxScroll);
-                    }
+                            const t = translations[key] !== undefined ? translations[key] : chunk[key];
+                            SaveTranslation({
+                                type: row.type,
+                                key: row.id,
+                                translateContent: t,
+                                source: row.source,
+                                provider: providerId,
+                                AllowedMetaFields,
+                            });
+                            const src = row.source || "";
+                            totalChars += src.trim().length;
+                            totalStrings += src.trim().split(/(?<=[.!?]+)\s+/).filter(Boolean).length;
+                            doneKeys++;
+                        }
+
+                        const pct = Math.min(100, Math.round((doneKeys / totalKeys) * 100));
+                        jQuery(`.${providerId}-translator_progress`).css("width", `${pct}%`).text(`${pct}%`);
+
+                        // Keep the strings container scrolling while work is happening
+                        const el = stringContainer && stringContainer[0] ? stringContainer[0] : null;
+                        if (el && el.scrollHeight > el.clientHeight) {
+                            const maxScroll = el.scrollHeight - el.clientHeight;
+                            el.scrollTop = Math.round((pct / 100) * maxScroll);
+                        }
+                    });
+                } finally {
                 }
 
                 dispatch("block-lmatPageTranslation/translate").translationInfo({
