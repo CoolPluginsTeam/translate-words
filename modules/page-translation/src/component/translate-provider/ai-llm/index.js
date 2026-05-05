@@ -112,6 +112,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
             try {
                 clearErrorNotice();
+                btn.setAttribute("aria-busy", "true");
                 const chunks = chunkStringMap(strings);
                 const totalKeys = Math.max(1, Object.keys(strings).length);
                 let doneKeys = 0;
@@ -121,17 +122,23 @@ export default function createAiLlmPageTranslator(providerId) {
                 for (const chunk of chunks) {
                     const modelKey = 'gemini_model';
                     const selectedModel = (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]) ? String(lmatPageTranslationGlobal.ai_models[modelKey]) : '';
-                    const translations = await requestAiBatch({
-                        provider: providerId,
-                        postId,
-                        objectType,
-                        sourceLang,
-                        targetLang,
-                        strings: chunk,
-                        model: selectedModel,
-                        restUrl,
-                        nonce,
-                    });
+                    startWaitUi();
+                    let translations;
+                    try {
+                        translations = await requestAiBatch({
+                            provider: providerId,
+                            postId,
+                            objectType,
+                            sourceLang,
+                            targetLang,
+                            strings: chunk,
+                            model: selectedModel,
+                            restUrl,
+                            nonce,
+                        });
+                    } finally {
+                        clearWaitUi();
+                    }
 
                     if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
                         throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));

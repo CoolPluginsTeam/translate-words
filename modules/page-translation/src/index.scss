@@ -989,6 +989,95 @@ button.lmat-page-translation-setting-close:hover {
     height: calc(100% - 164px);
 }
 
+/* Animated ellipsis only — same visual as original overlay */
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 2px;
+    vertical-align: baseline;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots span {
+    display: inline-block;
+    animation: lmat-translation-progress-dot 1.05s ease-in-out infinite;
+    opacity: 0.35;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots span:nth-child(2) {
+    animation-delay: 0.18s;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots span:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+/* Second row of dots (coffee line): stagger so it doesn’t mirror the title exactly */
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots--secondary span:nth-child(1) {
+    animation-delay: 0.22s;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots--secondary span:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+#lmat_page_translation_strings_model .lmat_page_translation_translate_progress__dots--secondary span:nth-child(3) {
+    animation-delay: 0.58s;
+}
+
+@keyframes lmat-translation-progress-dot {
+    0%,
+    100% {
+        opacity: 0.2;
+        transform: translateY(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-3px);
+    }
+}
+
+/* Strings modal — linear % bar: same diagonal stripe track as bulk translation */
+#lmat_page_translation_strings_model .lmat-page-translation-translate-progress-bar [class$="-translator_progress_bar"] {
+    position: relative;
+    background-color: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 20px;
+    text-align: center;
+    color: #fff;
+    background-size: 30px 30px;
+    background-image: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+    );
+    animation: lmat-page-translation-progress-stripes 1.25s linear infinite reverse;
+}
+
+#lmat_page_translation_strings_model .lmat-page-translation-translate-progress-bar [class$="-translator_progress"] {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: width 0.2s ease-in-out;
+    text-align: center;
+    box-sizing: border-box;
+    width: 0%;
+    background-color: #4caf50;
+    color: #fff;
+    font-weight: 600;
+}
+
 #lmat_page_translation_strings_model .lmat_page_translation_translate_element_wrapper {
     display: flex;
     justify-content: start;

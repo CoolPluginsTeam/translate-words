@@ -681,10 +681,27 @@ const StringPopUpBody = (props) => {
                 <>
                     {StringModalBodyNotice && <div className="lmat-page-translation-body-notice-wrapper"><StringModalBodyNotice /></div>}
                     {props.translatePendingStatus && (
-                        <div className="lmat_page_translation_translate_progress" key={props.modalRender}>
-                            {__("Automatic translation is in progress....", 'translate-words')}<br />
-                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'translate-words')}<br /><br />
-                            {__("Please do not leave this window or browser tab while translation is in progress...", 'translate-words')}
+                        <div
+                            className="lmat_page_translation_translate_progress"
+                            key={props.modalRender}
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {__("Automatic translation is in progress", 'translate-words')}
+                            <span className="lmat_page_translation_translate_progress__dots" aria-hidden="true">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
+                            <br />
+                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'translate-words')}
+                            <br /><br />
+                            {__("Please do not leave this window or browser tab while translation is in progress", 'translate-words')}
+                            <span className="lmat_page_translation_translate_progress__dots" aria-hidden="true">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
                         </div>
                     )}
                     {translationError && (
