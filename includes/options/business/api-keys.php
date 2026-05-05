@@ -17,6 +17,43 @@ use Linguator\Includes\Options\Options;
  */
 class Api_Keys extends Abstract_Option {
 	/**
+	 * Filter and label preferred models for a provider.
+	 *
+	 * @param string $provider_id Provider id used by WP AI Client (e.g. google).
+	 * @param array  $models      Discovered model ids (list<string>).
+	 * @return array<string,string> Map of model_id => label.
+	 */
+	private static function filtered_specific_models( string $provider_id, array $models ): array {
+		$provider_id = strtolower( trim( $provider_id ) );
+
+		$preferred = array();
+		if ( 'google' === $provider_id ) {
+			// Gemini models (labels shown in UI). We only show these if the provider reports them.
+			$preferred = array(
+				'gemini-3.1-pro-preview'        => __( 'gemini-3.1-pro-preview (Best Quality)', 'translate-words' ),
+				'gemini-3.1-flash-lite-preview' => __( 'gemini-3.1-flash-lite-preview (Fast & Cheap)', 'translate-words' ),
+				'gemma-3n-e4b-it'               => __( 'gemma-3n-e4b-it (Cheapest)', 'translate-words' ),
+				'gemini-2.5-pro'                => __( 'gemini-2.5-pro (Best Overall)', 'translate-words' ),
+				'gemini-2.5-flash'              => __( 'gemini-2.5-flash (Balanced)', 'translate-words' ),
+				'gemini-3-flash-preview'        => __( 'gemini-3-flash-preview (Recommended)', 'translate-words' ),
+				'gemini-2.5-pro-preview-tts'    => __( 'gemini-2.5-pro-preview-tts (High Accuracy)', 'translate-words' ),
+			);
+		}
+
+		if ( empty( $preferred ) ) {
+			return array();
+		}
+
+		if ( ! empty( $models ) ) {
+			$preferred = array_intersect_key(
+				$preferred,
+				array_flip( array_values( $models ) )
+			);
+		}
+
+		return $preferred;
+	}
+	/**
 	 * Returns option key.
 	 *
 	 * @return string
@@ -86,6 +123,71 @@ class Api_Keys extends Abstract_Option {
 	}
 
 	/**
+	 * Sub-key of {@see Options::OPTION_NAME} for the last Gemini model list (updated when the key is saved / discovery runs).
+	 */
+	private static function gemini_models_list_option(): string {
+		return 'lmat_gemini_models_list';
+	}
+
+	/**
+	 * @param string               $api_key Raw Gemini API key.
+	 * @param array<string|int,mixed> $gemini Same shape as REST `available_models.gemini`.
+	 */
+	public static function persist_gemini_models_list( string $api_key, array $gemini ): void {
+		$key = trim( $api_key );
+		if ( '' === $key ) {
+			self::clear_gemini_models_list();
+			return;
+		}
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		if ( ! is_array( $linguator ) ) {
+			$linguator = array();
+		}
+		$linguator[ self::gemini_models_list_option() ] = array(
+			'fingerprint' => md5( $key ),
+			'gemini'      => $gemini,
+		);
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
+	public static function clear_gemini_models_list(): void {
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		if ( ! is_array( $linguator ) || ! isset( $linguator[ self::gemini_models_list_option() ] ) ) {
+			return;
+		}
+		unset( $linguator[ self::gemini_models_list_option() ] );
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
+	/**
+	 * Models for GET /settings — DB only, no HTTP. Populated when a new key triggers discovery.
+	 *
+	 * @return array{gemini:array<int|string,mixed>}
+	 */
+	public static function get_stored_provider_models(): array {
+		$result = array(
+			'gemini' => array(),
+		);
+
+		$gemini_key = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+		if ( '' === $gemini_key ) {
+			return $result;
+		}
+
+		$fingerprint = md5( $gemini_key );
+		$linguator          = get_option( Options::OPTION_NAME, array() );
+		$model_list         = self::gemini_models_list_option();
+		$list      = ( is_array( $linguator ) && isset( $linguator[ $model_list ] ) && is_array( $linguator[ $model_list ] ) ) ? $linguator[ $model_list ] : null;
+
+		if ( is_array( $list ) && isset( $list['fingerprint'], $list['gemini'] ) && $list['fingerprint'] === $fingerprint ) {
+			$result['gemini'] = is_array( $list['gemini'] ) ? $list['gemini'] : array();
+			return $result;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Discover available text-generation models for supported providers via WP AI Client.
 	 *
 	 * Notes:
@@ -93,7 +195,7 @@ class Api_Keys extends Abstract_Option {
 	 * - Provider API keys are stored in WP options (connectors_ai_{provider}_key). When WP AI
 	 *   Client is available, it typically reads those connector settings to configure providers.
 	 *
-	 * @return array{gemini:list<string>}
+	 * @return array{gemini:array<int|string,mixed>} List of model ids, or id => label when {@see filtered_specific_models} matches.
 	 */
 	public static function discover_provider_models(): array {
 		$result = array(
@@ -109,28 +211,25 @@ class Api_Keys extends Abstract_Option {
 			return $result;
 		}
 
-		// Only attempt discovery when a provider key exists.
 		$get_provider_key = static function ( string $provider ): string {
 			$opt = 'connectors_ai_' . strtolower( $provider ) . '_key';
 			return trim( (string) get_option( $opt, '' ) );
 		};
+
+		$gemini_key = $get_provider_key( 'gemini' );
+		if ( '' === $gemini_key ) {
+			return $result;
+		}
 
 		try {
 			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
 			if ( ! $registry || ! method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
 				return $result;
 			}
-
-			// Ensure the registry is authenticated using our stored connector options.
-			// Without this, model listing can work right after "test" calls but fail after page reload.
 			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
-			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-				$gemini_key = $get_provider_key( 'gemini' );
 
-				if ( '' !== $gemini_key ) {
-					// WP AI Client provider id is "google" for Gemini.
-					$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
-				}
+			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
+				$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
 			}
 
 			$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
@@ -152,14 +251,38 @@ class Api_Keys extends Abstract_Option {
 
 			$load_models = static function ( string $provider_id ) use ( $registry, $requirements, $excluded_patterns ): array {
 				try {
-					$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
-					$ids             = array();
+					/*
+					 * Cap timeout only for Generative Language API requests (model discovery),
+					 * not for every outbound HTTP request while discovery runs.
+					 */
+					$timeout_filter = static function ( array $args, $url = '' ): array {
+						$url = is_string( $url ) ? $url : '';
+						if ( '' === $url || false === stripos( $url, 'generativelanguage.googleapis.com' ) ) {
+							return $args;
+						}
+						$args['timeout'] = isset( $args['timeout'] )
+							? min( (float) $args['timeout'], 4.0 )
+							: 4.0;
 
-					if ( is_array( $models_metadata ) ) {
-						foreach ( $models_metadata as $model ) {
-							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
-								$ids[] = (string) $model->getId();
-							}
+						return $args;
+					};
+
+					add_filter( 'http_request_args', $timeout_filter, 10, 2 );
+
+					try {
+						$models_metadata = $registry->findProviderModelsMetadataForSupport( $provider_id, $requirements );
+					} finally {
+						remove_filter( 'http_request_args', $timeout_filter, 10 );
+					}
+
+					if ( ! is_array( $models_metadata ) ) {
+						return array();
+					}
+
+					$ids = array();
+					foreach ( $models_metadata as $model ) {
+						if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
+							$ids[] = (string) $model->getId();
 						}
 					}
 
@@ -188,9 +311,10 @@ class Api_Keys extends Abstract_Option {
 				}
 			};
 
-			if ( '' !== $get_provider_key( 'gemini' ) ) {
-				$result['gemini'] = $load_models( 'google' );
-			}
+			$models           = $load_models( 'google' );
+			$filtered         = self::filtered_specific_models( 'google', $models );
+			$result['gemini'] = ! empty( $filtered ) ? $filtered : $models;
+			self::persist_gemini_models_list( $gemini_key, $result['gemini'] );
 		} catch ( \Throwable $e ) {
 			return $result;
 		}

@@ -4,10 +4,9 @@
  * @param {HTMLElement} container - The container element for translation.
  */
 const AddProgressBar = (provider) => {
-    console.log(provider);
     const providerName = {
-        gemini: "Gemini",
-        google: "Google",
+        gemini: "Google Gemini",
+        google: "Google Translate",
     }
 
     const progressBarSelector = "#lmat_page_translation_strings_model .lmat_page_translation_translate_progress";
@@ -15,14 +14,14 @@ const AddProgressBar = (provider) => {
     if (!document.querySelector(`#lmat-page-translation-${provider}-progress-bar`)) {
         const progressBar = jQuery(`
             <div id="lmat-page-translation-${provider}-progress-bar" class="lmat-page-translation-translate-progress-bar">
-                <div class="${provider}-translator_progress_bar" style="background-color: #f3f3f3;border-radius: 10px;overflow: hidden;margin: 1.5rem auto; width: 50%;">
-                <div class="${provider}-translator_progress" style="overflow: hidden;transition: width .2s ease-in-out; border-radius: 10px;text-align: center;width: 0%;height: 20px;box-sizing: border-box;background-color: #4caf50; color: #fff; font-weight: 600;"></div>
+                <div class="${provider}-translator_progress_bar" style="margin: 1.5rem auto; width: 50%;">
+                <div class="${provider}-translator_progress"></div>
                 </div>
                 <div style="display:none; color: white;" class="${provider}-translator-strings-count hidden">
                     Wahooo! You have saved your valuable time via auto translating 
                     <strong class="totalChars"></strong> characters using 
                     <strong>
-                        ${providerName[provider]} Translator
+                        ${providerName[provider]}
                     </strong>
                 </div>
             </div>

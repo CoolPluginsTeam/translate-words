@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button, Checkbox, Container, Input, Label, RadioButton, Switch, Badge } from '@bsf/force-ui'
 import { Languages, Link } from 'lucide-react';
 import { RiDraftLine } from "react-icons/ri";
@@ -9,102 +9,8 @@ import { toast } from 'sonner'
 import { ChromeIcon } from '../../../../../assets/logo/chrome';
 import { GoogleIcon } from '../../../../../assets/logo/google';
 import { GeminiIcon } from '../../../../../assets/logo/gemini';
-
-
-
-const ChromeLocalAINotice = () => {
-    const [showBrowserNotice, setShowBrowserNotice] = React.useState(false);
-    const [showSecureNotice, setShowSecureNotice] = React.useState(false);
-    const [showApiNotice, setShowApiNotice] = React.useState(false);
-
-    React.useEffect(() => {
-        const safeBrowser = window?.location?.protocol === "https:";
-        const browserContentSecure = window?.isSecureContext;
-        // Secure connection + API availability check
-        const apiAvailable =
-            ("translation" in window?.self &&
-                "createTranslator" in window?.self?.translation) ||
-            ("ai" in window?.self && "translator" in window?.self?.ai) ||
-            ("Translator" in window?.self && "create" in window?.self?.Translator);
-
-        // Browser check (must be Chrome, not Edge or others)
-        if (
-            !window?.hasOwnProperty("chrome") ||
-            !navigator?.userAgent?.includes("Chrome") ||
-            navigator?.userAgent?.includes("Edg")
-        ) {
-            setShowBrowserNotice(true);
-        } else if (!apiAvailable && !safeBrowser && !browserContentSecure) {
-            setShowSecureNotice(true);
-        } else if (!apiAvailable) {
-            setShowApiNotice(true);
-        }
-    }, []);
-
-    if (!showBrowserNotice && !showSecureNotice && !showApiNotice) {
-        return null; // no notice needed
-    }
-
-    let message = '';
-    let heading = '';
-
-    if (showBrowserNotice) {
-        heading = __('⚠️ Important Notice: Browser Compatibility', 'translate-words');
-        message = `<ul className="list-disc ml-5 mt-2"><li>
-                ${sprintf(__('The %sTranslator API%s, which uses Chrome Local AI Models, is designed exclusively for use with the %sChrome browser%s.', 'translate-words'), '<strong>', '</strong>', '<strong>', '</strong>')}
-              </li>
-              <li>
-                ${sprintf(__('If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.', 'translate-words'))}
-              </li>
-              <li>
-                ${sprintf(__('Learn more in the %sofficial documentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank" rel="noreferrer" class="underline text-blue-600">', '</a>')}
-              </li>
-      </ul>`;
-    } else if (showSecureNotice) {
-        heading = __('⚠️ Important Notice: Secure Connection Required', 'translate-words');
-        message = `<ul className="list-disc ml-5 mt-2">
-              <li>
-                ${sprintf(__('The %sTranslator API%s requires a secure (HTTPS) connection to function properly.', 'translate-words'), '<strong>', '</strong>')}
-              </li>
-              <li>
-                ${__('If you are on an insecure connection (HTTP), the API will not work.', 'translate-words')}
-              </li>
-            </ul>
-            <p className="mt-2">${__('👉 How to Fix This:', 'translate-words')}</p>
-            <ol className="list-decimal ml-5 mt-2">
-              <li>${sprintf(__('Switch to a secure connection by using %s.', 'translate-words'), '<strong><code>https://</code></strong>')}
-              </li>
-              <li>
-                ${sprintf(__('Alternatively, add this URL to Chrome’s list of insecure origins treated as secure: %s.', 'translate-words'), '<strong><code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></strong>')}
-                <br />
-                ${__('Copy the URL and then open a new window and paste this URL to access the settings.', 'translate-words')}
-              </li>
-            </ol>`;
-    } else if (showApiNotice) {
-        heading = __('⚠️ Important Notice: API Availability', 'translate-words');
-        message = `<ol>
-                    <li>${sprintf(__('Open this URL in a new Chrome tab: %s. Copy this URL and then open a new window and paste this URL to access the settings.', 'translate-words'), '<strong><code>chrome://flags/#translation-api</code></strong>')}</li>
-                    <li>${sprintf(__('Ensure that the %sExperimental translation API%s option is set to <strong>Enabled</strong>.', 'translate-words'), '<strong>', '</strong>')}</li>
-                    <li>${sprintf(__('After change the setting, Click on the %sRelaunch%s button to apply the changes.', 'translate-words'), '<strong>', '</strong>')}</li>
-                    <li>${__('The Translator AI modal should now be enabled and ready for use.', 'translate-words')}</li>
-                </ol>
-                <p>${sprintf(__('For more information, please refer to the %sdocumentation%s.', 'translate-words'), '<a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">', '</a>')}</p>   
-                <p>${__('If the issue persists, please ensure that your browser is up to date and restart your browser.', 'translate-words')}</p>
-                <p>${sprintf(__('If you continue to experience issues after following the above steps, please %sopen a support ticket%s with our team. We are here to help you resolve any problems and ensure a smooth translation experience.', 'translate-words'), '<a href="https://my.coolplugins.net/account/support-tickets/" target="_blank" rel="noopener">', '</a>')}</p>`;
-    }
-
-    return (
-        <div
-            className="flex flex-col gap-4 p-6 rounded-lg"
-            style={{ border: "1px solid #e5e7eb", background: "#fff5f5", margin: "0 1.5rem 1.5rem 1.5rem" }}
-        >
-            <div className="text-red-600 text-sm leading-6">
-                <h3 className="font-semibold">{heading}</h3>
-                <div dangerouslySetInnerHTML={{ __html: message }} />
-            </div>
-        </div>
-    );
-};
+import ApiKey from './api-key';
+import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 
 const TranslationConfig = ({ data, setData }) => {
 
@@ -118,6 +24,15 @@ const TranslationConfig = ({ data, setData }) => {
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [apiKeyDirty, setApiKeyDirty] = useState(false)
+    const geminiApiKeyRef = useRef(null)
+
+    useEffect(() => {
+        if (!geminiTranslation) {
+            setApiKeyDirty(false)
+        }
+    }, [geminiTranslation])
 
     useEffect(() => {
         let sameChecker = {
@@ -153,20 +68,33 @@ const TranslationConfig = ({ data, setData }) => {
         for (const key in sameChecker) {
             if (!sameChecker[key]) {
                 flag = false;
-                setHandleButtonDisabled(false)
                 break;
             }
         }
-        if (flag) {
-            setHandleButtonDisabled(true)
-        }
-    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption])
+        const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
+        setHandleButtonDisabled(flag && !(geminiSectionOpen && apiKeyDirty))
+    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
     async function SaveSettings() {
         try {
+            if (isSaving) return
+            setIsSaving(true)
             let apiBody;
+            const apiKeyPayload =
+                wpAiClientAvailable && geminiTranslation && geminiApiKeyRef.current?.getPendingPayload
+                    ? geminiApiKeyRef.current.getPendingPayload()
+                    : null;
+
+            // Require Gemini API key when enabling Gemini.
+            if (wpAiClientAvailable && geminiTranslation) {
+                const pendingGeminiKey = (apiKeyPayload?.keys?.gemini || '').toString().trim()
+                const hasConfiguredGeminiKey = Boolean(geminiApiKeyRef.current?.hasConfiguredKey?.('gemini'))
+                if (!hasConfiguredGeminiKey && pendingGeminiKey === '') {
+                    throw new Error(__('Please add a Gemini API key to continue.', 'translate-words'))
+                }
+            }
 
             apiBody = {
                 ai_translation_configuration: {
@@ -180,6 +108,12 @@ const TranslationConfig = ({ data, setData }) => {
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption
                 }
+            }
+            if (apiKeyPayload?.keys) {
+                apiBody.keys = apiKeyPayload.keys
+            }
+            if (apiKeyPayload?.models) {
+                apiBody.models = apiKeyPayload.models
             }
 
             setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
@@ -195,7 +129,7 @@ const TranslationConfig = ({ data, setData }) => {
                     ...apiBody
                 }))
             }
-            //API Call
+            //API Call (single settings request includes Gemini keys/models when present)
             const response = apiFetch({
                 path: 'lmat/v1/settings',
                 method: 'POST',
@@ -205,8 +139,16 @@ const TranslationConfig = ({ data, setData }) => {
                 },
                 body: JSON.stringify(apiBody)
             })
-                .then((response) => {
-                    setData(prev => ({ ...prev, ...response }))
+                .then((settingsResponse) => {
+                    setData(prev => ({ ...prev, ...settingsResponse }))
+                    if (apiKeyPayload && geminiApiKeyRef.current?.syncAfterParentSave) {
+                        geminiApiKeyRef.current.syncAfterParentSave({
+                            keys: apiBody.keys,
+                            models: apiBody.models,
+                        }, settingsResponse)
+                        setApiKeyDirty(false)
+                    }
+                    return settingsResponse
                 })
                 .catch(error => {
                     // Handle general API errors
@@ -221,9 +163,18 @@ const TranslationConfig = ({ data, setData }) => {
                 success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message
             })
-            setHandleButtonDisabled(true)
+            await response
+                .then(() => {
+                    setHandleButtonDisabled(true)
+                })
+                // Avoid double notifications: toast.promise already shows the error message.
+                .catch(() => { })
+                .finally(() => {
+                    setIsSaving(false)
+                })
 
         } catch (error) {
+            setIsSaving(false)
             // Handle domain validation errors
             if (error.message.includes(__("Linguator was unable to access", "translate-words"))) {
                 toast.error(error.message);
@@ -265,7 +216,7 @@ const TranslationConfig = ({ data, setData }) => {
                 <Container.Item className='flex w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Translation Settings', 'translate-words')}</h1>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"
@@ -335,35 +286,48 @@ const TranslationConfig = ({ data, setData }) => {
                                 />
                             </Container.Item>
                         </div>
-                        {chromeLocalAITranslation && <ChromeLocalAINotice />}
+                        {chromeLocalAITranslation && (
+                            <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
+                        )}
                     </div>
                     {wpAiClientAvailable && (
-                        <>
-                            <div style={{ backgroundColor: "#fbfbfb" }}>
-                                <div className='switcher p-6 rounded-lg'>
-                                    <Container.Item>
-                                        <h3 className='flex items-center gap-2'>
-                                            <GeminiIcon className='w-5 h-5' />
-                                            {__('Gemini', 'translate-words')}
-                                        </h3>
-                                        <p>
-                                            {__('Gemini uses your configured API key to translate text.', 'translate-words')}
-                                        </p>
-                                    </Container.Item>
-                                    <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
-                                        <Switch
-                                            aria-label="Switch Element"
-                                            id="gemini-translation"
-                                            onChange={() => {
-                                                setGeminiTranslation(!geminiTranslation)
-                                            }}
-                                            value={geminiTranslation}
-                                            size="sm"
-                                        />
-                                    </Container.Item>
-                                </div>
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <GeminiIcon className='w-5 h-5' />
+                                        {__('Google Gemini AI', 'translate-words')}
+                                    </h3>
+                                    <p className="m-0">
+                                        {__('Google Gemini AI uses Google Gemini API to translate your content.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="gemini-translation"
+                                        onChange={() => {
+                                            setGeminiTranslation(!geminiTranslation)
+                                        }}
+                                        value={geminiTranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
                             </div>
-                        </>
+                            {geminiTranslation && (
+                                <div
+                                    className="px-6 pb-6 pt-0"
+                                >
+                                    <ApiKey
+                                        ref={geminiApiKeyRef}
+                                        data={data}
+                                        setData={setData}
+                                        embedded
+                                        onPendingChange={setApiKeyDirty}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </Container.Item>
@@ -429,7 +393,7 @@ const TranslationConfig = ({ data, setData }) => {
             <Container className='flex items-center justify-end'>
                 <Container.Item className='flex gap-6'>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"

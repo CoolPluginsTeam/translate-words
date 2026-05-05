@@ -25,6 +25,7 @@ const General = ({ data, setData }) => {
     const [selectedTaxonomies, setSelectedTaxonomies] = useState(data.taxonomies); //Selected Custom Taxonomies
     const disabledPostTypes= data.disabled_post_types || []; //Disabled Post Types (programmatically active)
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
     const [selectAllSync,setSelectAllSync] = useState(false);
     const [selectAllPostTypes, setSelectAllPostTypes] = useState(false);
     const [selectAllTaxonomies, setSelectAllTaxonomies] = useState(false);
@@ -326,6 +327,8 @@ const General = ({ data, setData }) => {
     //Save Setting Function 
     async function SaveSettings() {
         try {
+            if (isSaving) return;
+            setIsSaving(true);
             let reloadCheck = false;
             let apiBody;
             if (forceLang === 3) {
@@ -429,9 +432,17 @@ const General = ({ data, setData }) => {
                 success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message
             })
-            setHandleButtonDisabled(true)
+            await response
+                .then(() => {
+                    setHandleButtonDisabled(true)
+                })
+                .catch(() => { })
+                .finally(() => {
+                    setIsSaving(false)
+                })
             
         } catch (error) {
+            setIsSaving(false)
             // Handle domain validation errors
             if (error.message.includes(__("Please enter valid URLs", "translate-words")) ||
                 error.message.includes(__("Domain URL is required", "translate-words")) ||
@@ -484,7 +495,7 @@ const General = ({ data, setData }) => {
                     <Container.Item className='flex w-full justify-between px-4 gap-6'>
                         <h1 className='font-bold'>General Settings</h1>
                         <Button
-                            disabled={handleButtonDisabled}
+                            disabled={handleButtonDisabled || isSaving}
                             className=""
                             iconPosition="left"
                             size="md"
@@ -908,7 +919,7 @@ const General = ({ data, setData }) => {
                 <Container className='flex items-center justify-end'>
                     <Container.Item className='flex gap-6'>
                         <Button
-                            disabled={handleButtonDisabled}
+                            disabled={handleButtonDisabled || isSaving}
                             className=""
                             iconPosition="left"
                             size="md"

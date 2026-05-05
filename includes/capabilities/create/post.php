@@ -42,7 +42,6 @@ class Post extends Abstract_Object {
 	public function get_language( User $user, int $id = 0 ): Linguator_Language {
 		/** Get the default language from the system as a final fallback. */
 		$default_language = $this->model->get_default_language();
-
 		// 1. If a language is directly picked in admin (in GET['new_lang']), use it.
 		if ( ! empty( $_GET['new_lang'] ) && $lang = $this->model->get_language( sanitize_key( wp_unslash( $_GET['new_lang'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			return $lang;

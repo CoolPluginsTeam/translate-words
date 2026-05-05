@@ -22,7 +22,7 @@ export default (props) => {
             title: "Google Translate",
             SettingBtnText: "Translate",
             serviceLabel: "Google Translate",
-            Docs: "https://docs.coolplugins.net/doc/google-translate-for-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=popup_google_pro",
+            Docs: "https://linguator.com/docs/automatic-translation-via-google-translate-widget/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=popup_google_pro",
             heading: __("Choose Language", "translate-words"),
             BetaEnabled: false,
             ButtonDisabled: props.googleButtonDisabled,
@@ -35,7 +35,7 @@ export default (props) => {
             SettingBtnText: "Translate",
             serviceLabel: "Chrome AI Translator",
             heading: sprintf(__("Translate Using %s", "translate-words"), "Chrome built-in API"),
-            Docs: "https://docs.coolplugins.net/doc/chrome-ai-translation-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=popup_chrome_pro",
+            Docs: "https://linguator.com/docs/automatic-translation-via-chrome-ai/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=popup_chrome_pro",
             BetaEnabled: true,
             ButtonDisabled: props.localAiTranslatorButtonDisabled,
             ErrorMessage: props.localAiTranslatorButtonDisabled ? <div className="lmat-page-translation-provider-error button button-primary" onClick={() => openErrorModalHandler("localAiTranslator")}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
@@ -47,10 +47,10 @@ export default (props) => {
             SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.gemini ? "Translate" : "Add API Key",
             serviceLabel: "Gemini",
             heading: __("Translate Using Gemini", "translate-words"),
-            Docs: "https://docs.coolplugins.net/doc/gemini-translation-polylang/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs",
+            Docs: "https://linguator.com/docs/automatic-translation-via-googe-gemini/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs",
             BetaEnabled: false,
             ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.gemini,
-            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=api-keys`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Add API Key', 'translate-words')}</a> : <></>,
+            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />
         }
     };

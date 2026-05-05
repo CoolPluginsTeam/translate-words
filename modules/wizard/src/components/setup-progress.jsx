@@ -11,6 +11,8 @@ import Default from "./default"
 import URLModifications from "./url-modifications"
 import AiTranslation from "./ai-translation"
 import LanguageSwitcher from "./language-switcher"
+import apiFetch from "@wordpress/api-fetch"
+import { getNonce } from "../utils"
 
 //Component router for setup 
 const SetupFileRouting = () => {
@@ -125,7 +127,33 @@ const SetupProgress = ({lmat_setup_data}) => {
             </div>
             {setupProgress != "ready" &&
                 <div className='text-center text-sm' style={{marginTop:"14px"}}>
-                    <a style={{ color: "gray" }} className='' onClick={()=>localStorage.removeItem("setupProgress")} href={`${currentDomain}admin.php?page=lmat_settings`}>{__("Skip","translate-words")}</a>
+                    <a
+                        style={{ color: "gray" }}
+                        className=''
+                        href={`${currentDomain}admin.php?page=lmat_settings`}
+                        onClick={async (e) => {
+                            e.preventDefault()
+                            localStorage.removeItem("setupProgress")
+                            try {
+                                await apiFetch({
+                                    path: 'lmat/v1/settings/setup-complete',
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-WP-Nonce': getNonce()
+                                    },
+                                    body: JSON.stringify({ complete: true })
+                                })
+                            } catch (error) {
+                                // If this fails, still let the user exit the wizard.
+                                console.error('Failed to mark setup as complete:', error)
+                            } finally {
+                                window.location.href = `${currentDomain}admin.php?page=lmat_settings`
+                            }
+                        }}
+                    >
+                        {__("Skip","translate-words")}
+                    </a>
                 </div>
             }
         </div>

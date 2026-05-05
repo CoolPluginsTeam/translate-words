@@ -40,7 +40,10 @@ const StringPopUpBody = (props) => {
         const onTranslationError = (e) => {
             const msg = e?.detail?.message;
             if (typeof msg === 'string' && msg.trim() !== '') {
-                setTranslationError(msg);
+                setTranslationError({
+                    message: msg,
+                    link: e?.detail?.link || null,
+                });
             }
         };
         const onTranslationErrorClear = () => setTranslationError(null);
@@ -678,10 +681,27 @@ const StringPopUpBody = (props) => {
                 <>
                     {StringModalBodyNotice && <div className="lmat-page-translation-body-notice-wrapper"><StringModalBodyNotice /></div>}
                     {props.translatePendingStatus && (
-                        <div className="lmat_page_translation_translate_progress" key={props.modalRender}>
-                            {__("Automatic translation is in progress....", 'translate-words')}<br />
-                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'translate-words')}<br /><br />
-                            {__("Please do not leave this window or browser tab while translation is in progress...", 'translate-words')}
+                        <div
+                            className="lmat_page_translation_translate_progress"
+                            key={props.modalRender}
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {__("Automatic translation is in progress", 'translate-words')}
+                            <span className="lmat_page_translation_translate_progress__dots" aria-hidden="true">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
+                            <br />
+                            {__("It will take few minutes, enjoy ☕ coffee in this time!", 'translate-words')}
+                            <br /><br />
+                            {__("Please do not leave this window or browser tab while translation is in progress", 'translate-words')}
+                            <span className="lmat_page_translation_translate_progress__dots" aria-hidden="true">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
                         </div>
                     )}
                     {translationError && (
@@ -693,7 +713,15 @@ const StringPopUpBody = (props) => {
                         >
                             <div className="lmat_page_translation_error_popup_card notice notice-error">
                                 <p id="lmat_page_translation_error_popup_title" className="lmat_page_translation_error_popup_message">
-                                    {translationError}
+                                    {translationError?.message || ""}
+                                    {translationError?.link?.href && (
+                                        <>
+                                            {" "}
+                                            <a href={translationError.link.href} target="_blank" rel="noreferrer">
+                                                {translationError?.link?.text || translationError.link.href}
+                                            </a>
+                                        </>
+                                    )}
                                 </p>
                             </div>
                         </div>

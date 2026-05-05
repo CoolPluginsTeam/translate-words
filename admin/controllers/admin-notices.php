@@ -171,6 +171,9 @@ class Linguator_Admin_Notices {
 			// Handle all review related notices
 			if (in_array($notice, array('already-rated', 'not-interested'))) {
 				self::dismiss('review'); 
+			} elseif ( 'wizard' === $notice ) {
+				update_option( 'lmat_setup_complete', true );
+				self::dismiss( $notice );
 			} else {
 				self::dismiss( $notice );
 			}

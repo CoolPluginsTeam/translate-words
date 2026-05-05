@@ -2317,6 +2317,11 @@
   padding-right: 1.375rem;
 }
 
+.lmat-styles .px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 .lmat-styles .px-8 {
   padding-left: 2rem;
   padding-right: 2rem;
@@ -2387,6 +2392,10 @@
   padding-bottom: 1.25rem;
 }
 
+.lmat-styles .pb-6 {
+  padding-bottom: 1.5rem;
+}
+
 .lmat-styles .pl-10 {
   padding-left: 2.5rem;
 }
@@ -2445,6 +2454,10 @@
 
 .lmat-styles .pr-9 {
   padding-right: 2.25rem;
+}
+
+.lmat-styles .pt-0 {
+  padding-top: 0px;
 }
 
 .lmat-styles .pt-2 {

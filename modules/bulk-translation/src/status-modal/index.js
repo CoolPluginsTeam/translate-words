@@ -7,6 +7,9 @@ import ErrorModalBox from '../components/error-modal-box/index.js';
 import { store } from '../redux-store/store.js';
 import DOMPurify from 'dompurify';
 
+/** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
+const PURIFY_ERROR_HTML = { ADD_ATTR: ['target', 'rel'] };
+
 const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     const storeDispatch = useDispatch();
@@ -298,7 +301,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                     </td>
                                                 </tr>
                                                 <tr key={key}>
-                                                    <td colSpan="4" style={{textAlign: 'center' , width: '100%'}} className={`${prefix}-error-message`} dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(errorPostsInfo[key].errorMessage)}}></td>
+                                                    <td colSpan="4" style={{textAlign: 'center' , width: '100%'}} className={`${prefix}-error-message`} dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(errorPostsInfo[key].errorMessage, PURIFY_ERROR_HTML)}}></td>
                                                 </tr>
                                                 </React.Fragment>
                                             );
@@ -328,7 +331,13 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                 </td>
                                                 {info.status === 'error' ?
                                                 <>
-                                                    <td colSpan={`${info.errorHtml ? '2' : '3'}`}>{info.errorMessage}</td>
+                                                    <td colSpan={`${info.errorHtml ? '2' : '3'}`}>
+                                                        {info.errorAllowHtml ? (
+                                                            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(info.errorMessage, PURIFY_ERROR_HTML) }} />
+                                                        ) : (
+                                                            info.errorMessage
+                                                        )}
+                                                    </td>
                                                     {info.errorHtml && <td colSpan="1" onClick={()=>{handleErrorModal(info)}}><button className={`${prefix}-status-error-button`}>{__('Error Details', 'translate-words')}</button></td>}
                                                 </> :
                                                 <>

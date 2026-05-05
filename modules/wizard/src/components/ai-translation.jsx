@@ -1,7 +1,7 @@
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
-import { Switch } from '@bsf/force-ui';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Input, Switch } from '@bsf/force-ui';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { setupContext } from '../pages/setup-page';
@@ -11,307 +11,275 @@ import { getNonce } from '../utils';
 import { ChromeIcon } from '../../../../assets/logo/chrome';
 import { GeminiIcon } from '../../../../assets/logo/gemini';
 import { GoogleIcon } from '../../../../assets/logo/google';
-
-const ChromeLocalAINotice = () => {
-	const noticeType = useMemo(() => {
-		const isHttps = window?.location?.protocol === 'https:';
-		const isSecureContext = Boolean( window?.isSecureContext );
-
-		const apiAvailable =
-			( 'translation' in window?.self && 'createTranslator' in window?.self?.translation ) ||
-			( 'ai' in window?.self && 'translator' in window?.self?.ai ) ||
-			( 'Translator' in window?.self && 'create' in window?.self?.Translator );
-
-		const hasChromeObject = Object.prototype.hasOwnProperty.call( window ?? {}, 'chrome' );
-		const userAgent = navigator?.userAgent ?? '';
-		const isChrome = hasChromeObject && userAgent.includes( 'Chrome' ) && ! userAgent.includes( 'Edg' );
-
-		if ( ! isChrome ) {
-			return 'browser';
-		}
-
-		if ( ! apiAvailable && ! isHttps && ! isSecureContext ) {
-			return 'secure';
-		}
-
-		if ( ! apiAvailable ) {
-			return 'api';
-		}
-
-		return null;
-	}, [] );
-
-	if ( ! noticeType ) {
-		return null;
-	}
-
-	return (
-		<div
-			className="flex flex-col gap-4 p-6 rounded-lg"
-			style={ { border: '1px solid #e5e7eb', background: '#fff5f5' } }
-		>
-			<div className="text-red-600 text-sm leading-6">
-				<h3 className="font-semibold">
-					{ noticeType === 'browser' && __( 'Important Notice: Browser Compatibility', 'translate-words' ) }
-					{ noticeType === 'secure' && __( 'Important Notice: Secure Connection Required', 'translate-words' ) }
-					{ noticeType === 'api' && __( 'Important Notice: API Availability', 'translate-words' ) }
-				</h3>
-
-				{ noticeType === 'browser' && (
-					<ul className="list-disc ml-5 mt-2">
-						<li>
-							{ __( 'The Translator API (Chrome Local AI Models) is designed for the Chrome browser.', 'translate-words' ) }
-						</li>
-						<li>
-							{ __(
-								'If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.',
-								'translate-words'
-							) }
-						</li>
-						<li>
-							<a
-								className="underline text-blue-600"
-								href="https://developer.chrome.com/docs/ai/translator-api"
-								rel="noreferrer noopener"
-								target="_blank"
-							>
-								{ __( 'Learn more in the official documentation.', 'translate-words' ) }
-							</a>
-						</li>
-					</ul>
-				) }
-
-				{ noticeType === 'secure' && (
-					<>
-						<ul className="list-disc ml-5 mt-2">
-							<li>
-								{ __( 'The Translator API requires a secure (HTTPS) connection to function properly.', 'translate-words' ) }
-							</li>
-							<li>{ __( 'If you are on an insecure connection (HTTP), the API will not work.', 'translate-words' ) }</li>
-						</ul>
-
-						<p className="mt-2">{ __( 'How to fix this:', 'translate-words' ) }</p>
-						<ol className="list-decimal ml-5 mt-2">
-							<li>
-								{ __( 'Use a secure connection (https://).', 'translate-words' ) }
-							</li>
-							<li>
-								{ __( 'Or add your site to Chrome’s “insecure origins treated as secure”.', 'translate-words' ) }{' '}
-								<code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
-							</li>
-						</ol>
-					</>
-				) }
-
-				{ noticeType === 'api' && (
-					<>
-						<ol className="list-decimal ml-5 mt-2">
-							<li>
-								{ __( 'Open this URL in a new Chrome tab:', 'translate-words' ) }{' '}
-								<code>chrome://flags/#translation-api</code>
-							</li>
-							<li>
-								{ __( 'Set “Experimental translation API” to Enabled.', 'translate-words' ) }
-							</li>
-							<li>
-								{ __( 'Click Relaunch to apply changes.', 'translate-words' ) }
-							</li>
-							<li>
-								{ __( 'The Translator AI option should now be enabled.', 'translate-words' ) }
-							</li>
-						</ol>
-						<p className="mt-2">
-							<a
-								className="underline text-blue-600"
-								href="https://developer.chrome.com/docs/ai/translator-api"
-								rel="noreferrer noopener"
-								target="_blank"
-							>
-								{ __( 'Documentation', 'translate-words' ) }
-							</a>
-						</p>
-						<p>
-							{ __( 'If the issue persists, please ensure Chrome is up to date and restart the browser.', 'translate-words' ) }
-						</p>
-						<p>
-							<a
-								className="underline text-blue-600"
-								href="https://my.coolplugins.net/account/support-tickets/"
-								rel="noreferrer noopener"
-								target="_blank"
-							>
-								{ __( 'Open a support ticket', 'translate-words' ) }
-							</a>
-						</p>
-					</>
-				) }
-			</div>
-		</div>
-	);
-};
+import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
 
 const AiTranslation = () => {
-	const { setSetupProgress, data, setData } = useContext( setupContext );
+	const { setSetupProgress, data, setData } = useContext(setupContext);
 	const aiTranslation = data?.ai_translation_configuration ?? {};
 	const provider = aiTranslation?.provider ?? {};
 
-	const wpAiClientAvailable = Boolean( window?.lmat_setup?.wp_ai_client_available );
+	const wpAiClientAvailable = Boolean(window?.lmat_setup?.wp_ai_client_available);
 
-	const [ googleMachineTranslation, setGoogleMachineTranslation ] = useState( Boolean( provider?.google ) );
-	const [ chromeLocalAITranslation, setChromeLocalAITranslation ] = useState( Boolean( provider?.chrome_local_ai ) );
-	const [ geminiTranslation, setGeminiTranslation ] = useState( Boolean( provider?.gemini ) );
+	const [googleMachineTranslation, setGoogleMachineTranslation] = useState(Boolean(provider?.google));
+	const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(Boolean(provider?.chrome_local_ai));
+	const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini));
+	const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState('');
+	const geminiMaskedKey = (data?.api_keys_configuration?.keys?.gemini || '').toString();
+	const hasGeminiSavedKey = geminiMaskedKey.trim() !== '';
+	const geminiApiKeyDisplayValue =
+		(geminiApiKeyDraft || '') === '' && hasGeminiSavedKey ? geminiMaskedKey : geminiApiKeyDraft;
+	const geminiApiKeyInputDisabled = hasGeminiSavedKey;
 
-	const lastSavedRef = useRef( {
-		chrome_local_ai: Boolean( provider?.chrome_local_ai ),
-		google: Boolean( provider?.google ),
-		gemini: Boolean( provider?.gemini ),
-	} );
+	const lastSavedRef = useRef({
+		chrome_local_ai: Boolean(provider?.chrome_local_ai),
+		google: Boolean(provider?.google),
+		gemini: Boolean(provider?.gemini),
+	});
 
-	useEffect( () => {
-		setGoogleMachineTranslation( Boolean( provider?.google ) );
-		setChromeLocalAITranslation( Boolean( provider?.chrome_local_ai ) );
-		setGeminiTranslation( Boolean( provider?.gemini ) );
+	useEffect(() => {
+		setGoogleMachineTranslation(Boolean(provider?.google));
+		setChromeLocalAITranslation(Boolean(provider?.chrome_local_ai));
+		setGeminiTranslation(Boolean(provider?.gemini));
 
 		lastSavedRef.current = {
-			chrome_local_ai: Boolean( provider?.chrome_local_ai ),
-			google: Boolean( provider?.google ),
-			gemini: Boolean( provider?.gemini ),
+			chrome_local_ai: Boolean(provider?.chrome_local_ai),
+			google: Boolean(provider?.google),
+			gemini: Boolean(provider?.gemini),
 		};
-	}, [ provider ] );
+	}, [provider]);
 
 	const handleBack = () => {
 		const mediaEnabled = window?.lmat_setup?.media === '1';
 
-		if ( mediaEnabled ) {
-			setSetupProgress( 'media' );
-			localStorage.setItem( 'setupProgress', 'media' );
+		if (mediaEnabled) {
+			setSetupProgress('media');
+			localStorage.setItem('setupProgress', 'media');
 			return;
 		}
 
-		setSetupProgress( 'url' );
-		localStorage.setItem( 'setupProgress', 'url' );
+		setSetupProgress('url');
+		localStorage.setItem('setupProgress', 'url');
 	};
 
 	const saveAITranslation = async () => {
 		try {
-			const nextProvider = {
-				chrome_local_ai: chromeLocalAITranslation,
-				google: googleMachineTranslation,
-				...( wpAiClientAvailable
-					? {
-							gemini: geminiTranslation,
-						}
-					: {} ),
-			};
-
-			const prevProvider = lastSavedRef.current ?? {};
-			const hasChanges =
-				prevProvider.google !== nextProvider.google ||
-				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
-				( wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini );
-
-			if ( hasChanges ) {
-				const response = await apiFetch( {
+			// If Gemini is enabled and user provided an API key in the wizard,
+			// validate it using the same endpoint/settings-panel logic before continuing.
+			const trimmedGeminiKey = (geminiApiKeyDraft || '').trim();
+			if (wpAiClientAvailable && geminiTranslation && '' !== trimmedGeminiKey) {
+				const resp = await apiFetch({
 					path: 'lmat/v1/settings',
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						'X-WP-Nonce': getNonce(),
 					},
-					body: JSON.stringify( {
+					body: JSON.stringify({
+						keys: {
+							gemini: trimmedGeminiKey,
+						},
+					}),
+				});
+				// Sync masked key back into wizard state.
+				if (resp) {
+					setData(resp);
+				}
+				setGeminiApiKeyDraft('');
+			}
+
+			const nextProvider = {
+				chrome_local_ai: chromeLocalAITranslation,
+				google: googleMachineTranslation,
+				...(wpAiClientAvailable
+					? {
+						gemini: geminiTranslation,
+					}
+					: {}),
+			};
+
+			const prevProvider = lastSavedRef.current ?? {};
+			const hasChanges =
+				prevProvider.google !== nextProvider.google ||
+				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
+				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini);
+
+			if (hasChanges) {
+				const response = await apiFetch({
+					path: 'lmat/v1/settings',
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': getNonce(),
+					},
+					body: JSON.stringify({
 						ai_translation_configuration: {
 							provider: nextProvider,
 						},
-					} ),
-				} );
+					}),
+				});
 
 				lastSavedRef.current = { ...nextProvider };
-				setData( response );
+				setData(response);
 			}
 
-			setSetupProgress( 'language_switcher' );
-			localStorage.setItem( 'setupProgress', 'language_switcher' );
-		} catch ( error ) {
-			toast.error( __( 'Please try again later', 'translate-words' ) );
+			setSetupProgress('language_switcher');
+			localStorage.setItem('setupProgress', 'language_switcher');
+		} catch (error) {
+			toast.error(error?.message || __('Please try again later', 'translate-words'));
 		}
 	};
 
 	return (
 		<div className="mx-auto p-10 max-w-[600px] min-h-[40vh] bg-white shadow-sm flex flex-col">
 			<div className="flex-grow">
-				<h2>{ __( 'Translation Configuration', 'translate-words' ) }</h2>
+				<h2>{__('Translation Configuration', 'translate-words')}</h2>
 				<p className="text-justify text-sm/6">
-					{ __(
-						'Linguator lets you translate content using AI. You can translate the content of your website using AI.',
-						'translate-words'
-					) }
-				</p>
-				<p className="text-justify text-sm/6">
-					{ __(
+					{__(
 						'Turn on AI translation if you need to translate the content of your website using AI. If not, you can leave it off.',
 						'translate-words'
-					) }
+					)}
 				</p>
 
 				<div
 					className="flex justify-between items-center p-6 rounded-lg"
-					style={ { border: '1px solid #e5e7eb', marginBottom: '10px' } }
+					style={{ border: '1px solid #e5e7eb', marginBottom: '10px' }}
 				>
 					<div className="flex items-center gap-2">
 						<GoogleIcon className="w-4 h-4" />
-						<p className="text-sm/6">{ __( 'Google Machine Translation', 'translate-words' ) }</p>
+						<p className="text-sm/6">{__('Google Machine Translation', 'translate-words')}</p>
 					</div>
 					<Switch
-						aria-label={ __( 'Google Machine Translation', 'translate-words' ) }
+						aria-label={__('Google Machine Translation', 'translate-words')}
 						id="google-machine-translation"
-						onChange={ () => setGoogleMachineTranslation( ( prev ) => ! prev ) }
+						onChange={() => setGoogleMachineTranslation((prev) => !prev)}
 						size="sm"
-						value={ googleMachineTranslation }
+						value={googleMachineTranslation}
 					/>
 				</div>
 
-				<div className="p-6 rounded-lg" style={ { border: '1px solid #e5e7eb' } }>
+				<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb' }}>
 					<div className="flex justify-between items-center">
 						<div className="flex items-center gap-2">
 							<ChromeIcon className="w-4 h-4" />
-							<p className="text-sm/6">{ __( 'Chrome Local AI Translation', 'translate-words' ) }</p>
+							<p className="text-sm/6">{__('Chrome Local AI Translation', 'translate-words')}</p>
 						</div>
 						<Switch
-							aria-label={ __( 'Chrome Local AI Translation', 'translate-words' ) }
+							aria-label={__('Chrome Local AI Translation', 'translate-words')}
 							id="chrome-local-ai-translation"
-							onChange={ () => setChromeLocalAITranslation( ( prev ) => ! prev ) }
+							onChange={() => setChromeLocalAITranslation((prev) => !prev)}
 							size="sm"
-							value={ chromeLocalAITranslation }
+							value={chromeLocalAITranslation}
 						/>
 					</div>
-					{ chromeLocalAITranslation && <ChromeLocalAINotice /> }
+					{chromeLocalAITranslation && <ChromeLocalAINotice />}
 				</div>
 
-				{ wpAiClientAvailable && (
+				{wpAiClientAvailable && (
 					<>
-						<div
-							className="flex justify-between items-center p-6 rounded-lg"
-							style={ { border: '1px solid #e5e7eb', marginTop: '10px' } }
-						>
-							<div className="flex items-center gap-2">
-								<GeminiIcon className="w-4 h-4" />
-								<p className="text-sm/6">{ __( 'Gemini', 'translate-words' ) }</p>
+						<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+							<div className="flex justify-between items-center">
+								<div className="flex items-center gap-2">
+									<GeminiIcon className="w-4 h-4" />
+									<p className="text-sm/6">{__('Google Gemini AI', 'translate-words')}</p>
+								</div>
+								<Switch
+									aria-label={__('Google Gemini AI', 'translate-words')}
+									id="gemini-translation"
+									onChange={() => setGeminiTranslation((prev) => !prev)}
+									size="sm"
+									value={geminiTranslation}
+								/>
 							</div>
-							<Switch
-								aria-label={ __( 'Gemini', 'translate-words' ) }
-								id="gemini-translation"
-								onChange={ () => setGeminiTranslation( ( prev ) => ! prev ) }
-								size="sm"
-								value={ geminiTranslation }
-							/>
+
+							{geminiTranslation && (
+								<div className="mt-4 flex flex-col gap-4">
+									{hasGeminiSavedKey ? (
+										<p className="text-base font-semibold m-0">
+											{__('Gemini API key', 'translate-words')}
+										</p>
+									) : (
+										<div
+											className="p-4 rounded-lg"
+											style={{
+												border: '1px solid #e5e7eb',
+												background: '#fffbeb',
+											}}
+										>
+											<p className="text-base font-semibold m-0">
+												{__('Gemini API key (optional)', 'translate-words')}
+											</p>
+											<p className="text-sm/6 m-0 mt-2" style={{ color: '#92400e' }}>
+												{__(
+													'You can skip adding an API key for now and continue setup. To use Gemini, you must add a valid API key (you can add it later in the Settings panel).',
+													'translate-words'
+												)}
+											</p>
+										</div>
+									)}
+
+									<div className="flex flex-col gap-2 w-full" style={{ width: '100%' }}>
+										<div style={{ width: '100%' }}>
+											<Input
+												aria-label={__('Gemini API key', 'translate-words')}
+												id="gemini-api-key"
+												size="md"
+												type="text"
+												placeholder="AIza…"
+												disabled={geminiApiKeyInputDisabled}
+												value={geminiApiKeyDisplayValue}
+												onChange={(v) => {
+													if (geminiApiKeyInputDisabled) {
+														return;
+													}
+													setGeminiApiKeyDraft(v);
+												}}
+											/>
+										</div>
+
+										{hasGeminiSavedKey ? (
+											<p className="text-xs/5 text-gray-600 m-0" style={{ wordBreak: 'break-word' }}>
+												{__('Manage your Gemini API key in the ', 'translate-words')}
+												<a
+													className="underline"
+													href={`${window?.lmat_setup?.admin_url || ''}admin.php?page=lmat_settings&tab=translation`}
+													target="_blank"
+													rel="noreferrer noopener"
+												>
+													{__('Settings panel.', 'translate-words')}
+												</a>
+											</p>
+										) : (
+											<p className="text-xs/5 text-gray-600 m-0" style={{ wordBreak: 'break-word' }}>
+												<a
+													className="underline"
+													href="https://aistudio.google.com/app/api-keys"
+													target="_blank"
+													rel="noreferrer noopener"
+												>
+													{__('Get Gemini API key', 'translate-words')}
+												</a>
+												{__(' or add it later in the ', 'translate-words')}
+												<a
+													className="underline"
+													href={`${window?.lmat_setup?.admin_url || ''}admin.php?page=lmat_settings&tab=translation`}
+													target="_blank"
+													rel="noreferrer noopener"
+												>
+													{__('Settings panel.', 'translate-words')}
+												</a>
+											</p>
+										)}
+									</div>
+								</div>
+							)}
 						</div>
 					</>
-				) }
+				)}
 			</div>
 
-			<div className="flex justify-between" style={ { marginTop: '14px' } }>
-				<SetupBackButton handleClick={ handleBack } />
-				<SetupContinueButton SaveSettings={ saveAITranslation } />
+			<div className="flex justify-between" style={{ marginTop: '14px' }}>
+				<SetupBackButton handleClick={handleBack} />
+				<SetupContinueButton SaveSettings={saveAITranslation} />
 			</div>
 		</div>
 	);

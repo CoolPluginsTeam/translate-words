@@ -14,80 +14,49 @@
  * @returns {Promise<Record<string,string>>}
  */
 export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce }) {
-    const maxRetries = 3;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        let res;
-        try {
-            res = await fetch(restUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': nonce,
-                },
-                body: JSON.stringify({
-                    provider,
-                    post_id: Number(postId),
-                    object_type: objectType,
-                    source_lang: sourceLang,
-                    target_lang: targetLang,
-                    model: model || '',
-                    strings,
-                }),
-            });
-        } catch (error) {
-            const networkMessage = error?.message || 'Network request failed';
-            if (attempt < maxRetries) {
-                await wait(backoffMs(attempt));
-                continue;
-            }
-            throw createTranslationError(`Translation request failed: ${networkMessage}`);
-        }
-
-        let data = {};
-        try {
-            data = await res.json();
-        } catch {
-            data = {};
-        }
-
-        if (!res.ok) {
-            if (isQuotaExceededResponse(data, res.status)) {
-                throw createTranslationError(
-                    'API quota exceeded (429). Please check your plan/billing and retry later.',
-                    'LLM_QUOTA_EXCEEDED'
-                );
-            }
-
-            if (isRetryableStatus(res.status) && attempt < maxRetries) {
-                await wait(backoffMs(attempt, res.headers.get('Retry-After')));
-                continue;
-            }
-            const errorMessage = resolveErrorMessage(data, res.status, res.statusText);
-            throw createTranslationError(errorMessage);
-        }
-
-        return data.translations && typeof data.translations === 'object' ? data.translations : {};
+    let res;
+    try {
+        res = await fetch(restUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': nonce,
+            },
+            body: JSON.stringify({
+                provider,
+                post_id: Number(postId),
+                object_type: objectType,
+                source_lang: sourceLang,
+                target_lang: targetLang,
+                model: model || '',
+                strings,
+            }),
+        });
+    } catch (error) {
+        const networkMessage = error?.message || 'Network request failed';
+        throw createTranslationError(`Translation request failed: ${networkMessage}`);
     }
 
-    throw new Error('Translation request failed');
-}
-
-function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isRetryableStatus(status) {
-    return status === 503 || status === 502;
-}
-
-function backoffMs(attempt, retryAfterHeader = '') {
-    const retryAfter = Number.parseInt(retryAfterHeader, 10);
-    if (Number.isFinite(retryAfter) && retryAfter > 0) {
-        return retryAfter * 1000;
+    let data = {};
+    try {
+        data = await res.json();
+    } catch {
+        data = {};
     }
-    return Math.min(15000, 1500 * (2 ** attempt));
+
+    if (!res.ok) {
+        if (isQuotaExceededResponse(data, res.status)) {
+            throw createTranslationError(
+                'API quota exceeded (429). Please check your plan/billing and retry later.',
+                'LLM_QUOTA_EXCEEDED'
+            );
+        }
+        const errorMessage = resolveErrorMessage(data, res.status, res.statusText);
+        throw createTranslationError(errorMessage);
+    }
+
+    return data.translations && typeof data.translations === 'object' ? data.translations : {};
 }
 
 function resolveErrorMessage(data, status, statusText) {
@@ -173,30 +142,43 @@ function isQuotaExceededResponse(data, status) {
     );
 }
 
-// Keep AI batch payload smaller to reduce server/gateway 5xx errors.
-const CHUNK_KEYS = 20;
-const CHUNK_CHARS = 6000;
-
 /**
  * @param {Record<string,string>} map
+ * @param {{maxTokens?:number,maxChars?:number,maxKeys?:number}} [opts]
  * @returns {Array<Record<string,string>>}
  */
-export function chunkStringMap(map) {
+export function chunkStringMap(map, opts = {}) {
+    // ATFP-style defaults: pack as many strings as possible into a batch using a rough token estimator.
+    // ATFP does not enforce a chars-per-request cap; batching is token-budget driven.
+    const maxTokens = Number.isFinite(opts.maxTokens) ? Number(opts.maxTokens) : 500;
+    // Optional safety caps (disabled by default to match ATFP flow).
+    const maxChars = Number.isFinite(opts.maxChars) ? Number(opts.maxChars) : Infinity;
+    const maxKeys = Number.isFinite(opts.maxKeys) ? Number(opts.maxKeys) : 0; // 0 => unlimited
+
     const chunks = [];
     let current = {};
     let charBudget = 0;
+    let tokenBudget = 0;
     const keys = Object.keys(map);
 
     for (const k of keys) {
         const v = map[k] ?? '';
-        const entryCost = k.length + String(v).length;
-        if (Object.keys(current).length >= CHUNK_KEYS || (charBudget + entryCost > CHUNK_CHARS && Object.keys(current).length > 0)) {
+        const value = String(v);
+        const entryChars = k.length + value.length;
+        const entryTokens = Math.ceil(value.length / 4);
+        const wouldExceedKeys = maxKeys > 0 && Object.keys(current).length >= maxKeys;
+        const wouldExceedChars = Number.isFinite(maxChars) && (charBudget + entryChars > maxChars) && Object.keys(current).length > 0;
+        const wouldExceedTokens = (tokenBudget + entryTokens > maxTokens) && Object.keys(current).length > 0;
+
+        if (wouldExceedKeys || wouldExceedChars || wouldExceedTokens) {
             chunks.push(current);
             current = {};
             charBudget = 0;
+            tokenBudget = 0;
         }
-        current[k] = v;
-        charBudget += entryCost;
+        current[k] = value;
+        charBudget += entryChars;
+        tokenBudget += entryTokens;
     }
     if (Object.keys(current).length > 0) {
         chunks.push(current);

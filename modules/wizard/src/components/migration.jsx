@@ -198,6 +198,23 @@ const Migration = ({ onComplete, onSkip }) => {
     } catch (error) {
       console.error('Failed to save migration status:', error)
     }
+
+    // If user skips migration, consider wizard finished as well.
+    try {
+      await apiFetch({
+        path: 'lmat/v1/settings/setup-complete',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': getNonce()
+        },
+        body: JSON.stringify({
+          complete: true
+        })
+      })
+    } catch (error) {
+      console.error('Failed to mark setup as complete:', error)
+    }
     
     if (onSkip) {
       onSkip()

@@ -17,6 +17,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use Linguator\Includes\Models\Languages;
 use Linguator\Includes\Options\Options;
+use Linguator\Includes\Options\Business\Api_Keys as Api_Keys_Option;
 use Linguator\Modules\REST\Abstract_Controller;
 use Linguator\Includes\Migration\Polylang_Migration;
 use Linguator\Includes\Migration\WPML_Migration;
@@ -71,6 +72,12 @@ class Settings extends Abstract_Controller {
 	 */
 	private $disabled_taxonomies;
 
+	/**
+	 * True when update_item saved a new non-empty Gemini key; get_item runs discovery once then clears this.
+	 *
+	 * @var bool
+	 */
+	private $ai_gemini_model_refresh_needed = false;
 
 	protected $namespace;
 	protected $rest_base;
@@ -362,13 +369,14 @@ class Settings extends Abstract_Controller {
 	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
 	 */
 	public function update_setup_complete( $request ) {
-		$complete = $request->get_param( 'complete' );
+		$complete = (bool) $request->get_param( 'complete' );
 		
 		$result = update_option( 'lmat_setup_complete', $complete );
 		// Verify the option was set correctly by checking the stored value
 		$stored_value = get_option( 'lmat_setup_complete' );
 		
-		if ( $result !== false || $stored_value == $complete ) {
+		$stored_bool = $this->sanitize_boolean_param( $stored_value );
+		if ( $result !== false || $stored_bool === $complete ) {
 			return rest_ensure_response( array(
 				'success' => true,
 				'lmat_setup_complete' => $complete,
@@ -469,6 +477,7 @@ class Settings extends Abstract_Controller {
 		$response['disabled_post_types'] = $disabled_post_types;
 		$response['lmat_video_status'] = get_option('lmat_video_status');
 		$response['lmat_migration_completed'] = get_option('lmat_migration_completed', false);
+		$response['lmat_setup_complete'] = $this->sanitize_boolean_param( get_option( 'lmat_setup_complete', false ) );
 		// Check if CPFM opt-in choice exists for LMAT
 		$cpfm_opt_in_choice = get_option( 'cpfm_opt_in_choice_lmat' );
 		
@@ -480,20 +489,225 @@ class Settings extends Abstract_Controller {
 		}
 
 		// Never return raw API keys over REST; return masked values so the UI can show "configured".
-		if ( isset( $response['api_keys'] ) && is_array( $response['api_keys'] ) ) {
-			foreach ( array( 'gemini' ) as $provider ) {
-				$raw = isset( $response['api_keys'][ $provider ] ) ? (string) $response['api_keys'][ $provider ] : '';
-				if ( '' === $raw ) {
-					$response['api_keys'][ $provider ] = '';
-					continue;
-				}
-				$tail = substr( $raw, -4 );
-				$response['api_keys'][ $provider ] = '••••••••' . $tail;
+		// Keys live in dedicated WP options `connectors_ai_{provider}_key`.
+		$gemini_raw = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+		$gemini_masked = '';
+		if ( '' !== $gemini_raw ) {
+			$tail          = substr( $gemini_raw, -4 );
+			$gemini_masked = '••••••••' . $tail;
+		}
+
+		$models = $this->options->get( 'api_keys' );
+		if ( ! is_array( $models ) ) {
+			$models = array();
+		}
+		$ai_config  = $this->options->get( 'ai_translation_configuration' );
+		$providers  = isset( $ai_config['provider'] ) && is_array( $ai_config['provider'] ) ? $ai_config['provider'] : array();
+		$gemini_on  = ! empty( $providers['gemini'] );
+		$has_key    = ( '' !== $gemini_raw );
+		$available_models = array(
+			'gemini' => array()
+		);
+		if ( $gemini_on && $has_key ) {
+			if ( $this->should_run_ai_model_discovery() ) {
+				$available_models = Api_Keys_Option::discover_provider_models();
+			} else {
+				$available_models = Api_Keys_Option::get_stored_provider_models();
 			}
 		}
+
+		$this->ai_gemini_model_refresh_needed = false;
+
+		$response['api_keys_configuration'] = array(
+			'keys'             => array(
+				'gemini' => $gemini_masked,
+			),
+			'models'           => $models,
+			'available_models' => $available_models,
+		);
 		
 		return $response;
-		// return $this->prepare_item_for_response( $this->options->get_all(), $request);
+	}
+
+	/**
+	 * Whether get_item should call the Gemini provider API for model discovery (~4s cap).
+	 *
+	 * @return bool
+	 */
+	private function should_run_ai_model_discovery(): bool {
+		return $this->ai_gemini_model_refresh_needed;
+	}
+
+	/**
+	 * Sanitize provider exceptions for safe UI display.
+	 *
+	 * @param string $message Raw exception message.
+	 * @param string $api_key Raw API key (to redact if present).
+	 * @return string
+	 */
+	private function sanitize_provider_error_message( string $message, string $api_key ): string {
+		$msg = trim( (string) $message );
+		if ( '' === $msg ) {
+			return __( 'Provider returned an unknown error.', 'translate-words' );
+		}
+
+		$key_trimmed = trim( (string) $api_key );
+		if ( '' !== $key_trimmed ) {
+			$msg = str_replace( $key_trimmed, '[redacted]', $msg );
+		}
+
+		// Keep responses reasonably small for REST/UI.
+		if ( strlen( $msg ) > 500 ) {
+			$msg = substr( $msg, 0, 500 ) . '…';
+		}
+
+		return $msg;
+	}
+
+	/**
+	 * Validate Gemini API key via WP AI Client before saving.
+	 *
+	 * @param string $api_key Raw API key.
+	 * @return true|WP_Error
+	 */
+	private function validate_gemini_api_key( string $api_key ) {
+		$key_trimmed = trim( (string) $api_key );
+		if ( '' === $key_trimmed ) {
+			return true;
+		}
+
+		if ( preg_match( '/[<>"\']/', $key_trimmed ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( 0 !== strpos( $key_trimmed, 'AIza' ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Gemini API keys must start with AIza.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( strlen( $key_trimmed ) < 20 ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Gemini API keys must be at least 20 characters long.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Only validate allowed characters after the AIza prefix.
+		$rest = substr( $key_trimmed, 4 );
+		if ( '' === $rest || ! preg_match( '/^[0-9A-Za-z\-_]+$/', $rest ) ) {
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Real provider validation using WP AI Client.
+		if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+			return new WP_Error(
+				'lmat_ai_client_missing',
+				__( 'AI client is not available.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+		if ( ! $registry || ! method_exists( $registry, 'hasProvider' ) || ! $registry->hasProvider( 'google' ) ) {
+			return new WP_Error(
+				'lmat_ai_provider_invalid',
+				__( 'Invalid AI provider.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Cooldown lock to avoid repeated provider validation calls (rate-limit protection).
+		// This validator is Gemini-specific (WP AI Client provider id: "google").
+		$cooldown = 30;
+		$lock_key = 'lmat_ai_test_lock_google_' . md5( $key_trimmed );
+
+		if ( get_transient( $lock_key ) ) {
+			return new WP_Error(
+				'lmat_ai_provider_rate_limited',
+				__( 'Gemini rate limit reached. Please wait a minute and try again.', 'translate-words' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
+		if ( ! class_exists( $auth_class ) ) {
+			return new WP_Error(
+				'lmat_ai_client_missing',
+				__( 'AI client is not available.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
+			$registry->setProviderRequestAuthentication( 'google', new $auth_class( $key_trimmed ) );
+		}
+
+		try {
+			$provider_classname = $registry->getProviderClassName( 'google' );
+			if ( ! $provider_classname || ! class_exists( $provider_classname ) ) {
+				return new WP_Error(
+					'lmat_ai_provider_invalid',
+					__( 'Invalid AI provider.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			if ( method_exists( $provider_classname, 'availability' ) ) {
+				$provider_availability = $provider_classname::availability();
+				if ( is_object( $provider_availability ) && method_exists( $provider_availability, 'isConfigured' ) && ! $provider_availability->isConfigured() ) {
+					return new WP_Error(
+						'lmat_api_key_invalid',
+						__( 'Invalid API key. Please check API key and try again.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+			}
+
+			if ( method_exists( $provider_classname, 'modelMetadataDirectory' ) ) {
+				$model_metadata_directory = $provider_classname::modelMetadataDirectory();
+				if ( is_object( $model_metadata_directory ) && method_exists( $model_metadata_directory, 'listModelMetadata' ) ) {
+					$model_metadata_directory->listModelMetadata(); // throws on invalid key.
+				}
+			}
+		} catch ( \Exception $e ) {
+			$msg = strtolower( (string) $e->getMessage() );
+			$is_rate_limited =
+				( false !== strpos( $msg, '429' ) ) ||
+				( false !== strpos( $msg, 'too many requests' ) ) ||
+				( false !== strpos( $msg, 'rate limit' ) ) ||
+				( false !== strpos( $msg, 'ratelimit' ) );
+
+			if ( $is_rate_limited ) {
+				set_transient( $lock_key, 1, $cooldown );
+				return new WP_Error(
+					'lmat_ai_provider_rate_limited',
+					__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
+					array( 'status' => 429 )
+				);
+			}
+
+			return new WP_Error(
+				'lmat_api_key_invalid',
+				$this->sanitize_provider_error_message( (string) $e->getMessage(), $key_trimmed ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Only start cooldown after a successful validation.
+		set_transient( $lock_key, 1, $cooldown );
+		return true;
 	}
 
 	/**
@@ -509,12 +723,58 @@ class Settings extends Abstract_Controller {
 	 * @phpstan-param WP_REST_Request<T> $request
 	 */
 	public function update_item( $request ) {
+		$this->ai_gemini_model_refresh_needed = false;
+
+		// Support saving AI provider keys/models via the Settings route.
+		// Keys are stored in dedicated WP options `connectors_ai_{provider}_key`,
+		// while models are stored in the `api_keys` option (see Business\\Api_Keys).
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+
+		$incoming_keys   = isset( $params['keys'] ) && is_array( $params['keys'] ) ? $params['keys'] : array();
+		$incoming_models = isset( $params['models'] ) && is_array( $params['models'] ) ? $params['models'] : array();
+
+		// Handle Gemini key save/reset.
+		if ( array_key_exists( 'gemini', $incoming_keys ) ) {
+			$v = $incoming_keys['gemini'];
+			$v = is_string( $v ) ? trim( $v ) : '';
+
+			$current_raw  = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+			$is_unchanged = ( '' !== $v && '' !== $current_raw && $current_raw === $v );
+
+			// Validate only when setting a non-empty key AND it differs from the stored one.
+			// Empty string is allowed for reset.
+			if ( '' !== $v && ! $is_unchanged ) {
+				$validation = $this->validate_gemini_api_key( $v );
+				if ( is_wp_error( $validation ) ) {
+					return $validation;
+				}
+			}
+
+			update_option( 'connectors_ai_gemini_key', $v );
+			if ( '' === $v && '' !== $current_raw ) {
+				Api_Keys_Option::clear_gemini_models_list();
+			} elseif ( '' !== $v && ! $is_unchanged ) {
+				$this->ai_gemini_model_refresh_needed = true;
+			}
+		}
+
 		$errors  = new WP_Error();
 		$schema  = $this->options->get_schema();
 		$options = array_intersect_key(
 			$request->get_params(),
 			rest_get_endpoint_args_for_schema( $schema, WP_REST_Server::EDITABLE ) // Remove fields with `readonly`.
 		);
+
+		// Allow saving provider models through Settings using the same payload shape as the Api Keys endpoint.
+		if ( ! empty( $incoming_models ) && isset( $incoming_models['gemini_model'] ) ) {
+			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
+				$options['api_keys'] = array();
+			}
+			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
+		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)
 		$validation_errors = $this->validate_domains_before_save( $options );
@@ -573,6 +833,13 @@ class Settings extends Abstract_Controller {
 		
 		if ( $errors->has_errors() ) {
 			return $this->add_status_to_error( $errors );
+		}
+
+		// If this request also carried AI key/model payload, return the full settings response
+		// (including `api_keys_configuration.available_models`) so the UI can update instantly
+		// without issuing a second GET request.
+		if ( ! empty( $incoming_keys ) || ! empty( $incoming_models ) ) {
+			return $this->get_item( $request );
 		}
 
 		return $this->prepare_item_for_response( $this->options->get_all(), $request );

@@ -11,6 +11,7 @@ const Switcher = ({ data, setData }) => {
 
      const [selectedLanguageSwitchers, setSelectedLanguageSwitchers] = React.useState(data.lmat_language_switcher_options || ['default']);
      const [handleButtonDisabled, setHandleButtonDisabled] = React.useState(true);
+     const [isSaving, setIsSaving] = React.useState(false);
 
      const arraysEqualIgnoreOrder = (arr1, arr2) => {
         if (arr1.length !== arr2.length) return false;
@@ -40,6 +41,8 @@ const Switcher = ({ data, setData }) => {
     };
     function SaveSettings() {
         try {
+            if (isSaving) return;
+            setIsSaving(true);
             const apiBody = {
                 lmat_language_switcher_options: selectedLanguageSwitchers,
             }
@@ -61,15 +64,19 @@ const Switcher = ({ data, setData }) => {
                     if (error?.message) {
                         throw new Error(error.message)
                     }
-                    throw new Error(__("Something went wrong", 'linguator-multilingual-ai-translation'))
+                    throw new Error(__("Something went wrong", 'translate-words'))
+                })
+                .finally(() => {
+                    setIsSaving(false)
                 })
 
             toast.promise(response, {
-                loading: __('Saving Settings', 'linguator-multilingual-ai-translation'),
-                success: __('Settings Saved', 'linguator-multilingual-ai-translation'),
+                loading: __('Saving Settings', 'translate-words'),
+                success: __('Settings Saved', 'translate-words'),
                 error: (error) => error.message,
             })
         } catch (error) {
+            setIsSaving(false);
             toast.error(error.message || __("Something went wrong", "translate-words"));
         }
     }
@@ -80,7 +87,7 @@ const Switcher = ({ data, setData }) => {
                 <Container.Item className='flex w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Language Switcher Widget Configuration', 'translate-words')}</h1>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"
@@ -134,7 +141,7 @@ const Switcher = ({ data, setData }) => {
             <Container className='flex items-center justify-end'>
                 <Container.Item className='flex gap-6'>
                     <Button
-                        disabled={handleButtonDisabled}
+                        disabled={handleButtonDisabled || isSaving}
                         className=""
                         iconPosition="left"
                         size="md"

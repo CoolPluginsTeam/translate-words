@@ -1,6 +1,6 @@
 import { Button } from '@bsf/force-ui';
 import { __ } from '@wordpress/i18n';
-export default function SetupContinueButton({ SaveSettings,children="Continue" }) {
+export default function SetupContinueButton({ SaveSettings, children = "Continue" }) {
     return (
         <>
             <Button
@@ -11,14 +11,14 @@ export default function SetupContinueButton({ SaveSettings,children="Continue" }
                 type="button"
                 onClick={SaveSettings}
                 variant="primary"
-                style={{minWidth:"100px"}}
+                style={{ minWidth: "100px" }}
             >
                 {children}
             </Button>
         </>
     )
 }
-export const SetupBackButton = ({handleClick}) => {
+export const SetupBackButton = ({ handleClick }) => {
     return (
         <>
             <Button
