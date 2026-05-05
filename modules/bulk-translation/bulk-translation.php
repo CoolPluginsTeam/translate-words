@@ -267,7 +267,6 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
                 'AIRequestMaxTokens' => (int) get_option('lmat_ai_request_token_per_request', 500),
                 'AIRequestBatchSize' => (int) get_option('lmat_ai_request_batch_size', 5),
-				'AIRequestMaxChars' => (int) get_option('lmat_ai_request_chars_per_request', 20000),
             ), $extra_data)
         );
 		}
