@@ -176,9 +176,17 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			}
 			echo '</div>';
 			echo '<div class="lmat-settings-header-actions">';
-			echo '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Documentation', 'translate-words' ) . '</a>';
-			echo '<a href="https://linguator.com/docs/video-tutorials/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Video Tutorial', 'translate-words' ) . '</a>';
-			echo '<a href="https://my.coolplugins.net/account/support-tickets/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=support&utm_content=dashboard" target="_blank" class="lmat-header-action-link">' . esc_html__( 'Support', 'translate-words' ) . '</a>';
+			$docs_label    = esc_html__( 'Documentation', 'translate-words' );
+			$video_label   = esc_html__( 'Video Tutorial', 'translate-words' );
+			$support_label = esc_html__( 'Support', 'translate-words' );
+
+			$docs_icon_url    = esc_url( plugin_dir_url( LINGUATOR_ROOT_FILE ) . 'assets/logo/docs.svg' );
+			$video_icon_url   = esc_url( plugin_dir_url( LINGUATOR_ROOT_FILE ) . 'assets/logo/video.svg' );
+			$support_icon_url = esc_url( plugin_dir_url( LINGUATOR_ROOT_FILE ) . 'assets/logo/support.svg' );
+
+			echo '<a href="https://linguator.com/documentation/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=dashboard" target="_blank" rel="noopener noreferrer" class="lmat-header-action-link" title="' . esc_attr( $docs_label ) . '"><span class="lmat-header-action-icon" style="--lmat-icon-url: url(\'' . esc_url( $docs_icon_url ) . '\');" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $docs_label ) . '</span></a>';
+			echo '<a href="https://linguator.com/docs/video-tutorials/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=video&utm_content=dashboard" target="_blank" rel="noopener noreferrer" class="lmat-header-action-link" title="' . esc_attr( $video_label ) . '"><span class="lmat-header-action-icon" style="--lmat-icon-url: url(\'' . esc_url( $video_icon_url ) . '\');" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $video_label ) . '</span></a>';
+			echo '<a href="https://my.coolplugins.net/account/support-tickets/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=support&utm_content=dashboard" target="_blank" rel="noopener noreferrer" class="lmat-header-action-link" title="' . esc_attr( $support_label ) . '"><span class="lmat-header-action-icon" style="--lmat-icon-url: url(\'' . esc_url( $support_icon_url ) . '\');" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $support_label ) . '</span></a>';
 			echo '</div>';
 			echo '</div>';
 			echo '</div>';
