@@ -508,12 +508,8 @@ class Settings extends Abstract_Controller {
 		$available_models = array(
 			'gemini' => array()
 		);
-		if ( $gemini_on && $has_key ) {
-			if ( $this->should_run_ai_model_discovery() ) {
-				$available_models = Api_Keys_Option::discover_provider_models();
-			} else {
-				$available_models = Api_Keys_Option::get_stored_provider_models();
-			}
+		if ( $has_key ) {
+			$available_models = Api_Keys_Option::get_stored_provider_models();
 		}
 
 		$this->ai_gemini_model_refresh_needed = false;
@@ -757,7 +753,8 @@ class Settings extends Abstract_Controller {
 			if ( '' === $v && '' !== $current_raw ) {
 				Api_Keys_Option::clear_gemini_models_list();
 			} elseif ( '' !== $v && ! $is_unchanged ) {
-				$this->ai_gemini_model_refresh_needed = true;
+				Api_Keys_Option::discover_provider_models();
+				$this->ai_gemini_model_refresh_needed = false;
 			}
 		}
 
