@@ -1,45 +1,48 @@
 === Linguator AI – Auto Translate & Create Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
-Tags: translation, multilingual, languages, ai translation
+Tags: automatic translation, google translate,elementor translation, multilingual, ai translator
 Requires at least: 6.8
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.2
 Stable tag: 2.1.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Translate your WordPress website into multiple languages with AI. Linguator makes creating multilingual sites simple, fast, and SEO-friendly.
+Translate your entire WordPress site in minutes using built-in AI. Linguator is a fast, SEO-friendly, and affordable way to reach a global audience.
 
 == Description ==
 
-https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
+**Linguator AI – Auto Translate & Create Multilingual Sites** is an AI-powered translation plugin that helps **site owners create multilingual websites** in minutes without **recurring fees** or **complex setups**.
 
-**Linguator AI – Auto Translate & Create Multilingual Sites** is an all-in-one multilingual WordPress plugin designed for site owners who want to reach a global audience without **recurring fees**, **external SaaS platforms**, or **complex setups**.
+https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
 Translate your **posts**, **pages**, **menus**, **categories**, **custom post types**, **media**, and **SEO data** using AI, and refine translations manually when needed, all from your WordPress dashboard.
 
-== Want multilingual content without paying for monthly translation credits? ==
+Linguator works seamlessly with **Elementor, Gutenberg, and the Classic Editor**, helping you create multilingual websites in just a few clicks.
+
+### Want multilingual content without paying for monthly translation credits?
  Linguator uses **Chrome’s built-in AI** and **Google Translate**, so you can generate high-quality translations without external API keys or subscriptions.
 
 https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
 [Check Live Demo](https://wordpress.org/plugins/translate-words/?preview=1) | [Learn more](https://linguator.com/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) 
 
-== AI Translation Made Easy for WordPress ==
+### AI Translation Made Easy for WordPress 
 * **Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
 
-* **Built for maximum compatibility:** Linguator is built for maximum compatibility across the WordPress ecosystem. It works seamlessly with popular editors such as **Elementor**, **Gutenberg**, and the **Classic Editor**. Whether you’re translating **WooCommerce product pages**, **custom post types**, or **Elementor landing pages**. 
+* **Built for maximum compatibility:** Linguator is built for maximum compatibility across the WordPress ecosystem. It works seamlessly with popular editors such as **Elementor**, **Gutenberg**, and the **Classic Editor**. Whether you are translating **WooCommerce product pages**, **custom post types**, or **Elementor landing pages**. 
 
 * **Multilingual SEO:** The plugin follows WordPress and Google best practices. Each language version of your content contains, **language-specific URLs** with **SEO-friendly permalink structures**. Metadata can be translated helping search engines properly index your site in multiple languages and improve your global visibility.
 
 * **Translation Quality:** Linguator allows you to generate fast **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, translate **specific blocks** or **widgets inline**, and use **glossary support** to maintain consistent terminology across your site. 
 
+
 ### Multilingual & AI Translation Features
 
-* **AI-Powered Automatic Translation:**   Save hours of manual work!. Linguator uses powerful AI translation engines to automatically translate your posts and pages into multiple languages — giving you high-quality, natural translations in one click.
+* **AI-Powered Automatic Translation:**   Save hours of manual work!. Linguator uses powerful AI translation engines to automatically translate your posts and pages into multiple languages  giving you high-quality, natural translations in one click.
 
-* **Manual + Automatic Translation Control:** Translate your content automatically using AI, or fine-tune it manually for complete accuracy — Linguator gives you both options for full flexibility.
+* **Manual + Automatic Translation Control:** Translate your content automatically using AI, or fine-tune it manually for complete accuracy  Linguator gives you both options for full flexibility.
 
 * **Elementor Page Translation:** Translate entire Elementor pages, including all sections, widgets, and content, without losing styles or design.
 
@@ -53,9 +56,26 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
 * **Language Switcher:** Add a language switcher to your site with multiple display options, including Classic, Block-based, and Elementor widget styles, to easily switch languages.
 
- **Trusted by 80,000+ users worldwide**, Linguator is built by experts in AI translation — the same team behind [**LocoAI – Auto Translate for Loco Translate**](https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate).
+* **Google Gemini AI Integration:**  Translate your website using advanced Google Gemini AI technology with better context and natural language accuracy. (available for WordPress 7.0+).
+
+* **Trusted by 80,000+ users worldwide** - Linguator is built by experts in AI translation  the same team behind [**LocoAI – Auto Translate for Loco Translate**](https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate).
 With [**580+ five-star reviews**](https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate/#reviews), our plugins are proven to deliver quality and user satisfaction.
 
+### Why Choose Linguator AI?
+*   **No Monthly Fees:** Forget recurring credits; use your own AI resources for unlimited translation.
+*   **Performance First:** Built on a stable foundation, Linguator is lightweight and won't slow down your site loading times.
+*   **SEO Ready:** Automatically creates language-specific URLs (e.g., `/fr/` or `/es/`) so search engines can index your site globally.
+*   **Built for Design:** Full compatibility with Elementor ensures your translated pages look exactly like your originals.
+
+### Perfect For
+
+* Business websites
+* Blogs and publishers
+* Agency websites
+* Elementor landing pages
+* Educational websites
+* Portfolio websites
+* Global multilingual brands
 
 #### Service Provider 
 This plugin offers AI translation services via Chrome's built-in AI APIs. Learn more about Chrome AI using the links below.
@@ -63,6 +83,8 @@ This plugin offers AI translation services via Chrome's built-in AI APIs. Learn 
 * [Chrome Built-in AI APIs Documentation](https://developer.chrome.com/docs/ai/built-in-apis)
 * [Chrome Summarizer API Documentation](https://developer.chrome.com/docs/ai/summarizer-api)
 * [Chrome Prompt API Documentation for Extensions](https://developer.chrome.com/docs/extensions/ai/prompt-api)
+* [Google Gemini get API key](https://aistudio.google.com/app/api-keys)
+* [Google Gemini Terms of Service](https://ai.google.dev/gemini-api/terms)
 
 [Linguator AI on GitHub.](https://github.com/CoolPluginsTeam/translate-words)
 
@@ -84,14 +106,18 @@ This plugin is distributed under the terms of the GNU General Public License, ve
 5. Menu and language configuration.
 
 == Installation ==
-1. Log in to your WordPress dashboard.
-2. Navigate to the Plugins section.
-3. Search for "Linguator".
-4. Click Install and then Activate the plugin.
+
+1.  **Install:** Search for "Linguator" in your WordPress dashboard and click **Install Now**.
+2.  **Activate:** Click **Activate** to launch the 2-minute **Setup Wizard**.
+3.  **Configure:** The wizard will guide you through:
+    *   Choosing your primary and secondary languages.
+    *   Setting up your SEO-friendly URL structure.
+    *   Selecting your AI source (Google or Chrome AI).
+4.  **Win:** Your site is now ready for translation!
 
 That's it! Linguator AI – Auto Translate & Create Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
 
-**Language Configuration**
+**Configuration steps in details**
 
 When you first activate Linguator, a simple Setup Wizard will guide you through configuring your multilingual website.
 Follow these steps to complete the setup:
@@ -100,30 +126,30 @@ Follow these steps to complete the setup:
 2. Select additional languages you want to support from the list of available languages.
 3. Decide how different language versions will appear in your URLs (e.g., subdirectories like /fr/ or query parameters like ?lang=fr).
 4. Turn on this option to automatically translate media details such as title, alt text, caption, and description for each selected language.
-5. Choose your preferred translation source — Google Translate or Chrome's built-in AI translator — to handle your translations.
+5. Choose your preferred translation source  Google Translate or Chrome's built-in AI translator  to handle your translations.
 6. Choose how and where the language switcher will appear on your website so visitors can easily switch between languages.
 
 That's it! The setup configuration has been successfully completed. You can now start translating your website content and make it fully multilingual.
 
 == Frequently Asked Questions ==
 
-= Transition Notice =
-Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
+= How long does it take to translate my first page? =
+With our AI-powered engine, you can translate a standard page or post in under 10 seconds.
 
-The current Translate Words feature set will remain available until 6 months. After this period, the plugin will fully transition to Linguator.
+= Does this work for my visitors who don't use Chrome? =
+Yes! The **Chrome Built-in AI** is a tool used by you (the admin) to *generate* the translations. Once translated, your site visitors will see the content perfectly on any browser (Safari, Firefox, Edge, etc.).
 
-If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
+= Will this slow down my website? =
+No. Linguator is built to be lightweight. It does not rely on external SaaS calls for every page load, ensuring your site remains fast for every visitor.
 
-You are not required to take immediate action. Your website will continue working normally during the transition period. A detailed migration panel is included inside the plugin settings with all guidance and support information.
+= Is it compatible with Elementor and Gutenberg? =
+Absolutely. You can translate your content directly within your favorite page builder without breaking the design.
 
 = Which languages are supported? =
 Linguator supports all languages that WordPress supports, including RTL languages.
 
 = Is it compatible with all WordPress themes? =
 Yes, Linguator is designed to work with any properly coded WordPress theme.
-
-= Does it work with Elementor and Gutenberg? =
-Yes, the Linguator plugin fully supports the translation of page editors like Gutenberg and Elementor. You can translate your content directly within these editors.
 
 = Can I create different menus for each language? =
 Yes. You can create and manage separate navigation menus for each language and let visitors switch between them.
@@ -139,6 +165,16 @@ Yes. Linguator includes an option to automatically detect the visitor's browser 
 
 = How many languages can I add with Linguator? =
 There is no limit. You can add as many languages as you want to your website using Linguator.
+
+= Transition Notice =
+Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
+
+The current Translate Words feature set will remain available until 6 months. After this period, the plugin will fully transition to Linguator.
+
+If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
+
+You are not required to take immediate action. Your website will continue working normally during the transition period. A detailed migration panel is included inside the plugin settings with all guidance and support information.
+
 
 = How can I report security bugs? =
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team help validate, triage, and handle any security vulnerabilities. [Report a security vulnerability](https://patchstack.com/database/wordpress/plugin/translate-words/vdp).
@@ -160,7 +196,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
 
 = Version 2.1.5 | 23 April 2026 =
-* Added Google Gemini AI provider for WP 7.0
+* Added Google Gemini AI provider (available for WordPress 7.0+).
 
 = Version 2.1.4 | 3 April 2026 =
 * Minor Textual changes.
@@ -219,7 +255,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Fixed Undefined constant error.
 
 = Version 2.0.4 | 13 January 2026 =
-* Code Improvemnets.
+* Code Improvements.
 * Added Categories Filter in Quick Edit option.
 * Fixed incorrect URLs.
 
@@ -244,7 +280,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Added **Inline Translation Mode** to translate content block-by-block with live preview.
 * Added **Page Translation Module** including SEO titles and meta descriptions.
 * Added **Advanced Language Management Panel** with unlimited languages, RTL support, and browser language detection.
-* Added **Language Switcher Options** – widget, block, Elementor widget, and menu integration.
+* Added **Language Switcher Options**  widget, block, Elementor widget, and menu integration.
 * Added **Custom Field Translation Manager** for ACF and meta-based fields.
 * Improved migration guidance and helpful links.
 * Improved stability and minor internal improvements.
