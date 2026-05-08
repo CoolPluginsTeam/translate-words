@@ -567,7 +567,9 @@ class Settings extends Abstract_Controller {
 	 * @return true|WP_Error
 	 */
 	private function validate_gemini_api_key( string $api_key ) {
-		$key_trimmed = trim( (string) $api_key );
+		// Normalize: Gemini API keys never contain whitespace; remove accidental spaces/newlines from pastes.
+		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
+		$key_trimmed = trim( (string) $key_trimmed );
 		if ( '' === $key_trimmed ) {
 			return true;
 		}
@@ -735,7 +737,8 @@ class Settings extends Abstract_Controller {
 		// Handle Gemini key save/reset.
 		if ( array_key_exists( 'gemini', $incoming_keys ) ) {
 			$v = $incoming_keys['gemini'];
-			$v = is_string( $v ) ? trim( $v ) : '';
+			$v = is_string( $v ) ? preg_replace( '/\s+/', '', $v ) : '';
+			$v = trim( (string) $v );
 
 			$current_raw  = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
 			$is_unchanged = ( '' !== $v && '' !== $current_raw && $current_raw === $v );

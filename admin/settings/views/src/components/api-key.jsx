@@ -24,6 +24,7 @@ const providerMeta = [
 ]
 
 const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onPendingChange }, ref) {
+  const normalizeApiKey = useCallback((v) => (v || '').toString().replace(/\s+/g, '').trim(), [])
   const [loading, setLoading] = useState(true)
   const [masked, setMasked] = useState({ gemini: '' })
   const [configured, setConfigured] = useState({ gemini: false })
@@ -148,7 +149,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
     }
 
     for (const { key } of providerMeta) {
-      const draft = (keyDrafts[key] || '').trim()
+      const draft = normalizeApiKey(keyDrafts[key])
 
       if (resetProvider === key) {
         keys[key] = ''
@@ -173,6 +174,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       body: JSON.stringify(apiBody),
     })
 
+    if (setData && resp) {
+      setData((prev) => ({ ...(prev || {}), ...(resp || {}) }))
+    }
+
     const nextModels = {
       gemini_model: modelsBody.gemini_model,
     }
@@ -181,7 +186,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
     const nextConfigured = { ...configured }
     const nextMasked = { ...masked }
-    const draft = (keyDrafts.gemini || '').trim()
+    const draft = normalizeApiKey(keyDrafts.gemini)
     if (resetProvider === 'gemini') {
       nextConfigured.gemini = false
       nextMasked.gemini = ''
@@ -221,7 +226,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       if (!hasKeyChanges && !hasModelChanges) return null
 
       const keys = {}
-      const geminiDraft = (keyDrafts.gemini || '').trim()
+      const geminiDraft = normalizeApiKey(keyDrafts.gemini)
       if (geminiDraft !== '') {
         keys.gemini = geminiDraft
       }
@@ -243,7 +248,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       }
 
       if (payload.keys && Object.prototype.hasOwnProperty.call(payload.keys, 'gemini')) {
-        const v = typeof payload.keys.gemini === 'string' ? payload.keys.gemini.trim() : ''
+        const v = typeof payload.keys.gemini === 'string' ? normalizeApiKey(payload.keys.gemini) : ''
         const nextConfigured = { ...configured }
         const nextMasked = { ...masked }
         if (v === '') {
@@ -272,7 +277,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
         })
       }
     },
-  }), [keyDrafts, models, configured, masked])
+  }), [keyDrafts, models, configured, masked, normalizeApiKey])
 
   async function SaveSettings({ resetProvider } = {}) {
     try {
