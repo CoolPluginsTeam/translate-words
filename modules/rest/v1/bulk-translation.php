@@ -397,8 +397,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 		/**
 		 * @param string               $provider    gemini.
-		 * @param string               $source_lang Slug (used in prompt; ATFP-style).
-		 * @param string               $target_lang Slug (used in prompt; ATFP-style).
+		 * @param string               $source_lang Slug
+		 * @param string               $target_lang Slug
 		 * @param array<string,string> $strings     Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
@@ -544,11 +544,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$custom_prompt = '';
-			if ( isset( $ai_config['custom_prompt'] ) && is_string( $ai_config['custom_prompt'] ) ) {
-				$custom_prompt = trim( $ai_config['custom_prompt'] );
-			}
-
 			$instruction = sprintf(
 				'You are a professional translator.
 				Source Language: %s
@@ -575,13 +570,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$payload
 			);
 
-			if ( '' !== $custom_prompt ) {
-				$instruction .= 'Instruction 9: ' . sanitize_text_field( $custom_prompt );
-			}
-
 			if ( '' !== $glossary_instructions ) {
-				$instruction_number = '' !== $custom_prompt ? 10 : 9;
-				$instruction       .= 'Instruction ' . $instruction_number . ': ' . $glossary_instructions;
+				$instruction       .= 'Instruction 9: ' . $glossary_instructions;
 			}
 			
 			$ai_request_timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
@@ -616,12 +606,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 				$builder = wp_ai_client_prompt();
 
-				$can_use_atfp_chain = method_exists( $builder, 'using_provider' )
+				$canUseProviderChain = method_exists( $builder, 'using_provider' )
 					&& method_exists( $builder, 'with_text' )
 					&& method_exists( $builder, 'generate_text' )
 					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
 
-				if ( $can_use_atfp_chain ) {
+				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
 						try {
 							$model   = $provider_class::model( $model_id );
@@ -715,8 +705,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$clean_text = preg_replace( '/(^```json\n|```$)/', '', (string) $text );
-			$clean_text = str_replace( '<ATFPP_NEW_L>', '\n', (string) $clean_text );
-			$clean_text = str_replace( '<ATFPP_NEW_R>', '\r', (string) $clean_text );
 			$final_text = preg_replace( '/\\\\{2,}([\'"n])/', '\\\$1', (string) $clean_text );
 
 			if ( is_string( $final_text ) ) {
@@ -780,7 +768,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Map generate_text() failures to WP_Error (aligned with ATFP exception handling).
+		 * Map generate_text() failures to WP_Error
 		 *
 		 * @param \Throwable $e Thrown error.
 		 * @return \WP_Error

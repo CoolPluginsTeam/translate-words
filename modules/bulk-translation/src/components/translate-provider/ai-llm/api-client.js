@@ -148,10 +148,7 @@ function isQuotaExceededResponse(data, status) {
  * @returns {Array<Record<string,string>>}
  */
 export function chunkStringMap(map, opts = {}) {
-    // ATFP-style defaults: pack as many strings as possible into a batch using a rough token estimator.
-    // ATFP does not enforce a chars-per-request cap; batching is token-budget driven.
     const maxTokens = Number.isFinite(opts.maxTokens) ? Number(opts.maxTokens) : 500;
-    // Optional safety caps (disabled by default to match ATFP flow).
     const maxChars = Number.isFinite(opts.maxChars) ? Number(opts.maxChars) : Infinity;
     const maxKeys = Number.isFinite(opts.maxKeys) ? Number(opts.maxKeys) : 0; // 0 => unlimited
 

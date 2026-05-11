@@ -21,7 +21,7 @@ use Linguator\Admin\Controllers\Linguator_Admin_Base;
 ?>
 <div id="col-container">
 	<?php $header && $header instanceof \Linguator\Settings\Header\Header && $header->header(); ?>
-	<div id = "main-col-container">
+	<div id="main-col-container">
 			
 		<div id="col-right">
 			<div class="col-wrap">
