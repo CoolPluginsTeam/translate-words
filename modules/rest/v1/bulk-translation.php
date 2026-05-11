@@ -345,14 +345,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_invalid_params', __( 'No translatable strings in request.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$lang_names = $this->ai_translate_language_labels( $source_lang, $target_lang );
-
 			$result = $this->ai_translate_strings_with_llm(
 				$provider,
 				$source_lang,
 				$target_lang,
-				$lang_names['source_name'],
-				$lang_names['target_name'],
 				$sanitized_strings,
 				$api_key,
 				$model
@@ -400,52 +396,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string $source_slug Source language slug.
-		 * @param string $target_slug Target language slug.
-		 * @return array{source_name:string,target_name:string}
-		 */
-		private function ai_translate_language_labels( string $source_slug, string $target_slug ): array {
-			$default = array(
-				'source_name' => $source_slug,
-				'target_name' => $target_slug,
-			);
-			if ( ! function_exists( 'LMAT' ) || ! LMAT() || ! property_exists( LMAT(), 'model' ) ) {
-				return $default;
-			}
-			$list = LMAT()->model->get_languages_list();
-			if ( ! is_array( $list ) ) {
-				return $default;
-			}
-			$source_name = $source_slug;
-			$target_name = $target_slug;
-			foreach ( $list as $lang ) {
-				if ( ! is_object( $lang ) || ! isset( $lang->slug ) ) {
-					continue;
-				}
-				$name = isset( $lang->name ) ? (string) $lang->name : $lang->slug;
-				if ( $lang->slug === $source_slug ) {
-					$source_name = $name;
-				}
-				if ( $lang->slug === $target_slug ) {
-					$target_name = $name;
-				}
-			}
-			return array(
-				'source_name' => $source_name,
-				'target_name' => $target_name,
-			);
-		}
-
-		/**
-		 * @param string               $provider     gemini.
-		 * @param string               $source_lang  Slug.
-		 * @param string               $target_lang  Slug.
-		 * @param string               $source_label Human label.
-		 * @param string               $target_label Human label.
-		 * @param array<string,string> $strings      Key => source text.
+		 * @param string               $provider    gemini.
+		 * @param string               $source_lang Slug (used in prompt; ATFP-style).
+		 * @param string               $target_lang Slug (used in prompt; ATFP-style).
+		 * @param array<string,string> $strings     Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
-		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, string $source_label, string $target_label, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
+		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
 			$models = array();
 			$ai_config = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
@@ -608,13 +565,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				Please ensure that the output follows the format: {"key(numeric value)": "(translations of the strings in %s language)"}
 
 				Strings are :- %s',
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $target_label ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $target_lang ),
 				$payload
 			);
 
@@ -626,49 +583,89 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$instruction_number = '' !== $custom_prompt ? 10 : 9;
 				$instruction       .= 'Instruction ' . $instruction_number . ': ' . $glossary_instructions;
 			}
-
-			$builder = wp_ai_client_prompt();
-			if ( method_exists( $builder, 'using_system_instruction' ) ) {
-				$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
-			}
-			if ( method_exists( $builder, 'with_text' ) ) {
-				$builder = $builder->with_text( $instruction );
-			} else {
-				$builder = wp_ai_client_prompt( $instruction );
+			
+			$ai_request_timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
+			if ( $ai_request_timeout < 1 ) {
+				$ai_request_timeout = 120;
 			}
 
-			if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
-				$builder = $builder->using_model_preference( $model_id );
-			}
+			$timeout_filter = static function ( $time ) use ( $ai_request_timeout ) {
+				return $ai_request_timeout;
+			};
+			add_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
+
+			$text = null;
 
 			try {
-				$text = $builder->generate_text();
-			} catch ( \Exception $e ) {
-				$msg = (string) $e->getMessage();
-				if ( false !== stripos( $msg, 'No models found' ) ) {
+				if ( method_exists( $registry, 'isProviderConfigured' ) && ! $registry->isProviderConfigured( $provider_id ) ) {
 					return new WP_Error(
-						'lmat_ai_no_models',
-						__( 'No compatible text-generation model is available for the selected provider. Please ensure the provider is installed, an API key is saved, and a text model is selected.', 'translate-words' ),
+						'lmat_ai_no_key',
+						__( 'API key for this provider is not configured.', 'translate-words' ),
 						array( 'status' => 400 )
 					);
 				}
-				if (
-					false !== stripos( $msg, '429' ) ||
-					false !== stripos( $msg, 'quota exceeded' ) ||
-					false !== stripos( $msg, 'rate limit' ) ||
-					false !== stripos( $msg, 'too many requests' )
-				) {
+
+				$provider_class = $registry->getProviderClassName( $provider_id );
+				if ( ! is_string( $provider_class ) || ! class_exists( $provider_class ) ) {
 					return new WP_Error(
-						'lmat_ai_rate_limited',
-						__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
-						array( 'status' => 429 )
+						'lmat_ai_provider_invalid',
+						__( 'Invalid AI provider.', 'translate-words' ),
+						array( 'status' => 400 )
 					);
 				}
-				return new WP_Error(
-					'lmat_ai_request_failed',
-					__( 'AI translation request failed. Please try again shortly.', 'translate-words' ),
-					array( 'status' => 502 )
-				);
+
+				$builder = wp_ai_client_prompt();
+
+				$can_use_atfp_chain = method_exists( $builder, 'using_provider' )
+					&& method_exists( $builder, 'with_text' )
+					&& method_exists( $builder, 'generate_text' )
+					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
+
+				if ( $can_use_atfp_chain ) {
+					if ( '' !== $model_id ) {
+						try {
+							$model   = $provider_class::model( $model_id );
+							$builder = $builder->using_model( $model );
+						} catch ( \Throwable $e ) {
+							return new WP_Error(
+								'lmat_ai_invalid_model',
+								__( 'Invalid model selected during text generation.', 'translate-words' ),
+								array( 'status' => 400 )
+							);
+						}
+					}
+
+					try {
+						$text = $builder
+							->using_provider( $provider_id )
+							->with_text( $instruction )
+							->generate_text();
+					} catch ( \Throwable $e ) {
+						return $this->ai_translate_map_generate_text_exception( $e );
+					}
+				} else {
+					// Older WP AI Client: fall back to model preference + single-message prompt.
+					if ( method_exists( $builder, 'using_system_instruction' ) ) {
+						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
+					}
+					if ( method_exists( $builder, 'with_text' ) ) {
+						$builder = $builder->with_text( $instruction );
+					} else {
+						$builder = wp_ai_client_prompt( $instruction );
+					}
+
+					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
+						$builder = $builder->using_model_preference( $model_id );
+					}
+
+					try {
+						$text = $builder->generate_text();
+					} catch ( \Throwable $e ) {
+						return $this->ai_translate_map_generate_text_exception( $e );
+					}
+				}
+			} finally {
+				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 			}
 
 			if ( is_wp_error( $text ) ) {
@@ -681,8 +678,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 								$provider,
 								$source_lang,
 								$target_lang,
-								$source_label,
-								$target_label,
 								$chunks[0],
 								$api_key,
 								$model_override,
@@ -696,8 +691,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 								$provider,
 								$source_lang,
 								$target_lang,
-								$source_label,
-								$target_label,
 								$chunks[1],
 								$api_key,
 								$model_override,
@@ -784,6 +777,40 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return $decoded;
+		}
+
+		/**
+		 * Map generate_text() failures to WP_Error (aligned with ATFP exception handling).
+		 *
+		 * @param \Throwable $e Thrown error.
+		 * @return \WP_Error
+		 */
+		private function ai_translate_map_generate_text_exception( \Throwable $e ): WP_Error {
+			$msg = (string) $e->getMessage();
+			if ( false !== stripos( $msg, 'No models found' ) ) {
+				return new WP_Error(
+					'lmat_ai_no_models',
+					__( 'No compatible text-generation model is available for the selected provider. Please ensure the provider is installed, an API key is saved, and a text model is selected.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+			if (
+				false !== stripos( $msg, '429' ) ||
+				false !== stripos( $msg, 'quota exceeded' ) ||
+				false !== stripos( $msg, 'rate limit' ) ||
+				false !== stripos( $msg, 'too many requests' )
+			) {
+				return new WP_Error(
+					'lmat_ai_rate_limited',
+					__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+					array( 'status' => 429 )
+				);
+			}
+			return new WP_Error(
+				'lmat_ai_request_failed',
+				__( 'AI translation request failed. Please try again shortly.', 'translate-words' ),
+				array( 'status' => 502 )
+			);
 		}
 
 		/**
