@@ -733,13 +733,51 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$out = array();
 			foreach ( array_keys( $strings ) as $key ) {
 				if ( isset( $decoded[ $key ] ) && is_scalar( $decoded[ $key ] ) ) {
-					$out[ $key ] = (string) $decoded[ $key ];
+					$out[ $key ] = $this->ai_normalize_translation_string( (string) $decoded[ $key ] );
 				} else {
 					$out[ $key ] = $strings[ $key ];
 				}
 			}
 
 			return $out;
+		}
+
+		/**
+		 * Turn literal \n, \r, \t (backslash + letter) into real control characters after JSON decode.
+		 * Matches client `normalizeBulkTranslationEscapes`; repeats until stable for doubled model escapes.
+		 *
+		 * @param string $value Raw decoded string from the model.
+		 * @return string
+		 */
+		private function ai_normalize_translation_string( string $value ): string {
+			$out = $value;
+			for ( $i = 0; $i < 24; $i++ ) {
+				$next = str_replace( array( '\\n', '\\r', '\\t' ), array( "\n", "\r", "\t" ), $out );
+				if ( $next === $out ) {
+					break;
+				}
+				$out = $next;
+			}
+			return $out;
+		}
+
+		/**
+		 * Recursively normalize literal \n, \r, \t in all string leaves (blocks JSON, meta, Elementor trees).
+		 *
+		 * @param mixed $data Decoded array or scalar.
+		 * @return mixed
+		 */
+		private function ai_normalize_translation_strings_recursive( $data ) {
+			if ( is_string( $data ) ) {
+				return $this->ai_normalize_translation_string( $data );
+			}
+			if ( is_array( $data ) ) {
+				foreach ( $data as $k => $v ) {
+					$data[ $k ] = $this->ai_normalize_translation_strings_recursive( $v );
+				}
+				return $data;
+			}
+			return $data;
 		}
 
 		/**
@@ -1512,7 +1550,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						array( 'status' => 400 )
 					);
 				}
-				$post_data['post_meta_fields'] = $decoded_meta_fields;
+				$post_data['post_meta_fields'] = is_array( $decoded_meta_fields )
+					? $this->ai_normalize_translation_strings_recursive( $decoded_meta_fields )
+					: $decoded_meta_fields;
 			}
 
 			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
@@ -1525,7 +1565,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
-				$post_data['meta_fields']['_elementor_data'] = $content;
+				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
+				$el_dec = json_decode( $el_raw, true );
+				if ( JSON_ERROR_NONE === json_last_error() && is_array( $el_dec ) ) {
+					$post_data['meta_fields']['_elementor_data'] = wp_json_encode(
+						$this->ai_normalize_translation_strings_recursive( $el_dec ),
+						JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+					);
+				} else {
+					$post_data['meta_fields']['_elementor_data'] = $this->ai_normalize_translation_string( (string) $el_raw );
+				}
 				unset( $post_data['post_content'] );
 			} elseif ( 'block' === $editor_type ) {
 				$decoded_blocks = json_decode( $post_data['post_content'], true );
@@ -1543,6 +1592,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						array( 'status' => 400 )
 					);
 				}
+				$decoded_blocks            = $this->ai_normalize_translation_strings_recursive( $decoded_blocks );
 				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
 			} elseif ( 'classic' === $editor_type ) {
 				// Classic editor content is plain HTML, not JSON.
@@ -1550,11 +1600,22 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$raw_classic = isset( $params['post_content'] ) ? (string) $params['post_content'] : '';
 				$decoded     = json_decode( $raw_classic, true );
 				if ( JSON_ERROR_NONE === json_last_error() && is_string( $decoded ) ) {
-					$post_data['post_content'] = wp_kses_post( $decoded );
+					$post_data['post_content'] = $this->ai_normalize_translation_string( wp_kses_post( $decoded ) );
 				} else {
 					// Use already-sanitized `post_content` from args sanitizer.
-					$post_data['post_content'] = isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : '';
+					$post_data['post_content'] = $this->ai_normalize_translation_string(
+						isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : ''
+					);
 				}
+			} else {
+				if ( isset( $post_data['post_content'] ) && is_string( $post_data['post_content'] ) ) {
+					$post_data['post_content'] = $this->ai_normalize_translation_string( $post_data['post_content'] );
+				}
+			}
+
+			$post_data['post_title'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) ( $post_data['post_title'] ?? '' ) ) );
+			if ( isset( $post_data['post_excerpt'] ) ) {
+				$post_data['post_excerpt'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) $post_data['post_excerpt'] ) );
 			}
 
 			global $linguator;
@@ -1730,9 +1791,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$term_id                 = intval( sanitize_text_field( $params['term_id'] ) );
 			$target_language         = isset( $params['target_language'] ) ? sanitize_text_field( $params['target_language'] ) : '';
 			$taxonomy                = isset( $params['taxonomy'] ) ? sanitize_text_field( $params['taxonomy'] ) : '';
-			$taxonomy_name           = isset( $params['taxonomy_name'] ) ? sanitize_text_field( $params['taxonomy_name'] ) : '';
+			$taxonomy_name           = isset( $params['taxonomy_name'] ) ? sanitize_text_field( $this->ai_normalize_translation_string( (string) $params['taxonomy_name'] ) ) : '';
 			$taxonomy_slug           = isset( $params['taxonomy_slug'] ) ? sanitize_title( $params['taxonomy_slug'] ) : '';
-			$taxonomy_description    = isset( $params['taxonomy_description'] ) ? wp_kses_post( $params['taxonomy_description'] ) : '';
+			$taxonomy_description    = isset( $params['taxonomy_description'] ) ? wp_kses_post( $this->ai_normalize_translation_string( (string) $params['taxonomy_description'] ) ) : '';
 					$slug_translation_option = 'title_translate';
 			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
