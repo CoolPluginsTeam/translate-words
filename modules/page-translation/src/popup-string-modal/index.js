@@ -16,6 +16,8 @@ const popStringModal = (props) => {
     const [refPostData, setRefPostData] = useState('');
     const [translatePending, setTranslatePending] = useState(true);
     const [hasTranslateError, setHasTranslateError] = useState(false);
+    /** While Gemini recoverable error is open (or until resolved), block Update Content — cleared on Continue or terminal AI outcome. */
+    const [recoverableAiErrorBlocksUpdate, setRecoverableAiErrorBlocksUpdate] = useState(false);
     const [characterCount, setCharacterCount] = useState(translateData?.targetCharacterCount || 0);
     const [onDestroy, setOnDestroy] = useState([]);
     const [translateButtonStatus, setTranslateButtonStatus] = useState(false);
@@ -38,19 +40,27 @@ const popStringModal = (props) => {
 
     useEffect(() => {
         const onTranslationError = (e) => {
-            const msg = e?.detail?.message;
-            if (typeof msg === 'string' && msg.trim() !== '') {
+            const d = e?.detail;
+            if (d?.recoverable) {
+                setRecoverableAiErrorBlocksUpdate(true);
+            }
+            const msg = d?.message;
+            if (typeof msg === "string" && msg.trim() !== "") {
                 setHasTranslateError(true);
             }
         };
         const onTranslationErrorClear = () => setHasTranslateError(false);
 
+        const onRecoverableAiResolved = () => setRecoverableAiErrorBlocksUpdate(false);
+
         document.addEventListener('lmat-page-translation:translation-error', onTranslationError);
         document.addEventListener('lmat-page-translation:translation-error-clear', onTranslationErrorClear);
+        document.addEventListener('lmat-page-translation:recoverable-ai-error-resolved', onRecoverableAiResolved);
 
         return () => {
             document.removeEventListener('lmat-page-translation:translation-error', onTranslationError);
             document.removeEventListener('lmat-page-translation:translation-error-clear', onTranslationErrorClear);
+            document.removeEventListener('lmat-page-translation:recoverable-ai-error-resolved', onRecoverableAiResolved);
         };
     }, []);
 
@@ -102,6 +112,7 @@ const popStringModal = (props) => {
 
         setTranslatePending(true);
         setHasTranslateError(false);
+        setRecoverableAiErrorBlocksUpdate(false);
         setPopupVisibility(false);
     }
 
@@ -126,6 +137,7 @@ const popStringModal = (props) => {
         setTranslateButtonStatus(true);
         setTranslatePending(true);
         setHasTranslateError(false);
+        setRecoverableAiErrorBlocksUpdate(false);
 
         props.translatePost({ postContent: postContent, modalClose: modalClose, service: service });
         props.pageTranslate(true);
@@ -134,6 +146,7 @@ const popStringModal = (props) => {
 
     useEffect(() => {
         setPopupVisibility(true);
+        setRecoverableAiErrorBlocksUpdate(false);
 
         if (translateStatus) {
             setCharacterCount(translateData?.targetCharacterCount || 0);
@@ -148,6 +161,9 @@ const popStringModal = (props) => {
         })
     }, [props.modalRender])
 
+    const updateContentDisabled =
+        translatePending || hasTranslateError || recoverableAiErrorBlocksUpdate;
+
     return (
         <> {popupVisibility &&
             <div id={`lmat-page-translation-${props.service}-strings-modal`} className="modal-container" style={{ display: popupVisibility ? 'flex' : 'none' }} data-render-id={props.modalRender}>
@@ -158,6 +174,7 @@ const popStringModal = (props) => {
                         postContent={refPostData}
                         translatePendingStatus={translatePending}
                         hasTranslateError={hasTranslateError}
+                        updateContentDisabled={updateContentDisabled}
                         pageTranslate={props.pageTranslate}
                         service={props.service}
                         serviceLabel={serviceLabel()}
@@ -185,6 +202,7 @@ const popStringModal = (props) => {
                         postContent={refPostData}
                         translatePendingStatus={translatePending}
                         hasTranslateError={hasTranslateError}
+                        updateContentDisabled={updateContentDisabled}
                         pageTranslate={props.pageTranslate}
                         service={props.service}
                         serviceLabel={serviceLabel()}

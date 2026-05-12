@@ -2,7 +2,7 @@ import { updateProgressStatus, updateTranslatePostInfo, unsetPendingPost } from 
 import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } from "../../../redux-store/features/selectors.js";
 import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
-import { __ } from "@wordpress/i18n";
+import { __, sprintf } from "@wordpress/i18n";
 import { requestAiBatch, chunkStringMap } from "./api-client.js";
 
 function escapeHtml(text) {
@@ -20,19 +20,35 @@ function geminiQuotaErrorHtml(message) {
 }
 
 class AiLlmBulkTranslator {
-    constructor({ sourceLang = "en", targetLangs = false, updateContent, totalPosts, storeDispatch, postId, prefix, updateDestoryHandler }) {
+    constructor({
+        sourceLang = "en",
+        targetLangs = false,
+        updateContent,
+        totalPosts,
+        storeDispatch,
+        postId,
+        prefix,
+        updateDestoryHandler,
+        createTranslatePostNonce = "",
+        previousCompletedStrings = 0,
+    }) {
         this.textContentObject = selectTargetContent(store.getState(), postId);
-        this.totalTranslatedLength = Object.keys(this.textContentObject).length;
+        this.totalSourceKeys = Math.max(0, Object.keys(this.textContentObject || {}).length);
         this.sourceLang = sourceLang;
         this.targetLangs = targetLangs;
         this.updateContent = updateContent;
-        this.totalPosts = totalPosts;
+        this.totalPosts = Math.max(1, totalPosts);
         this.storeDispatch = storeDispatch;
         this.postId = postId;
         this.prefix = prefix;
         this.serviceProvider = store.getState().serviceProvider;
         this.stopTranslation = false;
         this.completedPostStatus = 0;
+        this.createTranslatePostNonce = createTranslatePostNonce;
+        this.previousCompletedStrings = typeof previousCompletedStrings === "number" ? previousCompletedStrings : 0;
+        this.progressSliceTarget = 100 / this.totalPosts;
+        this.progressContributedThisJob = 0;
+        this.lastSyncedProgressPercent = 0;
         updateDestoryHandler(() => {
             this.destroy();
         });
@@ -52,11 +68,30 @@ class AiLlmBulkTranslator {
         return `${base}/ai-translate-batch`;
     };
 
+    /**
+     * Keys still missing a Gemini translation for this target language.
+     * @param {string} targetLang
+     * @returns {Record<string,string>}
+     */
+    getRemainingStringsMap(targetLang) {
+        const base = this.textContentObject || {};
+        const out = {};
+        const tc = store.getState().translatedContent[this.postId] || {};
+        const provider = this.serviceProvider;
+        Object.keys(base).forEach((k) => {
+            const tr = tc[k]?.translation?.[provider]?.[targetLang];
+            if (tr === undefined || tr === null || String(tr).trim() === "") {
+                out[k] = base[k];
+            }
+        });
+        return out;
+    }
+
     updateProgressForChunk = (completedKeys, targetLang) => {
-        if (this.totalTranslatedLength < 1) {
+        if (this.totalSourceKeys < 1) {
             return;
         }
-        const completedPercentage = Math.min(100, (completedKeys / this.totalTranslatedLength) * 100);
+        const completedPercentage = Math.min(100, (completedKeys / this.totalSourceKeys) * 100);
         const progressBarCircular = document.querySelector(`.${this.prefix}-progress-bar-circular[data-id="${this.postId}_${targetLang}"]`);
         if (progressBarCircular) {
             const rounded = Math.min(100, Math.round(completedPercentage));
@@ -70,6 +105,35 @@ class AiLlmBulkTranslator {
             totalProgressBar.innerHTML = `${totalProgress.toFixed(2)}%`;
         }
     };
+
+    /**
+     * Update the progress bar for the target language.
+     * @param {number} mergedDone previousCompletedStrings + keys done this run
+     * @param {string} targetLang
+     */
+    addReduxProgressForCompletedCount(mergedDone, targetLang) {
+        const total = Math.max(1, this.totalSourceKeys);
+        const newPct = Math.min(100, (mergedDone / total) * 100);
+        const prevPct =
+            typeof this.lastSyncedProgressPercent === "number"
+                ? this.lastSyncedProgressPercent
+                : (this.previousCompletedStrings / total) * 100;
+        const delta = ((newPct - prevPct) / 100) * this.progressSliceTarget;
+        if (delta > 0.0001) {
+            this.storeDispatch(updateProgressStatus(delta));
+            this.progressContributedThisJob += delta;
+        }
+        this.lastSyncedProgressPercent = newPct;
+        this.updateProgressForChunk(mergedDone, targetLang);
+    }
+
+    finalizeProgressSliceRedux() {
+        const rem = this.progressSliceTarget - this.progressContributedThisJob;
+        if (rem > 0.0001) {
+            this.storeDispatch(updateProgressStatus(rem));
+            this.progressContributedThisJob += rem;
+        }
+    }
 
     getBatchConfig = () => {
         const maxTokens = Number(lmatBulkTranslationGlobal?.AIRequestMaxTokens);
@@ -103,8 +167,65 @@ class AiLlmBulkTranslator {
         if (firstError) throw firstError;
     };
 
+    buildRecoverableErrorHtml(mergedDone, totalKeys, limitExceeded) {
+        const total = Math.max(1, totalKeys);
+        const completedPercent = Math.min(100, Math.round(((mergedDone / total) * 100) * 10) / 10).toFixed(1);
+        const notCompletedPercent = Math.min(100, Math.round(((100 - (mergedDone / total) * 100) * 10) / 10) / 10).toFixed(1);
+
+        let errorMessage = "";
+        let translateBtnMessage = "";
+        if (limitExceeded) {
+            errorMessage =
+                `<p class="${this.prefix}-ai-pending-request-heading">` +
+                __("You’ve exceeded your current plan limit.", "translate-words") +
+                "</p> " +
+                __("To continue, please check your plan details and update your API key.", "translate-words");
+            translateBtnMessage = __(
+                'Click "Translate" after updating your API key to re-translate the remaining strings.',
+                "translate-words"
+            );
+        } else {
+            errorMessage =
+                `<p class="${this.prefix}-ai-pending-request-heading">` + __("Oops! Something went wrong during translation", "translate-words") + "</p>";
+            translateBtnMessage = __('Click "Translate" to re-translate the remaining strings.', "translate-words");
+        }
+
+        return `<div class="${this.prefix}-ai-pending-request">
+                    <div>${errorMessage}</div>
+                    <p>${__("To see more details, open your browser’s developer console.", "translate-words")}</p>
+                <p>✅ ${sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%")}</p>
+                <p>❌ ${sprintf(__("%s of the strings are still not translated.", "translate-words"), notCompletedPercent + "%")}</p>
+                <p><strong>${__("Next Steps:", "translate-words")}</strong></p>
+                <p>${translateBtnMessage}</p>
+                <p><strong>${__("OR", "translate-words")}</strong></p>
+                <p>${__('Click "Continue" to proceed without translating the rest of the strings.', "translate-words")}</p>
+                </div>`;
+    }
+
+    dispatchRecoverableError(targetLang, mergedDone) {
+        const infoKey = `${this.postId}_${targetLang}`;
+        const existing = store.getState().translatePostInfo[infoKey] || {};
+        const pendingHtml = this.buildRecoverableErrorHtml(mergedDone, this.totalSourceKeys, false);
+        this.storeDispatch(
+            updateTranslatePostInfo({
+                [infoKey]: {
+                    ...existing,
+                    status: "error",
+                    messageClass: "error",
+                    errorMessage: __("Translation failed.", "translate-words"),
+                    errorHtml: pendingHtml,
+                    errorAllowHtml: false,
+                    aiError: true,
+                    nonce: this.createTranslatePostNonce,
+                    completedStrings: mergedDone,
+                    totalPosts: this.totalPosts,
+                },
+            })
+        );
+    }
+
     /**
-     * Run all Gemini chunk requests for one target language (parallel with other languages).
+     * Run Gemini chunk requests for one target language.
      * @param {string} targetLang
      * @returns {Promise<boolean>} true if strings translated and post save can run
      */
@@ -114,10 +235,13 @@ class AiLlmBulkTranslator {
         }
 
         this.completedPostStatus = selectProgressStatus(store.getState());
+        this.progressContributedThisJob = 0;
+        const total = Math.max(1, this.totalSourceKeys);
+        this.lastSyncedProgressPercent = (this.previousCompletedStrings / total) * 100;
 
-        if (!this.textContentObject || Object.keys(this.textContentObject).length === 0) {
+        if (!this.textContentObject || this.totalSourceKeys === 0) {
             this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
-            this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+            this.finalizeProgressSliceRedux();
             this.storeDispatch(
                 updateTranslatePostInfo({
                     [`${this.postId}_${targetLang}`]: {
@@ -125,6 +249,7 @@ class AiLlmBulkTranslator {
                         messageClass: "error",
                         errorMessage: __("No content to translate", "translate-words"),
                         errorHtml: false,
+                        aiError: false,
                     },
                 })
             );
@@ -134,15 +259,32 @@ class AiLlmBulkTranslator {
         this.storeDispatch(updateTranslatePostInfo({ [`${this.postId}_${targetLang}`]: { status: "running", messageClass: "" } }));
         const startTime = new Date();
 
+        const stringsToTranslate = this.getRemainingStringsMap(targetLang);
+        if (Object.keys(stringsToTranslate).length === 0) {
+            if (!this.stopTranslation) {
+                this.finalizeProgressSliceRedux();
+                const duration = new Date() - startTime;
+                const tInfo = selectTranslatePostInfo(store.getState());
+                const previousDuration = (tInfo && tInfo[`${this.postId}_${targetLang}`] && tInfo[`${this.postId}_${targetLang}`].duration) || 0;
+                this.storeDispatch(
+                    updateTranslatePostInfo({
+                        [`${this.postId}_${targetLang}`]: { duration: previousDuration + duration },
+                    })
+                );
+            }
+            return true;
+        }
+
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
-            const chunks = chunkStringMap(this.textContentObject, { maxTokens });
+            const chunks = chunkStringMap(stringsToTranslate, { maxTokens });
             const modelKey = "gemini_model";
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
                     : "";
-            let done = 0;
+            let doneThisRun = 0;
+
             await this.runWithConcurrency(chunks, concurrency, async (chunk) => {
                 if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
                     return;
@@ -165,13 +307,14 @@ class AiLlmBulkTranslator {
                 for (const key of Object.keys(chunk)) {
                     const value = translations[key] !== undefined ? translations[key] : chunk[key];
                     storeTranslateString(this.postId, key, targetLang, value, this.serviceProvider, targetLang, this.storeDispatch);
-                    done++;
+                    doneThisRun++;
+                    const merged = this.previousCompletedStrings + doneThisRun;
+                    this.addReduxProgressForCompletedCount(merged, targetLang);
                 }
-                this.updateProgressForChunk(done, targetLang);
             });
 
             if (!this.stopTranslation) {
-                this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+                this.finalizeProgressSliceRedux();
                 const duration = new Date() - startTime;
                 const tInfo = selectTranslatePostInfo(store.getState());
                 const previousDuration = (tInfo && tInfo[`${this.postId}_${targetLang}`] && tInfo[`${this.postId}_${targetLang}`].duration) || 0;
@@ -189,44 +332,59 @@ class AiLlmBulkTranslator {
                 this.serviceProvider === "gemini" &&
                 /429|quota exceeded|rate limit|resource has been exhausted|too many requests/i.test(String(msg));
             const haltForQuota = isQuotaError || isGeminiQuotaByMessage;
-            const showGeminiUsageLink = this.serviceProvider === "gemini" && (isQuotaError || isGeminiQuotaByMessage);
+            const showGeminiUsageLink = this.serviceProvider === "gemini" && haltForQuota;
+
+            const mergedFromStore = Object.keys(this.textContentObject).filter((k) => {
+                const tr = store.getState().translatedContent[this.postId]?.[k]?.translation?.[this.serviceProvider]?.[targetLang];
+                return tr !== undefined && tr !== null && String(tr).trim() !== "";
+            }).length;
 
             if (haltForQuota) {
                 this.stopTranslation = true;
                 window.lmatBulkTranslationQuotaExceeded = true;
+                const rem = Math.max(0, this.progressSliceTarget - this.progressContributedThisJob);
+                if (rem > 0.0001) {
+                    this.storeDispatch(updateProgressStatus(rem));
+                    this.progressContributedThisJob += rem;
+                }
+                const infoKey = `${this.postId}_${targetLang}`;
+                const existing = store.getState().translatePostInfo[infoKey] || {};
+                const errorMessage = showGeminiUsageLink ? geminiQuotaErrorHtml(msg) : msg;
+                this.storeDispatch(unsetPendingPost(infoKey));
+                this.storeDispatch(
+                    updateTranslatePostInfo({
+                        [infoKey]: {
+                            ...existing,
+                            status: "error",
+                            messageClass: "error",
+                            errorMessage,
+                            errorHtml: false,
+                            errorAllowHtml: showGeminiUsageLink,
+                            aiError: false,
+                        },
+                    })
+                );
+                return false;
             }
 
-            const errorAllowHtml = showGeminiUsageLink;
-            const errorMessage = errorAllowHtml ? geminiQuotaErrorHtml(msg) : msg;
-
-            this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
-            this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-            this.storeDispatch(
-                updateTranslatePostInfo({
-                    [`${this.postId}_${targetLang}`]: {
-                        status: "error",
-                        messageClass: "error",
-                        errorMessage,
-                        errorHtml: false,
-                        errorAllowHtml,
-                    },
-                })
-            );
+            this.dispatchRecoverableError(targetLang, mergedFromStore);
             return false;
         }
     }
 
     async initTranslation() {
-        if (this.textContentObject && Object.keys(this.textContentObject).length > 0 && this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
+        if (this.textContentObject && this.totalSourceKeys > 0 && this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
             const langs = [...this.targetLangs];
-            const chunkResults = await Promise.all(langs.map((lang) => this.runChunksForTargetLanguage(lang)));
-
-            if (!this.stopTranslation && !window.lmatBulkTranslationQuotaExceeded) {
-                for (let i = 0; i < langs.length; i++) {
-                    if (chunkResults[i]) {
-                        // eslint-disable-next-line no-await-in-loop
-                        await this.updateContent(langs[i]);
-                    }
+            for (let i = 0; i < langs.length; i++) {
+                if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
+                    break;
+                }
+                const lang = langs[i];
+                // eslint-disable-next-line no-await-in-loop
+                const ok = await this.runChunksForTargetLanguage(lang);
+                if (!this.stopTranslation && !window.lmatBulkTranslationQuotaExceeded && ok) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await this.updateContent(lang);
                 }
             }
         } else if (this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
@@ -240,6 +398,7 @@ class AiLlmBulkTranslator {
                             messageClass: "error",
                             errorMessage: __("No content to translate", "translate-words"),
                             errorHtml: false,
+                            aiError: false,
                         },
                     })
                 );
