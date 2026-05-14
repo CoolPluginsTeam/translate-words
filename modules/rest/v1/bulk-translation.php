@@ -323,7 +323,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_' . $provider . '_key';
+			$key_option = 'connectors_ai_google_api_key';
 			$api_key    = (string) get_option( $key_option, '' );
 			if ( '' === trim( $api_key ) ) {
 				return new WP_Error( 'lmat_ai_no_key', __( 'API key is not configured for this provider.', 'translate-words' ), array( 'status' => 400 ) );
@@ -744,19 +744,30 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 		/**
 		 * Turn literal \n, \r, \t (backslash + letter) into real control characters after JSON decode.
-		 * Matches client `normalizeBulkTranslationEscapes`; repeats until stable for doubled model escapes.
+		 * Matches client `normalizeBulkTranslationEscapes`; repeats until stable (max 5 passes).
+		 * Strips spurious surrounding ASCII double quotes (up to three layers) some models add per value.
 		 *
 		 * @param string $value Raw decoded string from the model.
 		 * @return string
 		 */
 		private function ai_normalize_translation_string( string $value ): string {
 			$out = $value;
-			for ( $i = 0; $i < 24; $i++ ) {
+			for ( $i = 0; $i < 5; $i++ ) {
 				$next = str_replace( array( '\\n', '\\r', '\\t' ), array( "\n", "\r", "\t" ), $out );
 				if ( $next === $out ) {
 					break;
 				}
 				$out = $next;
+			}
+			// Strip spurious surrounding ASCII double quotes the model sometimes leaves on decoded values.
+			for ( $j = 0; $j < 3; $j++ ) {
+				$t = trim( $out );
+				$len = strlen( $t );
+				if ( $len >= 2 && '"' === $t[0] && '"' === $t[ $len - 1 ] ) {
+					$out = substr( $t, 1, -1 );
+				} else {
+					break;
+				}
 			}
 			return $out;
 		}

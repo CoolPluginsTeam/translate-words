@@ -87,7 +87,7 @@ export default function createAiLlmPageTranslator(providerId) {
             </div>`;
             }
             const completedPercent = Math.min(100, Math.round(((done / totalSafe) * 100) * 10) / 10).toFixed(1);
-            const notCompletedPercent = Math.min(100, Math.round(((100 - (done / totalSafe) * 100) * 10) / 10) / 10).toFixed(1);
+            const notCompletedPercent = Math.min(100, Math.round((100 - (done / total) * 100) * 10) / 10).toFixed(1);
             return `<div class="lmat_page_translation_ai_pending">
                 <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(__("Oops! Something went wrong during translation", "translate-words"))}</p>
                 <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>

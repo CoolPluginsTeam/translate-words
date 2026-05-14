@@ -170,7 +170,7 @@ class AiLlmBulkTranslator {
     buildRecoverableErrorHtml(mergedDone, totalKeys, limitExceeded) {
         const total = Math.max(1, totalKeys);
         const completedPercent = Math.min(100, Math.round(((mergedDone / total) * 100) * 10) / 10).toFixed(1);
-        const notCompletedPercent = Math.min(100, Math.round(((100 - (mergedDone / total) * 100) * 10) / 10) / 10).toFixed(1);
+        const notCompletedPercent = Math.min(100, Math.round((100 - (mergedDone / total) * 100) * 10) / 10).toFixed(1);
 
         let errorMessage = "";
         let translateBtnMessage = "";

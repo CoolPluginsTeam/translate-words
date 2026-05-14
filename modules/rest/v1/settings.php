@@ -489,8 +489,8 @@ class Settings extends Abstract_Controller {
 		}
 
 		// Never return raw API keys over REST; return masked values so the UI can show "configured".
-		// Keys live in dedicated WP options `connectors_ai_{provider}_key`.
-		$gemini_raw = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+		// Keys live in dedicated WP options `connectors_ai_google_api_key`.
+		$gemini_raw = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
 		$gemini_masked = '';
 		if ( '' !== $gemini_raw ) {
 			$tail          = substr( $gemini_raw, -4 );
@@ -569,7 +569,6 @@ class Settings extends Abstract_Controller {
 	private function validate_gemini_api_key( string $api_key ) {
 		// Normalize: Gemini API keys never contain whitespace; remove accidental spaces/newlines from pastes.
 		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
-		$key_trimmed = trim( (string) $key_trimmed );
 		if ( '' === $key_trimmed ) {
 			return true;
 		}
@@ -724,7 +723,7 @@ class Settings extends Abstract_Controller {
 		$this->ai_gemini_model_refresh_needed = false;
 
 		// Support saving AI provider keys/models via the Settings route.
-		// Keys are stored in dedicated WP options `connectors_ai_{provider}_key`,
+		// Keys are stored in dedicated WP options `connectors_ai_google_api_key`,
 		// while models are stored in the `api_keys` option (see Business\\Api_Keys).
 		$params = $request->get_json_params();
 		if ( ! is_array( $params ) ) {
@@ -738,9 +737,8 @@ class Settings extends Abstract_Controller {
 		if ( array_key_exists( 'gemini', $incoming_keys ) ) {
 			$v = $incoming_keys['gemini'];
 			$v = is_string( $v ) ? preg_replace( '/\s+/', '', $v ) : '';
-			$v = trim( (string) $v );
 
-			$current_raw  = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+			$current_raw  = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
 			$is_unchanged = ( '' !== $v && '' !== $current_raw && $current_raw === $v );
 
 			// Validate only when setting a non-empty key AND it differs from the stored one.
@@ -752,7 +750,7 @@ class Settings extends Abstract_Controller {
 				}
 			}
 
-			update_option( 'connectors_ai_gemini_key', $v );
+			update_option( 'connectors_ai_google_api_key', $v );
 			if ( '' === $v && '' !== $current_raw ) {
 				Api_Keys_Option::clear_gemini_models_list();
 			} elseif ( '' !== $v && ! $is_unchanged ) {
