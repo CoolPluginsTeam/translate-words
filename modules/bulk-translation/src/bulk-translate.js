@@ -279,18 +279,33 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
         postUrl='lmat:bulk-translate-taxonomy-entries';
     }
 
-    const untranslatedPosts=await fetch(bulkTranslateRouteUrl + '/' + postUrl, {
-        method: 'POST',
-        body: new URLSearchParams(body),
-        headers: {
-            'X-WP-Nonce': nonce,
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Accept': 'application/json',
-        },
-        ...(signal ? { signal } : {}),
-    })
-    
-    const untranslatedPostsData=await untranslatedPosts.json();
+    let untranslatedPosts;
+    let untranslatedPostsData;
+    try {
+        untranslatedPosts = await fetch(bulkTranslateRouteUrl + '/' + postUrl, {
+            method: 'POST',
+            body: new URLSearchParams(body),
+            headers: {
+                'X-WP-Nonce': nonce,
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': 'application/json',
+            },
+            ...(signal ? { signal } : {}),
+        });
+
+        untranslatedPostsData = await untranslatedPosts.json();
+    } catch (err) {
+        if (err && err.name === 'AbortError') {
+            return { success: false, message: '', aborted: true };
+        }
+        if (signal && signal.aborted) {
+            return { success: false, message: '', aborted: true };
+        }
+        return {
+            success: false,
+            message: __('Could not load posts to translate. Check your connection and try again.', 'translate-words'),
+        };
+    }
 
     if (signal && signal.aborted) {
         return { success: false, message: '', aborted: true };

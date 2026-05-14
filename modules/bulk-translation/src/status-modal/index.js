@@ -65,18 +65,28 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         const { signal } = abortControllerRef.current;
 
         const translatePosts = async () => {
-            const response = await bulkTranslateEntries({ ids: postIds, langs: selectedLanguages, storeDispatch, signal });
-            if (signal.aborted) {
-                return;
-            }
-            setIsLoading(false);
+            try {
+                const response = await bulkTranslateEntries({ ids: postIds, langs: selectedLanguages, storeDispatch, signal });
+                if (signal.aborted) {
+                    return;
+                }
+                setIsLoading(false);
 
-            if(!response.success && false === response.success && response.message){
-                setEmptyPostMessage(response.message);
-                return;
+                if (!response.success && response.success === false && response.message) {
+                    setEmptyPostMessage(response.message);
+                    return;
+                }
+
+                initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler, signal);
+            } catch (err) {
+                if (signal.aborted) {
+                    return;
+                }
+                setIsLoading(false);
+                setEmptyPostMessage(
+                    __('Could not load posts to translate. Check your connection and try again.', 'translate-words')
+                );
             }
-        
-            initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler, signal);
         }
         translatePosts();
 
@@ -165,11 +175,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             
             if(running) return;
 
-            if(error){
-                updateBulkStatus('pending');
-            }else{
-                updateBulkStatus('pending');
-            }
+            updateBulkStatus(error ? 'error' : 'pending');
         }
     }, [translatePostInfo]); 
 
@@ -183,6 +189,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return __('In Progress', 'translate-words');
             case 'pending':
                 return __('Pending', 'translate-words');
+            case 'error':
+                return __('Includes errors', 'translate-words');
             case 'completed':
                 return __('Completed', 'translate-words');
             default:

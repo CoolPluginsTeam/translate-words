@@ -21,6 +21,7 @@ const popStringModal = (props) => {
     const [characterCount, setCharacterCount] = useState(translateData?.targetCharacterCount || 0);
     const destroyHandlersRef = useRef([]);
     const sessionAbortRef = useRef(null);
+    const [translationAbortSignal, setTranslationAbortSignal] = useState(null);
     const [translateButtonStatus, setTranslateButtonStatus] = useState(false);
 
     const runModalCleanup = useCallback(() => {
@@ -89,6 +90,8 @@ const popStringModal = (props) => {
         const abortController = new AbortController();
     
         sessionAbortRef.current = abortController;
+        setTranslationAbortSignal(abortController.signal);
+    
         destroyHandlersRef.current = [];
     
         if (!props.postDataFetchStatus) {
@@ -234,7 +237,7 @@ const popStringModal = (props) => {
                         translateStatus={translateStatus}
                         stringModalBodyNotice={props.stringModalBodyNotice}
                         updateDestroyHandler={updateDestroyHandler}
-                        translationAbortSignal={sessionAbortRef.current?.signal}
+                        translationAbortSignal={translationAbortSignal}
                     />
                     <StringPopUpFooter
                         modalRender={props.modalRender}

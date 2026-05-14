@@ -38,6 +38,10 @@ export function mergeFetchAbortSignals(parentSignal, childController) {
         }
     };
     parentSignal.addEventListener('abort', onParentAbort, { once: true });
+    const onChildDone = () => {
+        parentSignal.removeEventListener('abort', onParentAbort);
+    };
+    childSig.addEventListener('abort', onChildDone, { once: true });
     return childSig;
 }
 

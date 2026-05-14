@@ -855,7 +855,7 @@ const StringPopUpBody = (props) => {
                                                                             onFocus={() => setActivePopupCell({ row: index, col: 2 })}
                                                                             onInput={e => handleTextareaInput(e, index, 2)}
                                                                             style={{ width: '100%', minHeight: 40, resize: 'vertical' }}
-                                                                            dangerouslySetInnerHTML={{ __html: editingValues[cellKey] || '' }}
+                                                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(editingValues[cellKey] || '') }}
                                                                         />
                                                                     ) : (
                                                                         getCellContent(index, data, cellKey)
