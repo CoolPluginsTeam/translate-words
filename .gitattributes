@@ -28,3 +28,4 @@ modules/bulk-translation/src export-ignore
 modules/page-translation/src export-ignore
 modules/inline-translation/src export-ignore
 modules/wizard/src export-ignore
+.claude/ export-ignore
