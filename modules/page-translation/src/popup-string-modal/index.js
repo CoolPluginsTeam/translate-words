@@ -1,4 +1,4 @@
-import { useEffect, useState } from "@wordpress/element";
+import { useEffect, useState, useRef, useCallback } from "@wordpress/element";
 import { updateTranslateData } from "../helper/index.js";
 import { select } from "@wordpress/data";
 import StringPopUpHeader from "./header.js";
@@ -19,25 +19,33 @@ const popStringModal = (props) => {
     /** While Gemini recoverable error is open (or until resolved), block Update Content — cleared on Continue or terminal AI outcome. */
     const [recoverableAiErrorBlocksUpdate, setRecoverableAiErrorBlocksUpdate] = useState(false);
     const [characterCount, setCharacterCount] = useState(translateData?.targetCharacterCount || 0);
-    const [onDestroy, setOnDestroy] = useState([]);
+    const destroyHandlersRef = useRef([]);
+    const sessionAbortRef = useRef(null);
+    const [translationAbortSignal, setTranslationAbortSignal] = useState(null);
     const [translateButtonStatus, setTranslateButtonStatus] = useState(false);
 
-    const updateDestroyHandler = (callback) => {
-        setOnDestroy(prev => [...prev, callback]);
-    }
+    const runModalCleanup = useCallback(() => {
+        sessionAbortRef.current?.abort();
+        destroyHandlersRef.current.forEach((callback) => {
+            if (typeof callback === 'function') {
+                try {
+                    callback();
+                } catch (e) {
+                    /* noop */
+                }
+            }
+        });
+    }, []);
+
+    const updateDestroyHandler = useCallback((callback) => {
+        destroyHandlersRef.current.push(callback);
+    }, []);
 
     useEffect(() => {
-        if(!popupVisibility){
-            if (onDestroy.length > 0) {
-                onDestroy.forEach(callback => {
-                    if (typeof callback === 'function') {
-                        callback();
-                    }
-                });
-            }
+        if (!popupVisibility) {
+            runModalCleanup();
         }
-    }, [popupVisibility, onDestroy]);
-
+    }, [popupVisibility, runModalCleanup]);
     useEffect(() => {
         const onTranslationError = (e) => {
             const d = e?.detail;
@@ -78,14 +86,44 @@ const popStringModal = (props) => {
         }
     }
 
-    /**
-     * Fetches the post data.
-     */
     useEffect(() => {
+        const abortController = new AbortController();
+    
+        sessionAbortRef.current = abortController;
+        setTranslationAbortSignal(abortController.signal);
+    
+        destroyHandlersRef.current = [];
+    
         if (!props.postDataFetchStatus) {
-                props.fetchPostData({ postId: props.postId, sourceLang: props.sourceLang, targetLang: props.targetLang, updatePostDataFetch: props.updatePostDataFetch, refPostData: data => setRefPostData((prev) => ({ ...prev, ...data })), updateDestroyHandler: updateDestroyHandler });
+            props.fetchPostData({
+                postId: props.postId,
+                sourceLang: props.sourceLang,
+                targetLang: props.targetLang,
+                updatePostDataFetch: props.updatePostDataFetch,
+                refPostData: (data) => setRefPostData((prev) => ({ ...prev, ...data })),
+                updateDestroyHandler,
+                signal: abortController.signal,
+            });
         }
-    }, [props.postDataFetchStatus, props.modalRender])
+    
+        return () => {
+            try {
+                abortController.abort();
+            } catch (e) {
+                /* noop */
+            }
+    
+            destroyHandlersRef.current.forEach((callback) => {
+                if (typeof callback === 'function') {
+                    try {
+                        callback();
+                    } catch (err) {
+                        /* noop */
+                    }
+                }
+            });
+        };
+    }, [props.modalRender]);
 
     /**
      * Updates the post content data.
@@ -100,6 +138,8 @@ const popStringModal = (props) => {
      * @param {boolean} state - The state to update the fetch with.
      */
     const setPopupVisibilityHandler = () => {
+        runModalCleanup();
+
         if(props.service === 'google'){
             const iframe = document.querySelector('.skiptranslate iframe[id=":1.container"]');
             if (iframe) {
@@ -131,7 +171,9 @@ const popStringModal = (props) => {
         }
 
         const postContent = refPostData;
-        const modalClose = () => {setPopupVisibility(false); setPopupVisibilityHandler(false)};
+        const modalClose = () => {
+            setPopupVisibilityHandler();
+        };
         let service=props.service;
         
         setTranslateButtonStatus(true);
@@ -195,6 +237,7 @@ const popStringModal = (props) => {
                         translateStatus={translateStatus}
                         stringModalBodyNotice={props.stringModalBodyNotice}
                         updateDestroyHandler={updateDestroyHandler}
+                        translationAbortSignal={translationAbortSignal}
                     />
                     <StringPopUpFooter
                         modalRender={props.modalRender}

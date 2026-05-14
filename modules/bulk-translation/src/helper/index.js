@@ -1,7 +1,10 @@
 import { store } from '../redux-store/store.js';
 
-export const updateTranslateData = ({ provider, sourceLang, targetLang, parentPostId, currentPostId, editorType, updateTranslateDataNonce, extraData={} }) => {
+export const updateTranslateData = ({ provider, sourceLang, targetLang, parentPostId, currentPostId, editorType, updateTranslateDataNonce, extraData={}, signal }) => {
     if(!updateTranslateDataNonce || !currentPostId || !parentPostId || !provider || !sourceLang || !targetLang || !editorType) return;
+    if (signal && signal.aborted) {
+        return;
+    }
 
     const parentPostInfo = store.getState().parentPostsInfo[parentPostId];
     const translateData = store.getState().translatePostInfo[parentPostId+'_'+targetLang];
@@ -24,8 +27,12 @@ export const updateTranslateData = ({ provider, sourceLang, targetLang, parentPo
             'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Accept': 'application/json',
         },
+        ...(signal ? { signal } : {}),
         body: new URLSearchParams(data)
     }).then().catch(error => {
+        if (error && error.name === 'AbortError') {
+            return;
+        }
         console.error(error);
     });
 }

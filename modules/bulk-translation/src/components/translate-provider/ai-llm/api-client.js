@@ -11,9 +11,10 @@
  * @param {string} [opts.model] Optional model id override
  * @param {string} opts.restUrl Full REST URL (…/bulk-translate/ai-translate-batch)
  * @param {string} opts.nonce wp_rest nonce
+ * @param {AbortSignal} [opts.signal] Optional abort signal (modal closed / user cancelled).
  * @returns {Promise<Record<string,string>>}
  */
-export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce }) {
+export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce, signal }) {
     let res;
     try {
         res = await fetch(restUrl, {
@@ -23,6 +24,7 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
                 'Content-Type': 'application/json',
                 'X-WP-Nonce': nonce,
             },
+            ...(signal ? { signal } : {}),
             body: JSON.stringify({
                 provider,
                 post_id: Number(postId),

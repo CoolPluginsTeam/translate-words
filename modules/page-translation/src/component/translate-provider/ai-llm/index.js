@@ -12,7 +12,7 @@ import ShowStringCount from "../../progress-bar/show-string-count.js";
  */
 export default function createAiLlmPageTranslator(providerId) {
     return async (props) => {
-        const { sourceLang, targetLang, translateStatusHandler, ID, translateStatus, destroyUpdateHandler, modalRenderId } = props;
+        const { sourceLang, targetLang, translateStatusHandler, ID, translateStatus, destroyUpdateHandler, modalRenderId, translationAbortSignal } = props;
         const AllowedMetaFields = select("block-lmatPageTranslation/translate").getAllowedMetaFields();
 
         const clearErrorNotice = () => {
@@ -212,6 +212,7 @@ export default function createAiLlmPageTranslator(providerId) {
                         model: selectedModel,
                         restUrl,
                         nonce,
+                        signal: translationAbortSignal,
                     });
 
                     if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
@@ -259,12 +260,18 @@ export default function createAiLlmPageTranslator(providerId) {
 
                 const runChunksFromCurrentIndex = async () => {
                     while (chunkIndex < chunks.length) {
+                        if (translationAbortSignal && translationAbortSignal.aborted) {
+                            return "aborted";
+                        }
                         const chunk = chunks[chunkIndex];
                         try {
                             // eslint-disable-next-line no-await-in-loop
                             await applyChunk(chunk);
                             chunkIndex += 1;
                         } catch (err) {
+                            if (err && err.name === "AbortError") {
+                                return "aborted";
+                            }
                             const errorMessage = err?.message || __("Translation failed. Please try again.", "translate-words");
                             const lower = String(errorMessage || "").toLowerCase();
                             const isQuota =
@@ -377,6 +384,15 @@ export default function createAiLlmPageTranslator(providerId) {
                 const outcome = await runChunksFromCurrentIndex();
                 btn.removeAttribute("aria-busy");
 
+                if (outcome === "aborted") {
+                    releaseRecoverableUpdateBlock();
+                    clearErrorNotice();
+                    translateStatusHandler(false);
+                    btn.disabled = false;
+                    finish({ hideProgress: false });
+                    return;
+                }
+
                 if (outcome === "ok") {
                     finishSuccess();
                     releaseRecoverableUpdateBlock();
@@ -387,6 +403,14 @@ export default function createAiLlmPageTranslator(providerId) {
                     releaseRecoverableUpdateBlock();
                 }
             } catch (e) {
+                if (e && e.name === "AbortError") {
+                    releaseRecoverableUpdateBlock();
+                    clearErrorNotice();
+                    translateStatusHandler(false);
+                    btn.disabled = false;
+                    finish({ hideProgress: false });
+                    return;
+                }
                 StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
                 const errorMessage = e?.message || __("Translation failed. Please try again.", "translate-words");
                 showErrorNotice(errorMessage);

@@ -9,7 +9,7 @@ const localAiTranslator = async (props) => {
     const sourceLangName = lmatPageTranslationGlobal.languageObject[props.sourceLang]['name'];
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
 
-    const { translateStatusHandler, translateStatus } = props;
+    const { translateStatusHandler, translateStatus, destroyUpdateHandler } = props;
 
     let startTime = 0;
 
@@ -87,6 +87,14 @@ const localAiTranslator = async (props) => {
         onBeforeTranslate: beforeTranslate,
         onAfterTranslate: afterTranslate
     });
+
+    if (typeof destroyUpdateHandler === 'function') {
+        destroyUpdateHandler(() => {
+            if (TranslateProvider && typeof TranslateProvider.stopTranslation === 'function') {
+                TranslateProvider.stopTranslation();
+            }
+        });
+    }
 
     if (TranslateProvider.hasOwnProperty('init')) {
         TranslateProvider.init();

@@ -1,5 +1,50 @@
 import { select } from '@wordpress/data';
 
+/**
+ * Combine a modal/session abort signal with a per-request AbortController so either can cancel the fetch.
+ *
+ * @param {AbortSignal|undefined|null} parentSignal
+ * @param {AbortController|undefined|null} childController
+ * @returns {AbortSignal|undefined}
+ */
+export function mergeFetchAbortSignals(parentSignal, childController) {
+    if (!childController) {
+        return parentSignal || undefined;
+    }
+    const childSig = childController.signal;
+    if (!parentSignal) {
+        return childSig;
+    }
+    if (typeof AbortSignal.any === 'function') {
+        try {
+            return AbortSignal.any([parentSignal, childSig]);
+        } catch (e) {
+            // fall through
+        }
+    }
+    if (parentSignal.aborted) {
+        try {
+            childController.abort();
+        } catch (e) {
+            /* noop */
+        }
+        return childSig;
+    }
+    const onParentAbort = () => {
+        try {
+            childController.abort();
+        } catch (e) {
+            /* noop */
+        }
+    };
+    parentSignal.addEventListener('abort', onParentAbort, { once: true });
+    const onChildDone = () => {
+        parentSignal.removeEventListener('abort', onParentAbort);
+    };
+    childSig.addEventListener('abort', onChildDone, { once: true });
+    return childSig;
+}
+
 export const updateTranslateData = ({ provider, sourceLang, targetLang, postId }) => {
     const translateData = select('block-lmatPageTranslation/translate').getTranslationInfo();
     const totalStringCount = translateData.translateData?.[provider]?.targetStringCount || 0;
