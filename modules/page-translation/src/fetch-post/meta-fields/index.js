@@ -52,41 +52,49 @@ const MetaFieldsFetch = async (props) => {
         const allowedCustomFieldsController = new AbortController();
         apiController.push(allowedCustomFieldsController);
         const metaSignal = mergeFetchAbortSignals(props.signal, allowedCustomFieldsController);
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Accept': 'application/json',
-            },
-            body: new URLSearchParams({
-                action,
-                meta_fields_key,
-                postId: postId
-            }),
-            signal: metaSignal,
-        });
-    
-        const data = await response.json();
-        const metaFields = data?.data?.metaFields;
-        const allowedMetaFields = data?.data?.allowedMetaFields;
-    
-        if(metaFields && Object.keys(metaFields).length > 0){
-            Object.keys(metaFields).forEach(key => {
-                if(allowedMetaFields[key] && allowedMetaFields[key].status){
-                    if(typeof metaFields[key] === 'string'){
-                        const value=metaFields[key];
 
-                        // Store meta fields
-                        storeMetaFields({key, value, type: allowedMetaFields[key].type, status: allowedMetaFields[key].status, allowedMetaFields});
-                    }else if(typeof metaFields[key] === 'object' && Object.keys(metaFields[key]).length > 0){
-                        // Store object meta fields
-                        storeObjectMetaFields([key], metaFields[key], allowedMetaFields);
-                    }
-                }
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json',
+                },
+                body: new URLSearchParams({
+                    action,
+                    meta_fields_key,
+                    postId: postId
+                }),
+                signal: metaSignal,
             });
-        }
 
-        props.refPostData({'metaFields': metaFields});
+            const data = await response.json();
+            const metaFields = data?.data?.metaFields;
+            const allowedMetaFields = data?.data?.allowedMetaFields;
+
+            if (metaFields && Object.keys(metaFields).length > 0) {
+                Object.keys(metaFields).forEach(key => {
+                    if (allowedMetaFields[key] && allowedMetaFields[key].status) {
+                        if (typeof metaFields[key] === 'string') {
+                            const value = metaFields[key];
+
+                            // Store meta fields
+                            storeMetaFields({ key, value, type: allowedMetaFields[key].type, status: allowedMetaFields[key].status, allowedMetaFields });
+                        } else if (typeof metaFields[key] === 'object' && Object.keys(metaFields[key]).length > 0) {
+                            // Store object meta fields
+                            storeObjectMetaFields([key], metaFields[key], allowedMetaFields);
+                        }
+                    }
+                });
+            }
+
+            props.refPostData({ 'metaFields': metaFields });
+        } catch (err) {
+            if (err && err.name === 'AbortError') {
+                return;
+            }
+            props.refPostData({ metaFields: {} });
+        }
     }
 
     const storeObjectMetaFields = (keys, value, allowedMetaFields) => {

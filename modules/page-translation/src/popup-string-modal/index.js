@@ -21,7 +21,6 @@ const popStringModal = (props) => {
     const [characterCount, setCharacterCount] = useState(translateData?.targetCharacterCount || 0);
     const destroyHandlersRef = useRef([]);
     const sessionAbortRef = useRef(null);
-    const [translationAbortSignal, setTranslationAbortSignal] = useState(undefined);
     const [translateButtonStatus, setTranslateButtonStatus] = useState(false);
 
     const runModalCleanup = useCallback(() => {
@@ -37,9 +36,9 @@ const popStringModal = (props) => {
         });
     }, []);
 
-    const updateDestroyHandler = (callback) => {
+    const updateDestroyHandler = useCallback((callback) => {
         destroyHandlersRef.current.push(callback);
-    };
+    }, []);
 
     useEffect(() => {
         if (!popupVisibility) {
@@ -87,11 +86,11 @@ const popStringModal = (props) => {
     }
 
     useEffect(() => {
-        const ac = new AbortController();
-        sessionAbortRef.current = ac;
-        setTranslationAbortSignal(ac.signal);
+        const abortController = new AbortController();
+    
+        sessionAbortRef.current = abortController;
         destroyHandlersRef.current = [];
-
+    
         if (!props.postDataFetchStatus) {
             props.fetchPostData({
                 postId: props.postId,
@@ -100,16 +99,17 @@ const popStringModal = (props) => {
                 updatePostDataFetch: props.updatePostDataFetch,
                 refPostData: (data) => setRefPostData((prev) => ({ ...prev, ...data })),
                 updateDestroyHandler,
-                signal: ac.signal,
+                signal: abortController.signal,
             });
         }
-
+    
         return () => {
             try {
-                ac.abort();
+                abortController.abort();
             } catch (e) {
                 /* noop */
             }
+    
             destroyHandlersRef.current.forEach((callback) => {
                 if (typeof callback === 'function') {
                     try {
@@ -234,7 +234,7 @@ const popStringModal = (props) => {
                         translateStatus={translateStatus}
                         stringModalBodyNotice={props.stringModalBodyNotice}
                         updateDestroyHandler={updateDestroyHandler}
-                        translationAbortSignal={translationAbortSignal}
+                        translationAbortSignal={sessionAbortRef.current?.signal}
                     />
                     <StringPopUpFooter
                         modalRender={props.modalRender}

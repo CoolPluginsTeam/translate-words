@@ -106,7 +106,7 @@ class GoogleTranslater {
         }
     }
 
-    appendTranslateWidget = async () => {
+    appendTranslateWidget = () => {
         const g = typeof window !== "undefined" ? window.google : undefined;
         const TranslateElementCtor = g?.translate?.TranslateElement;
         if (!TranslateElementCtor) {

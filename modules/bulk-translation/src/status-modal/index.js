@@ -17,6 +17,19 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [errorModal, setErrorModal] = useState(false);
     const [errorModalData, setErrorModalData] = useState(false);
+    const [progressBarVisibility, setProgressBarVisibility] = useState(true);
+    const [charactersCountVisibility, setCharactersCountVisibility] = useState(false);
+    const [bulkStatus, setBulkStatus] = useState('status');
+    const [emptyPostMessage, setEmptyPostMessage] = useState(
+        sprintf(
+            __(
+                'Translations already exist for all selected %s in the chosen languages. There are no new %s to translate.',
+                'translate-words'
+            ),
+            lmatBulkTranslationGlobal.post_label,
+            lmatBulkTranslationGlobal.post_label
+        )
+    );
     const translatePostInfo = useSelector(selectTranslatePostInfo);
     const pendingPosts=useSelector(selectPendingPosts);
     const serviceProvider = useSelector(selectServiceProvider);
@@ -73,11 +86,6 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         // Intentionally once per status modal mount; cleanup aborts in-flight work when the modal closes.
         // eslint-disable-next-line react-hooks/exhaustive-deps -- postIds/selectedLanguages are fixed for this modal session
     }, []);
-
-    const [progressBarVisibility, setProgressBarVisibility] = useState(true);
-    const [charactersCountVisibility, setCharactersCountVisibility] = useState(false);
-    const [bulkStatus, setBulkStatus] = useState('status');
-    let [emptyPostMessage, setEmptyPostMessage]=useState(sprintf(__('Translations already exist for all selected %s in the chosen languages. There are no new %s to translate.', 'translate-words'), lmatBulkTranslationGlobal.post_label, lmatBulkTranslationGlobal.post_label));
 
     const handleErrorModal = (data) => {
         setErrorModalData(data);
