@@ -9,6 +9,7 @@ import { InfoPopup, GlossaryPopup, AddGlossaryPopup } from "../component/RightPo
 import SaveTranslation from '../component/store-translated-string/index.js';
 import GlossaryCount from "../component/glossary-count/index.js";
 import DOMPurify from "dompurify";
+import { mergeFetchAbortSignals } from "../helper/index.js";
 
 const StringPopUpBody = (props) => {
 
@@ -167,6 +168,9 @@ const StringPopUpBody = (props) => {
     };
 
     useEffect(() => {
+        const ac = new AbortController();
+        const fetchSignal = mergeFetchAbortSignals(props.translationAbortSignal, ac);
+
         async function fetchGlossary() {
             try {
 
@@ -185,7 +189,8 @@ const StringPopUpBody = (props) => {
                         'Accept': 'application/json',
                     },
                     credentials: 'same-origin',
-                    body: new URLSearchParams(data)
+                    body: new URLSearchParams(data),
+                    signal: fetchSignal,
 
                 });
 
@@ -201,11 +206,17 @@ const StringPopUpBody = (props) => {
                 setGlossaryOrignalTerms(glossaryOrignalTerms);
                 setGlossaryTerms(responseData.data.terms || []);
             } catch (err) {
+                if (err && err.name === 'AbortError') {
+                    return;
+                }
                 setGlossaryTerms([]); // fallback or show error
             }
         }
         fetchGlossary();
-    }, [props.sourceLang, props.targetLang]);
+        return () => {
+            ac.abort();
+        };
+    }, [props.sourceLang, props.targetLang, props.translationAbortSignal]);
 
 
     // Update handleTdClick to check for AI service
@@ -423,7 +434,7 @@ const StringPopUpBody = (props) => {
 
         if (translateContent.length > 0 && props.postDataFetchStatus) {
             const ServiceSetting = TranslateService({ Service: service });
-            const run = ServiceSetting.Provider({ sourceLang: props.sourceLang, targetLang: props.targetLang, translateStatusHandler: props.translateStatusHandler, ID: id, translateStatus: props.translateStatus, modalRenderId: props.modalRender, destroyUpdateHandler: props.updateDestroyHandler });
+            const run = ServiceSetting.Provider({ sourceLang: props.sourceLang, targetLang: props.targetLang, translateStatusHandler: props.translateStatusHandler, ID: id, translateStatus: props.translateStatus, modalRenderId: props.modalRender, destroyUpdateHandler: props.updateDestroyHandler, translationAbortSignal: props.translationAbortSignal });
             if (run && typeof run.then === "function") {
                 run.catch(() => {});
             }

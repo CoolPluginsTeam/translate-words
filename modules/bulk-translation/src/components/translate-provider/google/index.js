@@ -32,6 +32,18 @@ class GoogleTranslater {
 
     destroy = () => {
         this.stopTranslation = true;
+        if (this._mutationObserver) {
+            try {
+                this._mutationObserver.disconnect();
+            } catch (e) {
+                /* noop */
+            }
+            this._mutationObserver = null;
+        }
+        if (this._translateTimeout) {
+            clearTimeout(this._translateTimeout);
+            this._translateTimeout = null;
+        }
     }
 
     createGoogleTranslator = async (targetLang, index) => {

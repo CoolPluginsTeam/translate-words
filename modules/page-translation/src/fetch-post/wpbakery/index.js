@@ -1,4 +1,5 @@
 import { select, dispatch } from "@wordpress/data";
+import { mergeFetchAbortSignals } from "../../helper/index.js";
 import WPBakerySaveSource from "../../store-source-string/wpbakery/index.js";
 
 /**
@@ -50,6 +51,7 @@ const WPBakeryPostFetch = async (props) => {
 
         const contentController = new AbortController();
         apiController.push(contentController);
+        const contentSignal = mergeFetchAbortSignals(props.signal, contentController);
 
         /**
          * Fetch post data from WordPress via AJAX.
@@ -64,7 +66,7 @@ const WPBakeryPostFetch = async (props) => {
                 'Accept': 'application/json',
             },
             body: new URLSearchParams(apiSendData),
-            signal: contentController.signal,
+            signal: contentSignal,
         })
             .then(response => response.json())
             .then(data => {
@@ -88,6 +90,9 @@ const WPBakeryPostFetch = async (props) => {
                 dispatch('block-lmatPageTranslation/translate').contentFetchStatus(true);
             })
             .catch(error => {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
                 console.error('Error fetching WPBakery post content:', error);
             });
     }

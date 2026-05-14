@@ -1,4 +1,5 @@
 import { dispatch, select } from "@wordpress/data";
+import { mergeFetchAbortSignals } from "../../helper/index.js";
 
 const MetaFieldsFetch = async (props) => {
     const apiUrl = window?.lmatPageTranslationGlobal?.ajax_url;
@@ -50,6 +51,7 @@ const MetaFieldsFetch = async (props) => {
 
         const allowedCustomFieldsController = new AbortController();
         apiController.push(allowedCustomFieldsController);
+        const metaSignal = mergeFetchAbortSignals(props.signal, allowedCustomFieldsController);
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -61,11 +63,7 @@ const MetaFieldsFetch = async (props) => {
                 meta_fields_key,
                 postId: postId
             }),
-            headers: {
-                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Accept': 'application/json',
-            },
-            signal: allowedCustomFieldsController.signal,
+            signal: metaSignal,
         });
     
         const data = await response.json();

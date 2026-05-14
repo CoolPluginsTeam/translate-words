@@ -2,6 +2,7 @@ import GutenbergBlockSaveSource from "../../store-source-string/gutenberg/index.
 import { dispatch, select } from "@wordpress/data";
 import { parse } from "@wordpress/blocks";
 import { __ } from "@wordpress/i18n";
+import { mergeFetchAbortSignals } from "../../helper/index.js";
 
 const GutenbergPostFetch = async (props) => {
     const apiUrl = lmatPageTranslationGlobal.ajax_url;
@@ -32,6 +33,7 @@ const GutenbergPostFetch = async (props) => {
 
         const rulesController = new AbortController();
         apiController.push(rulesController);
+        const rulesSignal = mergeFetchAbortSignals(props.signal, rulesController);
         await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -39,7 +41,7 @@ const GutenbergPostFetch = async (props) => {
                 'Accept': 'application/json',
             },
             body: new URLSearchParams(blockRulesApiSendData),
-            signal: rulesController.signal,
+            signal: rulesSignal,
         })
             .then(response => response.json())
             .then(data => {
@@ -48,6 +50,9 @@ const GutenbergPostFetch = async (props) => {
 
             })
             .catch(error => {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
                 console.error('Error fetching post content:', error);
             });
     }
@@ -74,6 +79,7 @@ const GutenbergPostFetch = async (props) => {
 
         const contentController = new AbortController();
         apiController.push(contentController);
+        const contentSignal = mergeFetchAbortSignals(props.signal, contentController);
 
         /**
          * useEffect hook to fetch post data from the specified API endpoint.
@@ -87,7 +93,7 @@ const GutenbergPostFetch = async (props) => {
                 'Accept': 'application/json',
             },
             body: new URLSearchParams(apiSendData),
-            signal: contentController.signal,
+            signal: contentSignal,
         })
             .then(response => response.json())
             .then(data => {
@@ -110,6 +116,9 @@ const GutenbergPostFetch = async (props) => {
                 dispatch('block-lmatPageTranslation/translate').contentFetchStatus(true);
             })
             .catch(error => {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
                 console.error('Error fetching post content:', error);
             });
     }

@@ -6,7 +6,7 @@ import ModalStringScroll from "../../string-modal-scroll/index.js";
  */
 const GoogleTranslater = (data) => {
 
-    const { sourceLang, targetLang, ID, translateStatusHandler, modalRenderId } = data;
+    const { sourceLang, targetLang, ID, translateStatusHandler, modalRenderId, destroyUpdateHandler } = data;
 
     let lang=targetLang;
     let srcLang=sourceLang;
@@ -41,9 +41,24 @@ const GoogleTranslater = (data) => {
         }
     }
 
-    document.querySelector(`#${ID}`).addEventListener('change', () => {
+    const onChange = () => {
         ModalStringScroll(translateStatusHandler,'google', modalRenderId);
-    });
+    };
+
+    const host = document.querySelector(`#${ID}`);
+    if (host) {
+        host.addEventListener('change', onChange);
+    }
+
+    if (typeof destroyUpdateHandler === 'function') {
+        destroyUpdateHandler(() => {
+            const node = document.querySelector(`#${ID}`);
+            if (node) {
+                node.removeEventListener('change', onChange);
+                node.innerHTML = '';
+            }
+        });
+    }
 
 }
 

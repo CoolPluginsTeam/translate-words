@@ -1,5 +1,6 @@
 import { select, dispatch } from "@wordpress/data";
 import { __ } from "@wordpress/i18n";
+import { mergeFetchAbortSignals } from "../../helper/index.js";
 import ClassicSaveSource from "../../store-source-string/classic/index.js";
 
 const ClassicPostFetch = async (props) => {
@@ -36,6 +37,7 @@ const ClassicPostFetch = async (props) => {
 
         const contentController = new AbortController();
         apiController.push(contentController);
+        const fetchSignal = mergeFetchAbortSignals(props.signal, contentController);
 
         /**
          * useEffect hook to fetch post data from the specified API endpoint.
@@ -49,7 +51,7 @@ const ClassicPostFetch = async (props) => {
                 'Accept': 'application/json',
             },
             body: new URLSearchParams(apiSendData),
-            signal: contentController.signal,
+            signal: fetchSignal,
         })
             .then(response => response.json())
             .then(data => {
@@ -67,6 +69,9 @@ const ClassicPostFetch = async (props) => {
                 dispatch('block-lmatPageTranslation/translate').contentFetchStatus(true);
             })
             .catch(error => {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
                 console.error('Error fetching post content:', error);
             });
     }

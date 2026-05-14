@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { bulkTranslateEntries, initBulkTranslate } from '../bulk-translate.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTranslatePostInfo, selectProgressStatus, selectCountInfo, selectPendingPosts, selectServiceProvider, selectErrorPostsInfo, selectTargetLanguages } from '../redux-store/features/selectors.js';
@@ -18,22 +18,44 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     const [errorModal, setErrorModal] = useState(false);
     const [errorModalData, setErrorModalData] = useState(false);
     const translatePostInfo = useSelector(selectTranslatePostInfo);
-    const [destroyHandlers, setDestroyHandlers] = useState([]);
-    const errorPostsInfo = useSelector(selectErrorPostsInfo);
     const pendingPosts=useSelector(selectPendingPosts);
     const serviceProvider = useSelector(selectServiceProvider);
-    const [progressBarVisibility, setProgressBarVisibility] = useState(true);
-    const [charactersCountVisibility, setCharactersCountVisibility] = useState(false);
-    const [bulkStatus, setBulkStatus] = useState('status');
     const countInfo = useSelector(selectCountInfo);
-    let [emptyPostMessage, setEmptyPostMessage]=useState(sprintf(__('Translations already exist for all selected %s in the chosen languages. There are no new %s to translate.', 'translate-words'), lmatBulkTranslationGlobal.post_label, lmatBulkTranslationGlobal.post_label));
+    const errorPostsInfo = useSelector(selectErrorPostsInfo);
     let progressStatus = useSelector(selectProgressStatus);
     progressStatus=progressStatus.toFixed(1);
     progressStatus=Math.min(progressStatus, 100);
 
+    const destroyHandlersRef = useRef([]);
+    const abortControllerRef = useRef(null);
+
+    const runTranslationCleanup = useCallback(() => {
+        abortControllerRef.current?.abort();
+        destroyHandlersRef.current.forEach((callback) => {
+            if (typeof callback === 'function') {
+                try {
+                    callback();
+                } catch (e) {
+                    /* noop */
+                }
+            }
+        });
+    }, []);
+
+    const updateDestoryHandler = useCallback((callback) => {
+        destroyHandlersRef.current.push(callback);
+    }, []);
+
     useEffect(() => {
+        abortControllerRef.current = new AbortController();
+        destroyHandlersRef.current = [];
+        const { signal } = abortControllerRef.current;
+
         const translatePosts = async () => {
-            const response = await bulkTranslateEntries({ ids: postIds, langs: selectedLanguages, storeDispatch });
+            const response = await bulkTranslateEntries({ ids: postIds, langs: selectedLanguages, storeDispatch, signal });
+            if (signal.aborted) {
+                return;
+            }
             setIsLoading(false);
 
             if(!response.success && false === response.success && response.message){
@@ -41,10 +63,21 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return;
             }
         
-            initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler);
+            initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler, signal);
         }
         translatePosts();
+
+        return () => {
+            runTranslationCleanup();
+        };
+        // Intentionally once per status modal mount; cleanup aborts in-flight work when the modal closes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- postIds/selectedLanguages are fixed for this modal session
     }, []);
+
+    const [progressBarVisibility, setProgressBarVisibility] = useState(true);
+    const [charactersCountVisibility, setCharactersCountVisibility] = useState(false);
+    const [bulkStatus, setBulkStatus] = useState('status');
+    let [emptyPostMessage, setEmptyPostMessage]=useState(sprintf(__('Translations already exist for all selected %s in the chosen languages. There are no new %s to translate.', 'translate-words'), lmatBulkTranslationGlobal.post_label, lmatBulkTranslationGlobal.post_label));
 
     const handleErrorModal = (data) => {
         setErrorModalData(data);
@@ -54,10 +87,6 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     const closeErrorModal = (e) => {
         setErrorModal(false);
         setErrorModalData(false);
-    }
-
-    const updateDestoryHandler = (callback) => {
-        setDestroyHandlers(prev => [...prev, callback]);
     }
 
     const AIErrorBtnHandler = (e) => {
@@ -85,7 +114,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     };
 
     const onModalClose= (e) => {
-        destroyHandlers.forEach(callback => typeof callback === 'function' && callback());
+        runTranslationCleanup();
         onDestory(e);
     }
 

@@ -31,6 +31,7 @@ class AiLlmBulkTranslator {
         updateDestoryHandler,
         createTranslatePostNonce = "",
         previousCompletedStrings = 0,
+        abortSignal,
     }) {
         this.textContentObject = selectTargetContent(store.getState(), postId);
         this.totalSourceKeys = Math.max(0, Object.keys(this.textContentObject || {}).length);
@@ -43,6 +44,7 @@ class AiLlmBulkTranslator {
         this.prefix = prefix;
         this.serviceProvider = store.getState().serviceProvider;
         this.stopTranslation = false;
+        this.abortSignal = abortSignal;
         this.completedPostStatus = 0;
         this.createTranslatePostNonce = createTranslatePostNonce;
         this.previousCompletedStrings = typeof previousCompletedStrings === "number" ? previousCompletedStrings : 0;
@@ -57,6 +59,8 @@ class AiLlmBulkTranslator {
     destroy = () => {
         this.stopTranslation = true;
     };
+
+    isCancelled = () => this.stopTranslation || (this.abortSignal && this.abortSignal.aborted);
 
     getObjectType = () => {
         const info = store.getState().parentPostsInfo[this.postId];
@@ -151,7 +155,9 @@ class AiLlmBulkTranslator {
 
         const worker = async () => {
             while (idx < items.length) {
-                if (firstError) return;
+                if (firstError || this.isCancelled()) {
+                    return;
+                }
                 const currentIndex = idx++;
                 try {
                     // eslint-disable-next-line no-await-in-loop
@@ -230,7 +236,7 @@ class AiLlmBulkTranslator {
      * @returns {Promise<boolean>} true if strings translated and post save can run
      */
     async runChunksForTargetLanguage(targetLang) {
-        if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
+        if (this.isCancelled() || window.lmatBulkTranslationQuotaExceeded) {
             return false;
         }
 
@@ -261,7 +267,7 @@ class AiLlmBulkTranslator {
 
         const stringsToTranslate = this.getRemainingStringsMap(targetLang);
         if (Object.keys(stringsToTranslate).length === 0) {
-            if (!this.stopTranslation) {
+            if (!this.isCancelled()) {
                 this.finalizeProgressSliceRedux();
                 const duration = new Date() - startTime;
                 const tInfo = selectTranslatePostInfo(store.getState());
@@ -286,7 +292,7 @@ class AiLlmBulkTranslator {
             let doneThisRun = 0;
 
             await this.runWithConcurrency(chunks, concurrency, async (chunk) => {
-                if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
+                if (this.isCancelled() || window.lmatBulkTranslationQuotaExceeded) {
                     return;
                 }
 
@@ -300,6 +306,7 @@ class AiLlmBulkTranslator {
                     model: selectedModel,
                     restUrl: this.getRestUrl(),
                     nonce: lmatBulkTranslationGlobal.nonce,
+                    signal: this.abortSignal,
                 });
                 if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
                     throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
@@ -313,7 +320,7 @@ class AiLlmBulkTranslator {
                 }
             });
 
-            if (!this.stopTranslation) {
+            if (!this.isCancelled()) {
                 this.finalizeProgressSliceRedux();
                 const duration = new Date() - startTime;
                 const tInfo = selectTranslatePostInfo(store.getState());
@@ -326,6 +333,9 @@ class AiLlmBulkTranslator {
             }
             return true;
         } catch (err) {
+            if (err && err.name === "AbortError") {
+                return false;
+            }
             const msg = err && err.message ? err.message : __("Translation failed.", "translate-words");
             const isQuotaError = err?.code === "LLM_QUOTA_EXCEEDED";
             const isGeminiQuotaByMessage =
@@ -373,21 +383,21 @@ class AiLlmBulkTranslator {
     }
 
     async initTranslation() {
-        if (this.textContentObject && this.totalSourceKeys > 0 && this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
+        if (this.textContentObject && this.totalSourceKeys > 0 && this.targetLangs && this.targetLangs.length > 0 && !this.isCancelled()) {
             const langs = [...this.targetLangs];
             for (let i = 0; i < langs.length; i++) {
-                if (this.stopTranslation || window.lmatBulkTranslationQuotaExceeded) {
+                if (this.isCancelled() || window.lmatBulkTranslationQuotaExceeded) {
                     break;
                 }
                 const lang = langs[i];
                 // eslint-disable-next-line no-await-in-loop
                 const ok = await this.runChunksForTargetLanguage(lang);
-                if (!this.stopTranslation && !window.lmatBulkTranslationQuotaExceeded && ok) {
+                if (!this.isCancelled() && !window.lmatBulkTranslationQuotaExceeded && ok) {
                     // eslint-disable-next-line no-await-in-loop
                     await this.updateContent(lang);
                 }
             }
-        } else if (this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
+        } else if (this.targetLangs && this.targetLangs.length > 0 && !this.isCancelled()) {
             this.targetLangs.forEach((lang) => {
                 this.storeDispatch(unsetPendingPost(`${this.postId}_${lang}`));
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));

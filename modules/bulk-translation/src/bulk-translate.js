@@ -8,7 +8,7 @@ import LoopCallback from './components/loop-callback/index.js';
 import updateGlossaryString from './components/filter-content/update-glossary-string/index.js';
 import { selectGlossaryTerms } from './redux-store/features/selectors.js';
 
-const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler)=>{
+const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler, signal)=>{
     window.lmatBulkTranslationQuotaExceeded = false;
 
     const pendingPosts=store.getState().pendingPosts;
@@ -18,13 +18,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
         return;
     }
 
-    let modalClosed=false;
-
-    updateDestoryHandler(
-        () => {
-            modalClosed=true;
-        }
-    )
+    const cancelled = () => Boolean(signal && signal.aborted);
 
     const markRemainingPendingAsQuotaError = () => {
         if (!window.lmatBulkTranslationQuotaExceeded) {
@@ -60,7 +54,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
             return;
         }
 
-        if(!postId || modalClosed){
+        if(!postId || cancelled()){
             return;
         }
     
@@ -85,7 +79,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
             // Deep clone the content object to avoid mutating the original reference
             const source = { title: title, content: JSON.parse(JSON.stringify(content)), post_name: post_name, excerpt: excerpt, metaFields: metaFields && Object.keys(metaFields).length > 0 ? JSON.parse(JSON.stringify(metaFields)) : {} };
 
-             await translateContent({sourceLang: sourceLanguage, targetLangs: languages, totalPosts: pendingPosts.length,storeDispatch,prefix, postId, source, editorType, createTranslatePostNonce: nonce, updateDestoryHandler});
+             await translateContent({sourceLang: sourceLanguage, targetLangs: languages, totalPosts: pendingPosts.length,storeDispatch,prefix, postId, source, editorType, createTranslatePostNonce: nonce, updateDestoryHandler, signal});
         }
     
         index++;
@@ -95,7 +89,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
             return;
         }
 
-        if(index > postKeys.length-1 || modalClosed){
+        if(index > postKeys.length-1 || cancelled()){
             return;
         }
 
@@ -105,7 +99,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
     await translatePost(0);
 }
 
-const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatch, postId, prefix, source, editorType, createTranslatePostNonce, updateDestoryHandler})=>{
+const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatch, postId, prefix, source, editorType, createTranslatePostNonce, updateDestoryHandler, signal})=>{
 
     const activeProvider=store.getState().serviceProvider;
     const providerDetails=Provider({Service: activeProvider});
@@ -113,9 +107,9 @@ const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatc
     if(providerDetails && providerDetails.Provider){
 
         const updateContentCallback=async (lang)=>
-            { await updateContent({source, postId, sourceLang, lang, editorType, createTranslatePostNonce , storeDispatch})};
+            { await updateContent({source, postId, sourceLang, lang, editorType, createTranslatePostNonce , storeDispatch, signal})};
 
-        const data={sourceLang, targetLangs, totalPosts,storeDispatch, postId, createTranslatePostNonce, updateContent: updateContentCallback, prefix, updateDestoryHandler};
+        const data={sourceLang, targetLangs, totalPosts,storeDispatch, postId, createTranslatePostNonce, updateContent: updateContentCallback, prefix, updateDestoryHandler, abortSignal: signal};
 
         const provider=new providerDetails.Provider(data);
 
@@ -123,7 +117,7 @@ const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatc
     }
 }
 
-export const updateContent=async ({source, postId, sourceLang, lang, editorType, createTranslatePostNonce, storeDispatch})=>{
+export const updateContent=async ({source, postId, sourceLang, lang, editorType, createTranslatePostNonce, storeDispatch, signal})=>{
 
     const service=store.getState().serviceProvider;
 
@@ -135,6 +129,10 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
     const nonce = lmatBulkTranslationGlobal.nonce;
 
     storeDispatch(updateTranslatePostInfo({[postId+'_'+lang]: { status: 'in-progress', messageClass: 'in-progress'}}));
+
+    if (signal && signal.aborted) {
+        return;
+    }
 
     let endPoint='create-translate-post';
 
@@ -171,7 +169,8 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
             'X-WP-Nonce': nonce,
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Accept': 'application/json',
-        }
+        },
+        ...(signal ? { signal } : {}),
     }).then(async response=>{
         // Some server/proxy errors return HTML (e.g. 502/504). Don't blindly JSON.parse.
         const raw = await response.text();
@@ -198,7 +197,7 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
                 extraData.taxonomy=lmatBulkTranslationGlobal.taxonomy_page;
             }
 
-            updateTranslateData({provider: service, sourceLang, targetLang: lang, currentPostId: successPayload.post_id, parentPostId: postId, editorType, updateTranslateDataNonce: successPayload.update_translate_data_nonce, extraData});
+            updateTranslateData({provider: service, sourceLang, targetLang: lang, currentPostId: successPayload.post_id, parentPostId: postId, editorType, updateTranslateDataNonce: successPayload.update_translate_data_nonce, extraData, signal});
 
             successPayload.post_title = '' === successPayload.post_title ? __('N/A', 'translate-words') : successPayload.post_title;
             updateData={targetPostId: successPayload.post_id, targetPostTitle: successPayload.post_title, targetLanguage: lang, postLink: successPayload.post_link, postEditLink: successPayload.post_edit_link, status: 'completed', messageClass: 'success'};
@@ -232,6 +231,9 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
         storeDispatch(updateTranslatePostInfo({[postId+'_'+lang]: updateData}));
 
     }).catch(error=>{
+        if (error && error.name === 'AbortError') {
+            return;
+        }
         console.log(error);
         storeDispatch(unsetPendingPost(postId+'_'+lang));
         storeDispatch(updateCompletedPosts([postId+'_'+lang]));
@@ -257,7 +259,7 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
     })
 }
 
-const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
+const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
     
     const bulkTranslateRouteUrl = lmatBulkTranslationGlobal.bulkTranslateRouteUrl;
     const bulkTranslatePrivateKey = lmatBulkTranslationGlobal.bulkTranslatePrivateKey;
@@ -284,10 +286,15 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
             'X-WP-Nonce': nonce,
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Accept': 'application/json',
-        }
+        },
+        ...(signal ? { signal } : {}),
     })
     
     const untranslatedPostsData=await untranslatedPosts.json();
+
+    if (signal && signal.aborted) {
+        return { success: false, message: '', aborted: true };
+    }
     
     if(!untranslatedPostsData.success && !untranslatedPostsData.code && untranslatedPostsData.data && untranslatedPostsData.data.message){
         return {success: false, message: untranslatedPostsData.data.message};
@@ -365,6 +372,9 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
         const fetchGlossaryTerms=async(allTargetLanguages)=>{
 
             const fethcGlossary=async(sourceLanauges)=>{
+                if (signal && signal.aborted) {
+                    return;
+                }
                 const targetLanguages=allTargetLanguages[sourceLanauges];
 
                 if(!targetLanguages || typeof targetLanguages !== 'object' || Object.values(targetLanguages).length < 1){
@@ -388,7 +398,8 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
                             'Accept': 'application/json',
                         },
                         credentials: 'same-origin',
-                        body: new URLSearchParams(data)
+                        body: new URLSearchParams(data),
+                        ...(signal ? { signal } : {}),
     
                     });
     
@@ -404,6 +415,9 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
                         storeDispatch(updateGlossaryTerms({sourceLanguage: sourceLanauges, translations: Object.values(responseData.data.terms)}));
                     }
                 } catch (err) {
+                    if (err && err.name === 'AbortError') {
+                        return;
+                    }
                     console.log(err);
                 }
             }
@@ -418,6 +432,10 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
         }
 
         const storeSourceContent=async(index, translatePostsCount)=>{
+
+            if (signal && signal.aborted) {
+                return;
+            }
 
             const postId=postKeys[index];
             const activeProvider=store.getState().serviceProvider;
@@ -484,6 +502,9 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch}) => {
                 }
 
                 if((content && content !== '') || (metaFields && Object.keys(metaFields).length > 0)){
+                    if (signal && signal.aborted) {
+                        return;
+                    }
                     await filterContent(data);
                 }
             
