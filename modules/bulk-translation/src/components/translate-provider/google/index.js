@@ -46,7 +46,6 @@ class GoogleTranslater {
 
         if (!GoogleLanguage().includes(this.filterLanguage(targetLang))) {
             this.storeDispatch(unsetPendingPost(this.postId + '_' + targetLang));
-            this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
             this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
         } else {
             this.activeTargetLang = targetLang;
@@ -61,16 +60,29 @@ class GoogleTranslater {
 
             this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'running', messageClass: '' } }));
             this.startTime = new Date();
-            const isTranslated = await this.translateContent();
+            let isTranslated = false;
+            try {
+                isTranslated = await this.translateContent();
+            } catch (err) {
+                console.error(err);
+                this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
+                this.storeDispatch(
+                    updateTranslatePostInfo({
+                        [`${this.postId}_${targetLang}`]: {
+                            status: 'error',
+                            messageClass: 'error',
+                            errorMessage: __('Google Translate failed for this batch. Try again.', 'translate-words'),
+                            errorHtml: false,
+                        },
+                    })
+                );
+            }
 
-            if (!this.stopTranslation) {
+            if (!this.stopTranslation && isTranslated) {
                 this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+                this.updateContent(targetLang);
 
-                if (isTranslated) {
-                    this.updateContent(targetLang);
-
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
         }
@@ -83,28 +95,26 @@ class GoogleTranslater {
     }
 
     appendTranslateWidget = async () => {
-
-        this.googleTranslator = new google.translate.TranslateElement({
-            pageLanguage: this.sourceLang,
-            // multilanguagePage: true,
-            autoDisplay: false,
-        }, `${this.prefix}-google-translate-btn`);
-
-
-        const element = document.querySelector(`#${this.prefix}-google-translate-btn`);
-
-        if (element) {
-            const translateElement = element.children;
-
-            if (translateElement.length <= 0) {
-                Object.values(google?.translate?.TranslateElement()).map(item => {
-                    if (item instanceof HTMLElement && item.id === `${this.prefix}-google-translate-btn`) {
-                        element.replaceWith(item);
-                    }
-                });
-            }
+        const g = typeof window !== "undefined" ? window.google : undefined;
+        const TranslateElementCtor = g?.translate?.TranslateElement;
+        if (!TranslateElementCtor) {
+            return false;
         }
-    }
+
+        try {
+            this.googleTranslator = new TranslateElementCtor(
+                {
+                    pageLanguage: this.sourceLang,
+                    autoDisplay: false,
+                },
+                `${this.prefix}-google-translate-btn`
+            );
+        } catch {
+            return false;
+        }
+
+        return true;
+    };
 
     appendStringTable = () => {
 
@@ -133,9 +143,25 @@ class GoogleTranslater {
         const languageSelector = document.querySelector(`#${this.prefix}-google-translate-btn .goog-te-combo`);
     
         await new Promise(resolve => setTimeout(resolve, 1000));
-    
-        if (!languageSelector) return false;
-    
+
+        if (!languageSelector) {
+            this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
+            this.storeDispatch(
+                updateTranslatePostInfo({
+                    [`${this.postId}_${this.activeTargetLang}`]: {
+                        status: 'error',
+                        messageClass: 'error',
+                        errorMessage: __(
+                            'Google Translate did not load. Check your internet connection, disable ad blockers for this site, and try again.',
+                            'translate-words'
+                        ),
+                        errorHtml: false,
+                    },
+                })
+            );
+            return false;
+        }
+
         const langCode = this.filterLanguage(this.activeTargetLang);
         const languageExist = languageSelector.querySelector(`option[value="${langCode}"]`);
     
@@ -150,6 +176,7 @@ class GoogleTranslater {
                     errorHtml: false
                 }
             }));
+            this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
             return false;
         }
     
@@ -161,7 +188,20 @@ class GoogleTranslater {
         if (this.stopTranslation) return false;
     
         const container = document.querySelector(`#${this.prefix}-google-translate-strings-container`);
-        if (!container) return false;
+        if (!container) {
+            this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
+            this.storeDispatch(
+                updateTranslatePostInfo({
+                    [`${this.postId}_${this.activeTargetLang}`]: {
+                        status: 'error',
+                        messageClass: 'error',
+                        errorMessage: __('Translation UI is missing. Reload the page and try again.', 'translate-words'),
+                        errorHtml: false,
+                    },
+                })
+            );
+            return false;
+        }
 
         let status=false;
         let mutationRun=false;
@@ -178,6 +218,7 @@ class GoogleTranslater {
                                 if (!fontStyle) continue;
                                 mutationRun=true;
                                 mutationObserver.disconnect();
+                                this._mutationObserver = null;
     
                                 try {
                                     status = await this.startTranslate();
@@ -194,8 +235,12 @@ class GoogleTranslater {
                 }
             });
 
-            setTimeout(async () => {
+            this._mutationObserver = mutationObserver;
+
+            this._translateTimeout = setTimeout(async () => {
                 mutationObserver.disconnect();
+                this._mutationObserver = null;
+                this._translateTimeout = null;
                 if(!mutationRun){
                     status = await this.startTranslate();
                     resolve();
@@ -235,12 +280,30 @@ class GoogleTranslater {
     // Function to initialize translation if conditions are met
     async initTranslation() {
         if (this.textContentObject && Object.keys(this.textContentObject).length > 0 && this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
-            this.appendTranslateWidget();
+            const loaded = await this.appendTranslateWidget();
+            if (!loaded) {
+                this.targetLangs.forEach((lang) => {
+                    this.storeDispatch(unsetPendingPost(`${this.postId}_${lang}`));
+                    this.storeDispatch(
+                        updateTranslatePostInfo({
+                            [`${this.postId}_${lang}`]: {
+                                status: 'error',
+                                messageClass: 'error',
+                                errorMessage: __(
+                                    'Google Translate could not be loaded. Check your internet connection and try again.',
+                                    'translate-words'
+                                ),
+                                errorHtml: false,
+                            },
+                        })
+                    );
+                });
+                return;
+            }
             await this.createGoogleTranslator(this.targetLangs[0], 0);
         } else if (this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
             this.targetLangs.forEach(lang => {
                 this.storeDispatch(unsetPendingPost(this.postId + '_' + lang));
-                this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
                 this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false } }));
             });
         }
