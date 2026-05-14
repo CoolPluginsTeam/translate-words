@@ -6,6 +6,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import ErrorModalBox from '../components/error-modal-box/index.js';
 import { store } from '../redux-store/store.js';
 import DOMPurify from 'dompurify';
+import { geminiTranslateAgain, geminiTranslateComplete } from '../gemini-bulk-recovery.js';
 
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
 const PURIFY_ERROR_HTML = { ADD_ATTR: ['target', 'rel'] };
@@ -59,6 +60,30 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         setDestroyHandlers(prev => [...prev, callback]);
     }
 
+    const AIErrorBtnHandler = (e) => {
+        const btnType = e.target.dataset.status;
+        const d = errorModalData;
+        if (!d || !d.aiError) {
+            return;
+        }
+        const payload = {
+            postId: d.parentPostId,
+            targetLang: d.targetLanguage,
+            storeDispatch,
+            prefix,
+            updateDestoryHandler,
+            nonce: d.nonce,
+            closeErrorModal,
+            completedStrings: d.completedStrings,
+            totalPosts: d.totalPosts,
+        };
+        if (btnType === 'translateAgain') {
+            geminiTranslateAgain(payload);
+        } else if (btnType === 'continue') {
+            geminiTranslateComplete(payload);
+        }
+    };
+
     const onModalClose= (e) => {
         destroyHandlers.forEach(callback => typeof callback === 'function' && callback());
         onDestory(e);
@@ -72,7 +97,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         }
 
         if(translatePostInfo && Object.keys(translatePostInfo).length > 0){
-            if(pendingPosts.length < 1){''
+            if(pendingPosts.length < 1){
                 updateBulkStatus('completed');
                 return;
             }
@@ -179,6 +204,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Google Translate';
             case 'localAiTranslator':
                 return 'Chrome AI Translator';
+            case 'gemini':
+                return 'Google Gemini';
             default:
                 return 'Google Translate';
         }
@@ -203,7 +230,14 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     }
 
     return (
-        errorModal ? <ErrorModalBox message={errorModalData.errorHtml} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} />:
+        errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
+            {errorModalData.aiError && serviceProvider === 'gemini' && (
+                <div className={`${prefix}-ai-error-buttons`}>
+                    <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
+                    <button type="button" className={`${prefix}-ai-error-button button`} data-status="continue" onClick={AIErrorBtnHandler}>{__('Continue', 'translate-words')}</button>
+                </div>
+            )}
+        </ErrorModalBox> :
         <div id={`${prefix}-status-modal-container`}>
             <h2 className={`${prefix}-bulk-status-heading ${bulkStatus}`}>{sprintf(__('Bulk Translation %s', 'translate-words'), getBulkStatus())}{bulkStatus === 'running' && <span className={`${prefix}-bulk-status-running`}></span>}</h2>
             <div className={`${prefix}-status-modal-close`} onClick={onModalClose}>&times;</div>
@@ -211,7 +245,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                     <p>{emptyPostMessage}</p> :
                     <>
                         {isLoading && <div className={`${prefix}-progress-skeleton`}></div>}
-                        {(countInfo.totalPosts > 1) && progressBarVisibility && !isLoading ?
+                        {(countInfo.totalPosts >= 1) && progressBarVisibility && !isLoading ?
                         <>
                             <div className={`${prefix}-overall-progress`}>
                                 <div className={`${prefix}-progress-bar`}>

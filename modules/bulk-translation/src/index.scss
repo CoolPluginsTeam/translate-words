@@ -988,6 +988,39 @@ $prefix: lmat-bulk-translate;
                         background: #005682;
                     }
                 }
+
+                .#{$prefix}-ai-error-buttons {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    margin-top: 1rem;
+
+                    button {
+                        &[data-status="translateAgain"] {
+                            background: #30b230 !important;
+                            color: #fff !important;
+                            border-color: #239d23 !important;
+                            transition: all .3s ease-in-out;
+
+                            &:hover {
+                                background: #2da52d !important;
+                                border-color: #209120 !important;
+                            }
+                        }
+
+                        &[data-status="continue"] {
+                            background: #0073aa !important;
+                            color: #fff !important;
+                            border-color: #2271b1 !important;
+                            transition: all .3s ease-in-out;
+
+                            &:hover {
+                                background: #005682 !important;
+                                border-color: #004466 !important;
+                            }
+                        }
+                    }
+                }
             }
 
             .#{$prefix}-error-modal-box-footer {
@@ -1024,42 +1057,7 @@ $prefix: lmat-bulk-translate;
                 }
 
             }
-
-            .#{$prefix}-ai-error-buttons {
-                display: flex;
-                gap: 1rem;
-                justify-content: center;
-                margin-top: 1rem;
-
-                button {
-                    &[data-status="translateAgain"] {
-                        background: #30b230 !important;
-                        color: #fff !important;
-                        border-color: #239d23 !important;
-                        transition: all .3s ease-in-out;
-
-                        &:hover {
-                            background: #2da52d !important;
-                            border-color: #209120 !important;
-                        }
-                    }
-
-                    &[data-status="continue"] {
-                        background: #0073aa !important;
-                        color: #fff !important;
-                        border-color: #2271b1 !important;
-                        transition: all .3s ease-in-out;
-
-                        &:hover {
-                            background: #005682 !important;
-                            border-color: #004466 !important;
-                        }
-                    }
-                }
-            }
         }
-
-        /* Setting Modal CSS End */
 
         @keyframes shimmer {
             0% {

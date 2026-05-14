@@ -19,6 +19,12 @@ export default function createAiLlmPageTranslator(providerId) {
             document.dispatchEvent(new CustomEvent("lmat-page-translation:translation-error-clear", { bubbles: true }));
         };
 
+        const releaseRecoverableUpdateBlock = () => {
+            document.dispatchEvent(
+                new CustomEvent("lmat-page-translation:recoverable-ai-error-resolved", { bubbles: true })
+            );
+        };
+
         const showErrorNotice = (messageOrDetail) => {
             const detail =
                 messageOrDetail && typeof messageOrDetail === "object"
@@ -31,6 +37,13 @@ export default function createAiLlmPageTranslator(providerId) {
                 })
             );
         };
+
+        const escapeHtml = (text) =>
+            String(text ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
 
         const targetEl = ID ? document.getElementById(ID) : null;
         if (!targetEl) {
@@ -55,34 +68,36 @@ export default function createAiLlmPageTranslator(providerId) {
 
         const getBatchConfig = () => {
             const maxTokens = Number(lmatPageTranslationGlobal?.AIRequestMaxTokens);
-            const batchSize = Number(lmatPageTranslationGlobal?.AIRequestBatchSize);
             return {
                 maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
-                concurrency: Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5,
             };
         };
 
-        const runWithConcurrency = async (items, concurrency, handler) => {
-            const limit = Math.min(Math.max(1, concurrency), Math.max(1, items.length));
-            let idx = 0;
-            let firstError = null;
-
-            const worker = async () => {
-                while (idx < items.length) {
-                    if (firstError) return;
-                    const currentIndex = idx++;
-                    try {
-                        // eslint-disable-next-line no-await-in-loop
-                        await handler(items[currentIndex], currentIndex);
-                    } catch (e) {
-                        firstError = e;
-                        return;
-                    }
-                }
-            };
-
-            await Promise.all(Array.from({ length: limit }, () => worker()));
-            if (firstError) throw firstError;
+        const buildRecoverableHtml = (done, total) => {
+            const totalSafe = Math.max(1, total);
+            if (done <= 0) {
+                return `<div class="lmat_page_translation_ai_pending">
+                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(__("Oops! Something went wrong during translation", "translate-words"))}</p>
+                <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>
+                <p>${escapeHtml(__("No strings were saved yet. You can retry the same step or stop here.", "translate-words"))}</p>
+                <p><strong>${escapeHtml(__("Next Steps:", "translate-words"))}</strong></p>
+                <p>${escapeHtml(__('Click "Translate" to try again.', "translate-words"))}</p>
+                <p><strong>${escapeHtml(__("OR", "translate-words"))}</strong></p>
+                <p>${escapeHtml(__('Click "Continue" to close this message and keep the editor as it is.', "translate-words"))}</p>
+            </div>`;
+            }
+            const completedPercent = Math.min(100, Math.round(((done / totalSafe) * 100) * 10) / 10).toFixed(1);
+            const notCompletedPercent = Math.min(100, Math.round((100 - (done / total) * 100) * 10) / 10).toFixed(1);
+            return `<div class="lmat_page_translation_ai_pending">
+                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(__("Oops! Something went wrong during translation", "translate-words"))}</p>
+                <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>
+                <p>✅ ${escapeHtml(sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%"))}</p>
+                <p>❌ ${escapeHtml(sprintf(__("%s of the strings are still not translated.", "translate-words"), notCompletedPercent + "%"))}</p>
+                <p><strong>${escapeHtml(__("Next Steps:", "translate-words"))}</strong></p>
+                <p>${escapeHtml(__('Click "Translate" to re-translate the remaining strings.', "translate-words"))}</p>
+                <p><strong>${escapeHtml(__("OR", "translate-words"))}</strong></p>
+                <p>${escapeHtml(__('Click "Continue" to proceed without translating the rest of the strings.', "translate-words"))}</p>
+            </div>`;
         };
 
         const runTranslation = async () => {
@@ -105,7 +120,27 @@ export default function createAiLlmPageTranslator(providerId) {
             });
 
             const stringContainer = jQuery("#lmat_page_translation_strings_model .modal-content .lmat_page_translation_string_container");
-            const progressBar = jQuery("#lmat_page_translation_strings_model .lmat_page_translation_translate_progress");
+
+            /** Template uses `display:none` in CSS; it must be faded in after React mounts this node (including retries). */
+            const mountPageTranslationProgressUi = () => {
+                const pb = jQuery("#lmat_page_translation_strings_model .lmat_page_translation_translate_progress");
+                const sc = jQuery("#lmat_page_translation_strings_model .modal-content .lmat_page_translation_string_container");
+                if (!pb.length) {
+                    return;
+                }
+                AddProgressBar(providerId);
+                if (sc[0] && sc[0].scrollHeight > 100) {
+                    pb.fadeIn("slow");
+                } else {
+                    pb.css({ display: "block", opacity: 1 });
+                }
+            };
+
+            const scheduleMountPageTranslationProgressUi = () => {
+                window.setTimeout(() => {
+                    mountPageTranslationProgressUi();
+                }, 0);
+            };
 
             if (Object.keys(strings).length === 0) {
                 clearErrorNotice();
@@ -113,11 +148,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 btn.disabled = false;
                 return;
             }
-            AddProgressBar(providerId);
-
-            if (stringContainer[0] && stringContainer[0].scrollHeight > 100) {
-                progressBar.fadeIn("slow");
-            }
+            scheduleMountPageTranslationProgressUi();
 
             const startTime = new Date().getTime();
             const restUrl = lmatPageTranslationGlobal.ai_batch_translate_url;
@@ -129,10 +160,11 @@ export default function createAiLlmPageTranslator(providerId) {
             let translationSucceeded = false;
 
             const finish = ({ hideProgress } = {}) => {
+                const pb = jQuery("#lmat_page_translation_strings_model .lmat_page_translation_translate_progress");
                 if (hideProgress) {
-                    progressBar.fadeOut("slow");
+                    pb.fadeOut("slow");
                 } else {
-                    progressBar.show();
+                    pb.show();
                 }
                 translateStatusHandler(false);
                 if (!translationSucceeded) {
@@ -145,107 +177,220 @@ export default function createAiLlmPageTranslator(providerId) {
             try {
                 clearErrorNotice();
                 btn.setAttribute("aria-busy", "true");
-                const { maxTokens, concurrency } = getBatchConfig();
+                const { maxTokens } = getBatchConfig();
                 const chunks = chunkStringMap(strings, { maxTokens });
                 const totalKeys = Math.max(1, Object.keys(strings).length);
+                let chunkIndex = 0;
                 let doneKeys = 0;
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = 'gemini_model';
+                const modelKey = "gemini_model";
                 const selectedModel =
-                    (lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey])
+                    lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])
-                        : '';
+                        : "";
 
-                try {
-                    await runWithConcurrency(chunks, concurrency, async (chunk) => {
-                        const translations = await requestAiBatch({
-                            provider: providerId,
-                            postId,
-                            objectType,
-                            sourceLang,
-                            targetLang,
-                            strings: chunk,
-                            model: selectedModel,
-                            restUrl,
-                            nonce,
-                        });
+                const updateProgressUi = () => {
+                    const pct = Math.min(100, Math.round((doneKeys / totalKeys) * 100));
+                    jQuery(`.${providerId}-translator_progress`).css("width", `${pct}%`).text(`${pct}%`);
+                    const el = stringContainer && stringContainer[0] ? stringContainer[0] : null;
+                    if (el && el.scrollHeight > el.clientHeight) {
+                        const maxScroll = el.scrollHeight - el.clientHeight;
+                        el.scrollTop = Math.round((pct / 100) * maxScroll);
+                    }
+                };
 
-                        if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
-                            throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
-                        }
-
-                        for (const key of Object.keys(chunk)) {
-                            const row = entryById[key];
-                            if (!row) continue;
-
-                            const t = translations[key] !== undefined ? translations[key] : chunk[key];
-                            SaveTranslation({
-                                type: row.type,
-                                key: row.id,
-                                translateContent: t,
-                                source: row.source,
-                                provider: providerId,
-                                AllowedMetaFields,
-                            });
-                            const src = row.source || "";
-                            totalChars += src.trim().length;
-                            totalStrings += src.trim().split(/(?<=[.!?]+)\s+/).filter(Boolean).length;
-                            doneKeys++;
-                        }
-
-                        const pct = Math.min(100, Math.round((doneKeys / totalKeys) * 100));
-                        jQuery(`.${providerId}-translator_progress`).css("width", `${pct}%`).text(`${pct}%`);
-
-                        // Keep the strings container scrolling while work is happening
-                        const el = stringContainer && stringContainer[0] ? stringContainer[0] : null;
-                        if (el && el.scrollHeight > el.clientHeight) {
-                            const maxScroll = el.scrollHeight - el.clientHeight;
-                            el.scrollTop = Math.round((pct / 100) * maxScroll);
-                        }
+                const applyChunk = async (chunk) => {
+                    const translations = await requestAiBatch({
+                        provider: providerId,
+                        postId,
+                        objectType,
+                        sourceLang,
+                        targetLang,
+                        strings: chunk,
+                        model: selectedModel,
+                        restUrl,
+                        nonce,
                     });
-                } finally {
+
+                    if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
+                        throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
+                    }
+
+                    for (const key of Object.keys(chunk)) {
+                        const row = entryById[key];
+                        if (!row) continue;
+
+                        const t = translations[key] !== undefined ? translations[key] : chunk[key];
+                        SaveTranslation({
+                            type: row.type,
+                            key: row.id,
+                            translateContent: t,
+                            source: row.source,
+                            provider: providerId,
+                            AllowedMetaFields,
+                        });
+                        const src = row.source || "";
+                        totalChars += src.trim().length;
+                        totalStrings += src.trim().split(/(?<=[.!?]+)\s+/).filter(Boolean).length;
+                        doneKeys++;
+                    }
+                    updateProgressUi();
+                };
+
+                const finishSuccess = () => {
+                    dispatch("block-lmatPageTranslation/translate").translationInfo({
+                        targetStringCount: totalStrings,
+                        targetWordCount: entries.reduce((acc, row) => {
+                            const s = (row.source || "").trim();
+                            return acc + s.split(/\s+/).filter((word) => /[^\p{L}\p{N}]/.test(word)).length;
+                        }, 0),
+                        targetCharacterCount: totalChars,
+                        translateStatus: true,
+                        provider: providerId,
+                    });
+
+                    jQuery(`.${providerId}-translator_progress`).css("width", "100%").text("100%");
+                    ShowStringCount(providerId, "block", totalChars);
+                    StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: true });
+                    translationSucceeded = true;
+                };
+
+                const runChunksFromCurrentIndex = async () => {
+                    while (chunkIndex < chunks.length) {
+                        const chunk = chunks[chunkIndex];
+                        try {
+                            // eslint-disable-next-line no-await-in-loop
+                            await applyChunk(chunk);
+                            chunkIndex += 1;
+                        } catch (err) {
+                            const errorMessage = err?.message || __("Translation failed. Please try again.", "translate-words");
+                            const lower = String(errorMessage || "").toLowerCase();
+                            const isQuota =
+                                err?.code === "LLM_QUOTA_EXCEEDED" ||
+                                lower.includes("429") ||
+                                lower.includes("quota") ||
+                                lower.includes("rate limit") ||
+                                lower.includes("resource has been exhausted");
+
+                            if (providerId === "gemini" && isQuota) {
+                                releaseRecoverableUpdateBlock();
+                                showErrorNotice({
+                                    message: errorMessage,
+                                    link: {
+                                        href: "https://aistudio.google.com/app/usage",
+                                        text: __("View usage.", "translate-words"),
+                                    },
+                                });
+                                return "quota";
+                            }
+
+                            const totalStringKeys = Object.keys(strings).length;
+                            const canOfferGeminiRecovery =
+                                providerId === "gemini" &&
+                                totalStringKeys > 0 &&
+                                chunks.length > 0 &&
+                                chunkIndex < chunks.length;
+
+                            if (canOfferGeminiRecovery) {
+                                showErrorNotice({
+                                    recoverable: true,
+                                    messagePlain: __("Translation failed.", "translate-words"),
+                                    html: buildRecoverableHtml(doneKeys, totalKeys),
+                                    onTranslateAgain: () => {
+                                        clearErrorNotice();
+                                        btn.disabled = true;
+                                        translateStatusHandler(true);
+                                        scheduleMountPageTranslationProgressUi();
+                                        btn.setAttribute("aria-busy", "true");
+                                        void (async () => {
+                                            const r = await runChunksFromCurrentIndex();
+                                            btn.removeAttribute("aria-busy");
+                                            if (r === "ok") {
+                                                finishSuccess();
+                                                releaseRecoverableUpdateBlock();
+                                            } else if (r !== "recoverable") {
+                                                StoreTimeTaken({
+                                                    prefix: providerId,
+                                                    start: startTime,
+                                                    end: new Date().getTime(),
+                                                    translateStatus: false,
+                                                });
+                                                releaseRecoverableUpdateBlock();
+                                            }
+                                            translateStatusHandler(false);
+                                            if (!translationSucceeded) {
+                                                btn.disabled = false;
+                                            }
+                                            if (translationSucceeded) {
+                                                setTimeout(() => finish({ hideProgress: true }), 800);
+                                            } else {
+                                                finish({ hideProgress: false });
+                                            }
+                                        })();
+                                    },
+                                    onContinue: () => {
+                                        releaseRecoverableUpdateBlock();
+                                        clearErrorNotice();
+                                        jQuery(`.${providerId}-translator_progress`)
+                                            .css("width", `${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`)
+                                            .text(`${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`);
+                                        dispatch("block-lmatPageTranslation/translate").translationInfo({
+                                            targetStringCount: totalStrings,
+                                            targetWordCount: entries.reduce((acc, row) => {
+                                                const s = (row.source || "").trim();
+                                                return acc + s.split(/\s+/).filter((word) => /[^\p{L}\p{N}]/.test(word)).length;
+                                            }, 0),
+                                            targetCharacterCount: totalChars,
+                                            translateStatus: doneKeys > 0,
+                                            provider: providerId,
+                                        });
+                                        ShowStringCount(providerId, "block", totalChars);
+                                        StoreTimeTaken({
+                                            prefix: providerId,
+                                            start: startTime,
+                                            end: new Date().getTime(),
+                                            translateStatus: doneKeys > 0,
+                                        });
+                                        translationSucceeded = doneKeys > 0;
+                                        translateStatusHandler(false);
+                                        btn.disabled = !translationSucceeded;
+                                        btn.removeAttribute("aria-busy");
+                                        if (translationSucceeded) {
+                                            setTimeout(() => finish({ hideProgress: true }), 800);
+                                        } else {
+                                            finish({ hideProgress: false });
+                                        }
+                                    },
+                                });
+                                return "recoverable";
+                            }
+
+                            showErrorNotice(errorMessage);
+                            return "fail";
+                        }
+                    }
+                    return "ok";
+                };
+
+                const outcome = await runChunksFromCurrentIndex();
+                btn.removeAttribute("aria-busy");
+
+                if (outcome === "ok") {
+                    finishSuccess();
+                    releaseRecoverableUpdateBlock();
+                } else if (outcome === "recoverable") {
+                    StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
+                } else {
+                    StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
+                    releaseRecoverableUpdateBlock();
                 }
-
-                dispatch("block-lmatPageTranslation/translate").translationInfo({
-                    targetStringCount: totalStrings,
-                    targetWordCount: entries.reduce((acc, row) => {
-                        const s = (row.source || "").trim();
-                        return acc + s.split(/\s+/).filter((word) => /[^\p{L}\p{N}]/.test(word)).length;
-                    }, 0),
-                    targetCharacterCount: totalChars,
-                    translateStatus: true,
-                    provider: providerId,
-                });
-
-                jQuery(`.${providerId}-translator_progress`).css("width", "100%").text("100%");
-                ShowStringCount(providerId, "block", totalChars);
-                StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: true });
-                translationSucceeded = true;
             } catch (e) {
                 StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
                 const errorMessage = e?.message || __("Translation failed. Please try again.", "translate-words");
-
-                // When Gemini quota/billing is exceeded, guide users to the usage page.
-                const lower = String(errorMessage || "").toLowerCase();
-                const isQuota =
-                    lower.includes("429") ||
-                    lower.includes("quota") ||
-                    lower.includes("rate limit") ||
-                    lower.includes("resource has been exhausted");
-
-                if (providerId === "gemini" && isQuota) {
-                    showErrorNotice({
-                        message: errorMessage,
-                        link: {
-                            href: "https://aistudio.google.com/app/usage",
-                            text: __("View usage.", "translate-words"),
-                        },
-                    });
-                } else {
-                    showErrorNotice(errorMessage);
-                }
+                showErrorNotice(errorMessage);
+                releaseRecoverableUpdateBlock();
             }
 
             // UX: hide progress only when translation succeeds.

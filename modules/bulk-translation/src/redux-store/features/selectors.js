@@ -1,4 +1,6 @@
 // selector.js — Pure selector functions
+import normalizeBulkTranslationEscapes from '../../utils/normalize-bulk-translation-escapes.js';
+
 export const selectServiceProvider = (state) => state.serviceProvider;
 export const selectPendingPosts = (state) => state.pendingPosts;
 export const selectCompletedPosts = (state) => state.completedPosts;
@@ -9,9 +11,14 @@ export const selectBlockParseRules = (state) => state.blockParseRules;
 export const selectAllowedMetaFields = (state) => state.allowedMetaFields;
 export const selectErrorPostsInfo = (state) => state.errorPostsInfo;
 export const selectGlossaryTerms = (state, sourceLanguage) => state.glossaryTerms[sourceLanguage]?.translations;
-export const selectTranslatedContent=(state, postId, uniqueKey, key, provider)=>{
-  return state.translatedContent[postId]?.[uniqueKey]?.translation?.[provider]?.[key] || state.translatedContent[postId]?.[uniqueKey]?.source;
-}
+
+export const selectTranslatedContent = (state, postId, uniqueKey, key, provider) => {
+	const fromTranslation = state.translatedContent[postId]?.[uniqueKey]?.translation?.[provider]?.[key];
+	if (typeof fromTranslation === 'string' && fromTranslation !== '') {
+		return normalizeBulkTranslationEscapes(fromTranslation);
+	}
+	return state.translatedContent[postId]?.[uniqueKey]?.source;
+};
 export const selectSourceContent=(state, postId, uniqueKey)=>{
   return state.translatedContent[postId]?.[uniqueKey]?.source;
 }

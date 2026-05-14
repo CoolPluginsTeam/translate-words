@@ -323,7 +323,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_' . $provider . '_key';
+			$key_option = 'connectors_ai_google_api_key';
 			$api_key    = (string) get_option( $key_option, '' );
 			if ( '' === trim( $api_key ) ) {
 				return new WP_Error( 'lmat_ai_no_key', __( 'API key is not configured for this provider.', 'translate-words' ), array( 'status' => 400 ) );
@@ -345,14 +345,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_invalid_params', __( 'No translatable strings in request.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$lang_names = $this->ai_translate_language_labels( $source_lang, $target_lang );
-
 			$result = $this->ai_translate_strings_with_llm(
 				$provider,
 				$source_lang,
 				$target_lang,
-				$lang_names['source_name'],
-				$lang_names['target_name'],
 				$sanitized_strings,
 				$api_key,
 				$model
@@ -400,52 +396,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string $source_slug Source language slug.
-		 * @param string $target_slug Target language slug.
-		 * @return array{source_name:string,target_name:string}
-		 */
-		private function ai_translate_language_labels( string $source_slug, string $target_slug ): array {
-			$default = array(
-				'source_name' => $source_slug,
-				'target_name' => $target_slug,
-			);
-			if ( ! function_exists( 'LMAT' ) || ! LMAT() || ! property_exists( LMAT(), 'model' ) ) {
-				return $default;
-			}
-			$list = LMAT()->model->get_languages_list();
-			if ( ! is_array( $list ) ) {
-				return $default;
-			}
-			$source_name = $source_slug;
-			$target_name = $target_slug;
-			foreach ( $list as $lang ) {
-				if ( ! is_object( $lang ) || ! isset( $lang->slug ) ) {
-					continue;
-				}
-				$name = isset( $lang->name ) ? (string) $lang->name : $lang->slug;
-				if ( $lang->slug === $source_slug ) {
-					$source_name = $name;
-				}
-				if ( $lang->slug === $target_slug ) {
-					$target_name = $name;
-				}
-			}
-			return array(
-				'source_name' => $source_name,
-				'target_name' => $target_name,
-			);
-		}
-
-		/**
-		 * @param string               $provider     gemini.
-		 * @param string               $source_lang  Slug.
-		 * @param string               $target_lang  Slug.
-		 * @param string               $source_label Human label.
-		 * @param string               $target_label Human label.
-		 * @param array<string,string> $strings      Key => source text.
+		 * @param string               $provider    gemini.
+		 * @param string               $source_lang Slug
+		 * @param string               $target_lang Slug
+		 * @param array<string,string> $strings     Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
-		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, string $source_label, string $target_label, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
+		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
 			$models = array();
 			$ai_config = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
@@ -587,11 +544,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$custom_prompt = '';
-			if ( isset( $ai_config['custom_prompt'] ) && is_string( $ai_config['custom_prompt'] ) ) {
-				$custom_prompt = trim( $ai_config['custom_prompt'] );
-			}
-
 			$instruction = sprintf(
 				'You are a professional translator.
 				Source Language: %s
@@ -608,67 +560,102 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				Please ensure that the output follows the format: {"key(numeric value)": "(translations of the strings in %s language)"}
 
 				Strings are :- %s',
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $source_label ),
-				sanitize_text_field( $target_label ),
-				sanitize_text_field( $target_label ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $source_lang ),
+				sanitize_text_field( $target_lang ),
+				sanitize_text_field( $target_lang ),
 				$payload
 			);
 
-			if ( '' !== $custom_prompt ) {
-				$instruction .= 'Instruction 9: ' . sanitize_text_field( $custom_prompt );
-			}
-
 			if ( '' !== $glossary_instructions ) {
-				$instruction_number = '' !== $custom_prompt ? 10 : 9;
-				$instruction       .= 'Instruction ' . $instruction_number . ': ' . $glossary_instructions;
+				$instruction       .= 'Instruction 9: ' . $glossary_instructions;
+			}
+			
+			$ai_request_timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
+			if ( $ai_request_timeout < 1 ) {
+				$ai_request_timeout = 120;
 			}
 
-			$builder = wp_ai_client_prompt();
-			if ( method_exists( $builder, 'using_system_instruction' ) ) {
-				$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
-			}
-			if ( method_exists( $builder, 'with_text' ) ) {
-				$builder = $builder->with_text( $instruction );
-			} else {
-				$builder = wp_ai_client_prompt( $instruction );
-			}
+			$timeout_filter = static function ( $time ) use ( $ai_request_timeout ) {
+				return $ai_request_timeout;
+			};
+			add_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 
-			if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
-				$builder = $builder->using_model_preference( $model_id );
-			}
+			$text = null;
 
 			try {
-				$text = $builder->generate_text();
-			} catch ( \Exception $e ) {
-				$msg = (string) $e->getMessage();
-				if ( false !== stripos( $msg, 'No models found' ) ) {
+				if ( method_exists( $registry, 'isProviderConfigured' ) && ! $registry->isProviderConfigured( $provider_id ) ) {
 					return new WP_Error(
-						'lmat_ai_no_models',
-						__( 'No compatible text-generation model is available for the selected provider. Please ensure the provider is installed, an API key is saved, and a text model is selected.', 'translate-words' ),
+						'lmat_ai_no_key',
+						__( 'API key for this provider is not configured.', 'translate-words' ),
 						array( 'status' => 400 )
 					);
 				}
-				if (
-					false !== stripos( $msg, '429' ) ||
-					false !== stripos( $msg, 'quota exceeded' ) ||
-					false !== stripos( $msg, 'rate limit' ) ||
-					false !== stripos( $msg, 'too many requests' )
-				) {
+
+				$provider_class = $registry->getProviderClassName( $provider_id );
+				if ( ! is_string( $provider_class ) || ! class_exists( $provider_class ) ) {
 					return new WP_Error(
-						'lmat_ai_rate_limited',
-						__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
-						array( 'status' => 429 )
+						'lmat_ai_provider_invalid',
+						__( 'Invalid AI provider.', 'translate-words' ),
+						array( 'status' => 400 )
 					);
 				}
-				return new WP_Error(
-					'lmat_ai_request_failed',
-					__( 'AI translation request failed. Please try again shortly.', 'translate-words' ),
-					array( 'status' => 502 )
-				);
+
+				$builder = wp_ai_client_prompt();
+
+				$canUseProviderChain = method_exists( $builder, 'using_provider' )
+					&& method_exists( $builder, 'with_text' )
+					&& method_exists( $builder, 'generate_text' )
+					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
+
+				if ( $canUseProviderChain ) {
+					if ( '' !== $model_id ) {
+						try {
+							$model   = $provider_class::model( $model_id );
+							$builder = $builder->using_model( $model );
+						} catch ( \Throwable $e ) {
+							return new WP_Error(
+								'lmat_ai_invalid_model',
+								__( 'Invalid model selected during text generation.', 'translate-words' ),
+								array( 'status' => 400 )
+							);
+						}
+					}
+
+					try {
+						$text = $builder
+							->using_provider( $provider_id )
+							->with_text( $instruction )
+							->generate_text();
+					} catch ( \Throwable $e ) {
+						return $this->ai_translate_map_generate_text_exception( $e );
+					}
+				} else {
+					// Older WP AI Client: fall back to model preference + single-message prompt.
+					if ( method_exists( $builder, 'using_system_instruction' ) ) {
+						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
+					}
+					if ( method_exists( $builder, 'with_text' ) ) {
+						$builder = $builder->with_text( $instruction );
+					} else {
+						$builder = wp_ai_client_prompt( $instruction );
+					}
+
+					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
+						$builder = $builder->using_model_preference( $model_id );
+					}
+
+					try {
+						$text = $builder->generate_text();
+					} catch ( \Throwable $e ) {
+						return $this->ai_translate_map_generate_text_exception( $e );
+					}
+				}
+			} finally {
+				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 			}
 
 			if ( is_wp_error( $text ) ) {
@@ -681,8 +668,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 								$provider,
 								$source_lang,
 								$target_lang,
-								$source_label,
-								$target_label,
 								$chunks[0],
 								$api_key,
 								$model_override,
@@ -696,8 +681,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 								$provider,
 								$source_lang,
 								$target_lang,
-								$source_label,
-								$target_label,
 								$chunks[1],
 								$api_key,
 								$model_override,
@@ -722,8 +705,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$clean_text = preg_replace( '/(^```json\n|```$)/', '', (string) $text );
-			$clean_text = str_replace( '<ATFPP_NEW_L>', '\n', (string) $clean_text );
-			$clean_text = str_replace( '<ATFPP_NEW_R>', '\r', (string) $clean_text );
 			$final_text = preg_replace( '/\\\\{2,}([\'"n])/', '\\\$1', (string) $clean_text );
 
 			if ( is_string( $final_text ) ) {
@@ -752,13 +733,62 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$out = array();
 			foreach ( array_keys( $strings ) as $key ) {
 				if ( isset( $decoded[ $key ] ) && is_scalar( $decoded[ $key ] ) ) {
-					$out[ $key ] = (string) $decoded[ $key ];
+					$out[ $key ] = $this->ai_normalize_translation_string( (string) $decoded[ $key ] );
 				} else {
 					$out[ $key ] = $strings[ $key ];
 				}
 			}
 
 			return $out;
+		}
+
+		/**
+		 * Turn literal \n, \r, \t (backslash + letter) into real control characters after JSON decode.
+		 * Matches client `normalizeBulkTranslationEscapes`; repeats until stable (max 5 passes).
+		 * Strips spurious surrounding ASCII double quotes (up to three layers) some models add per value.
+		 *
+		 * @param string $value Raw decoded string from the model.
+		 * @return string
+		 */
+		private function ai_normalize_translation_string( string $value ): string {
+			$out = $value;
+			for ( $i = 0; $i < 5; $i++ ) {
+				$next = str_replace( array( '\\n', '\\r', '\\t' ), array( "\n", "\r", "\t" ), $out );
+				if ( $next === $out ) {
+					break;
+				}
+				$out = $next;
+			}
+			// Strip spurious surrounding ASCII double quotes the model sometimes leaves on decoded values.
+			for ( $j = 0; $j < 3; $j++ ) {
+				$t = trim( $out );
+				$len = strlen( $t );
+				if ( $len >= 2 && '"' === $t[0] && '"' === $t[ $len - 1 ] ) {
+					$out = substr( $t, 1, -1 );
+				} else {
+					break;
+				}
+			}
+			return $out;
+		}
+
+		/**
+		 * Recursively normalize literal \n, \r, \t in all string leaves (blocks JSON, meta, Elementor trees).
+		 *
+		 * @param mixed $data Decoded array or scalar.
+		 * @return mixed
+		 */
+		private function ai_normalize_translation_strings_recursive( $data ) {
+			if ( is_string( $data ) ) {
+				return $this->ai_normalize_translation_string( $data );
+			}
+			if ( is_array( $data ) ) {
+				foreach ( $data as $k => $v ) {
+					$data[ $k ] = $this->ai_normalize_translation_strings_recursive( $v );
+				}
+				return $data;
+			}
+			return $data;
 		}
 
 		/**
@@ -784,6 +814,40 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return $decoded;
+		}
+
+		/**
+		 * Map generate_text() failures to WP_Error
+		 *
+		 * @param \Throwable $e Thrown error.
+		 * @return \WP_Error
+		 */
+		private function ai_translate_map_generate_text_exception( \Throwable $e ): WP_Error {
+			$msg = (string) $e->getMessage();
+			if ( false !== stripos( $msg, 'No models found' ) ) {
+				return new WP_Error(
+					'lmat_ai_no_models',
+					__( 'No compatible text-generation model is available for the selected provider. Please ensure the provider is installed, an API key is saved, and a text model is selected.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+			if (
+				false !== stripos( $msg, '429' ) ||
+				false !== stripos( $msg, 'quota exceeded' ) ||
+				false !== stripos( $msg, 'rate limit' ) ||
+				false !== stripos( $msg, 'too many requests' )
+			) {
+				return new WP_Error(
+					'lmat_ai_rate_limited',
+					__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+					array( 'status' => 429 )
+				);
+			}
+			return new WP_Error(
+				'lmat_ai_request_failed',
+				__( 'AI translation request failed. Please try again shortly.', 'translate-words' ),
+				array( 'status' => 502 )
+			);
 		}
 
 		/**
@@ -1497,7 +1561,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						array( 'status' => 400 )
 					);
 				}
-				$post_data['post_meta_fields'] = $decoded_meta_fields;
+				$post_data['post_meta_fields'] = is_array( $decoded_meta_fields )
+					? $this->ai_normalize_translation_strings_recursive( $decoded_meta_fields )
+					: $decoded_meta_fields;
 			}
 
 			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
@@ -1510,7 +1576,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
-				$post_data['meta_fields']['_elementor_data'] = $content;
+				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
+				$el_dec = json_decode( $el_raw, true );
+				if ( JSON_ERROR_NONE === json_last_error() && is_array( $el_dec ) ) {
+					$post_data['meta_fields']['_elementor_data'] = wp_json_encode(
+						$this->ai_normalize_translation_strings_recursive( $el_dec ),
+						JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+					);
+				} else {
+					$post_data['meta_fields']['_elementor_data'] = $this->ai_normalize_translation_string( (string) $el_raw );
+				}
 				unset( $post_data['post_content'] );
 			} elseif ( 'block' === $editor_type ) {
 				$decoded_blocks = json_decode( $post_data['post_content'], true );
@@ -1528,6 +1603,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						array( 'status' => 400 )
 					);
 				}
+				$decoded_blocks            = $this->ai_normalize_translation_strings_recursive( $decoded_blocks );
 				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
 			} elseif ( 'classic' === $editor_type ) {
 				// Classic editor content is plain HTML, not JSON.
@@ -1535,11 +1611,22 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$raw_classic = isset( $params['post_content'] ) ? (string) $params['post_content'] : '';
 				$decoded     = json_decode( $raw_classic, true );
 				if ( JSON_ERROR_NONE === json_last_error() && is_string( $decoded ) ) {
-					$post_data['post_content'] = wp_kses_post( $decoded );
+					$post_data['post_content'] = $this->ai_normalize_translation_string( wp_kses_post( $decoded ) );
 				} else {
 					// Use already-sanitized `post_content` from args sanitizer.
-					$post_data['post_content'] = isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : '';
+					$post_data['post_content'] = $this->ai_normalize_translation_string(
+						isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : ''
+					);
 				}
+			} else {
+				if ( isset( $post_data['post_content'] ) && is_string( $post_data['post_content'] ) ) {
+					$post_data['post_content'] = $this->ai_normalize_translation_string( $post_data['post_content'] );
+				}
+			}
+
+			$post_data['post_title'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) ( $post_data['post_title'] ?? '' ) ) );
+			if ( isset( $post_data['post_excerpt'] ) ) {
+				$post_data['post_excerpt'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) $post_data['post_excerpt'] ) );
 			}
 
 			global $linguator;
@@ -1715,9 +1802,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$term_id                 = intval( sanitize_text_field( $params['term_id'] ) );
 			$target_language         = isset( $params['target_language'] ) ? sanitize_text_field( $params['target_language'] ) : '';
 			$taxonomy                = isset( $params['taxonomy'] ) ? sanitize_text_field( $params['taxonomy'] ) : '';
-			$taxonomy_name           = isset( $params['taxonomy_name'] ) ? sanitize_text_field( $params['taxonomy_name'] ) : '';
+			$taxonomy_name           = isset( $params['taxonomy_name'] ) ? sanitize_text_field( $this->ai_normalize_translation_string( (string) $params['taxonomy_name'] ) ) : '';
 			$taxonomy_slug           = isset( $params['taxonomy_slug'] ) ? sanitize_title( $params['taxonomy_slug'] ) : '';
-			$taxonomy_description    = isset( $params['taxonomy_description'] ) ? wp_kses_post( $params['taxonomy_description'] ) : '';
+			$taxonomy_description    = isset( $params['taxonomy_description'] ) ? wp_kses_post( $this->ai_normalize_translation_string( (string) $params['taxonomy_description'] ) ) : '';
 					$slug_translation_option = 'title_translate';
 			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];

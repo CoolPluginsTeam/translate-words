@@ -65,8 +65,8 @@ const AiTranslation = () => {
 		try {
 			// If Gemini is enabled and user provided an API key in the wizard,
 			// validate it using the same endpoint/settings-panel logic before continuing.
-			const trimmedGeminiKey = (geminiApiKeyDraft || '').trim();
-			if (wpAiClientAvailable && geminiTranslation && '' !== trimmedGeminiKey) {
+			const normalizedGeminiKey = (geminiApiKeyDraft || '').toString().replace(/\s+/g, '').trim();
+			if (wpAiClientAvailable && geminiTranslation && '' !== normalizedGeminiKey) {
 				const resp = await apiFetch({
 					path: 'lmat/v1/settings',
 					method: 'POST',
@@ -76,13 +76,13 @@ const AiTranslation = () => {
 					},
 					body: JSON.stringify({
 						keys: {
-							gemini: trimmedGeminiKey,
+							gemini: normalizedGeminiKey,
 						},
 					}),
 				});
 				// Sync masked key back into wizard state.
 				if (resp) {
-					setData(resp);
+					setData((prev) => ({ ...(prev || {}), ...(resp || {}) }));
 				}
 				setGeminiApiKeyDraft('');
 			}
@@ -119,7 +119,7 @@ const AiTranslation = () => {
 				});
 
 				lastSavedRef.current = { ...nextProvider };
-				setData(response);
+				setData((prev) => ({ ...(prev || {}), ...(response || {}) }));
 			}
 
 			setSetupProgress('language_switcher');
@@ -210,9 +210,17 @@ const AiTranslation = () => {
 											</p>
 											<p className="text-sm/6 m-0 mt-2" style={{ color: '#92400e' }}>
 												{__(
-													'You can skip adding an API key for now and continue setup. To use Gemini, you must add a valid API key (you can add it later in the Settings panel).',
+													'You can skip adding an API key for now and continue with the setup. To use Gemini translation features, you\'ll need to add a valid API key later from the ',
 													'translate-words'
 												)}
+												<a
+													className="underline"
+													href={`${window?.lmat_setup?.admin_url || ''}admin.php?page=lmat_settings&tab=translation`}
+													target="_blank"
+													rel="noreferrer noopener"
+												>
+													{__('Settings panel.', 'translate-words')}
+												</a>
 											</p>
 										</div>
 									)}
@@ -257,15 +265,6 @@ const AiTranslation = () => {
 													rel="noreferrer noopener"
 												>
 													{__('Get Gemini API key', 'translate-words')}
-												</a>
-												{__(' or add it later in the ', 'translate-words')}
-												<a
-													className="underline"
-													href={`${window?.lmat_setup?.admin_url || ''}admin.php?page=lmat_settings&tab=translation`}
-													target="_blank"
-													rel="noreferrer noopener"
-												>
-													{__('Settings panel.', 'translate-words')}
 												</a>
 											</p>
 										)}

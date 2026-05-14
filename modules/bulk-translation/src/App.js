@@ -89,6 +89,8 @@ const App = ({ onDestory, prefix, postIds }) => {
         setIsLoading(true);
     }
 
+    const shouldHideLanguagesHeader = postIds.length === 0 && errorMessage === emptyPostIdsErrorMessage;
+
     const containerCls=()=>{
         let cls=[];
         if(statusModalVisibility){
@@ -163,7 +165,11 @@ const App = ({ onDestory, prefix, postIds }) => {
                 className={`${prefix}-language-container`}>
                 <div
                     className={`${prefix}-header`}>
-                    <h2>{__('Step 1: Select Languages', 'translate-words')}</h2>
+                    {shouldHideLanguagesHeader ? (
+                        <h2>{__('Action required', 'translate-words')}</h2>
+                    ) : (
+                        <h2>{__('Step 1: Select Languages', 'translate-words')}</h2>
+                    )}
                     <span
                         className="close"
                         onClick={destroyApp}

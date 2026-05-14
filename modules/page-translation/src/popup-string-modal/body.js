@@ -8,6 +8,7 @@ import ReactDOM from "react-dom";
 import { InfoPopup, GlossaryPopup, AddGlossaryPopup } from "../component/RightPopup/index.js";
 import SaveTranslation from '../component/store-translated-string/index.js';
 import GlossaryCount from "../component/glossary-count/index.js";
+import DOMPurify from "dompurify";
 
 const StringPopUpBody = (props) => {
 
@@ -38,11 +39,22 @@ const StringPopUpBody = (props) => {
 
     useEffect(() => {
         const onTranslationError = (e) => {
-            const msg = e?.detail?.message;
-            if (typeof msg === 'string' && msg.trim() !== '') {
+            const d = e?.detail;
+            if (d?.recoverable && typeof d.onTranslateAgain === "function" && typeof d.onContinue === "function") {
+                setTranslationError({
+                    recoverable: true,
+                    message: typeof d.messagePlain === "string" ? d.messagePlain : "",
+                    html: typeof d.html === "string" ? d.html : "",
+                    onTranslateAgain: d.onTranslateAgain,
+                    onContinue: d.onContinue,
+                });
+                return;
+            }
+            const msg = d?.message;
+            if (typeof msg === "string" && msg.trim() !== "") {
                 setTranslationError({
                     message: msg,
-                    link: e?.detail?.link || null,
+                    link: d?.link || null,
                 });
             }
         };
@@ -61,9 +73,9 @@ const StringPopUpBody = (props) => {
         setTranslationError(null);
     }, [props.modalRender]);
 
-    /** While an error is shown, disable provider translate buttons (e.g. “Translate with Gemini”). */
+    /** While a non-recoverable error is shown, disable provider translate buttons. */
     useEffect(() => {
-        if (!translationError) {
+        if (!translationError || translationError.recoverable) {
             return undefined;
         }
         const root = document.getElementById(`lmat_page_translation_${props.service}_translate_element`);
@@ -712,17 +724,52 @@ const StringPopUpBody = (props) => {
                             aria-labelledby="lmat_page_translation_error_popup_title"
                         >
                             <div className="lmat_page_translation_error_popup_card notice notice-error">
-                                <p id="lmat_page_translation_error_popup_title" className="lmat_page_translation_error_popup_message">
-                                    {translationError?.message || ""}
-                                    {translationError?.link?.href && (
-                                        <>
-                                            {" "}
-                                            <a href={translationError.link.href} target="_blank" rel="noreferrer">
-                                                {translationError?.link?.text || translationError.link.href}
-                                            </a>
-                                        </>
-                                    )}
-                                </p>
+                                {translationError.recoverable && translationError.html ? (
+                                    <div
+                                        className="lmat_page_translation_error_popup_html"
+                                        dangerouslySetInnerHTML={{
+                                            __html: DOMPurify.sanitize(translationError.html, { ADD_ATTR: ["target", "rel"] }),
+                                        }}
+                                    />
+                                ) : (
+                                    <p id="lmat_page_translation_error_popup_title" className="lmat_page_translation_error_popup_message">
+                                        {translationError?.message || ""}
+                                        {translationError?.link?.href && (
+                                            <>
+                                                {" "}
+                                                <a href={translationError.link.href} target="_blank" rel="noreferrer">
+                                                    {translationError?.link?.text || translationError.link.href}
+                                                </a>
+                                            </>
+                                        )}
+                                    </p>
+                                )}
+                                {translationError.recoverable && (
+                                    <div className="lmat_page_translation_ai_error_buttons">
+                                        <button
+                                            type="button"
+                                            className="button lmat_page_translation_ai_error_btn_translate"
+                                            onClick={() => {
+                                                if (typeof translationError.onTranslateAgain === "function") {
+                                                    translationError.onTranslateAgain();
+                                                }
+                                            }}
+                                        >
+                                            {__("Translate", "translate-words")}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="button button-primary lmat_page_translation_ai_error_btn_continue"
+                                            onClick={() => {
+                                                if (typeof translationError.onContinue === "function") {
+                                                    translationError.onContinue();
+                                                }
+                                            }}
+                                        >
+                                            {__("Continue", "translate-words")}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

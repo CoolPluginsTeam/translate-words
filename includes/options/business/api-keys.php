@@ -64,7 +64,7 @@ class Api_Keys extends Abstract_Option {
 
 	/**
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
-	 * connectors_ai_{provider}_key.
+	 * connectors_ai_google_api_key	.
 	 *
 	 * @return array{gemini_model:string}
 	 */
@@ -169,7 +169,7 @@ class Api_Keys extends Abstract_Option {
 			'gemini' => array(),
 		);
 
-		$gemini_key = trim( (string) get_option( 'connectors_ai_gemini_key', '' ) );
+		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key	', '' ) );
 		if ( '' === $gemini_key ) {
 			return $result;
 		}
@@ -192,7 +192,7 @@ class Api_Keys extends Abstract_Option {
 	 *
 	 * Notes:
 	 * - This mirrors the model discovery approach used in the TranslatePress AI settings UI.
-	 * - Provider API keys are stored in WP options (connectors_ai_{provider}_key). When WP AI
+	 * - Provider API keys are stored in WP options (connectors_ai_google_api_key). When WP AI
 	 *   Client is available, it typically reads those connector settings to configure providers.
 	 *
 	 * @return array{gemini:array<int|string,mixed>} List of model ids, or id => label when {@see filtered_specific_models} matches.
@@ -211,12 +211,7 @@ class Api_Keys extends Abstract_Option {
 			return $result;
 		}
 
-		$get_provider_key = static function ( string $provider ): string {
-			$opt = 'connectors_ai_' . strtolower( $provider ) . '_key';
-			return trim( (string) get_option( $opt, '' ) );
-		};
-
-		$gemini_key = $get_provider_key( 'gemini' );
+		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
 		if ( '' === $gemini_key ) {
 			return $result;
 		}
