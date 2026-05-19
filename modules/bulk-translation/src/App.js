@@ -13,7 +13,8 @@ import Notice from './components/notice/index.js';
 const App = ({ onDestory, prefix, postIds }) => {
     const dispatch = useDispatch();
     const { languageObject = {} } = lmatBulkTranslationGlobal || {};
-    const emptyPostIdsErrorMessage = sprintf(__('Please select at least one %s for translation.', 'translate-words'), lmatBulkTranslationGlobal.post_label);
+    const postLabelSingular = lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label;
+    const emptyPostIdsErrorMessage = sprintf(__('Please select at least one %s for translation.', 'translate-words'), postLabelSingular);
     const [selectedLanguages, setSelectedLanguages] = useState([]);
     const [errorMessage, setErrorMessage] = useState(postIds.length === 0 ? emptyPostIdsErrorMessage : '');
     const [settingModalVisibility, setSettingModalVisibility] = useState(false);
@@ -166,7 +167,7 @@ const App = ({ onDestory, prefix, postIds }) => {
                 <div
                     className={`${prefix}-header`}>
                     {shouldHideLanguagesHeader ? (
-                        <h2>{__('Action required', 'translate-words')}</h2>
+                        <h2>{__('Selection Required', 'translate-words')}</h2>
                     ) : (
                         <h2>{__('Step 1: Select Languages', 'translate-words')}</h2>
                     )}

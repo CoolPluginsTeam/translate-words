@@ -133,25 +133,35 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
             return;
         }
 
-        $post_label=__("Pages", "translate-words");
-        $taxonomy_page=false;
+        $post_label        = __( 'Pages', 'translate-words' );
+        $post_label_singular = __( 'Page', 'translate-words' );
+        $taxonomy_page     = false;
 
-        if(isset($current_screen->post_type)){
-            $post_type = $current_screen->post_type;
+        if ( isset( $current_screen->post_type ) ) {
+            $post_type      = $current_screen->post_type;
+            $post_type_obj  = get_post_type_object( $post_type );
 
-            if(isset(get_post_type_object($post_type)->label) && !empty(get_post_type_object($post_type)->label)){
-                $post_label = get_post_type_object($post_type)->label;
+            if ( $post_type_obj ) {
+                if ( ! empty( $post_type_obj->label ) ) {
+                    $post_label = $post_type_obj->label;
+                }
+                if ( ! empty( $post_type_obj->labels->singular_name ) ) {
+                    $post_label_singular = $post_type_obj->labels->singular_name;
+                }
             }
 
-            if(isset($current_screen->taxonomy) && !empty($current_screen->taxonomy)){
-                $taxonomy_page=$current_screen->taxonomy;    
-                $taxonomy_object = get_taxonomy($current_screen->taxonomy);
+            if ( isset( $current_screen->taxonomy ) && ! empty( $current_screen->taxonomy ) ) {
+                $taxonomy_page   = $current_screen->taxonomy;
+                $taxonomy_object = get_taxonomy( $current_screen->taxonomy );
 
-                if(isset($taxonomy_object->label) && !empty($taxonomy_object->label)){
-                    $post_label = $taxonomy_object->label;
+                if ( $taxonomy_object ) {
+                    if ( ! empty( $taxonomy_object->label ) ) {
+                        $post_label = $taxonomy_object->label;
+                    }
 
-                    if(isset($taxonomy_object->labels->singular_name) && !empty($taxonomy_object->labels->singular_name)){
-                        $post_label = $taxonomy_object->labels->singular_name;
+                    if ( ! empty( $taxonomy_object->labels->singular_name ) ) {
+                        $post_label_singular = $taxonomy_object->labels->singular_name;
+                        $post_label          = $taxonomy_object->labels->singular_name;
                     }
                 }
             }
@@ -257,7 +267,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'get_glossary_validate' => wp_create_nonce('lmat_get_glossary_private'),
                 'lmat_url'                => plugins_url( '', LINGUATOR_ROOT_FILE ) . '/',
                 'admin_url' => admin_url(),
-                'post_label' => $post_label,
+                'post_label'          => $post_label,
+                'post_label_singular' => $post_label_singular,
                 'update_translate_data' => 'lmat_update_translate_data',
                 'slug_translation_option' => $slug_translation_option,
                 'taxonomy_page' => $taxonomy_page,

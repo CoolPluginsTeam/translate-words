@@ -30,6 +30,11 @@ class GoogleTranslater {
 
     }
 
+    /** Count finished languages (success or terminal failure) toward the bulk progress bar. */
+    advanceProgress = () => {
+        this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+    };
+
     destroy = () => {
         this.stopTranslation = true;
         if (this._mutationObserver) {
@@ -59,6 +64,7 @@ class GoogleTranslater {
         if (!GoogleLanguage().includes(this.filterLanguage(targetLang))) {
             this.storeDispatch(unsetPendingPost(this.postId + '_' + targetLang));
             this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
+            this.advanceProgress();
         } else {
             this.activeTargetLang = targetLang;
             this.activeLanguageGlossaryTerms[targetLang]={};
@@ -88,10 +94,11 @@ class GoogleTranslater {
                         },
                     })
                 );
+                this.advanceProgress();
             }
 
             if (!this.stopTranslation && isTranslated) {
-                this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+                this.advanceProgress();
                 this.updateContent(targetLang);
 
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -171,6 +178,7 @@ class GoogleTranslater {
                     },
                 })
             );
+            this.advanceProgress();
             return false;
         }
 
@@ -189,6 +197,7 @@ class GoogleTranslater {
                 }
             }));
             this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
+            this.advanceProgress();
             return false;
         }
     
@@ -212,6 +221,7 @@ class GoogleTranslater {
                     },
                 })
             );
+            this.advanceProgress();
             return false;
         }
 
@@ -309,6 +319,7 @@ class GoogleTranslater {
                             },
                         })
                     );
+                    this.advanceProgress();
                 });
                 return;
             }
@@ -317,6 +328,7 @@ class GoogleTranslater {
             this.targetLangs.forEach(lang => {
                 this.storeDispatch(unsetPendingPost(this.postId + '_' + lang));
                 this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false } }));
+                this.advanceProgress();
             });
         }
     }

@@ -458,7 +458,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="button button-primary"
-                                                                        title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label)}
+                                                                        title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
                                                                     >
                                                                         {__('Review', 'translate-words')}
                                                                     </a>
@@ -466,7 +466,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                     <button
                                                                         className="button disabled"
                                                                         disabled
-                                                                        title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label)}
+                                                                        title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
                                                                     >
                                                                         {__('Review', 'translate-words')}
                                                                     </button>

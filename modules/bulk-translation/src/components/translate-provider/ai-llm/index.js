@@ -3,7 +3,7 @@ import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } fr
 import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
 import { __, sprintf } from "@wordpress/i18n";
-import { requestAiBatch, chunkStringMap } from "./api-client.js";
+import { requestAiBatch, chunkStringMap, logAiTranslationError } from "./api-client.js";
 
 function escapeHtml(text) {
     return String(text ?? "")
@@ -163,6 +163,9 @@ class AiLlmBulkTranslator {
                     // eslint-disable-next-line no-await-in-loop
                     await handler(items[currentIndex], currentIndex);
                 } catch (e) {
+                    if (e && !e.failedChunk) {
+                        e.failedChunk = items[currentIndex];
+                    }
                     firstError = e;
                     return;
                 }
@@ -208,7 +211,13 @@ class AiLlmBulkTranslator {
                 </div>`;
     }
 
-    dispatchRecoverableError(targetLang, mergedDone) {
+    dispatchRecoverableError(targetLang, mergedDone, { message, chunk, err } = {}) {
+        logAiTranslationError(message || __("Translation failed.", "translate-words"), {
+            chunk,
+            provider: this.serviceProvider,
+            context: { postId: this.postId, targetLang, mergedDone },
+            err,
+        });
         const infoKey = `${this.postId}_${targetLang}`;
         const existing = store.getState().translatePostInfo[infoKey] || {};
         const pendingHtml = this.buildRecoverableErrorHtml(mergedDone, this.totalSourceKeys, false);
@@ -309,7 +318,16 @@ class AiLlmBulkTranslator {
                     signal: this.abortSignal,
                 });
                 if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
-                    throw new Error(__("The AI returned an empty translation response. Please try again.", "translate-words"));
+                    const emptyMsg = __("The AI returned an empty translation response. Please try again.", "translate-words");
+                    logAiTranslationError(emptyMsg, {
+                        emptyResponse: true,
+                        chunk,
+                        provider: this.serviceProvider,
+                        context: { postId: this.postId, targetLang, sourceLang: this.sourceLang },
+                    });
+                    const emptyErr = new Error(emptyMsg);
+                    emptyErr.failedChunk = chunk;
+                    throw emptyErr;
                 }
                 for (const key of Object.keys(chunk)) {
                     const value = translations[key] !== undefined ? translations[key] : chunk[key];
@@ -350,6 +368,11 @@ class AiLlmBulkTranslator {
             }).length;
 
             if (haltForQuota) {
+                logAiTranslationError(msg, {
+                    provider: this.serviceProvider,
+                    context: { postId: this.postId, targetLang, mergedDone: mergedFromStore },
+                    err,
+                });
                 this.stopTranslation = true;
                 window.lmatBulkTranslationQuotaExceeded = true;
                 const rem = Math.max(0, this.progressSliceTarget - this.progressContributedThisJob);
@@ -377,7 +400,12 @@ class AiLlmBulkTranslator {
                 return false;
             }
 
-            this.dispatchRecoverableError(targetLang, mergedFromStore);
+            const failedChunk = err?.failedChunk;
+            this.dispatchRecoverableError(targetLang, mergedFromStore, {
+                message: msg,
+                chunk: failedChunk,
+                err,
+            });
             return false;
         }
     }

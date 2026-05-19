@@ -784,7 +784,8 @@ button.lmat-page-translation-setting-close:hover {
     top: 60px;
     left: 10px;
     width: calc(100% - 22px);
-    height: calc(100% - 133px);
+    height: calc(100% - 160px);
+    margin-top: 25px;
     z-index: 100;
     box-sizing: border-box;
     padding: 12px 16px;
@@ -1014,6 +1015,7 @@ button.lmat-page-translation-setting-close:hover {
     color: #fff;
     background: rgba(0, 0, 0, .5);
     width: calc(100% - 22px);
+    margin-top: 25px;
     border-radius: 3px;
     height: 100%;
     z-index: 9;
@@ -1023,7 +1025,7 @@ button.lmat-page-translation-setting-close:hover {
     font-weight: 700;
     text-align: center;
     padding-top: 30px;
-    height: calc(100% - 133px);
+    height: calc(100% - 160px);
 }
 
 /* Animated ellipsis only — same visual as original overlay */

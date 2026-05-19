@@ -342,22 +342,36 @@ class Settings extends Abstract_Controller {
 	 */
 	public function update_video_status( $request ) {
 		$status = $request->get_param( 'status' );
-		
-		$result = update_option( 'lmat_video_status', $status );
-		
-		if ( $result ) {
-			return rest_ensure_response( array(
-				'success' => true,
-				'lmat_video_status' => $status,
-				'message' => esc_html__( 'Video status updated successfully', 'translate-words' )
-			) );
-		} else {
-			return new WP_Error(
-				'update_failed',
-				esc_html__( 'Failed to update video status', 'translate-words' ),
-				array( 'status' => 500 )
+
+		// update_option() returns false when the value is unchanged — that is not a failure.
+		$current = get_option( 'lmat_video_status', false );
+		if ( (bool) $current === (bool) $status ) {
+			return rest_ensure_response(
+				array(
+					'success'           => true,
+					'lmat_video_status' => (bool) $status,
+					'message'           => esc_html__( 'Video status updated successfully', 'translate-words' ),
+				)
 			);
 		}
+
+		$result = update_option( 'lmat_video_status', $status );
+
+		if ( false !== $result ) {
+			return rest_ensure_response(
+				array(
+					'success'           => true,
+					'lmat_video_status' => (bool) $status,
+					'message'           => esc_html__( 'Video status updated successfully', 'translate-words' ),
+				)
+			);
+		}
+
+		return new WP_Error(
+			'update_failed',
+			esc_html__( 'Failed to update video status', 'translate-words' ),
+			array( 'status' => 500 )
+		);
 	}
 
 	/**
@@ -625,21 +639,31 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		// Cooldown lock to avoid repeated provider validation calls (rate-limit protection).
-		// This validator is Gemini-specific (WP AI Client provider id: "google").
-		$cooldown = 30;
-		$lock_key = 'lmat_ai_test_lock_google_' . md5( $key_trimmed );
+		$debounce_key     = 'lmat_ai_test_lock_google_' . md5( $key_trimmed );
+		$rate_limit_key   = 'lmat_ai_rate_limit_google_' . md5( $key_trimmed );
+		$debounce_seconds = 30;
 
-		if ( get_transient( $lock_key ) ) {
+		if ( get_transient( $rate_limit_key ) ) {
 			return new WP_Error(
 				'lmat_ai_provider_rate_limited',
-				__( 'Gemini rate limit reached. Please wait a minute and try again.', 'translate-words' ),
+				__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
 				array( 'status' => 429 )
 			);
 		}
 
+		if ( get_transient( $debounce_key ) ) {
+			return new WP_Error(
+				'lmat_api_key_test_cooldown',
+				__( 'Please wait 30 seconds and try again.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		set_transient( $debounce_key, 1, $debounce_seconds );
+
 		$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
 		if ( ! class_exists( $auth_class ) ) {
+			delete_transient( $debounce_key );
 			return new WP_Error(
 				'lmat_ai_client_missing',
 				__( 'AI client is not available.', 'translate-words' ),
@@ -654,6 +678,7 @@ class Settings extends Abstract_Controller {
 		try {
 			$provider_classname = $registry->getProviderClassName( 'google' );
 			if ( ! $provider_classname || ! class_exists( $provider_classname ) ) {
+				delete_transient( $debounce_key );
 				return new WP_Error(
 					'lmat_ai_provider_invalid',
 					__( 'Invalid AI provider.', 'translate-words' ),
@@ -664,6 +689,7 @@ class Settings extends Abstract_Controller {
 			if ( method_exists( $provider_classname, 'availability' ) ) {
 				$provider_availability = $provider_classname::availability();
 				if ( is_object( $provider_availability ) && method_exists( $provider_availability, 'isConfigured' ) && ! $provider_availability->isConfigured() ) {
+					delete_transient( $debounce_key );
 					return new WP_Error(
 						'lmat_api_key_invalid',
 						__( 'Invalid API key. Please check API key and try again.', 'translate-words' ),
@@ -687,13 +713,16 @@ class Settings extends Abstract_Controller {
 				( false !== strpos( $msg, 'ratelimit' ) );
 
 			if ( $is_rate_limited ) {
-				set_transient( $lock_key, 1, $cooldown );
+				delete_transient( $debounce_key );
+				set_transient( $rate_limit_key, 1, 60 );
 				return new WP_Error(
 					'lmat_ai_provider_rate_limited',
 					__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
 					array( 'status' => 429 )
 				);
 			}
+
+			delete_transient( $debounce_key );
 
 			return new WP_Error(
 				'lmat_api_key_invalid',
@@ -702,9 +731,24 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		// Only start cooldown after a successful validation.
-		set_transient( $lock_key, 1, $cooldown );
+		delete_transient( $debounce_key );
+
 		return true;
+	}
+
+	/**
+	 * Clear Gemini API key validation locks (debounce / rate-limit) for a stored key value.
+	 *
+	 * @param string $api_key Raw or normalized API key.
+	 */
+	private function clear_gemini_api_key_validation_locks( string $api_key ) {
+		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
+		if ( '' === $key_trimmed ) {
+			return;
+		}
+		$hash = md5( $key_trimmed );
+		delete_transient( 'lmat_ai_test_lock_google_' . $hash );
+		delete_transient( 'lmat_ai_rate_limit_google_' . $hash );
 	}
 
 	/**
@@ -748,6 +792,10 @@ class Settings extends Abstract_Controller {
 				if ( is_wp_error( $validation ) ) {
 					return $validation;
 				}
+			}
+
+			if ( '' === $v && '' !== $current_raw ) {
+				$this->clear_gemini_api_key_validation_locks( $current_raw );
 			}
 
 			update_option( 'connectors_ai_google_api_key', $v );
