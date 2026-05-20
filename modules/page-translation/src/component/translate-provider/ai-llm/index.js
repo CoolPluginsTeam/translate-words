@@ -73,28 +73,47 @@ export default function createAiLlmPageTranslator(providerId) {
             };
         };
 
-        const buildRecoverableHtml = (done, total) => {
+        const buildRecoverableHtml = (done, total, limitExceeded = false) => {
             const totalSafe = Math.max(1, total);
+            const translateAgainLabel = limitExceeded
+                ? __('Click "Translate" after updating your API key to try again.', "translate-words")
+                : __('Click "Translate" to try again.', "translate-words");
+            const translateAgainPartialLabel = limitExceeded
+                ? __('Click "Translate" after updating your API key to re-translate the remaining strings.', "translate-words")
+                : __('Click "Translate" to re-translate the remaining strings.', "translate-words");
+
             if (done <= 0) {
+                const heading = limitExceeded
+                    ? __("You’ve exceeded your current plan limit.", "translate-words")
+                    : __("Oops! Something went wrong during translation", "translate-words");
+                const intro = limitExceeded
+                    ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                    : __("No strings were saved yet. You can retry the same step or stop here.", "translate-words");
                 return `<div class="lmat_page_translation_ai_pending">
-                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(__("Oops! Something went wrong during translation", "translate-words"))}</p>
-                <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>
-                <p>${escapeHtml(__("No strings were saved yet. You can retry the same step or stop here.", "translate-words"))}</p>
+                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>
+                ${limitExceeded ? "" : `<p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>`}
+                <p>${escapeHtml(intro)}</p>
                 <p><strong>${escapeHtml(__("Next Steps:", "translate-words"))}</strong></p>
-                <p>${escapeHtml(__('Click "Translate" to try again.', "translate-words"))}</p>
+                <p>${escapeHtml(translateAgainLabel)}</p>
                 <p><strong>${escapeHtml(__("OR", "translate-words"))}</strong></p>
                 <p>${escapeHtml(__('Click "Continue" to close this message and keep the editor as it is.', "translate-words"))}</p>
             </div>`;
             }
             const completedPercent = Math.min(100, Math.round(((done / totalSafe) * 100) * 10) / 10).toFixed(1);
             const notCompletedPercent = Math.min(100, Math.round((100 - (done / total) * 100) * 10) / 10).toFixed(1);
+            const heading = limitExceeded
+                ? __("You’ve exceeded your current plan limit.", "translate-words")
+                : __("Oops! Something went wrong during translation", "translate-words");
+            const intro = limitExceeded
+                ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                : "";
             return `<div class="lmat_page_translation_ai_pending">
-                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(__("Oops! Something went wrong during translation", "translate-words"))}</p>
-                <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>
+                <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>
+                ${intro ? `<p>${escapeHtml(intro)}</p>` : `<p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>`}
                 <p>✅ ${escapeHtml(sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%"))}</p>
                 <p>❌ ${escapeHtml(sprintf(__("%s of the strings are still not translated.", "translate-words"), notCompletedPercent + "%"))}</p>
                 <p><strong>${escapeHtml(__("Next Steps:", "translate-words"))}</strong></p>
-                <p>${escapeHtml(__('Click "Translate" to re-translate the remaining strings.', "translate-words"))}</p>
+                <p>${escapeHtml(translateAgainPartialLabel)}</p>
                 <p><strong>${escapeHtml(__("OR", "translate-words"))}</strong></p>
                 <p>${escapeHtml(__('Click "Continue" to proceed without translating the rest of the strings.', "translate-words"))}</p>
             </div>`;
@@ -242,6 +261,81 @@ export default function createAiLlmPageTranslator(providerId) {
                     updateProgressUi();
                 };
 
+                const showGeminiRecoverableError = (limitExceeded) => {
+                    showErrorNotice({
+                        recoverable: true,
+                        messagePlain: limitExceeded
+                            ? __("You’ve exceeded your current plan limit.", "translate-words")
+                            : __("Translation failed.", "translate-words"),
+                        html: buildRecoverableHtml(doneKeys, totalKeys, limitExceeded),
+                        onTranslateAgain: () => {
+                            clearErrorNotice();
+                            btn.disabled = true;
+                            translateStatusHandler(true);
+                            scheduleMountPageTranslationProgressUi();
+                            btn.setAttribute("aria-busy", "true");
+                            void (async () => {
+                                const r = await runChunksFromCurrentIndex();
+                                btn.removeAttribute("aria-busy");
+                                if (r === "ok") {
+                                    finishSuccess();
+                                    releaseRecoverableUpdateBlock();
+                                } else if (r !== "recoverable") {
+                                    StoreTimeTaken({
+                                        prefix: providerId,
+                                        start: startTime,
+                                        end: new Date().getTime(),
+                                        translateStatus: false,
+                                    });
+                                    releaseRecoverableUpdateBlock();
+                                }
+                                translateStatusHandler(false);
+                                if (!translationSucceeded) {
+                                    btn.disabled = false;
+                                }
+                                if (translationSucceeded) {
+                                    setTimeout(() => finish({ hideProgress: true }), 800);
+                                } else {
+                                    finish({ hideProgress: false });
+                                }
+                            })();
+                        },
+                        onContinue: () => {
+                            releaseRecoverableUpdateBlock();
+                            clearErrorNotice();
+                            jQuery(`.${providerId}-translator_progress`)
+                                .css("width", `${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`)
+                                .text(`${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`);
+                            dispatch("block-lmatPageTranslation/translate").translationInfo({
+                                targetStringCount: totalStrings,
+                                targetWordCount: entries.reduce((acc, row) => {
+                                    const s = (row.source || "").trim();
+                                    return acc + s.split(/\s+/).filter((word) => /[^\p{L}\p{N}]/.test(word)).length;
+                                }, 0),
+                                targetCharacterCount: totalChars,
+                                translateStatus: doneKeys > 0,
+                                provider: providerId,
+                            });
+                            ShowStringCount(providerId, "block", totalChars);
+                            StoreTimeTaken({
+                                prefix: providerId,
+                                start: startTime,
+                                end: new Date().getTime(),
+                                translateStatus: doneKeys > 0,
+                            });
+                            translationSucceeded = doneKeys > 0;
+                            translateStatusHandler(false);
+                            btn.disabled = !translationSucceeded;
+                            btn.removeAttribute("aria-busy");
+                            if (translationSucceeded) {
+                                setTimeout(() => finish({ hideProgress: true }), 800);
+                            } else {
+                                finish({ hideProgress: false });
+                            }
+                        },
+                    });
+                };
+
                 const finishSuccess = () => {
                     dispatch("block-lmatPageTranslation/translate").translationInfo({
                         targetStringCount: totalStrings,
@@ -283,98 +377,16 @@ export default function createAiLlmPageTranslator(providerId) {
                                 lower.includes("rate limit") ||
                                 lower.includes("resource has been exhausted");
 
-                            if (providerId === "gemini" && isQuota) {
-                                logAiTranslationError(errorMessage);
-                                releaseRecoverableUpdateBlock();
-                                showErrorNotice({
-                                    message: errorMessage,
-                                    link: {
-                                        href: "https://aistudio.google.com/app/usage",
-                                        text: __("View usage.", "translate-words"),
-                                    },
-                                });
-                                return "quota";
-                            }
-
                             const totalStringKeys = Object.keys(strings).length;
                             const canOfferGeminiRecovery =
                                 providerId === "gemini" &&
                                 totalStringKeys > 0 &&
                                 chunks.length > 0 &&
-                                chunkIndex < chunks.length;
+                                (isQuota || chunkIndex < chunks.length);
 
                             if (canOfferGeminiRecovery) {
                                 logAiTranslationError(errorMessage);
-                                showErrorNotice({
-                                    recoverable: true,
-                                    messagePlain: __("Translation failed.", "translate-words"),
-                                    html: buildRecoverableHtml(doneKeys, totalKeys),
-                                    onTranslateAgain: () => {
-                                        clearErrorNotice();
-                                        btn.disabled = true;
-                                        translateStatusHandler(true);
-                                        scheduleMountPageTranslationProgressUi();
-                                        btn.setAttribute("aria-busy", "true");
-                                        void (async () => {
-                                            const r = await runChunksFromCurrentIndex();
-                                            btn.removeAttribute("aria-busy");
-                                            if (r === "ok") {
-                                                finishSuccess();
-                                                releaseRecoverableUpdateBlock();
-                                            } else if (r !== "recoverable") {
-                                                StoreTimeTaken({
-                                                    prefix: providerId,
-                                                    start: startTime,
-                                                    end: new Date().getTime(),
-                                                    translateStatus: false,
-                                                });
-                                                releaseRecoverableUpdateBlock();
-                                            }
-                                            translateStatusHandler(false);
-                                            if (!translationSucceeded) {
-                                                btn.disabled = false;
-                                            }
-                                            if (translationSucceeded) {
-                                                setTimeout(() => finish({ hideProgress: true }), 800);
-                                            } else {
-                                                finish({ hideProgress: false });
-                                            }
-                                        })();
-                                    },
-                                    onContinue: () => {
-                                        releaseRecoverableUpdateBlock();
-                                        clearErrorNotice();
-                                        jQuery(`.${providerId}-translator_progress`)
-                                            .css("width", `${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`)
-                                            .text(`${Math.min(100, Math.round((doneKeys / totalKeys) * 100))}%`);
-                                        dispatch("block-lmatPageTranslation/translate").translationInfo({
-                                            targetStringCount: totalStrings,
-                                            targetWordCount: entries.reduce((acc, row) => {
-                                                const s = (row.source || "").trim();
-                                                return acc + s.split(/\s+/).filter((word) => /[^\p{L}\p{N}]/.test(word)).length;
-                                            }, 0),
-                                            targetCharacterCount: totalChars,
-                                            translateStatus: doneKeys > 0,
-                                            provider: providerId,
-                                        });
-                                        ShowStringCount(providerId, "block", totalChars);
-                                        StoreTimeTaken({
-                                            prefix: providerId,
-                                            start: startTime,
-                                            end: new Date().getTime(),
-                                            translateStatus: doneKeys > 0,
-                                        });
-                                        translationSucceeded = doneKeys > 0;
-                                        translateStatusHandler(false);
-                                        btn.disabled = !translationSucceeded;
-                                        btn.removeAttribute("aria-busy");
-                                        if (translationSucceeded) {
-                                            setTimeout(() => finish({ hideProgress: true }), 800);
-                                        } else {
-                                            finish({ hideProgress: false });
-                                        }
-                                    },
-                                });
+                                showGeminiRecoverableError(isQuota);
                                 return "recoverable";
                             }
 
@@ -418,9 +430,22 @@ export default function createAiLlmPageTranslator(providerId) {
                 }
                 StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
                 const errorMessage = e?.message || __("Translation failed. Please try again.", "translate-words");
+                const lower = String(errorMessage || "").toLowerCase();
+                const isQuota =
+                    e?.code === "LLM_QUOTA_EXCEEDED" ||
+                    lower.includes("429") ||
+                    lower.includes("quota") ||
+                    lower.includes("rate limit") ||
+                    lower.includes("resource has been exhausted");
+                const totalStringKeys = Object.keys(strings).length;
+
                 logAiTranslationError(errorMessage);
-                showErrorNotice(errorMessage);
-                releaseRecoverableUpdateBlock();
+                if (providerId === "gemini" && isQuota && totalStringKeys > 0) {
+                    showGeminiRecoverableError(true);
+                } else {
+                    showErrorNotice(errorMessage);
+                    releaseRecoverableUpdateBlock();
+                }
             }
 
             // UX: hide progress only when translation succeeds.

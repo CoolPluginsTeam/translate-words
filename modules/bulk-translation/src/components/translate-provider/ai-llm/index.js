@@ -5,20 +5,6 @@ import storeTranslateString from "../../store-translate-strings/index.js";
 import { __, sprintf } from "@wordpress/i18n";
 import { requestAiBatch, chunkStringMap, logAiTranslationError } from "./api-client.js";
 
-function escapeHtml(text) {
-    return String(text ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
-
-/** Match page translation: exact message plus Google AI Studio usage link. */
-function geminiQuotaErrorHtml(message) {
-    const view = __("View usage.", "translate-words");
-    return `${escapeHtml(message)} <a href="https://aistudio.google.com/app/usage" target="_blank" rel="noopener noreferrer">${escapeHtml(view)}</a>`;
-}
-
 class AiLlmBulkTranslator {
     constructor({
         sourceLang = "en",
@@ -211,21 +197,24 @@ class AiLlmBulkTranslator {
                 </div>`;
     }
 
-    dispatchRecoverableError(targetLang, mergedDone, message) {
+    dispatchRecoverableError(targetLang, mergedDone, message, limitExceeded = false) {
         logAiTranslationError(message || __("Translation failed.", "translate-words"));
         const infoKey = `${this.postId}_${targetLang}`;
         const existing = store.getState().translatePostInfo[infoKey] || {};
-        const pendingHtml = this.buildRecoverableErrorHtml(mergedDone, this.totalSourceKeys, false);
+        const pendingHtml = this.buildRecoverableErrorHtml(mergedDone, this.totalSourceKeys, limitExceeded);
         this.storeDispatch(
             updateTranslatePostInfo({
                 [infoKey]: {
                     ...existing,
+                    parentPostId: this.postId,
+                    targetLanguage: targetLang,
                     status: "error",
                     messageClass: "error",
-                    errorMessage: __("Translation failed.", "translate-words"),
+                    errorMessage: limitExceeded ? "" : __("Translation failed.", "translate-words"),
                     errorHtml: pendingHtml,
                     errorAllowHtml: false,
                     aiError: true,
+                    quotaRecoverable: limitExceeded,
                     nonce: this.createTranslatePostNonce,
                     completedStrings: mergedDone,
                     totalPosts: this.totalPosts,
@@ -350,7 +339,6 @@ class AiLlmBulkTranslator {
                 this.serviceProvider === "gemini" &&
                 /429|quota exceeded|rate limit|resource has been exhausted|too many requests/i.test(String(msg));
             const haltForQuota = isQuotaError || isGeminiQuotaByMessage;
-            const showGeminiUsageLink = this.serviceProvider === "gemini" && haltForQuota;
 
             const mergedFromStore = Object.keys(this.textContentObject).filter((k) => {
                 const tr = store.getState().translatedContent[this.postId]?.[k]?.translation?.[this.serviceProvider]?.[targetLang];
@@ -366,23 +354,7 @@ class AiLlmBulkTranslator {
                     this.storeDispatch(updateProgressStatus(rem));
                     this.progressContributedThisJob += rem;
                 }
-                const infoKey = `${this.postId}_${targetLang}`;
-                const existing = store.getState().translatePostInfo[infoKey] || {};
-                const errorMessage = showGeminiUsageLink ? geminiQuotaErrorHtml(msg) : msg;
-                this.storeDispatch(unsetPendingPost(infoKey));
-                this.storeDispatch(
-                    updateTranslatePostInfo({
-                        [infoKey]: {
-                            ...existing,
-                            status: "error",
-                            messageClass: "error",
-                            errorMessage,
-                            errorHtml: false,
-                            errorAllowHtml: showGeminiUsageLink,
-                            aiError: false,
-                        },
-                    })
-                );
+                this.dispatchRecoverableError(targetLang, mergedFromStore, msg, true);
                 return false;
             }
 

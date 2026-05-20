@@ -81,10 +81,6 @@ class GoogleTranslater {
             let isTranslated = false;
             try {
                 isTranslated = await this.translateContent();
-                if (!this.stopTranslation && isTranslated) {
-                    await this.updateContent(targetLang);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
             } catch (err) {
                 console.error(err);
                 this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
@@ -98,9 +94,28 @@ class GoogleTranslater {
                         },
                     })
                 );
-            } finally {
-                if (!this.stopTranslation) {
-                    this.advanceProgress();
+            }
+
+            if (!this.stopTranslation) {
+                this.advanceProgress();
+                if (isTranslated) {
+                    try {
+                        await this.updateContent(targetLang);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (err) {
+                        console.error(err);
+                        this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
+                        this.storeDispatch(
+                            updateTranslatePostInfo({
+                                [`${this.postId}_${targetLang}`]: {
+                                    status: 'error',
+                                    messageClass: 'error',
+                                    errorMessage: __('Google Translate failed for this batch. Try again.', 'translate-words'),
+                                    errorHtml: false,
+                                },
+                            })
+                        );
+                    }
                 }
             }
 

@@ -802,8 +802,7 @@ button.lmat-page-translation-setting-close:hover {
   top: 92px;
   left: 10px;
   width: calc(100% - 22px);
-  margin-top: 25px;
-  height: calc(100% - 160px);
+  height: calc(100% - 133px);
   z-index: 100;
   -webkit-box-sizing: border-box;
           box-sizing: border-box;
@@ -948,8 +947,27 @@ button.lmat-page-translation-setting-close:hover {
   font-weight: 700;
   text-align: center;
   padding-top: 30px;
-  height: calc(100% - 160px);
+  height: calc(100% - 133px);
+}
+
+#lmat_page_translation_strings_model #lmat-page-translation-google-strings-modal .lmat_page_translation_translate_progress {
+  position: absolute;
+  display: none;
+  top: 60px;
+  left: 10px;
+  color: #fff;
+  background: rgba(0, 0, 0, .5);
+  width: calc(100% - 22px);
   margin-top: 25px;
+  border-radius: 3px;
+  z-index: 9;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 700;
+  text-align: center;
+  padding-top: 30px;
+  height: calc(100% - 160px);
 }
 
 #lmat_page_translation_strings_model .lmat_page_translation_translate_element_wrapper {
