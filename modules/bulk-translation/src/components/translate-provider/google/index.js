@@ -81,6 +81,10 @@ class GoogleTranslater {
             let isTranslated = false;
             try {
                 isTranslated = await this.translateContent();
+                if (!this.stopTranslation && isTranslated) {
+                    await this.updateContent(targetLang);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             } catch (err) {
                 console.error(err);
                 this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
@@ -94,14 +98,10 @@ class GoogleTranslater {
                         },
                     })
                 );
-                this.advanceProgress();
-            }
-
-            if (!this.stopTranslation && isTranslated) {
-                this.advanceProgress();
-                this.updateContent(targetLang);
-
-                await new Promise(resolve => setTimeout(resolve, 500));
+            } finally {
+                if (!this.stopTranslation) {
+                    this.advanceProgress();
+                }
             }
 
         }
@@ -178,7 +178,6 @@ class GoogleTranslater {
                     },
                 })
             );
-            this.advanceProgress();
             return false;
         }
 
@@ -197,7 +196,6 @@ class GoogleTranslater {
                 }
             }));
             this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
-            this.advanceProgress();
             return false;
         }
     
@@ -221,7 +219,6 @@ class GoogleTranslater {
                     },
                 })
             );
-            this.advanceProgress();
             return false;
         }
 
@@ -263,9 +260,13 @@ class GoogleTranslater {
                 mutationObserver.disconnect();
                 this._mutationObserver = null;
                 this._translateTimeout = null;
-                if(!mutationRun){
-                    status = await this.startTranslate();
-                    resolve();
+                if (!mutationRun) {
+                    try {
+                        status = await this.startTranslate();
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    }
                 }
             }, 6000);
     

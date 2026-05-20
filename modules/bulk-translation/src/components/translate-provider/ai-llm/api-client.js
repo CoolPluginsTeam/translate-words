@@ -2,9 +2,9 @@
  * Log AI translation failures to the browser console (matches Polylang Pro UX).
  *
  * @param {string} [message]
- * @param {{ chunk?: Record<string,string>, provider?: string, context?: object, emptyResponse?: boolean, err?: Error }} [opts]
+ * @param {{ emptyResponse?: boolean }} [opts]
  */
-export function logAiTranslationError(message, { chunk, provider, context, emptyResponse, err } = {}) {
+export function logAiTranslationError(message, { emptyResponse } = {}) {
     console.group('Automatic Translation Error');
     if (emptyResponse) {
         console.warn('Empty response');

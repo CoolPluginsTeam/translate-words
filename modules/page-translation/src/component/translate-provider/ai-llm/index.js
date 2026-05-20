@@ -217,12 +217,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
                     if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
                         const emptyMsg = __("The AI returned an empty translation response. Please try again.", "translate-words");
-                        logAiTranslationError(emptyMsg, {
-                            emptyResponse: true,
-                            chunk,
-                            provider: providerId,
-                            context: { postId, sourceLang, targetLang },
-                        });
+                        logAiTranslationError(emptyMsg, { emptyResponse: true });
                         throw new Error(emptyMsg);
                     }
 
@@ -289,12 +284,7 @@ export default function createAiLlmPageTranslator(providerId) {
                                 lower.includes("resource has been exhausted");
 
                             if (providerId === "gemini" && isQuota) {
-                                logAiTranslationError(errorMessage, {
-                                    chunk,
-                                    provider: providerId,
-                                    context: { postId, sourceLang, targetLang, doneKeys, chunkIndex },
-                                    err,
-                                });
+                                logAiTranslationError(errorMessage);
                                 releaseRecoverableUpdateBlock();
                                 showErrorNotice({
                                     message: errorMessage,
@@ -314,12 +304,7 @@ export default function createAiLlmPageTranslator(providerId) {
                                 chunkIndex < chunks.length;
 
                             if (canOfferGeminiRecovery) {
-                                logAiTranslationError(errorMessage, {
-                                    chunk,
-                                    provider: providerId,
-                                    context: { postId, sourceLang, targetLang, doneKeys, chunkIndex },
-                                    err,
-                                });
+                                logAiTranslationError(errorMessage);
                                 showErrorNotice({
                                     recoverable: true,
                                     messagePlain: __("Translation failed.", "translate-words"),
@@ -393,12 +378,7 @@ export default function createAiLlmPageTranslator(providerId) {
                                 return "recoverable";
                             }
 
-                            logAiTranslationError(errorMessage, {
-                                chunk,
-                                provider: providerId,
-                                context: { postId, sourceLang, targetLang, doneKeys, chunkIndex },
-                                err,
-                            });
+                            logAiTranslationError(errorMessage);
                             showErrorNotice(errorMessage);
                             return "fail";
                         }
@@ -438,11 +418,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 }
                 StoreTimeTaken({ prefix: providerId, start: startTime, end: new Date().getTime(), translateStatus: false });
                 const errorMessage = e?.message || __("Translation failed. Please try again.", "translate-words");
-                logAiTranslationError(errorMessage, {
-                    provider: providerId,
-                    context: { postId, sourceLang, targetLang },
-                    err: e,
-                });
+                logAiTranslationError(errorMessage);
                 showErrorNotice(errorMessage);
                 releaseRecoverableUpdateBlock();
             }

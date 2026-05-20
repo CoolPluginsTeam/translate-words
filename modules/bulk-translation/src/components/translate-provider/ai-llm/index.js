@@ -211,13 +211,8 @@ class AiLlmBulkTranslator {
                 </div>`;
     }
 
-    dispatchRecoverableError(targetLang, mergedDone, { message, chunk, err } = {}) {
-        logAiTranslationError(message || __("Translation failed.", "translate-words"), {
-            chunk,
-            provider: this.serviceProvider,
-            context: { postId: this.postId, targetLang, mergedDone },
-            err,
-        });
+    dispatchRecoverableError(targetLang, mergedDone, message) {
+        logAiTranslationError(message || __("Translation failed.", "translate-words"));
         const infoKey = `${this.postId}_${targetLang}`;
         const existing = store.getState().translatePostInfo[infoKey] || {};
         const pendingHtml = this.buildRecoverableErrorHtml(mergedDone, this.totalSourceKeys, false);
@@ -319,12 +314,7 @@ class AiLlmBulkTranslator {
                 });
                 if (Object.keys(translations).length === 0 && Object.keys(chunk).length > 0) {
                     const emptyMsg = __("The AI returned an empty translation response. Please try again.", "translate-words");
-                    logAiTranslationError(emptyMsg, {
-                        emptyResponse: true,
-                        chunk,
-                        provider: this.serviceProvider,
-                        context: { postId: this.postId, targetLang, sourceLang: this.sourceLang },
-                    });
+                    logAiTranslationError(emptyMsg, { emptyResponse: true });
                     const emptyErr = new Error(emptyMsg);
                     emptyErr.failedChunk = chunk;
                     throw emptyErr;
@@ -368,11 +358,7 @@ class AiLlmBulkTranslator {
             }).length;
 
             if (haltForQuota) {
-                logAiTranslationError(msg, {
-                    provider: this.serviceProvider,
-                    context: { postId: this.postId, targetLang, mergedDone: mergedFromStore },
-                    err,
-                });
+                logAiTranslationError(msg);
                 this.stopTranslation = true;
                 window.lmatBulkTranslationQuotaExceeded = true;
                 const rem = Math.max(0, this.progressSliceTarget - this.progressContributedThisJob);
@@ -400,12 +386,7 @@ class AiLlmBulkTranslator {
                 return false;
             }
 
-            const failedChunk = err?.failedChunk;
-            this.dispatchRecoverableError(targetLang, mergedFromStore, {
-                message: msg,
-                chunk: failedChunk,
-                err,
-            });
+            this.dispatchRecoverableError(targetLang, mergedFromStore, msg);
             return false;
         }
     }
