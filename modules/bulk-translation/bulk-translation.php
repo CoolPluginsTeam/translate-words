@@ -98,7 +98,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		 * @param \WP_Post_Type $post_type_object Post type object from get_post_type_object().
 		 * @return array{plural: string, singular: string}
 		 */
-		private function get_bulk_translate_labels_for_post_type( $post_type_object ) {
+		private static function get_bulk_translate_labels_for_post_type( $post_type_object ) {
 			$labels = function_exists( 'get_post_type_labels' )
 				? get_post_type_labels( $post_type_object )
 				: $post_type_object->labels;
@@ -118,7 +118,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		 * @param \WP_Taxonomy $taxonomy_object Taxonomy object from get_taxonomy().
 		 * @return array{plural: string, singular: string}
 		 */
-		private function get_bulk_translate_labels_for_taxonomy( $taxonomy_object ) {
+		private static function get_bulk_translate_labels_for_taxonomy( $taxonomy_object ) {
 			$labels = function_exists( 'get_taxonomy_labels' )
 				? get_taxonomy_labels( $taxonomy_object )
 				: $taxonomy_object->labels;
@@ -181,7 +181,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
             $post_type_obj  = get_post_type_object( $post_type );
 
             if ( $post_type_obj ) {
-                $post_type_labels = $this->get_bulk_translate_labels_for_post_type( $post_type_obj );
+                $post_type_labels = self::get_bulk_translate_labels_for_post_type( $post_type_obj );
                 if ( $post_type_labels['plural'] ) {
                     $post_label = $post_type_labels['plural'];
                 }
@@ -195,7 +195,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 $taxonomy_object = get_taxonomy( $current_screen->taxonomy );
 
                 if ( $taxonomy_object ) {
-                    $taxonomy_labels = $this->get_bulk_translate_labels_for_taxonomy( $taxonomy_object );
+                    $taxonomy_labels = self::get_bulk_translate_labels_for_taxonomy( $taxonomy_object );
                     if ( $taxonomy_labels['plural'] ) {
                         $post_label = $taxonomy_labels['plural'];
                     }

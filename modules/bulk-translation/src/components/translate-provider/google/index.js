@@ -64,7 +64,9 @@ class GoogleTranslater {
         if (!GoogleLanguage().includes(this.filterLanguage(targetLang))) {
             this.storeDispatch(unsetPendingPost(this.postId + '_' + targetLang));
             this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
-            this.advanceProgress();
+            if (!this.stopTranslation) {
+                this.advanceProgress();
+            }
         } else {
             this.activeTargetLang = targetLang;
             this.activeLanguageGlossaryTerms[targetLang]={};
@@ -321,6 +323,9 @@ class GoogleTranslater {
             const loaded = await this.appendTranslateWidget();
             if (!loaded) {
                 this.targetLangs.forEach((lang) => {
+                    if (this.stopTranslation) {
+                        return;
+                    }
                     this.storeDispatch(unsetPendingPost(`${this.postId}_${lang}`));
                     this.storeDispatch(
                         updateTranslatePostInfo({
@@ -341,7 +346,10 @@ class GoogleTranslater {
             }
             await this.createGoogleTranslator(this.targetLangs[0], 0);
         } else if (this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
-            this.targetLangs.forEach(lang => {
+            this.targetLangs.forEach((lang) => {
+                if (this.stopTranslation) {
+                    return;
+                }
                 this.storeDispatch(unsetPendingPost(this.postId + '_' + lang));
                 this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false } }));
                 this.advanceProgress();
