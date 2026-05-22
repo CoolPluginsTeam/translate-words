@@ -92,6 +92,45 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			echo "<div id='lmat-bulk-translate-wrapper'></div>";
 		}
 
+		/**
+		 * Plural and singular labels for bulk-translate UI (post type screen).
+		 *
+		 * @param \WP_Post_Type $post_type_object Post type object from get_post_type_object().
+		 * @return array{plural: string, singular: string}
+		 */
+		private function get_bulk_translate_labels_for_post_type( $post_type_object ) {
+			$labels = function_exists( 'get_post_type_labels' )
+				? get_post_type_labels( $post_type_object )
+				: $post_type_object->labels;
+
+			$plural   = ! empty( $labels->name ) ? $labels->name : '';
+			$singular = ! empty( $labels->singular_name ) ? $labels->singular_name : $plural;
+
+			return array(
+				'plural'   => $plural,
+				'singular' => $singular,
+			);
+		}
+
+		/**
+		 * Plural and singular labels for bulk-translate UI (taxonomy term screen).
+		 *
+		 * @param \WP_Taxonomy $taxonomy_object Taxonomy object from get_taxonomy().
+		 * @return array{plural: string, singular: string}
+		 */
+		private function get_bulk_translate_labels_for_taxonomy( $taxonomy_object ) {
+			$labels = function_exists( 'get_taxonomy_labels' )
+				? get_taxonomy_labels( $taxonomy_object )
+				: $taxonomy_object->labels;
+
+			$plural   = ! empty( $labels->name ) ? $labels->name : '';
+			$singular = ! empty( $labels->singular_name ) ? $labels->singular_name : $plural;
+			return array(
+				'plural'   => $plural,
+				'singular' => $singular,
+			);
+		}
+
 		public function linguator_enqueue_bulk_translate_assets() {
 			global $linguator;
         
@@ -142,11 +181,12 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
             $post_type_obj  = get_post_type_object( $post_type );
 
             if ( $post_type_obj ) {
-                if ( ! empty( $post_type_obj->label ) ) {
-                    $post_label = $post_type_obj->label;
+                $post_type_labels = $this->get_bulk_translate_labels_for_post_type( $post_type_obj );
+                if ( $post_type_labels['plural'] ) {
+                    $post_label = $post_type_labels['plural'];
                 }
-                if ( ! empty( $post_type_obj->labels->singular_name ) ) {
-                    $post_label_singular = $post_type_obj->labels->singular_name;
+                if ( $post_type_labels['singular'] ) {
+                    $post_label_singular = $post_type_labels['singular'];
                 }
             }
 
@@ -155,13 +195,12 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 $taxonomy_object = get_taxonomy( $current_screen->taxonomy );
 
                 if ( $taxonomy_object ) {
-                    if ( ! empty( $taxonomy_object->label ) ) {
-                        $post_label = $taxonomy_object->label;
+                    $taxonomy_labels = $this->get_bulk_translate_labels_for_taxonomy( $taxonomy_object );
+                    if ( $taxonomy_labels['plural'] ) {
+                        $post_label = $taxonomy_labels['plural'];
                     }
-
-                    if ( ! empty( $taxonomy_object->labels->singular_name ) ) {
-                        $post_label_singular = $taxonomy_object->labels->singular_name;
-                        $post_label          = $taxonomy_object->labels->singular_name;
+                    if ( $taxonomy_labels['singular'] ) {
+                        $post_label_singular = $taxonomy_labels['singular'];
                     }
                 }
             }

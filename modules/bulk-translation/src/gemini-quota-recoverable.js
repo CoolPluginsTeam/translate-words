@@ -5,6 +5,14 @@ import { store } from "./redux-store/store.js";
 import { selectTargetContent } from "./redux-store/features/selectors.js";
 import { __, sprintf } from "@wordpress/i18n";
 
+function escapeHtml(text) {
+    return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 /**
  * @param {number|string} postId
  * @param {string} targetLang
@@ -26,25 +34,31 @@ export function buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys) {
     const completedPercent = Math.min(100, Math.round(((mergedDone / total) * 100) * 10) / 10).toFixed(1);
     const notCompletedPercent = Math.min(100, Math.round((100 - (mergedDone / total) * 100) * 10) / 10).toFixed(1);
 
+    const safePrefix = escapeHtml(prefix);
     const errorMessage =
-        `<p class="${prefix}-ai-pending-request-heading">` +
-        __("You’ve exceeded your current plan limit.", "translate-words") +
+        `<p class="${safePrefix}-ai-pending-request-heading">` +
+        escapeHtml(__("You’ve exceeded your current plan limit.", "translate-words")) +
         "</p> " +
-        __("To continue, please check your plan details and update your API key.", "translate-words");
-    const translateBtnMessage = __(
-        'Click "Translate" after updating your API key to re-translate the remaining strings.',
-        "translate-words"
+        escapeHtml(__("To continue, please check your plan details and update your API key.", "translate-words"));
+    const translateBtnMessage = escapeHtml(
+        __('Click "Translate" after updating your API key to re-translate the remaining strings.', "translate-words")
+    );
+    const translatedLine = escapeHtml(
+        sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%")
+    );
+    const notTranslatedLine = escapeHtml(
+        sprintf(__("%s of the strings are still not translated.", "translate-words"), notCompletedPercent + "%")
     );
 
-    return `<div class="${prefix}-ai-pending-request">
+    return `<div class="${safePrefix}-ai-pending-request">
                     <div>${errorMessage}</div>
-                    <p>${__("To see more details, open your browser’s developer console.", "translate-words")}</p>
-                <p>✅ ${sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%")}</p>
-                <p>❌ ${sprintf(__("%s of the strings are still not translated.", "translate-words"), notCompletedPercent + "%")}</p>
-                <p><strong>${__("Next Steps:", "translate-words")}</strong></p>
+                    <p>${escapeHtml(__("To see more details, open your browser’s developer console.", "translate-words"))}</p>
+                <p>✅ ${translatedLine}</p>
+                <p>❌ ${notTranslatedLine}</p>
+                <p><strong>${escapeHtml(__("Next Steps:", "translate-words"))}</strong></p>
                 <p>${translateBtnMessage}</p>
-                <p><strong>${__("OR", "translate-words")}</strong></p>
-                <p>${__('Click "Continue" to proceed without translating the rest of the strings.', "translate-words")}</p>
+                <p><strong>${escapeHtml(__("OR", "translate-words"))}</strong></p>
+                <p>${escapeHtml(__('Click "Continue" to proceed without translating the rest of the strings.', "translate-words"))}</p>
                 </div>`;
 }
 
