@@ -75,8 +75,8 @@ class LocalAiTranslate {
             this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+targetLang]: { status: 'running', messageClass: ''}}));
             await this.translateContent(0);
 
-            if(!this.stopTranslation){
-                this.updateContent(targetLang);
+            if (!this.stopTranslation) {
+                await this.updateContent(targetLang);
             }
         }
         

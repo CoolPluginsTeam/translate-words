@@ -30,6 +30,11 @@ class GoogleTranslater {
 
     }
 
+    /** Count finished languages (success or terminal failure) toward the bulk progress bar. */
+    advanceProgress = () => {
+        this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
+    };
+
     destroy = () => {
         this.stopTranslation = true;
         if (this._mutationObserver) {
@@ -59,6 +64,9 @@ class GoogleTranslater {
         if (!GoogleLanguage().includes(this.filterLanguage(targetLang))) {
             this.storeDispatch(unsetPendingPost(this.postId + '_' + targetLang));
             this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + targetLang]: { status: 'error', messageClass: 'error', errorMessage: sprintf(__('Language %s(%s) is not supported by Google Translate', 'translate-words'), languageObject[targetLang].name, targetLang), errorHtml: false } }));
+            if (!this.stopTranslation) {
+                this.advanceProgress();
+            }
         } else {
             this.activeTargetLang = targetLang;
             this.activeLanguageGlossaryTerms[targetLang]={};
@@ -90,11 +98,27 @@ class GoogleTranslater {
                 );
             }
 
-            if (!this.stopTranslation && isTranslated) {
-                this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-                this.updateContent(targetLang);
-
-                await new Promise(resolve => setTimeout(resolve, 500));
+            if (!this.stopTranslation) {
+                this.advanceProgress();
+                if (isTranslated) {
+                    try {
+                        await this.updateContent(targetLang);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (err) {
+                        console.error(err);
+                        this.storeDispatch(unsetPendingPost(`${this.postId}_${targetLang}`));
+                        this.storeDispatch(
+                            updateTranslatePostInfo({
+                                [`${this.postId}_${targetLang}`]: {
+                                    status: 'error',
+                                    messageClass: 'error',
+                                    errorMessage: __('Google Translate failed for this batch. Try again.', 'translate-words'),
+                                    errorHtml: false,
+                                },
+                            })
+                        );
+                    }
+                }
             }
 
         }
@@ -253,9 +277,13 @@ class GoogleTranslater {
                 mutationObserver.disconnect();
                 this._mutationObserver = null;
                 this._translateTimeout = null;
-                if(!mutationRun){
-                    status = await this.startTranslate();
-                    resolve();
+                if (!mutationRun) {
+                    try {
+                        status = await this.startTranslate();
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    }
                 }
             }, 6000);
     
@@ -295,6 +323,9 @@ class GoogleTranslater {
             const loaded = await this.appendTranslateWidget();
             if (!loaded) {
                 this.targetLangs.forEach((lang) => {
+                    if (this.stopTranslation) {
+                        return;
+                    }
                     this.storeDispatch(unsetPendingPost(`${this.postId}_${lang}`));
                     this.storeDispatch(
                         updateTranslatePostInfo({
@@ -309,14 +340,19 @@ class GoogleTranslater {
                             },
                         })
                     );
+                    this.advanceProgress();
                 });
                 return;
             }
             await this.createGoogleTranslator(this.targetLangs[0], 0);
         } else if (this.targetLangs && this.targetLangs.length > 0 && !this.stopTranslation) {
-            this.targetLangs.forEach(lang => {
+            this.targetLangs.forEach((lang) => {
+                if (this.stopTranslation) {
+                    return;
+                }
                 this.storeDispatch(unsetPendingPost(this.postId + '_' + lang));
                 this.storeDispatch(updateTranslatePostInfo({ [this.postId + '_' + lang]: { status: 'error', messageClass: 'error', errorMessage: __('No content to translate', 'translate-words'), errorHtml: false } }));
+                this.advanceProgress();
             });
         }
     }

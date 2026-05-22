@@ -92,6 +92,45 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			echo "<div id='lmat-bulk-translate-wrapper'></div>";
 		}
 
+		/**
+		 * Plural and singular labels for bulk-translate UI (post type screen).
+		 *
+		 * @param \WP_Post_Type $post_type_object Post type object from get_post_type_object().
+		 * @return array{plural: string, singular: string}
+		 */
+		private static function get_bulk_translate_labels_for_post_type( $post_type_object ) {
+			$labels = function_exists( 'get_post_type_labels' )
+				? get_post_type_labels( $post_type_object )
+				: $post_type_object->labels;
+
+			$plural   = ! empty( $labels->name ) ? $labels->name : '';
+			$singular = ! empty( $labels->singular_name ) ? $labels->singular_name : $plural;
+
+			return array(
+				'plural'   => $plural,
+				'singular' => $singular,
+			);
+		}
+
+		/**
+		 * Plural and singular labels for bulk-translate UI (taxonomy term screen).
+		 *
+		 * @param \WP_Taxonomy $taxonomy_object Taxonomy object from get_taxonomy().
+		 * @return array{plural: string, singular: string}
+		 */
+		private static function get_bulk_translate_labels_for_taxonomy( $taxonomy_object ) {
+			$labels = function_exists( 'get_taxonomy_labels' )
+				? get_taxonomy_labels( $taxonomy_object )
+				: $taxonomy_object->labels;
+
+			$plural   = ! empty( $labels->name ) ? $labels->name : '';
+			$singular = ! empty( $labels->singular_name ) ? $labels->singular_name : $plural;
+			return array(
+				'plural'   => $plural,
+				'singular' => $singular,
+			);
+		}
+
 		public function linguator_enqueue_bulk_translate_assets() {
 			global $linguator;
         
@@ -133,25 +172,35 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
             return;
         }
 
-        $post_label=__("Pages", "translate-words");
-        $taxonomy_page=false;
+        $post_label        = __( 'Pages', 'translate-words' );
+        $post_label_singular = __( 'Page', 'translate-words' );
+        $taxonomy_page     = false;
 
-        if(isset($current_screen->post_type)){
-            $post_type = $current_screen->post_type;
+        if ( isset( $current_screen->post_type ) ) {
+            $post_type      = $current_screen->post_type;
+            $post_type_obj  = get_post_type_object( $post_type );
 
-            if(isset(get_post_type_object($post_type)->label) && !empty(get_post_type_object($post_type)->label)){
-                $post_label = get_post_type_object($post_type)->label;
+            if ( $post_type_obj ) {
+                $post_type_labels = self::get_bulk_translate_labels_for_post_type( $post_type_obj );
+                if ( $post_type_labels['plural'] ) {
+                    $post_label = $post_type_labels['plural'];
+                }
+                if ( $post_type_labels['singular'] ) {
+                    $post_label_singular = $post_type_labels['singular'];
+                }
             }
 
-            if(isset($current_screen->taxonomy) && !empty($current_screen->taxonomy)){
-                $taxonomy_page=$current_screen->taxonomy;    
-                $taxonomy_object = get_taxonomy($current_screen->taxonomy);
+            if ( isset( $current_screen->taxonomy ) && ! empty( $current_screen->taxonomy ) ) {
+                $taxonomy_page   = $current_screen->taxonomy;
+                $taxonomy_object = get_taxonomy( $current_screen->taxonomy );
 
-                if(isset($taxonomy_object->label) && !empty($taxonomy_object->label)){
-                    $post_label = $taxonomy_object->label;
-
-                    if(isset($taxonomy_object->labels->singular_name) && !empty($taxonomy_object->labels->singular_name)){
-                        $post_label = $taxonomy_object->labels->singular_name;
+                if ( $taxonomy_object ) {
+                    $taxonomy_labels = self::get_bulk_translate_labels_for_taxonomy( $taxonomy_object );
+                    if ( $taxonomy_labels['plural'] ) {
+                        $post_label = $taxonomy_labels['plural'];
+                    }
+                    if ( $taxonomy_labels['singular'] ) {
+                        $post_label_singular = $taxonomy_labels['singular'];
                     }
                 }
             }
@@ -257,7 +306,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'get_glossary_validate' => wp_create_nonce('lmat_get_glossary_private'),
                 'lmat_url'                => plugins_url( '', LINGUATOR_ROOT_FILE ) . '/',
                 'admin_url' => admin_url(),
-                'post_label' => $post_label,
+                'post_label'          => $post_label,
+                'post_label_singular' => $post_label_singular,
                 'update_translate_data' => 'lmat_update_translate_data',
                 'slug_translation_option' => $slug_translation_option,
                 'taxonomy_page' => $taxonomy_page,

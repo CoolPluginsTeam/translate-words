@@ -326,7 +326,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$key_option = 'connectors_ai_google_api_key';
 			$api_key    = (string) get_option( $key_option, '' );
 			if ( '' === trim( $api_key ) ) {
-				return new WP_Error( 'lmat_ai_no_key', __( 'API key is not configured for this provider.', 'translate-words' ), array( 'status' => 400 ) );
+				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
 			$sanitized_strings = array();
@@ -590,7 +590,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( method_exists( $registry, 'isProviderConfigured' ) && ! $registry->isProviderConfigured( $provider_id ) ) {
 					return new WP_Error(
 						'lmat_ai_no_key',
-						__( 'API key for this provider is not configured.', 'translate-words' ),
+						__( 'Please provide a valid API key for the selected provider.', 'translate-words' ),
 						array( 'status' => 400 )
 					);
 				}

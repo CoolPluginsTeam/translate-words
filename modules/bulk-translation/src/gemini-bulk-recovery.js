@@ -43,6 +43,8 @@ export async function geminiTranslateAgain({ postId, targetLang, storeDispatch, 
         await updateContentBulkTranslate({ source, postId, sourceLang: sourceLanguage, lang, editorType, createTranslatePostNonce: nonce, storeDispatch });
     };
 
+    window.lmatBulkTranslationQuotaExceeded = false;
+
     if (typeof closeErrorModal === "function") {
         closeErrorModal();
     }
@@ -113,6 +115,8 @@ export async function geminiTranslateComplete({ postId, targetLang, storeDispatc
             },
         })
     );
+
+    window.lmatBulkTranslationQuotaExceeded = false;
 
     if (typeof closeErrorModal === "function") {
         closeErrorModal();

@@ -1,4 +1,20 @@
 /**
+ * Log AI translation failures to the browser console (matches Polylang Pro UX).
+ *
+ * @param {string} [message]
+ * @param {{ emptyResponse?: boolean }} [opts]
+ */
+export function logAiTranslationError(message, { emptyResponse } = {}) {
+    console.group('Automatic Translation Error');
+    if (emptyResponse) {
+        console.warn('Empty response');
+    } else if (message) {
+        console.log('%c' + String(message), 'color: red; font-weight: bold; font-size: 1.2rem;');
+    }
+    console.groupEnd();
+}
+
+/**
  * Server-side LLM batch translation (Gemini via WordPress AI Client).
  *
  * @param {Object} opts

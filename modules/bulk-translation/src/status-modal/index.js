@@ -177,7 +177,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
             updateBulkStatus(error ? 'error' : 'pending');
         }
-    }, [translatePostInfo]); 
+    }, [translatePostInfo]);
 
     const updateBulkStatus=(status)=>{
         setBulkStatus(status);
@@ -199,25 +199,35 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     }
 
     useEffect(() => {
-       if(progressStatus >= 100 && pendingPosts.length < 1){
-            if(countInfo.postsTranslated < 1){
-                setProgressBarVisibility(false);
-                setCharactersCountVisibility(false);
-                return;
-            }
+        if (isLoading || pendingPosts.length > 0) {
+            return;
+        }
 
-            if(countInfo.stringsTranslated > 0){
-                setTimeout(() => {
-                    setCharactersCountVisibility(true);
-                }, 1000);
-            }
+        if (countInfo.postsTranslated < 1) {
+            setProgressBarVisibility(false);
+            setCharactersCountVisibility(false);
+            return;
+        }
 
-            setTimeout(() => {
-                setProgressBarVisibility(false);
-                setCharactersCountVisibility(false);
-            }, 7500);
-       }
-    }, [pendingPosts]);
+        let charsTimer;
+        if (countInfo.stringsTranslated > 0) {
+            charsTimer = setTimeout(() => {
+                setCharactersCountVisibility(true);
+            }, 1000);
+        }
+
+        // When pending clears before Redux progress hits 100%, still reveal the footer CTA.
+        const hideDelay = progressStatus >= 100 ? 7500 : 500;
+        const hideTimer = setTimeout(() => {
+            setProgressBarVisibility(false);
+            setCharactersCountVisibility(false);
+        }, hideDelay);
+
+        return () => {
+            clearTimeout(charsTimer);
+            clearTimeout(hideTimer);
+        };
+    }, [pendingPosts, progressStatus, countInfo.postsTranslated, countInfo.stringsTranslated, isLoading]);
 
     const getTranslatedPostLink = () => {
         const translatedLanguagesArr=Object.values(translatePostInfo).filter(post=>post.status==='completed' && post.targetLanguage);
@@ -410,14 +420,25 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                 </td>
                                                 {info.status === 'error' ?
                                                 <>
-                                                    <td colSpan={`${info.errorHtml ? '2' : '3'}`}>
-                                                        {info.errorAllowHtml ? (
-                                                            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(info.errorMessage, PURIFY_ERROR_HTML) }} />
-                                                        ) : (
-                                                            info.errorMessage
-                                                        )}
-                                                    </td>
-                                                    {info.errorHtml && <td colSpan="1" onClick={()=>{handleErrorModal(info)}}><button className={`${prefix}-status-error-button`}>{__('Error Details', 'translate-words')}</button></td>}
+                                                    {info.errorHtml ? (
+                                                        <td colSpan="3" className={`${prefix}-status-error-actions`}>
+                                                            <button
+                                                                type="button"
+                                                                className={`${prefix}-status-error-button`}
+                                                                onClick={() => { handleErrorModal(info); }}
+                                                            >
+                                                                {__('Error Details', 'translate-words')}
+                                                            </button>
+                                                        </td>
+                                                    ) : (
+                                                        <td colSpan="3">
+                                                            {info.errorAllowHtml ? (
+                                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(info.errorMessage, PURIFY_ERROR_HTML) }} />
+                                                            ) : (
+                                                                info.errorMessage
+                                                            )}
+                                                        </td>
+                                                    )}
                                                 </> :
                                                 <>
                                                     <td>
@@ -458,7 +479,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="button button-primary"
-                                                                        title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label)}
+                                                                        title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
                                                                     >
                                                                         {__('Review', 'translate-words')}
                                                                     </a>
@@ -466,7 +487,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                     <button
                                                                         className="button disabled"
                                                                         disabled
-                                                                        title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label)}
+                                                                        title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
                                                                     >
                                                                         {__('Review', 'translate-words')}
                                                                     </button>

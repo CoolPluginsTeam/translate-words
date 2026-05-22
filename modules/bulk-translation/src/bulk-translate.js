@@ -6,7 +6,8 @@ import Provider from './components/translate-provider/index.js';
 import { updateTranslateData } from './helper/index.js';
 import LoopCallback from './components/loop-callback/index.js';
 import updateGlossaryString from './components/filter-content/update-glossary-string/index.js';
-import { selectGlossaryTerms } from './redux-store/features/selectors.js';
+import { selectGlossaryTerms, selectTargetContent } from './redux-store/features/selectors.js';
+import { buildQuotaRecoverableTranslateInfo, countMergedTranslatedStrings } from './gemini-quota-recoverable.js';
 
 const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler, signal)=>{
     window.lmatBulkTranslationQuotaExceeded = false;
@@ -26,21 +27,35 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
         }
 
         const pendingNow = [...store.getState().pendingPosts];
+        const serviceProvider = store.getState().serviceProvider || 'gemini';
+        const totalPosts = Math.max(1, store.getState().countInfo.totalPosts || totalPendingCount);
+
         pendingNow.forEach((pendingKey) => {
             const existingInfo = store.getState().translatePostInfo[pendingKey] || {};
+            const postId = existingInfo.parentPostId;
+            const targetLang = existingInfo.targetLanguage;
+            if (!postId || !targetLang) {
+                return;
+            }
+
+            const totalKeys = Object.keys(selectTargetContent(store.getState(), postId) || {}).length;
+            const mergedDone = countMergedTranslatedStrings(postId, targetLang, serviceProvider);
+
             storeDispatch(unsetPendingPost(pendingKey));
             storeDispatch(updateCompletedPosts([pendingKey]));
             storeDispatch(updateProgressStatus(100 / totalPendingCount));
             storeDispatch(
                 updateTranslatePostInfo({
-                    [pendingKey]: {
-                        ...existingInfo,
-                        status: 'error',
-                        messageClass: 'error',
-                        errorMessage: `${__('API quota exceeded (429). Please check your plan/billing and retry later.', 'translate-words')} <a href="https://aistudio.google.com/app/usage" target="_blank" rel="noopener noreferrer">${__('View usage.', 'translate-words')}</a>`,
-                        errorHtml: false,
-                        errorAllowHtml: true,
-                    },
+                    [pendingKey]: buildQuotaRecoverableTranslateInfo({
+                        existingInfo,
+                        prefix,
+                        postId,
+                        targetLang,
+                        mergedDone,
+                        totalKeys,
+                        nonce,
+                        totalPosts,
+                    }),
                 })
             );
         });
