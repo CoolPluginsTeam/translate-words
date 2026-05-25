@@ -55,3 +55,4 @@ modules/page-translation/src
 modules/inline-translation/src
 modules/wizard/src
 .claude/
+.codex/
