@@ -195,6 +195,9 @@ class Linguator_Admin_Feedback {
 		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), '_cool-plugins_deactivate_feedback_nonce' ) ) {
 			wp_send_json_error();
 		} else {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
+			}
 
 			$reason             = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
 			$deactivate_reasons = array(
@@ -249,7 +252,11 @@ class Linguator_Admin_Feedback {
 				)
 			);
 
-			die( json_encode( array( 'response' => $response ) ) );
+			wp_send_json_success( 
+				array( 
+					'response_code' => wp_remote_retrieve_response_code( $response ) 
+				) 
+			);
 		}
 
 	}
