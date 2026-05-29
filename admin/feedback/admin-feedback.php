@@ -228,7 +228,7 @@ class Linguator_Admin_Feedback {
 
 			$plugin_initial = isset( $this->options['first_activation'] ) ? $this->options['first_activation'] : '';
 			$deativation_reason = array_key_exists( $reason, $deactivate_reasons ) ? $reason : 'other';
-			$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) == '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
+			$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) === '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
 			$admin_email       = sanitize_email( get_option( 'admin_email' ) );
 			$site_url          = esc_url( site_url() );
 			$install_date 		= get_option('linguator_install_date');
