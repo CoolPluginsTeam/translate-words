@@ -203,59 +203,59 @@ class Linguator_Admin_Feedback {
 		}
 
 		$reason             = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
-			$deactivate_reasons = array(
-				'didnt_work_as_expected'         => array(
-					'title'             => __( 'The plugin didn\'t work as expected', 'translate-words' ),
-					'input_placeholder' => 'What did you expect?',
-				),
-				'found_a_better_plugin'          => array(
-					'title'             => __( 'I found a better plugin', 'translate-words' ),
-					'input_placeholder' => __( 'Please share which plugin.', 'translate-words' ),
-				),
-				'couldnt_get_the_plugin_to_work' => array(
-					'title'             => __( 'The plugin is not working', 'translate-words' ),
-					'input_placeholder' => 'Please share your issue. So we can fix that for other users.',
-				),
-				'temporary_deactivation'         => array(
-					'title'             => __( 'It\'s a temporary deactivation.', 'translate-words' ),
-					'input_placeholder' => '',
-				),
-				'other'                          => array(
-					'title'             => __( 'Other', 'translate-words' ),
-					'input_placeholder' => __( 'Please share the reason.', 'translate-words' ),
-				),
-			);
+		$deactivate_reasons = array(
+			'didnt_work_as_expected'         => array(
+				'title'             => __( 'The plugin didn\'t work as expected', 'translate-words' ),
+				'input_placeholder' => 'What did you expect?',
+			),
+			'found_a_better_plugin'          => array(
+				'title'             => __( 'I found a better plugin', 'translate-words' ),
+				'input_placeholder' => __( 'Please share which plugin.', 'translate-words' ),
+			),
+			'couldnt_get_the_plugin_to_work' => array(
+				'title'             => __( 'The plugin is not working', 'translate-words' ),
+				'input_placeholder' => 'Please share your issue. So we can fix that for other users.',
+			),
+			'temporary_deactivation'         => array(
+				'title'             => __( 'It\'s a temporary deactivation.', 'translate-words' ),
+				'input_placeholder' => '',
+			),
+			'other'                          => array(
+				'title'             => __( 'Other', 'translate-words' ),
+				'input_placeholder' => __( 'Please share the reason.', 'translate-words' ),
+			),
+		);
 
-			$plugin_initial = isset( $this->options['first_activation'] ) ? $this->options['first_activation'] : '';
-			$deativation_reason = array_key_exists( $reason, $deactivate_reasons ) ? $reason : 'other';
-			$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) === '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
-			$admin_email       = sanitize_email( get_option( 'admin_email' ) );
-			$site_url          = esc_url( site_url() );
-			$install_date 		= get_option('linguator_install_date');
-			$unique_key     	= '153';  // Ensure this key is unique per plugin to prevent collisions when site URL and install date are the same across plugins
-            $site_id        	= $site_url . '-' . $install_date . '-' . $unique_key;
-			$feedback_url      = LINGUATOR_FEEDBACK_API .'wp-json/coolplugins-feedback/v1/feedback';
-			$user_info         = $this->cpfm_get_user_info();
-			$server_info         = $user_info['server_info'];
-			$extra_details         = $user_info['extra_details'];
-			$response          = wp_remote_post(
-				$feedback_url,
-				array(
-					'timeout' => 30,
-					'body'    => array(
-						'server_info' => wp_json_encode($server_info), 
-						'extra_details' => wp_json_encode($extra_details),
-						'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
-						'plugin_version' => sanitize_text_field($this->plugin_version),
-						'plugin_name'    => sanitize_text_field($this->plugin_name),
-						'reason'         => sanitize_text_field($deativation_reason),
-						'review'         => $sanitized_message,
-						'email'          => $admin_email,
-						'domain'         => $site_url,
-						'site_id'    	 => md5($site_id),
-					),
-				)
-			);
+		$plugin_initial = isset( $this->options['first_activation'] ) ? $this->options['first_activation'] : '';
+		$deativation_reason = array_key_exists( $reason, $deactivate_reasons ) ? $reason : 'other';
+		$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) === '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
+		$admin_email       = sanitize_email( get_option( 'admin_email' ) );
+		$site_url          = esc_url( site_url() );
+		$install_date 		= get_option('linguator_install_date');
+		$unique_key     	= '153';  // Ensure this key is unique per plugin to prevent collisions when site URL and install date are the same across plugins
+		$site_id        	= $site_url . '-' . $install_date . '-' . $unique_key;
+		$feedback_url      = LINGUATOR_FEEDBACK_API .'wp-json/coolplugins-feedback/v1/feedback';
+		$user_info         = $this->cpfm_get_user_info();
+		$server_info         = $user_info['server_info'];
+		$extra_details         = $user_info['extra_details'];
+		$response          = wp_remote_post(
+			$feedback_url,
+			array(
+				'timeout' => 30,
+				'body'    => array(
+					'server_info' => wp_json_encode($server_info), 
+					'extra_details' => wp_json_encode($extra_details),
+					'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
+					'plugin_version' => sanitize_text_field($this->plugin_version),
+					'plugin_name'    => sanitize_text_field($this->plugin_name),
+					'reason'         => sanitize_text_field($deativation_reason),
+					'review'         => $sanitized_message,
+					'email'          => $admin_email,
+					'domain'         => $site_url,
+					'site_id'    	 => md5($site_id),
+				),
+			)
+		);
 
 		wp_send_json_success(
 			array(

@@ -179,7 +179,6 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 			} else {
 				return wp_send_json_success( array( 'message' => __( 'No custom blocks found.', 'translate-words' ) ) );
 			}
-			exit();
 		}
 		
 		public function update_custom_blocks_content() {
