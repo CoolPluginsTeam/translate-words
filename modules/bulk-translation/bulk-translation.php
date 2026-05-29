@@ -99,10 +99,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		 * @return array{plural: string, singular: string}
 		 */
 		private static function get_bulk_translate_labels_for_post_type( $post_type_object ) {
-			$labels = function_exists( 'get_post_type_labels' )
-				? get_post_type_labels( $post_type_object )
-				: $post_type_object->labels;
-
+			$labels = $post_type_object->labels;
 			$plural   = ! empty( $labels->name ) ? $labels->name : '';
 			$singular = ! empty( $labels->singular_name ) ? $labels->singular_name : $plural;
 
