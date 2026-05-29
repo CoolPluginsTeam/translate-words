@@ -86,7 +86,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 		 * @param bool         $update Whether this is an existing post being updated.
 		 */
 		public function linguator_on_save_post( $post_id, $post, $update ) {
-			if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'edit_post', $post_id ) ) { 
+			if ( ! current_user_can( 'manage_options' ) ) { 
 				return;
 			}
 
