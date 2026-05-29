@@ -223,7 +223,7 @@ class Linguator_Admin_Feedback {
 				),
 			);
 
-			$plugin_initial =  $this->options['first_activation'];
+			$plugin_initial = isset( $this->options['first_activation'] ) ? $this->options['first_activation'] : '';
 			$deativation_reason = array_key_exists( $reason, $deactivate_reasons ) ? $reason : 'other';
 			$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) == '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
 			$admin_email       = sanitize_email( get_option( 'admin_email' ) );
@@ -233,13 +233,15 @@ class Linguator_Admin_Feedback {
             $site_id        	= $site_url . '-' . $install_date . '-' . $unique_key;
 			$feedback_url      = LINGUATOR_FEEDBACK_API .'wp-json/coolplugins-feedback/v1/feedback';
 			$user_info         = $this->cpfm_get_user_info();
+			$server_info         = $user_info['server_info'];
+			$extra_details         = $user_info['extra_details'];
 			$response          = wp_remote_post(
 				$feedback_url,
 				array(
 					'timeout' => 30,
 					'body'    => array(
-						'server_info' => serialize($this->cpfm_get_user_info()['server_info']), 
-						'extra_details' => serialize($this->cpfm_get_user_info()['extra_details']),
+						'server_info' => wp_json_encode($server_info), 
+						'extra_details' => wp_json_encode($extra_details),
 						'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
 						'plugin_version' => sanitize_text_field($this->plugin_version),
 						'plugin_name'    => sanitize_text_field($this->plugin_name),

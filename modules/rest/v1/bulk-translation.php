@@ -1482,7 +1482,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				'CreateTranslatePostNonce' => wp_create_nonce( 'lmat_create_translate_post_nonce' ),
 			);
 			if ( ! $post_meta_sync ) {
-				$data['allowedMetaFields'] = json_encode( $allowed_meta_fields );
+				$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
 			}
 
 			if ( $gutenberg_block ) {

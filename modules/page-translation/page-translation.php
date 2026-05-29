@@ -656,7 +656,7 @@ class Linguator_Page_Translation {
 		}
 
 		$data = Supported_Blocks::get_instance()->block_parsing_rules();
-		wp_send_json_success( array( 'blockRules' => json_encode( $data ) ) );
+		wp_send_json_success( array( 'blockRules' => wp_json_encode( $data ) ) );
 		exit;
 	}
 
