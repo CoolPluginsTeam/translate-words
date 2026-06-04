@@ -1073,7 +1073,7 @@ class Languages {
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query(
+			$res = $wpdb->query(
 				$wpdb->prepare(
 					sprintf(
 						"DELETE FROM {$wpdb->term_relationships} WHERE object_id IN (%s) AND term_taxonomy_id IN (%s)",
@@ -1085,7 +1085,7 @@ class Languages {
 			);
 			
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			if(is_wp_error($wpdb->query)){
+			if ( false === $res ) {
 				$errors->add( 'lmat_delete_relationships', __( 'Could not delete the relationships.', 'translate-words' ) );
 			}
 		}
@@ -1106,7 +1106,7 @@ class Languages {
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query(
+			$res = $wpdb->query(
 				$wpdb->prepare(
 					sprintf(
 						"DELETE FROM {$wpdb->terms} WHERE term_id IN (%s)",
@@ -1117,7 +1117,7 @@ class Languages {
 			);
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			if(is_wp_error($wpdb->query)){
+			if ( false === $res ) {
 				$errors->add( 'lmat_delete_terms', __( 'Could not delete the terms.', 'translate-words' ) );
 			}
 
@@ -1126,7 +1126,7 @@ class Languages {
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query(
+			$res = $wpdb->query(
 				$wpdb->prepare(
 					sprintf(
 						"DELETE FROM {$wpdb->term_taxonomy} WHERE term_taxonomy_id IN (%s)",
@@ -1137,7 +1137,7 @@ class Languages {
 			);
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			if(is_wp_error($wpdb->query)){
+			if ( false === $res ) {
 				$errors->add( 'lmat_delete_term_taxonomy', __( 'Could not delete the term taxonomy.', 'translate-words' ) );
 			}
 		}
@@ -1167,7 +1167,7 @@ class Languages {
 			// many terms across multiple languages.
 			// Support reference: https://wordpress.org/support/topic/fatal-error-while-attempting-to-delete-a-language/
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query(
+			$res = $wpdb->query(
 				$wpdb->prepare(
 					sprintf(
 						"UPDATE {$wpdb->term_taxonomy} SET description = ( CASE term_id %s END ) WHERE term_id IN (%s)",
@@ -1179,7 +1179,7 @@ class Languages {
 			);
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			if(is_wp_error($wpdb->query)){
+			if ( false === $res ) {
 				$errors->add( 'lmat_update_term_taxonomy', __( 'Could not update the term taxonomy.', 'translate-words' ) );
 			}
 		}

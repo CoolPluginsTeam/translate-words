@@ -86,7 +86,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 		 * @param bool         $update Whether this is an existing post being updated.
 		 */
 		public function linguator_on_save_post( $post_id, $post, $update ) {
-			if(!current_user_can('edit_post', $post_id)){
+			if (!current_user_can('edit_post', $post_id)){
 				return;
 			}
 
@@ -179,7 +179,6 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 			} else {
 				return wp_send_json_success( array( 'message' => __( 'No custom blocks found.', 'translate-words' ) ) );
 			}
-			exit();
 		}
 		
 		public function update_custom_blocks_content() {

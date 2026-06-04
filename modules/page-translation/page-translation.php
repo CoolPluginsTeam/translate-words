@@ -467,7 +467,7 @@ class Linguator_Page_Translation {
 		if ( ! isset( LMAT()->options['sync'] ) || ( isset( LMAT()->options['sync'] ) && ! in_array( 'post_meta', LMAT()->options['sync'] ) ) ) {
 			$extra_data['postMetaSync'] = 'false';
 
-			if ( in_array( $editor_type, array( 'classic', 'gutenberg','wpbakery' ) ) ) {
+			if ( in_array( $editor_type, array( 'classic', 'gutenberg', 'wpbakery', 'elementor' ), true ) ) {
 				$extra_data['update_post_meta_fields'] = 'lmat_update_post_meta_fields';
 				$extra_data['post_meta_fields_key']    = wp_create_nonce( 'lmat_update_post_meta_fields' );
 			}
@@ -656,7 +656,7 @@ class Linguator_Page_Translation {
 		}
 
 		$data = Supported_Blocks::get_instance()->block_parsing_rules();
-		wp_send_json_success( array( 'blockRules' => json_encode( $data ) ) );
+		wp_send_json_success( array( 'blockRules' => wp_json_encode( $data ) ) );
 		exit;
 	}
 

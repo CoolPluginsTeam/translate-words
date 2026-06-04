@@ -74,6 +74,89 @@ const lmatUpdateTitle = (title, service) => {
     }
 }
 
+/**
+ * Updates ACF fields in the Elementor editor when ACF is loaded.   
+ */
+const postAcfFieldsUpdate = (postContent, service) => {
+    const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
+    const metaFieldsData = postContent.metaFields;
+
+    if (!window.acf || !metaFieldsData) {
+        return;
+    }
+
+    acf.getFields().forEach(field => {
+        const fieldData = JSON.parse(JSON.stringify({ key: field.data.key, type: field.data.type, name: field.data.name }));
+
+        if (field.$el && field.$el.closest('.acf-field.acf-field-repeater') && field.$el.closest('.acf-field.acf-field-repeater').length > 0) {
+            const rowId = field.$el.closest('.acf-row').data('id');
+            const repeaterItemName = field.$el.closest('.acf-field.acf-field-repeater').data('name');
+
+            if (rowId && '' !== rowId) {
+                const index = rowId.replace('row-', '');
+                fieldData.name = repeaterItemName + '_' + index + '_' + fieldData.name;
+            }
+        }
+
+        if (fieldData && fieldData.key && Object.keys(AllowedMetaFields).includes(fieldData.name)) {
+            const fieldName = fieldData.name;
+            const inputType = fieldData.type;
+            const sourceValue = metaFieldsData[fieldName] ? metaFieldsData[fieldName] : field?.val();
+            const translatedMetaFields = select('block-lmatPageTranslation/translate').getTranslatedString('metaFields', sourceValue, fieldData.name, service);
+
+            if (!translatedMetaFields || '' === translatedMetaFields) {
+                return;
+            }
+
+            if ('wysiwyg' === inputType && window.tinymce) {
+                const editorId = field.data.id;
+                const tinymceTranslatedMetaFields = translatedMetaFields.replace(/(\r\n\r\n|\r\n)/g, '</p><p>');
+
+                tinymce.get(editorId)?.setContent(tinymceTranslatedMetaFields);
+
+                const tinymceTextArea = document.querySelector(`textarea#${editorId}`);
+                if (tinymceTextArea) {
+                    tinymceTextArea.value = translatedMetaFields;
+                }
+            } else {
+                field.val(translatedMetaFields);
+            }
+        }
+    });
+};
+
+/**
+ * Persists translated meta fields (including ACF) via AJAX when post meta sync is disabled.
+ */
+const updatePostMetaFields = (postContent, service) => {
+    const ajaxUrl = window.lmatPageTranslationGlobal.ajax_url;
+    const postId = window.lmatPageTranslationGlobal.current_post_id;
+    const nonce = window.lmatPageTranslationGlobal.post_meta_fields_key;
+    const action = window.lmatPageTranslationGlobal.update_post_meta_fields;
+
+    if (!postId || !nonce || !action) {
+        return Promise.resolve();
+    }
+
+    const requestBody = {
+        action: action,
+        post_id: postId,
+        meta_fields: JSON.stringify(translatedMetaFields(postContent.metaFields, service)),
+        post_meta_fields_key: nonce,
+    };
+
+    return fetch(ajaxUrl, {
+        method: 'POST',
+        headers: {
+            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Accept': 'application/json',
+        },
+        body: new URLSearchParams(requestBody),
+    }).catch(error => {
+        console.error('Error updating meta fields:', error);
+    });
+};
+
 // Find Elementor model by ID
 const lmatFindModelById = (elements, id) => {
     for (const model of elements) {
@@ -184,8 +267,13 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
     // Update widget content with translations
     lmatUpdateWidgetContent(translations);
     
-    // Update Meta Fields
+    // Update Meta Fields (SEO plugins in Elementor panel)
     lmatUpdateMetaFields(postContent.metaFields, service);
+
+    // Update ACF fields in the editor when post meta sync is disabled
+    if (lmatPageTranslationGlobal.postMetaSync === 'false') {
+        postAcfFieldsUpdate(postContent, service);
+    }
 
     // Update Title
     lmatUpdateTitle(postContent.title, service);
@@ -246,10 +334,6 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         }
     }
 
-    if("false" === lmatPageTranslationGlobal.postMetaSync){
-        requestBody.meta_fields=JSON.stringify(translatedMetaFields(postContent.metaFields, service));
-    }
-
     fetch(lmatPageTranslationGlobal.ajax_url, {
         method: 'POST',
         headers: {
@@ -259,7 +343,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         body: new URLSearchParams(requestBody)
     })
         .then(response => response.json())
-        .then(data => {
+        .then(async (data) => {
             if (data.success) {
                 const translateButton = document.querySelector('.lmat-page-translation-button[name="lmat_page_translation_meta_box_translate"]');
                 if(translateButton){
@@ -267,6 +351,10 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                 }
             } else {
                 console.error('Failed to update Elementor data:', data.data);
+            }
+
+            if (lmatPageTranslationGlobal.postMetaSync === 'false') {
+                await updatePostMetaFields(postContent, service);
             }
 
             modalClose();

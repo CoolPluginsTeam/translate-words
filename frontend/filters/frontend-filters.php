@@ -127,8 +127,7 @@ class Linguator_Frontend_Filters extends Linguator_Filters {
 		$relations = $wpdb->get_results(
 			$wpdb->prepare(
 				sprintf(
-					"SELECT object_id, term_taxonomy_id FROM %s WHERE object_id IN (%s) AND term_taxonomy_id IN (%s)",
-					esc_sql(sanitize_text_field($wpdb->term_relationships)),
+					"SELECT object_id, term_taxonomy_id FROM {$wpdb->term_relationships} WHERE object_id IN (%s) AND term_taxonomy_id IN (%s)",
 					implode( ',', array_fill( 0, count( $posts ), '%d' ) ),
 					implode( ',', array_fill( 0, count( $languages ), '%d' ) )
 				),

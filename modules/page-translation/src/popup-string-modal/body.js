@@ -680,7 +680,7 @@ const StringPopUpBody = (props) => {
                 // Use FilterTargetContent for pending translations with supported services
                 if (props.translatePendingStatus && !props.service.includes('_ai')) {
                     if (data.filteredString) {
-                        return <span dangerouslySetInnerHTML={{ __html: data.filteredString }} style={{ whiteSpace: 'pre-wrap' }}></span>;
+                        return <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.filteredString) }} style={{ whiteSpace: 'pre-wrap' }}></span>;
                     }
 
                     return <FilterTargetContent service={props.service} content={data.source || ''} contentKey={data.id} item={data} saveFilteredString={saveFilteredString} />;
