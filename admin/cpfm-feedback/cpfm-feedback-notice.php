@@ -8,37 +8,55 @@ class CPFM_Feedback_Notice {
     private static $registered_notices = [];
     
     public function __construct() {
+        
         add_action('admin_init', [ $this, 'cpfm_listen_for_external_notice_registration' ]);
         add_action('admin_enqueue_scripts', [ $this, 'cpfm_enqueue_assets' ]);
         add_action('wp_ajax_cpfm_handle_opt_in', [ $this, 'cpfm_handle_opt_in_choice' ]);
         add_action('admin_footer', [ $this, 'cpfm_render_notice_panel' ]);
+        
     }
     
     public static function cpfm_register_notice($key, $args) {
+        
         if (!current_user_can('manage_options')) {
+            
             return;
         }
         
+        if (!isset(self::$registered_notices[$key])) {
+            self::$registered_notices[$key] = wp_parse_args($args, [
+                'title'   => '',
+                'message' => '',
+                'pages'   => [],
+                'always_show_on' => [],
+            ]);
+        }
 
+        if(!isset(self::$registered_notices[$key]['plugins'])){
+            self::$registered_notices[$key]['plugins'] = array();
+        }
         
-        // Parse the args with defaults
-        $parsed_args = wp_parse_args($args, [
-            'title'   => '',
-            'message' => '',
-            'pages'   => [],
-            'always_show_on' => [],
-        ]);
-        
-        // Store the parsed notice
-        self::$registered_notices[$key] = $parsed_args;
+        self::$registered_notices[$key]['plugins'][] = $args;
     }
     
     public function cpfm_listen_for_external_notice_registration() {
+        
 
         if (!current_user_can('manage_options')) {
+
             return;
         }
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+
+        /**
+         * Allow other plugins to register notices dynamically.
+         * Example usage in other plugins:
+         * do_action('cpf_cpfm_register_notice', 'crypto', [
+         *     'title' => 'Crypto Plugin Notice',
+         *     'message' => 'This is a crypto dashboard setup notice.',
+         *     'pages' => ['dashboard', 'cpfm_'],
+         * ]);
+         */
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
         do_action('cpfm_register_notice');
     }
 
@@ -49,14 +67,14 @@ class CPFM_Feedback_Notice {
             return;
 
         }
-       
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for page identification
-       $current_page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
 
-        
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not required here
+        $current_page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+    
+        // Gather all unique pages from registered notices
         $allowed_pages = [];
         
-        foreach (self::$registered_notices as $key => $notice) {
+        foreach (self::$registered_notices as $notice) {
             if (!empty($notice['pages']) && is_array($notice['pages'])) {
                 $allowed_pages = array_merge($allowed_pages, $notice['pages']);
             }
@@ -99,24 +117,22 @@ class CPFM_Feedback_Notice {
     public function cpfm_handle_opt_in_choice() {
 
         if (!current_user_can('manage_options')) {
+
             wp_send_json_error('Unauthorized access.');
         }
 
         check_ajax_referer('dismiss_admin_notice', 'nonce');
 
-        $category   = isset($_POST['category']) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ): '';
-        $opt_in_raw = isset($_POST['opt_in']) ? sanitize_text_field( wp_unslash( $_POST['opt_in'] ) ) : '';
-        $opt_in = ($opt_in_raw === 'yes') ? 'yes' : 'no';
-        
-        $category_notices   = self::$registered_notices;
-        $registered_notices = isset($GLOBALS['cool_plugins_feedback'])? $GLOBALS['cool_plugins_feedback']:$category_notices;
+        $category           = isset($_POST['category']) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ): '';
+        $opt_in_raw         = isset($_POST['opt_in']) ? sanitize_text_field( wp_unslash( $_POST['opt_in'] ) ) : '';
+        $opt_in             = ($opt_in_raw === 'yes') ? 'yes' : 'no';
 
-        // Check both static array and global variable
-        $notice_exists = isset(self::$registered_notices[$category]);
-        $global_notice_exists = isset($GLOBALS['cool_plugins_feedback'][$category]);
-        
-        if (!$category || (!$notice_exists && !$global_notice_exists)) {
+        if (!$category || !isset(self::$registered_notices[$category])) {
             wp_send_json_error('Invalid notice category.');
+        }
+
+        if(!isset(self::$registered_notices[$category]['plugins'])){
+            wp_send_json_error('Invalid notice category plugins.');
         }
 
         update_option("cpfm_opt_in_choice_{$category}", $opt_in);
@@ -130,21 +146,23 @@ class CPFM_Feedback_Notice {
         $review_option = get_option("cpfm_opt_in_choice_{$category}");
 
         if ($review_option === 'yes') {
+            
+             foreach (self::$registered_notices[$category]['plugins'] as $notice) {
 
-            foreach ($registered_notices[$category] as $notice) {
-                   $plugin_name = isset($notice['plugin_name'])?sanitize_key($notice['plugin_name']):'';
-                   if($plugin_name){
-                    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-                       do_action('cpfm_after_opt_in_' . $plugin_name, $category);
-                   }
-             
-           }
-         
-       }
+                    $plugin_name = isset($notice['plugin_name'])?sanitize_key($notice['plugin_name']):'';
+
+                    if($plugin_name){
+
+                        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
+                        do_action('cpfm_after_opt_in_' . $plugin_name, $category);
+                    }
+              
+            }
+          
+        }
 
         wp_send_json_success();
     }
-
 
     public function cpfm_render_notice_panel() {
         
@@ -152,11 +170,9 @@ class CPFM_Feedback_Notice {
             return;
         }
 
-        $screen         = get_current_screen();
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for page identification
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not required here
         $current_page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
 
-       
         $unread_count   = 0;
         $auto_show      = false;
     
@@ -172,9 +188,8 @@ class CPFM_Feedback_Notice {
         $output .= '<div id="cpfNoticePanel" class="notice-panel"' . ($auto_show ? ' data-auto-show="true"' : '') . '>';
         $output .= '<div class="notice-panel-header">' . esc_html__('Help Improve Plugins', 'translate-words') . ' <span class="dashicons dashicons-no" id="cpfm_remove_notice"></span></div>';
         $output .= '<div class="notice-panel-content">';
-    
-        foreach (self::$registered_notices as $key => $notice) {
 
+        foreach (self::$registered_notices as $key => $notice) {
             $choice = get_option("cpfm_opt_in_choice_{$key}");
 
             if ($choice !== false) continue;
@@ -190,7 +205,7 @@ class CPFM_Feedback_Notice {
             }
     
             if (!$should_show) continue;
-            $unread_count++;
+            $unread_count++;  
     
             $output .= '<div class="notice-item unread" data-notice-id="' . esc_attr($key) . '">';
             $output .= '<strong>' . esc_html($notice['title']) . '</strong>';
@@ -220,7 +235,18 @@ class CPFM_Feedback_Notice {
         $output .= '</div>'; 
      
         if ($unread_count > 0) {
-            echo wp_kses_post($output);
+            $allowed = array(
+                'div' => array('id' => array(), 'class' => array(), 'data-auto-show' => array(), 'data-notice-id' => array()),
+                'span' => array('id' => array(), 'class' => array()),
+                'strong' => array(),
+                'p' => array(),
+                'a' => array('href' => array(), 'class' => array(), 'target' => array()),
+                'button' => array('class' => array(), 'data-category' => array(), 'id' => array(), 'value' => array()),
+                'ul' => array(),
+                'li' => array(), 'br' => array()
+            );
+            echo wp_kses($output, $allowed);
         }
     }
 }
+new CPFM_Feedback_Notice();
