@@ -64,7 +64,7 @@ else {
 		?>
 		<tr>
 			<th class = "lmat-language-column">
-				<span class = "lmat-translation-flag"><?php echo $language->flag ? wp_kses( $language->flag, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ), 'span' => array( 'class' => true ), 'abbr' => array() ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) : esc_html( $language->slug ); ?></span>
+				<span class = "lmat-translation-flag"><?php echo $language->get_admin_flag_kses(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<?php
 				printf(
 					'<span class="lmat-language-name%1$s">%2$s</span>',

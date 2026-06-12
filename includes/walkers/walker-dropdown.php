@@ -5,6 +5,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+use Linguator\Includes\Other\Linguator_Language;
+
 /**
  * @package Linguator
  */
@@ -91,28 +93,21 @@ class Linguator_Walker_Dropdown extends Linguator_Walker {
 			$current = wp_list_filter( $elements, array( $args['value'] => $args['selected'] ) );
 			$lang = reset( $current );
 			if ( $lang && is_object( $lang ) ) {
+				if ( $lang instanceof Linguator_Language ) {
+					$flag_html = $lang->get_admin_flag_kses( 'aria-hidden' );
+				} elseif ( empty( $lang->flag ) ) {
+					$flag_html = esc_html( $lang->slug );
+				} else {
+					$flag_html = wp_kses(
+						(string) $lang->flag,
+						Linguator_Language::get_admin_flag_allowed_html(),
+						array_merge( wp_allowed_protocols(), array( 'data' ) )
+					);
+				}
+
 				$output = sprintf(
 					'<span class="lmat-select-flag">%s</span>',
-					empty( $lang->flag )
-						? esc_html( $lang->slug )
-						: wp_kses(
-							(string) $lang->flag,
-							array(
-								'img' => array(
-									'src'      => true,
-									'alt'      => true,
-									'class'    => true,
-									'width'    => true,
-									'height'   => true,
-									'style'    => true,
-									'decoding' => true,
-									'loading'  => true,
-									'title'    => true,
-								),
-								'span' => array( 'class' => true, 'style' => true ),
-							),
-							array_merge( wp_allowed_protocols(), array( 'data' ) )
-						)
+					$flag_html
 				);
 			}
 		}

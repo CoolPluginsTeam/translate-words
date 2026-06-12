@@ -52,7 +52,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		}
 		?>
 		<tr>
-			<th class = "lmat-language-column"><?php echo $language->flag ? wp_kses( $language->flag, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ), 'span' => array( 'class' => true ), 'abbr' => array() ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) : esc_html( $language->slug ); ?></th>
+			<th class = "lmat-language-column"><?php echo $language->get_admin_flag_kses(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></th>
 			<td class = "hidden"><?php echo wp_kses_post( $add_link ); ?></td>
 			<td class = "lmat-edit-column lmat-column-icon"><?php echo wp_kses_post( $link ); ?></td>
 			<?php

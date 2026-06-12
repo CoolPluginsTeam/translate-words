@@ -92,7 +92,7 @@ class Linguator_Admin_Filters_Columns {
 		}
 
 		foreach ( $this->model->get_languages_list() as $language ) {
-			$columns[ 'language_' . $language->slug ] = $this->get_flag_html( $language ) . '<span class="screen-reader-text">' . esc_html( $language->name ) . '</span>';
+			$columns[ 'language_' . $language->slug ] = $language->get_admin_flag_kses();
 		}
 
 		return isset( $end ) ? array_merge( $columns, $end ) : $columns;
@@ -481,6 +481,6 @@ class Linguator_Admin_Filters_Columns {
 	 * @return string
 	 */
 	protected function get_flag_html( $language ) {
-		return $language->flag ?: sprintf( '<abbr>%s</abbr>', esc_html( $language->slug ) );
+		return $language->get_admin_flag_kses( 'aria-hidden' );
 	}
 }

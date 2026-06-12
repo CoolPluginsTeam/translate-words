@@ -39,13 +39,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     flag: non-empty-string,
  *     custom_flag_url?: string,
  *     custom_flag?: string,
- *     page_on_front: int<0, max>,
- *     page_for_posts: int<0, max>,
- *     active: bool,
+ *     page_on_front?: int<0, max>,
+ *     page_for_posts?: int<0, max>,
+ *     active?: bool,
  *     fallbacks?: array<non-empty-string>,
- *     is_default: bool
- * }
- */
+	 *     is_default: bool,
+	 *     admin_flag?: array{'aria-hidden': non-empty-string, '': non-empty-string}
+	 * }
+	 */
 class Linguator_Language {
 
 	/**
@@ -116,7 +117,7 @@ class Linguator_Language {
 	 *
 	 * @var string
 	 */
-	public $facebook = '';
+	public $facebook;
 
 	/**
 	 * Home URL in this language.
@@ -152,7 +153,7 @@ class Linguator_Language {
 	 *
 	 * @phpstan-var int<0, max>
 	 */
-	public $page_on_front = 0;
+	public $page_on_front;
 
 	/**
 	 * ID of the page for posts in this language (set from lmat_additional_language_data filter).
@@ -161,14 +162,13 @@ class Linguator_Language {
 	 *
 	 * @phpstan-var int<0, max>
 	 */
-	public $page_for_posts = 0;
+	public $page_for_posts;
 
 	/**
 	 * Code of the flag.
 	 *
 	 * @var string
 	 *
-	 * @phpstan-var non-empty-string
 	 */
 	public $flag_code;
 
@@ -176,8 +176,6 @@ class Linguator_Language {
 	 * URL of the flag. Always set to the main domain.
 	 *
 	 * @var string
-	 *
-	 * @phpstan-var non-empty-string
 	 */
 	public $flag_url;
 
@@ -185,8 +183,6 @@ class Linguator_Language {
 	 * HTML markup of the flag.
 	 *
 	 * @var string
-	 *
-	 * @phpstan-var non-empty-string
 	 */
 	public $flag;
 
@@ -195,21 +191,21 @@ class Linguator_Language {
 	 *
 	 * @var string
 	 */
-	public $custom_flag_url = '';
+	public $custom_flag_url;
 
 	/**
 	 * HTML markup of the custom flag if it exists.
 	 *
 	 * @var string
 	 */
-	public $custom_flag = '';
+	public $custom_flag;
 
 	/**
 	 * Whether or not the language is active. Default `true`.
 	 *
 	 * @var bool
 	 */
-	public $active = true;
+	public $active;
 
 	/**
 	 * List of WordPress language locales. Ex: array( 'en_GB' ).
@@ -218,7 +214,7 @@ class Linguator_Language {
 	 *
 	 * @phpstan-var list<non-empty-string>
 	 */
-	public $fallbacks = array();
+	public $fallbacks;
 
 	/**
 	 * Whether the language is the default one.
@@ -239,6 +235,18 @@ class Linguator_Language {
 	 *     &array<non-empty-string, LanguagePropData>
 	 */
 	protected $term_props;
+
+	/**
+	 * Admin flag variants for accessible markup.
+	 *
+	 * @var array
+	 *
+	 * @phpstan-var array{'aria-hidden': string, '': string}
+	 */
+	private $admin_flag = array(
+		'aria-hidden' => '',
+		''            => '',
+	);
 
 	/**
 	 * Constructor: builds a language object given the corresponding data.
@@ -269,16 +277,35 @@ class Linguator_Language {
 	 *     @type string   $custom_flag     Optional. HTML markup of the custom flag if it exists.
 	 *     @type int      $page_on_front   Optional. ID of the page on front in this language.
 	 *     @type int      $page_for_posts  Optional. ID of the page for posts in this language.
-	 *     @type bool     $active          Whether or not the language is active. Default `true`.
-	 *     @type string[] $fallbacks       List of WordPress language locales. Ex: array( 'en_GB' ).
+	 *     @type bool     $active          Optional. Whether or not the language is active. Default `true`.
+	 *     @type string[] $fallbacks       Optional. List of WordPress language locales. Ex: array( 'en_GB' ).
 	 *     @type bool     $is_default      Whether or not the language is the default one.
+	 *     @type array    $admin_flag      Optional. Admin flag variants keyed by mode.
 	 * }
 	 *
 	 * @phpstan-param LanguageData $language_data
 	 */
 	public function __construct( array $language_data ) {
-		foreach ( $language_data as $prop => $value ) {
+		$defaults = array(
+			'facebook'        => '',
+			'page_on_front'   => 0,
+			'page_for_posts'  => 0,
+			'custom_flag_url' => '',
+			'custom_flag'     => '',
+			'active'          => true,
+			'fallbacks'       => array(),
+			'admin_flag'      => array(
+				'aria-hidden' => '',
+				''            => '',
+			),
+		);
+
+		foreach ( array_merge( $defaults, $language_data ) as $prop => $value ) {
 			$this->$prop = $value;
+		}
+
+		if ( empty( $this->admin_flag[''] ) && empty( $this->admin_flag['aria-hidden'] ) ) {
+			$this->admin_flag = self::build_admin_flag( get_object_vars( $this ) );
 		}
 
 		$this->term_id = $this->term_props['lmat_language']['term_id'];
@@ -401,6 +428,14 @@ class Linguator_Language {
 			$flag['src'] = esc_url( set_url_scheme( $flag['url'], 'relative' ) );
 		}
 
+		if ( isset( $flag['width'] ) ) {
+			$flag['width'] = absint( $flag['width'] );
+		}
+
+		if ( isset( $flag['height'] ) ) {
+			$flag['height'] = absint( $flag['height'] );
+		}
+		
 		return $flag;
 	}
 
@@ -472,6 +507,108 @@ class Linguator_Language {
 					'title'    => true,
 				),
 			),
+			array_merge( wp_allowed_protocols(), array( 'data' ) )
+		);
+	}
+
+	/**
+	 * Builds admin flag variants from language data.
+	 *
+	 * @param array $data Language data.
+	 * @return array
+	 *
+	 * @phpstan-return array{'aria-hidden': string, '': string}
+	 */
+	public static function build_admin_flag( array $data ) {
+		$flag_html = ! empty( $data['custom_flag'] ) ? (string) $data['custom_flag'] : ( ! empty( $data['flag'] ) ? (string) $data['flag'] : '' );
+		$w3c       = isset( $data['w3c'] ) ? (string) $data['w3c'] : '';
+		$is_rtl    = ! empty( $data['is_rtl'] );
+		$slug      = isset( $data['slug'] ) ? (string) $data['slug'] : '';
+		$name      = isset( $data['name'] ) ? (string) $data['name'] : '';
+
+		if ( '' !== $flag_html ) {
+			return array(
+				'aria-hidden' => str_replace( '<img', '<img aria-hidden="true" tabindex="-1"', $flag_html ),
+				''            => str_replace(
+					'<img',
+					sprintf( '<img lang="%1$s" dir="%2$s"', esc_attr( $w3c ), $is_rtl ? 'rtl' : 'ltr' ),
+					$flag_html
+				),
+			);
+		}
+
+		return array(
+			'aria-hidden' => sprintf( '<abbr aria-hidden="true" tabindex="-1">%s</abbr>', esc_html( strtoupper( $slug ) ) ),
+			''            => sprintf(
+				'<abbr title="%1$s" lang="%2$s" dir="%3$s">%4$s</abbr>',
+				esc_attr( $name ),
+				esc_attr( $w3c ),
+				$is_rtl ? 'rtl' : 'ltr',
+				esc_html( strtoupper( $slug ) )
+			),
+		);
+	}
+
+	/**
+	 * Returns allowed HTML for admin flag markup.
+	 *
+	 * @return array
+	 */
+	public static function get_admin_flag_allowed_html() {
+		return array(
+			'img'  => array(
+				'src'         => true,
+				'alt'         => true,
+				'class'       => true,
+				'width'       => true,
+				'height'      => true,
+				'style'       => true,
+				'decoding'    => true,
+				'loading'     => true,
+				'title'       => true,
+				'aria-hidden' => true,
+				'tabindex'    => true,
+				'lang'        => true,
+				'dir'         => true,
+			),
+			'abbr' => array(
+				'title'       => true,
+				'lang'        => true,
+				'dir'         => true,
+				'aria-hidden' => true,
+				'tabindex'    => true,
+			),
+			'span' => array(
+				'class' => true,
+				'style' => true,
+			),
+		);
+	}
+
+	/**
+	 * Returns the language flag or the language slug if there is no flag.
+	 *
+	 * @param string $mode Optional. `aria-hidden` when the flag is decorative.
+	 * @return string
+	 *
+	 * @phpstan-param ''|'aria-hidden' $mode
+	 */
+	public function get_admin_flag( string $mode = '' ): string {
+		return $this->admin_flag[ $mode ] ?? '';
+	}
+
+	/**
+	 * Returns sanitized admin flag markup.
+	 *
+	 * @param string $mode Optional. `aria-hidden` when the flag is decorative.
+	 * @return string
+	 *
+	 * @phpstan-param ''|'aria-hidden' $mode
+	 */
+	public function get_admin_flag_kses( string $mode = '' ): string {
+		return wp_kses(
+			$this->get_admin_flag( $mode ),
+			self::get_admin_flag_allowed_html(),
 			array_merge( wp_allowed_protocols(), array( 'data' ) )
 		);
 	}
@@ -580,6 +717,7 @@ class Linguator_Language {
 	 */
 	public function to_array( $context = 'display' ) {
 		$language = get_object_vars( $this );
+		unset( $language['admin_flag'] );
 
 		if ( 'db' !== $context ) {
 			$language['home_url']   = $this->get_home_url();

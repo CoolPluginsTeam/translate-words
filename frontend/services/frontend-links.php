@@ -168,11 +168,18 @@ class Linguator_Frontend_Links extends Linguator_Links {
 				$keys = array( 'post_type', 'm', 'year', 'monthnum', 'day', 'author', 'author_name' );
 				$keys = array_merge( $keys, $this->model->get_filtered_taxonomies_query_vars() );
 				$args = array_intersect_key( $qv, array_flip( $keys ) );
-				$count = $this->model->count_posts( $language, $args );
 
-				/** This filter is documented in frontend/frontend-links.php */
-				if ( ! apply_filters( 'lmat_hide_archive_translation_url', ! $count, $language->slug, $args ) ) {
+				// Author archives are not post translations: keep the same author URL in each language
+				// even when the author has no posts in that language (otherwise the switcher falls back to home).
+				if ( is_author() ) {
 					$url = $this->linguator_get_archive_url( $language );
+				} else {
+					$count = $this->model->count_posts( $language, $args );
+
+					/** This filter is documented in frontend/frontend-links.php */
+					if ( ! apply_filters( 'lmat_hide_archive_translation_url', ! $count, $language->slug, $args ) ) {
+						$url = $this->linguator_get_archive_url( $language );
+					}
 				}
 			}
 

@@ -271,7 +271,6 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		 * 3 => true if loaded in footer
 		 */
 		$scripts = array(
-			'user'    => array( array( 'profile', 'user-edit' ), array( 'jquery' ), false, false ),
 			'widgets' => array( array( 'widgets' ), array( 'jquery' ), false, false ),
 		);
 
@@ -629,14 +628,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		$wp_admin_bar->add_menu(
 			array(
 				'id'    => 'languages',
-				'title' => wp_kses(
-					(string) $selected->flag,
-					array(
-						'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
-						'span' => array( 'class' => true, 'style' => true ),
-					),
-					array_merge( wp_allowed_protocols(), array( 'data' ) )
-				) . $title,
+				'title' => ( $selected instanceof Linguator_Language ? $selected->get_admin_flag_kses( 'aria-hidden' ) : wp_kses( (string) $selected->flag, Linguator_Language::get_admin_flag_allowed_html(), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) ) . $title,
 				'href'  => esc_url(
 					wp_nonce_url(
 						add_query_arg( 'lang', $selected->slug, remove_query_arg( 'paged' ) ),
@@ -660,7 +652,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 				array(
 					'parent' => 'languages',
 					'id'     => $lang->slug,
-					'title'  => wp_kses( $lang->flag, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ) ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) . esc_html( $lang->name ),
+					'title'  => sprintf( '%s %s', $lang->get_admin_flag_kses( 'aria-hidden' ), esc_html( $lang->name ) ),
 					'href'   => esc_url(
 						wp_nonce_url(
 							add_query_arg( 'lang', $lang->slug, remove_query_arg( 'paged' ) ),

@@ -148,16 +148,7 @@ class Linguator_Admin_Menu_Sync {
 			'name'            => $english_name,
 			'native_name'     => $native_name,
 			'locale'          => isset( $lang->locale ) ? $lang->locale : $lang->slug,
-			'flag'            => isset( $lang->flag )
-				? wp_kses(
-					(string) $lang->flag,
-					array(
-						'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
-						'span' => array( 'class' => true, 'style' => true ),
-					),
-					array_merge( wp_allowed_protocols(), array( 'data' ) )
-				)
-				: '',
+			'flag'            => $lang->get_admin_flag_kses( 'aria-hidden' ),
 			'has_synced_menu' => false,
 		);
 		}

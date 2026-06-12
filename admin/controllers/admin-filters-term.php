@@ -599,16 +599,7 @@ class Linguator_Admin_Filters_Term {
 		$x->Add(
 			array(
 				'what' => 'flag',
-				'data' => empty( $lang->flag )
-					? esc_html( $lang->slug )
-					: wp_kses(
-						(string) $lang->flag,
-						array(
-							'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
-							'span' => array( 'class' => true, 'style' => true ),
-						),
-						array_merge( wp_allowed_protocols(), array( 'data' ) )
-					),
+				'data' => $lang->get_admin_flag_kses( 'aria-hidden' ),
 			)
 		);
 

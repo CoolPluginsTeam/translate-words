@@ -184,6 +184,8 @@ class Linguator_Language_Factory {
 			unset( $data['fallbacks'] );
 		}
 
+		$data['admin_flag'] = Linguator_Language::build_admin_flag( $data );
+
 		/**
 		 * @var LanguageData
 		 */
