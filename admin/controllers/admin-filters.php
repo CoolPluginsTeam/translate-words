@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Filters\Linguator_Filters;
+use Linguator\Includes\Other\Linguator_Language;
 
 
 
@@ -32,7 +33,7 @@ class Linguator_Admin_Filters extends Linguator_Filters {
 		// Language management for users
 		add_action( 'personal_options_update', array( $this, 'linguator_personal_options_update' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'linguator_personal_options_update' ) );
-		add_action( 'personal_options', array( $this, 'linguator_personal_options' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_user_profile_scripts' ) );
 
 		// Upgrades plugins and themes translations files
 		add_filter( 'themes_update_check_locales', array( $this, 'linguator_update_check_locales' ) );
@@ -67,25 +68,62 @@ class Linguator_Admin_Filters extends Linguator_Filters {
 	}
 
 	/**
-	 * Outputs hidden information to modify the biography form with js.
+	 * Enqueues scripts for multilingual user biography fields on profile screens.
 	 *
-	 *  
-	 *
-	 * @param WP_User $profileuser The current WP_User object.
+	 * @param string $hook_suffix The current admin page hook suffix.
 	 * @return void
 	 */
-	public function linguator_personal_options( $profileuser ) {
+	public function linguator_enqueue_user_profile_scripts( $hook_suffix ) {
+		if ( ! in_array( $hook_suffix, array( 'profile.php', 'user-edit.php' ), true ) ) {
+			return;
+		}
+
+		if ( ! $this->model->has_languages() ) {
+			return;
+		}
+
+		$user_id = 'profile.php' === $hook_suffix ? get_current_user_id() : ( isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Core admin screen context.
+
+		if ( ! $user_id ) {
+			return;
+		}
+
+		$profileuser = get_userdata( $user_id );
+		if ( ! $profileuser instanceof \WP_User ) {
+			return;
+		}
+
+		$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+		$data   = array();
+
+		wp_enqueue_script(
+			'lmat_user',
+			plugins_url( "admin/assets/js/build/user{$suffix}.js", LINGUATOR_ROOT_FILE ),
+			array(),
+			LINGUATOR_VERSION,
+			true
+		);
+
 		foreach ( $this->model->get_languages_list() as $lang ) {
 			$meta        = $lang->is_default ? 'description' : 'description_' . $lang->slug;
 			$description = get_user_meta( $profileuser->ID, $meta, true );
+			$description = is_string( $description ) ? $description : '';
 
-			printf(
-				'<input type="hidden" class="biography" name="%s___%s" value="%s" />',
-				esc_attr( $lang->slug ),
-				esc_attr( $lang->name ),
-				sanitize_user_field( 'description', $description, $profileuser->ID, 'edit' )
+			$data[] = array(
+				'slug'        => $lang->slug,
+				'name'        => $lang->name,
+				'lang'        => $lang->get_locale( 'display' ),
+				'direction'   => $lang->is_rtl ? 'rtl' : 'ltr',
+				'flag'        => Linguator_Language::get_flag_information( $lang->flag_code ),
+				'description' => sanitize_user_field( 'description', $description, $profileuser->ID, 'edit' ),
 			);
 		}
+
+		wp_add_inline_script(
+			'lmat_user',
+			'const linguatorDescriptionData = ' . wp_json_encode( $data ) . ';',
+			'before'
+		);
 	}
 
 	/**
