@@ -117,8 +117,8 @@ class CPFM_Feedback_Notice {
     public function cpfm_handle_opt_in_choice() {
 
         if (!current_user_can('manage_options')) {
-
             wp_send_json_error('Unauthorized access.');
+            return;
         }
 
         check_ajax_referer('dismiss_admin_notice', 'nonce');
@@ -129,10 +129,12 @@ class CPFM_Feedback_Notice {
 
         if (!$category || !isset(self::$registered_notices[$category])) {
             wp_send_json_error('Invalid notice category.');
+            return;
         }
 
         if(!isset(self::$registered_notices[$category]['plugins'])){
             wp_send_json_error('Invalid notice category plugins.');
+            return;
         }
 
         update_option("cpfm_opt_in_choice_{$category}", $opt_in);
@@ -147,15 +149,15 @@ class CPFM_Feedback_Notice {
 
         if ($review_option === 'yes') {
             
-             foreach (self::$registered_notices[$category]['plugins'] as $notice) {
+            foreach (self::$registered_notices[$category]['plugins'] as $notice) {
 
-                    $plugin_name = isset($notice['plugin_name'])?sanitize_key($notice['plugin_name']):'';
+                $plugin_name = isset($notice['plugin_name'])?sanitize_key($notice['plugin_name']):'';
 
-                    if($plugin_name){
+                if($plugin_name){
 
-                        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
-                        do_action('cpfm_after_opt_in_' . $plugin_name, $category);
-                    }
+                    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
+                    do_action('cpfm_after_opt_in_' . $plugin_name, $category);
+                }
               
             }
           
@@ -205,7 +207,7 @@ class CPFM_Feedback_Notice {
             }
     
             if (!$should_show) continue;
-            $unread_count++;  
+            $unread_count++;
     
             $output .= '<div class="notice-item unread" data-notice-id="' . esc_attr($key) . '">';
             $output .= '<strong>' . esc_html($notice['title']) . '</strong>';
@@ -240,7 +242,7 @@ class CPFM_Feedback_Notice {
                 'span' => array('id' => array(), 'class' => array()),
                 'strong' => array(),
                 'p' => array(),
-                'a' => array('href' => array(), 'class' => array(), 'target' => array()),
+                'a' => array('href' => array(), 'class' => array(), 'target' => array(), 'rel' => array()),
                 'button' => array('class' => array(), 'data-category' => array(), 'id' => array(), 'value' => array()),
                 'ul' => array(),
                 'li' => array(), 'br' => array()
