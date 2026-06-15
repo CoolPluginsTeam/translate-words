@@ -266,4 +266,3 @@ class CPFM_Feedback_Notice {
         }
     }
 }
-new CPFM_Feedback_Notice();
