@@ -17,11 +17,26 @@ class CPFM_Feedback_Notice {
     }
     
     public static function cpfm_register_notice($key, $args) {
-        
-        if (!current_user_can('manage_options')) {
-            
+        $key = sanitize_key((string) $key);
+
+        if ('' === $key || !current_user_can('manage_options')) {
             return;
         }
+
+        $args = is_array($args) ? $args : array();
+        $args = wp_parse_args($args, [
+            'title'          => '',
+            'message'        => '',
+            'pages'          => [],
+            'always_show_on' => [],
+            'plugin_name'    => '',
+        ]);
+
+        $args['title']          = sanitize_text_field($args['title']);
+        $args['message']        = wp_kses_post($args['message']);
+        $args['pages']          = array_values(array_filter(array_map('sanitize_key', (array) $args['pages'])));
+        $args['always_show_on'] = array_values(array_filter(array_map('sanitize_key', (array) $args['always_show_on'])));
+        $args['plugin_name']    = sanitize_key($args['plugin_name']);
         
         if (!isset(self::$registered_notices[$key])) {
             self::$registered_notices[$key] = wp_parse_args($args, [
