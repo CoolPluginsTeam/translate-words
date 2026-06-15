@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 7.2
-Stable tag: 2.1.7
+Stable tag: 2.1.8
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -194,6 +194,9 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 > **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
 > The current functionality will remain available until **6 months**.
 > If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.1.8 | 15 June 2026 =
+* Improved: User Opt-in code improvements
 
 = Version 2.1.7 | 04 June 2026 =
 * Improved: Code Improvements & Optimization
