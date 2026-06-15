@@ -64,7 +64,7 @@ class Api_Keys extends Abstract_Option {
 
 	/**
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
-	 * connectors_ai_google_api_key	.
+	 * connectors_ai_google_api_key.
 	 *
 	 * @return array{gemini_model:string}
 	 */
@@ -169,7 +169,7 @@ class Api_Keys extends Abstract_Option {
 			'gemini' => array(),
 		);
 
-		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key	', '' ) );
+		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
 		if ( '' === $gemini_key ) {
 			return $result;
 		}
