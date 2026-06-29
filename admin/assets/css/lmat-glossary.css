@@ -180,6 +180,7 @@
   .lmat-glossary-modal-content label {
     display: block;
     font-weight: 500;
+    margin-top: 16px;
   }
   
   .lmat-glossary-modal-content textarea,
@@ -192,10 +193,6 @@
     font-size: 14px;
     font-family: inherit;
     resize: vertical;
-  }
-
-  .lmat-glossary-modal-content label {
-    margin-top: 16px;
   }
   
   .lmat-glossary-modal-actions .lmat-glossary-modal-actions-left {

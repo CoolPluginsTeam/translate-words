@@ -72,23 +72,6 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const text = event.target.result;
-            const lines = text.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-
-            const data = lines.slice(1).map(line => {
-                const values = line.split(',').map(v => v.trim());
-                const obj = {};
-                headers.forEach((header, i) => {
-                    obj[header] = values[i] || '';
-                });
-                return obj;
-            });
-        };
-        reader.readAsText(file);
-
         // If valid file:
         $('#file-name-display').text(file.name);
         $('#importing-file-name').text(file.name);
