@@ -25,10 +25,12 @@ window.addEventListener('load', function() {
     }
 
     const localizationMenu=document.querySelector('.wp-submenu li a[href$="page=lmat_settings&tab=general&loco=true"]');
-    localizationMenu.addEventListener('click', function(e) {
-        e.preventDefault();
-        locoRedirectCallback();
-    });
+    if(localizationMenu){
+        localizationMenu.addEventListener('click', function(e) {
+            e.preventDefault();
+            locoRedirectCallback();
+        });
+    }
 
     if(!locoDemo || locoDemo !== 'true'){
         return

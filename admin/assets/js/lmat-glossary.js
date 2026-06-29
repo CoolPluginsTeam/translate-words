@@ -28,6 +28,8 @@ jQuery(document).ready(function($) {
     const $addGlossaryForm = $('#lmat-add-glossary-form');
     const $addBtn = $('.lmat-add-btn');
     const $importBtn = $('.lmat-import-btn');
+    let $noResults = $('#lmat-no-results');
+    const $addGlossarySuccess = $('#add-glossary-success');
 
     // Open modal
     $addBtn.on('click', function() {
@@ -54,7 +56,7 @@ jQuery(document).ready(function($) {
         }
         modal.addClass('lmat-hidden').removeClass('active');
         modal.find('form').show();
-        modal.find('#add-glossary-success').addClass('lmat-hidden');
+        $addGlossarySuccess.addClass('lmat-hidden');
 
         $('body').removeClass('lmat-modal-open');
         resetImportModalUI();
@@ -425,12 +427,14 @@ jQuery(document).ready(function($) {
         var $visibleRows = $table.find('tbody tr:visible');
         if ($visibleRows.length === 0) {
             $tableWrapper.hide();
-            if ($('#lmat-no-results').length === 0) {
+            if (!$noResults.length) {
                 $tableWrapper.after('<div id="lmat-no-results" style="text-align:center; margin: 32px 0; color: #888; font-size: 1.2em;">No glossary entries found.</div>');
+                $noResults = $('#lmat-no-results');
             }
         } else {
             $tableWrapper.show();
-            $('#lmat-no-results').remove();
+            $noResults.remove();
+            $noResults = $();
         }
         applyZebraStriping();
     }
@@ -464,7 +468,8 @@ jQuery(document).ready(function($) {
     // Language Filter Buttons
     $(document).off('click', '.lmat-lang-filter-btn').on('click', '.lmat-lang-filter-btn', function() {
         $('.lmat-glossary-table-wrapper').show();
-        $('#lmat-no-results').remove();
+        $noResults.remove();
+        $noResults = $();
         // Reset alphabet filter
         $('.lmat-alphabet-btn').removeClass('active');
 
@@ -837,7 +842,7 @@ jQuery(document).ready(function($) {
                 if (resp.data && resp.data.added_entry) {
                 $form.hide();
                 $('.lmat-glossary-modal-content h2').hide();
-                $('#add-glossary-success').removeClass('lmat-hidden');
+                $addGlossarySuccess.removeClass('lmat-hidden');
 
                 // Use the data returned from the server
                 const addedEntry = resp.data.added_entry;
@@ -1139,7 +1144,8 @@ jQuery(document).ready(function($) {
                 // Update the UI (show table, remove no-results, apply zebra striping, etc.)
                 $('.lmat-glossary-table').show();
                 $('.lmat-glossary-table-wrapper').show();
-                $('#lmat-no-results').remove();
+                $noResults.remove();
+                $noResults = $();
                 updateGlossaryTableVisibility();
                 applyZebraStriping();
 
@@ -1202,7 +1208,7 @@ jQuery(document).ready(function($) {
                     // Fallback: Success but no server data - use original method with request data
                     console.warn('Success but no server data returned, using fallback method');
                     $form.hide();
-                    $('#add-glossary-success').removeClass('lmat-hidden');
+                    $addGlossarySuccess.removeClass('lmat-hidden');
                     // Could add fallback logic here if needed, or just show success
                 }
             } else {
@@ -1239,10 +1245,10 @@ jQuery(document).ready(function($) {
     }
 
     // Add close button handler for success message
-    $('#add-glossary-success').on('click', '#lmat-glossary-success-close', function() {
+    $addGlossarySuccess.on('click', '#lmat-glossary-success-close', function() {
         $('#lmat-glossary-modal-add').addClass('lmat-hidden').removeClass('active');
         $('#lmat-glossary-modal-add').find('form').show();
-        $('#add-glossary-success').addClass('lmat-hidden');
+        $addGlossarySuccess.addClass('lmat-hidden');
     });
 
     // --- GLOSSARY SEARCH FUNCTIONALITY ---
@@ -1260,10 +1266,12 @@ jQuery(document).ready(function($) {
 
         if (search !== '') {
             $('.lmat-glossary-table-wrapper').show();
-            $('#lmat-no-results').remove();
+            $noResults.remove();
+            $noResults = $();
         }else{
             $('.lmat-glossary-table-wrapper').show();
-            $('#lmat-no-results').remove();
+            $noResults.remove();
+            $noResults = $();
         }
         applyZebraStriping();
         filterGlossaryRows();
@@ -1276,7 +1284,8 @@ jQuery(document).ready(function($) {
         var selectedType = $(this).val();   
         if (selectedType) {
             $('.lmat-glossary-table-wrapper').show();
-            $('#lmat-no-results').remove();
+            $noResults.remove();
+            $noResults = $();
         }
         filterGlossaryRows();
         applyZebraStriping();

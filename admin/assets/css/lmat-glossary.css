@@ -400,6 +400,8 @@
     font-size: 13px;
     border-radius: 4px;
     text-decoration: none;
+    position: relative;
+    z-index: 3;
 }
 
 .lmat-edit-btn:hover {
@@ -415,6 +417,8 @@
     font-size: 13px;
     text-decoration: none;
     border-radius: 4px;
+    position: relative;
+    z-index: 3;
 }
 
 .lmat-delete-btn:hover {
@@ -824,8 +828,10 @@
     padding: 8px 8px;
     z-index: 2;
     display: flex;
-    gap: 25px;
+    gap: 32px;
     justify-content: center;
+    align-items: center;
+    height: 100%;
     min-width: 100px;
 }
 
@@ -853,39 +859,23 @@
     width: 10px;
 }
 
-.lmat-edit-btn,
-.lmat-delete-btn {
-    position: relative;
-    z-index: 3;
-}
-
-.lmat-actions-cell {
-  position: sticky;
-  right: 0;
-  background: #fff;
-  z-index: 10;
-  min-width: 120px;
-  padding: 0;
-}
-.lmat-action-buttons {
-  display: flex;
-  gap: 32px;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 8px 8px;
-  background: transparent;
-}
-
 /* Sticky Actions header and cell */
 .lmat-glossary-table th.lmat-actions-cell,
 .lmat-glossary-table td.lmat-actions-cell {
     position: sticky;
     right: 0;
-    background: #fff;
     z-index: 20;
     min-width: 120px;
     box-shadow: -2px 0 4px -2px rgba(0,0,0,0.04);
+}
+
+.lmat-glossary-table th.lmat-actions-cell {
+    background: #fff;
+}
+
+.lmat-glossary-table td.lmat-actions-cell {
+    background: #fff !important;
+    padding: 0;
 }
 
 .lmat-glossary-table thead tr:nth-child(2) th:last-child {
@@ -895,11 +885,6 @@
     z-index: 19;
     min-width: 120px;
     box-shadow: -2px 0 4px -2px rgba(0,0,0,0.04);
-}
-
-/* Sticky actions cell matches row background */
-.lmat-glossary-table td.lmat-actions-cell {
-    background: #fff !important;
 }
 
 /* .lmat-add-translation, */
@@ -949,10 +934,6 @@
     background: #f7f7f7 !important;
 }
 
-/* Sticky actions cell matches row background */
-.lmat-glossary-table td.lmat-actions-cell {
-    background: #fff !important;
-}
 .lmat-glossary-table tbody tr.lmat-row-striped td.lmat-actions-cell {
     background: #f7f7f7 !important;
 }

@@ -451,166 +451,221 @@ class Linguator_WPBakery {
 			return $content;
 		}
 
-		// Text-based parameter types that should be translated
-		$translatable_param_types = [
-			'textfield',
-			'textarea',
-			'textarea_html',
-			'textarea_raw_html',
-			'textarea_safe',
-			'textfield_html',
-		];
-		
-		// Parameter types that might contain translatable content but need special handling
-		$json_param_types = [
-			'param_group',
-			'textarea_raw_html',
-		];
-		
-		// Attributes that contain JSON data with translatable nested properties
-		// Format: attribute_name => array of json keys to translate
-		$json_attributes = [
-			'values' => [ 'label', 'title', 'text' ], // For vc_progress_bar, pie charts, etc.
-		];
-		
-		// Attributes that should never be translated (colors, CSS, IDs, etc.)
-		$skip_attributes = [
-			'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color',
-			'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container',
-			'google_fonts', 'css_animation', 'el_class', 'el_id', 'css_id', 'css_class',
-			'url', 'link', 'href', 'src', 'source', 'background_image', 'bg_image',
-			'icon', 'icon_type', 'icon_fontawesome', 'icon_openiconic', 'icon_typicons',
-			'icon_entypo', 'icon_linecons', 'icon_monosocial', 'icon_material',
-		];
-		
-		// Attributes that contain IDs or references that should be protected
-		$protected_attributes = [
-			'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id',
-			'taxonomy', 'term_id', 'el_id', 'attachment_id', 'media_id', 'page_id',
-		];
+		$config = self::linguator_get_expose_attributes_config();
 
-		// Match shortcodes and their attributes 
 		$content = preg_replace_callback(
 			'/(\[(vc_[\w-]+))([^\]]*)(\])/s',
-			function( $matches ) use ( $translatable_param_types, $json_param_types, $json_attributes, $protected_attributes, $skip_attributes ) {
-				$tag_start = $matches[1];
-				$shortcode_tag = $matches[2]; // Full shortcode tag (e.g., vc_column_text)
-				$attributes_str = $matches[3];
-				$tag_end = $matches[4];
-				$append_content = '';
-
-				// Get shortcode definition from WPBakery API
-				$shortcode_def = self::linguator_get_wpbakery_shortcode_definition( $shortcode_tag );
-				$dynamic_translatable_attrs = [];
-				
-				if ( $shortcode_def && ! empty( $shortcode_def['params'] ) ) {
-					// Extract translatable attributes from WPBakery API
-					foreach ( $shortcode_def['params'] as $param ) {
-						if ( ! empty( $param['param_name'] ) && ! empty( $param['type'] ) ) {
-							$param_name = $param['param_name'];
-							$param_type = $param['type'];
-							
-							// Check if this parameter type is translatable
-							if ( in_array( $param_type, $translatable_param_types, true ) ) {
-								$dynamic_translatable_attrs[] = $param_name;
-							}
-							
-							// Check for JSON-based parameters
-							if ( in_array( $param_type, $json_param_types, true ) && isset( $json_attributes[ $param_name ] ) ) {
-								// Already handled in $json_attributes
-							}
-						}
-					}
-				}
-
-				// Find attributes in the string - using /s modifier to handle multiline values
-				$attributes_str = preg_replace_callback(
-					'/([\w-]+)=(["\'])((?:(?!\2).)*)\2/s',
-					function( $attr_matches ) use ( $dynamic_translatable_attrs, $json_attributes, $protected_attributes, $skip_attributes, &$append_content ) {
-						$attr_name = $attr_matches[1];
-						$attr_quote = $attr_matches[2];
-						$attr_val = $attr_matches[3];
-
-						// Skip attributes that should never be translated (colors, CSS, etc.)
-						if ( in_array( $attr_name, $skip_attributes, true ) ) {
-							return $attr_matches[0];
-						}
-
-						// Handle JSON-encoded attributes (e.g., values in vc_progress_bar)
-						if ( isset( $json_attributes[ $attr_name ] ) && ! empty( $attr_val ) ) {
-							$processed_json = self::linguator_process_json_attribute( $attr_val, $json_attributes[ $attr_name ], $append_content );
-							if ( $processed_json !== $attr_val ) {
-								// JSON was processed and tokens were added to append_content
-								return $attr_name . '=' . $attr_quote . $processed_json . $attr_quote;
-							}
-						}
-
-						// Check if attribute is translatable (from WPBakery API or heuristics)
-						$is_translatable = false;
-						
-						if ( in_array( $attr_name, $dynamic_translatable_attrs, true ) ) {
-							// Found in WPBakery API definition
-							$is_translatable = true;
-						} else {
-							// Fallback: Use heuristics to detect translatable attributes
-							$is_translatable = self::linguator_is_attribute_translatable_by_heuristics( $attr_name, $attr_val );
-						}
-
-						if ( $is_translatable && ! empty( $attr_val ) ) {
-							// Skip if already tokenized
-							if ( strpos( $attr_val, '___LMAT_' ) === 0 ) {
-								return $attr_matches[0];
-							}
-							
-							// Skip if value looks like a color code or CSS
-							if ( preg_match( '/^#[0-9a-fA-F]{3,6}$/', $attr_val ) || 
-							     preg_match( '/^%23[0-9a-fA-F]{3,6}$/', $attr_val ) ||
-							     strpos( $attr_val, 'vc_custom_' ) === 0 ) {
-								return $attr_matches[0];
-							}
-							
-							// Clean data-start and data-end attributes before exposing for translation
-							$cleaned_attr_val = self::linguator_clean_data_attributes( $attr_val );
-							
-							// Generate a unique token for this attribute
-							$token = '___LMAT_' . md5( $attr_name . $attr_val . wp_rand() ) . '___';
-							
-							// Create the value tag with the ID using cleaned value
-							$append_content .= ' [lmat_val id="' . $token . '"]' . $cleaned_attr_val . '[/lmat_val]';
-							
-							// Replace the attribute value with the token
-							return $attr_name . '=' . $attr_quote . $token . $attr_quote;
-						}
-						
-						// Protect ID-based attributes by encoding them in a token
-						if ( in_array( $attr_name, $protected_attributes, true ) && ! empty( $attr_val ) ) {
-							// Skip if already protected
-							if ( strpos( $attr_val, '___LMAT_PROTECTED_' ) === 0 ) {
-								return $attr_matches[0];
-							}
-							
-							// Encode the value in base64 so we can decode it later
-							// Format: ___LMAT_PROTECTED_{base64}___
-							$protected_token = '___LMAT_PROTECTED_' . base64_encode( $attr_val ) . '___';
-							return $attr_name . '=' . $attr_quote . $protected_token . $attr_quote;
-						}
-						
-						return $attr_matches[0];
-					},
-					$attributes_str
-				);
-
-				return $tag_start . $attributes_str . $tag_end . $append_content;
+			function ( $matches ) use ( $config ) {
+				return self::linguator_process_wpbakery_shortcode_for_translation( $matches, $config );
 			},
 			$content
 		);
-		
-		// Also handle content between shortcode tags (e.g., [vc_column_text]content[/vc_column_text])
-		$content = self::linguator_expose_shortcode_content( $content );
 
-		return $content;
+		return self::linguator_expose_shortcode_content( $content );
 	}
-	
+
+	/**
+	 * Returns attribute-mapping configuration for exposing WPBakery shortcode values.
+	 *
+	 * @since 1.0.5
+	 * @access private
+	 * @static
+	 *
+	 * @return array
+	 */
+	private static function linguator_get_expose_attributes_config() {
+		return array(
+			'translatable_param_types' => array(
+				'textfield',
+				'textarea',
+				'textarea_html',
+				'textarea_raw_html',
+				'textarea_safe',
+				'textfield_html',
+			),
+			'json_param_types'         => array(
+				'param_group',
+				'textarea_raw_html',
+			),
+			'json_attributes'          => array(
+				'values' => array( 'label', 'title', 'text' ),
+			),
+			'skip_attributes'          => array(
+				'css', 'color', 'custom_background', 'custom_text', 'outline_custom_color',
+				'outline_custom_hover_background', 'outline_custom_hover_text', 'font_container',
+				'google_fonts', 'css_animation', 'el_class', 'el_id', 'css_id', 'css_class',
+				'url', 'link', 'href', 'src', 'source', 'background_image', 'bg_image',
+				'icon', 'icon_type', 'icon_fontawesome', 'icon_openiconic', 'icon_typicons',
+				'icon_entypo', 'icon_linecons', 'icon_monosocial', 'icon_material',
+			),
+			'protected_attributes'     => array(
+				'image', 'img_size', 'img_id', 'video_id', 'gallery', 'images', 'post_id',
+				'taxonomy', 'term_id', 'el_id', 'attachment_id', 'media_id', 'page_id',
+			),
+		);
+	}
+
+	/**
+	 * Reads translatable attribute names from a WPBakery shortcode definition.
+	 *
+	 * @since 1.0.5
+	 * @access private
+	 * @static
+	 *
+	 * @param string $shortcode_tag Shortcode tag (e.g. vc_column_text).
+	 * @param array  $config        Attribute mapping configuration.
+	 * @return string[]
+	 */
+	private static function linguator_get_translatable_attrs_for_shortcode( $shortcode_tag, $config ) {
+		$dynamic_translatable_attrs = array();
+		$shortcode_def              = self::linguator_get_wpbakery_shortcode_definition( $shortcode_tag );
+
+		if ( ! $shortcode_def || empty( $shortcode_def['params'] ) ) {
+			return $dynamic_translatable_attrs;
+		}
+
+		foreach ( $shortcode_def['params'] as $param ) {
+			if ( empty( $param['param_name'] ) || empty( $param['type'] ) ) {
+				continue;
+			}
+
+			$param_name = $param['param_name'];
+			$param_type = $param['type'];
+
+			if ( in_array( $param_type, $config['translatable_param_types'], true ) ) {
+				$dynamic_translatable_attrs[] = $param_name;
+			}
+		}
+
+		return $dynamic_translatable_attrs;
+	}
+
+	/**
+	 * Processes a single WPBakery shortcode match and exposes translatable attributes.
+	 *
+	 * @since 1.0.5
+	 * @access private
+	 * @static
+	 *
+	 * @param array $matches Shortcode regex match groups.
+	 * @param array $config  Attribute mapping configuration.
+	 * @return string
+	 */
+	private static function linguator_process_wpbakery_shortcode_for_translation( $matches, $config ) {
+		$tag_start      = $matches[1];
+		$shortcode_tag  = $matches[2];
+		$attributes_str = $matches[3];
+		$tag_end        = $matches[4];
+		$append_content = '';
+
+		$dynamic_translatable_attrs = self::linguator_get_translatable_attrs_for_shortcode( $shortcode_tag, $config );
+		$attributes_str             = self::linguator_process_shortcode_attributes_string(
+			$attributes_str,
+			$dynamic_translatable_attrs,
+			$config,
+			$append_content
+		);
+
+		return $tag_start . $attributes_str . $tag_end . $append_content;
+	}
+
+	/**
+	 * Replaces translatable attribute values inside a shortcode attribute string.
+	 *
+	 * @since 1.0.5
+	 * @access private
+	 * @static
+	 *
+	 * @param string $attributes_str             Shortcode attribute string.
+	 * @param array  $dynamic_translatable_attrs Attribute names from the shortcode definition.
+	 * @param array  $config                     Attribute mapping configuration.
+	 * @param string $append_content             Appended lmat_val tags for exposed values.
+	 * @return string
+	 */
+	private static function linguator_process_shortcode_attributes_string( $attributes_str, $dynamic_translatable_attrs, $config, &$append_content ) {
+		return preg_replace_callback(
+			'/([\w-]+)=(["\'])((?:(?!\2).)*)\2/s',
+			function ( $attr_matches ) use ( $dynamic_translatable_attrs, $config, &$append_content ) {
+				return self::linguator_process_shortcode_attribute(
+					$attr_matches,
+					$dynamic_translatable_attrs,
+					$config,
+					$append_content
+				);
+			},
+			$attributes_str
+		);
+	}
+
+	/**
+	 * Processes one shortcode attribute and tokenizes translatable or protected values.
+	 *
+	 * @since 1.0.5
+	 * @access private
+	 * @static
+	 *
+	 * @param array  $attr_matches               Attribute regex match groups.
+	 * @param array  $dynamic_translatable_attrs Attribute names from the shortcode definition.
+	 * @param array  $config                     Attribute mapping configuration.
+	 * @param string $append_content             Appended lmat_val tags for exposed values.
+	 * @return string
+	 */
+	private static function linguator_process_shortcode_attribute( $attr_matches, $dynamic_translatable_attrs, $config, &$append_content ) {
+		$attr_name  = $attr_matches[1];
+		$attr_quote = $attr_matches[2];
+		$attr_val   = $attr_matches[3];
+
+		if ( in_array( $attr_name, $config['skip_attributes'], true ) ) {
+			return $attr_matches[0];
+		}
+
+		if ( isset( $config['json_attributes'][ $attr_name ] ) && ! empty( $attr_val ) ) {
+			$processed_json = self::linguator_process_json_attribute(
+				$attr_val,
+				$config['json_attributes'][ $attr_name ],
+				$append_content
+			);
+
+			if ( $processed_json !== $attr_val ) {
+				return $attr_name . '=' . $attr_quote . $processed_json . $attr_quote;
+			}
+		}
+
+		$is_translatable = in_array( $attr_name, $dynamic_translatable_attrs, true )
+			|| self::linguator_is_attribute_translatable_by_heuristics( $attr_name, $attr_val );
+
+		if ( $is_translatable && ! empty( $attr_val ) ) {
+			if ( strpos( $attr_val, '___LMAT_' ) === 0 ) {
+				return $attr_matches[0];
+			}
+
+			if ( preg_match( '/^#[0-9a-fA-F]{3,6}$/', $attr_val ) ||
+				preg_match( '/^%23[0-9a-fA-F]{3,6}$/', $attr_val ) ||
+				strpos( $attr_val, 'vc_custom_' ) === 0 ) {
+				return $attr_matches[0];
+			}
+
+			$cleaned_attr_val = self::linguator_clean_data_attributes( $attr_val );
+			$token            = '___LMAT_' . md5( $attr_name . $attr_val . wp_rand() ) . '___';
+
+			$append_content .= ' [lmat_val id="' . $token . '"]' . $cleaned_attr_val . '[/lmat_val]';
+
+			return $attr_name . '=' . $attr_quote . $token . $attr_quote;
+		}
+
+		if ( in_array( $attr_name, $config['protected_attributes'], true ) && ! empty( $attr_val ) ) {
+			if ( strpos( $attr_val, '___LMAT_PROTECTED_' ) === 0 ) {
+				return $attr_matches[0];
+			}
+
+			$protected_token = '___LMAT_PROTECTED_' . base64_encode( $attr_val ) . '___';
+
+			return $attr_name . '=' . $attr_quote . $protected_token . $attr_quote;
+		}
+
+		return $attr_matches[0];
+	}
+
 	/**
 	 * Get WPBakery shortcode definition using WPBakery API.
 	 * 
