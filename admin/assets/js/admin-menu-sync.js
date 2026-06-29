@@ -200,9 +200,16 @@
         self.performSync();
       });
 
-      // ESC key to close
+      // ESC key closes whichever menu-sync dialog is visible
       $(document).on("keyup", function (e) {
-        if (e.key === "Escape" && self.$syncDialog.is(":visible")) {
+        if (e.key !== "Escape") {
+          return;
+        }
+        if (self.$errorDialog && self.$errorDialog.is(":visible")) {
+          self.$errorDialog.fadeOut(200);
+          return;
+        }
+        if (self.$syncDialog.is(":visible")) {
           self.hideDialog();
         }
       });
@@ -319,12 +326,6 @@
             self.$errorDialog.fadeOut(200);
           }
         );
-
-        $(document).on("keyup", function (e) {
-          if (e.key === "Escape" && self.$errorDialog.is(":visible")) {
-            self.$errorDialog.fadeOut(200);
-          }
-        });
       }
 
       // Set message and show dialog

@@ -10,8 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-
-use Linguator\Includes\Options\Options;
 use Linguator\Includes\Models\Translatable\Linguator_Translatable_Object_With_Types_Interface;
 use Linguator\Includes\Models\Translatable\Linguator_Translatable_Object_With_Types_Trait;
 use Linguator\Includes\Other\Linguator_Model;

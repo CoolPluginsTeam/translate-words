@@ -14,7 +14,6 @@ use Linguator\Admin\Controllers\Linguator_Admin_Notices;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Admin\Controllers\Linguator_Admin_Model;
 use Linguator\Includes\Core\Linguator;
-use WP_Error;
 
 
 

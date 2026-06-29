@@ -2,6 +2,11 @@
    Glossary Pages
 ================================================ */
 
+:root { 
+  --lmat-glossary-green:#1ca97c; 
+  --lmat-glossary-mint:#7ed6bf; 
+}
+
 .lmat-glossary {
     width: calc(100% - 4rem);
     margin-inline: 2rem;
@@ -55,7 +60,6 @@
     padding: 8px;
   }
   
-  .lmat-update-btn,
   .lmat-add-btn,
   .lmat-import-btn,
   .lmat-export-btn {
@@ -67,16 +71,10 @@
     border-radius: 4px;
   }
   
-  .lmat-update-btn:hover,
   .lmat-add-btn:hover,
   .lmat-import-btn:hover,
   .lmat-export-btn:hover {
     background-color: #005a8c;
-  }
-  
-  .lmat-status {
-    font-size: 14px;
-    color: #555;
   }
   
   .lmat-alphabet {
@@ -241,12 +239,6 @@
     font-weight: 600;
   }
   
-  
-  .lmat-help-text {
-    font-size: 13px;
-    color: #666;
-  }
-  
   .lmat-download-link {
     color: #007baf;
     font-size: 14px;
@@ -305,22 +297,22 @@
     color: #fff;
   }
   
-  .lmat-import-success-icon {
+  .lmat-import-success .import-success-icon {
     margin-bottom: 18px;
   }
   
-  .lmat-import-success-file {
+  .lmat-import-success .import-success-file {
     font-size: 15px;
     color: #222;
     margin-bottom: 10px;
   }
   
-  #lmat-importing-file-label {
+  #importing-file-label {
     color: #222;
     margin-right: 4px;
   }
   
-  #lmat-importing-file-name {
+  #importing-file-name {
     color: #222;
     font-weight: 500;
     word-break: break-all;
@@ -502,14 +494,6 @@
     color: #414141;
 }
   
-.lmat-icon-doc {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
-    background: url('doc-icon.svg') center/contain no-repeat;
-    vertical-align: middle;
-}
-  
 .lmat-lang-header img {
     width: 16px;
     height: 11px;
@@ -599,8 +583,8 @@
     min-width: 71px;
     padding: 3px 20px 3px 10px;
     border-radius: 10px;
-    border: 1.5px solid #7ed6bf;
-    color: #1ca97c;
+    border: 1.5px solid var(--lmat-glossary-mint);
+    color: var(--lmat-glossary-green);
     font-weight: 600;
     font-size: 0.9em;
     position: relative;
@@ -610,9 +594,6 @@
     appearance: none;
     cursor: pointer;
     text-align: center;
-}
-  
-.lmat-glossary-edit-row .lmat-edit-type {
     background-image: url("data:image/svg+xml;utf8,<svg fill='none' stroke='%231ca97c' stroke-width='2' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'><path d='M6 8l4 4 4-4'/></svg>");
     background-repeat: no-repeat;
     background-position: right 4px center;
@@ -623,7 +604,7 @@
     display: none;
 }
 .lmat-glossary-edit-row .lmat-edit-type:focus {
-    border-color: #1ca97c;
+    border-color: var(--lmat-glossary-green);
     outline: none;
     box-shadow: 0 0 0 2px #1ca97c22;
     background: #eafaf0;
@@ -645,20 +626,6 @@
   
 .lmat-glossary-edit-row .lmat-save-edit-btn:hover {
     background: #1b7a97;
-}
-  
-.lmat-glossary-edit-row .lmat-cancel-edit-link {
-    color: #666;
-    text-decoration: underline;
-    font-size: 1em;
-    margin-left: 0;
-    cursor: pointer;
-    display: block;
-    transition: color 0.2s;
-}
-  
-.lmat-glossary-edit-row .lmat-cancel-edit-link:hover {
-    text-decoration: underline;
 }
   
 .lmat-glossary-edit-row td textarea:last-child {
@@ -728,11 +695,6 @@
     margin-top: 20px;
 }
   
-.lmat-translations-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-}
 .lmat-translation-field {
   flex: 1 1 0;
   min-width: 160px;
@@ -1005,10 +967,6 @@ tr.lmat-glossary-edit-row > td.lmat-actions-cell {
     z-index: 1005002;
     justify-content: center;
     align-items: center;
-}
-
-.lmat-glossary-loader.active {
-    display: flex;
 }
 
 .lmat-glossary-loader-spinner {

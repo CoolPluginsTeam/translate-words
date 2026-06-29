@@ -9,7 +9,6 @@ namespace Linguator\Integrations\cache;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Don't access directly.
 }
-use Linguator\Includes\Helpers\Linguator_Cache;
 use Linguator\Integrations\cache\Linguator_Cache_Compat;
 use Linguator\Integrations\Linguator_Integrations;
 

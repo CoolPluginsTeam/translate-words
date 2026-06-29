@@ -540,15 +540,6 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
-	 * Whether get_item should call the Gemini provider API for model discovery (~4s cap).
-	 *
-	 * @return bool
-	 */
-	private function should_run_ai_model_discovery(): bool {
-		return $this->ai_gemini_model_refresh_needed;
-	}
-
-	/**
 	 * Sanitize provider exceptions for safe UI display.
 	 *
 	 * @param string $message Raw exception message.

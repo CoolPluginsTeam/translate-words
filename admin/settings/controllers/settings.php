@@ -16,8 +16,6 @@ use Linguator\Settings\Controllers\Linguator_Settings_Module;
 use Linguator\Settings\Tables\Linguator_Table_Languages;
 use Linguator\Settings\Tables\Linguator_Table_String;
 use Linguator\Settings\Header\Header;
-use Linguator\Supported_Blocks\Supported_Blocks;
-use Linguator\Custom_Fields\Custom_Fields;
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
 
 use WP_Error;

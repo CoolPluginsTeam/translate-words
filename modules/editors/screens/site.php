@@ -10,7 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Base\Linguator_Base;
-use Linguator\Includes\Other\Linguator_Model;
 use WP_Screen;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Modules\Full_Site_Editing\Linguator_FSE_Tools;

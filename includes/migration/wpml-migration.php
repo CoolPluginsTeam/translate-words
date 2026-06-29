@@ -11,7 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use Linguator\Includes\Models\Languages;
 use Linguator\Includes\Options\Options;
 use WP_Error;
 

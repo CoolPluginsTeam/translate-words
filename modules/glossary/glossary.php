@@ -20,6 +20,13 @@ if (!class_exists('Glossary')) {
         private static $init;
 
         /**
+         * Cached glossary option data for the current request.
+         *
+         * @var array|null
+         */
+        private static $glossary_data_cache = null;
+
+        /**
          * Instance
          * @return object
          */
@@ -45,6 +52,31 @@ if (!class_exists('Glossary')) {
             add_action('wp_ajax_lmat_add_glossary', array($this, 'add_glossary_ajax'));
             add_action('wp_ajax_lmat_export_glossary', array($this, 'export_glossary_ajax'));
             add_action('wp_ajax_lmat_get_glossary', array($this, 'get_glossary_ajax'));
+        }
+
+        /**
+         * Returns glossary data from the in-request cache or loads it from the database.
+         *
+         * @return array
+         */
+        private static function load_glossary_data() {
+            if (null === self::$glossary_data_cache) {
+                $data = get_option('lmat_glossary_data', array());
+                self::$glossary_data_cache = is_array($data) ? $data : array();
+            }
+
+            return self::$glossary_data_cache;
+        }
+
+        /**
+         * Persists glossary data and refreshes the in-request cache.
+         *
+         * @param array $data Glossary data.
+         * @return void
+         */
+        private static function save_glossary_data(array $data) {
+            self::$glossary_data_cache = $data;
+            update_option('lmat_glossary_data', $data);
         }
 
 		/*
@@ -174,7 +206,7 @@ if (!class_exists('Glossary')) {
             $target_langs = (array) ($glossary_data['target_lang'] ?? []);
             $translated_terms = (array) ($glossary_data['translated_term'] ?? []);
 
-            $all_glossaries = get_option('lmat_glossary_data', array());
+            $all_glossaries = self::load_glossary_data();
             $found = false;
 
             foreach ($all_glossaries as &$entry) {
@@ -236,7 +268,7 @@ if (!class_exists('Glossary')) {
                 );
             }
 
-            update_option('lmat_glossary_data', $all_glossaries);
+            self::save_glossary_data($all_glossaries);
 
             return true;
         }
@@ -245,7 +277,7 @@ if (!class_exists('Glossary')) {
          * Optional: Get all glossary entries (for debugging or display)
          */
         public static function get_all_glossaries() {
-            return get_option('lmat_glossary_data', array());
+            return self::load_glossary_data();
         }
 
         // Add this function to handle CSV import
@@ -336,7 +368,7 @@ if (!class_exists('Glossary')) {
             $source_language_code = sanitize_key($glossary_data['source_lang'] ?? '');
             $translations = $glossary_data['translations'] ?? [];
 
-            $all_glossaries = get_option('lmat_glossary_data', array());
+            $all_glossaries = self::load_glossary_data();
             $updated = false;
 
             foreach ($all_glossaries as $i => &$entry) {
@@ -412,7 +444,7 @@ if (!class_exists('Glossary')) {
             if ($updated) {
                 // Reindex array to avoid gaps
                 $all_glossaries = array_values($all_glossaries);
-                update_option('lmat_glossary_data', $all_glossaries);
+                self::save_glossary_data($all_glossaries);
                 return true;
             }
             return false;
@@ -474,7 +506,7 @@ if (!class_exists('Glossary')) {
          * Get updated glossary entry after update
          */
         private static function get_updated_glossary_entry($term, $source_lang) {
-            $all_glossaries = get_option('lmat_glossary_data', array());
+            $all_glossaries = self::load_glossary_data();
             
             foreach ($all_glossaries as $entry) {
                 if (
@@ -492,7 +524,7 @@ if (!class_exists('Glossary')) {
          * Delete glossary entry
          */
         public static function delete_glossary_data($term, $source_lang) {
-            $all_glossaries = get_option('lmat_glossary_data', array());
+            $all_glossaries = self::load_glossary_data();
             $updated = false;
             foreach ($all_glossaries as $i => $entry) {
                 if (
@@ -506,7 +538,7 @@ if (!class_exists('Glossary')) {
             }
             if ($updated) {
                 $all_glossaries = array_values($all_glossaries);
-                update_option('lmat_glossary_data', $all_glossaries);
+                self::save_glossary_data($all_glossaries);
                 return true;
             }
             return false;
@@ -614,7 +646,7 @@ if (!class_exists('Glossary')) {
                 }
             }
 
-            $glossary_data = get_option('lmat_glossary_data', []);
+            $glossary_data = self::load_glossary_data();
             $duplicate = false;
             foreach ($glossary_data as $entry) {
                 if (
@@ -650,7 +682,7 @@ if (!class_exists('Glossary')) {
                 wp_die('Permission denied');
             }
 
-            $glossary_data = get_option('lmat_glossary_data', []);
+            $glossary_data = self::load_glossary_data();
             if (!is_array($glossary_data)) {
                 $glossary_data = [];
             }

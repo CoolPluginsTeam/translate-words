@@ -11,9 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Base\Linguator_Base;
-use Linguator\Includes\Services\Links\Linguator_Links;
 use Linguator\Includes\Filters\Linguator_Filters_Links;
-use Linguator\Includes\Filters\Linguator_Filters_Widgets_Options;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Admin\Controllers\Linguator_Admin_Links;
 use WP_Post;

@@ -23,6 +23,7 @@ jQuery(document).ready(function($) {
 
     // Cache selectors used multiple times
     let $glossaryTable = $('.lmat-glossary-table');
+    const $glossaryTableWrapper = $('.lmat-glossary-table-wrapper');
     const $languageFilters = $('.lmat-language-filters');
     const $alphabet = $('.lmat-alphabet');    
     const $addGlossaryForm = $('#lmat-add-glossary-form');
@@ -238,7 +239,7 @@ jQuery(document).ready(function($) {
     });
 
     // Update the save handler to include validation
-    $('.lmat-glossary-table-wrapper').off('click', '.lmat-save-edit-btn').on('click', '.lmat-save-edit-btn', function(e) {
+    $glossaryTableWrapper.off('click', '.lmat-save-edit-btn').on('click', '.lmat-save-edit-btn', function(e) {
         e.preventDefault();
         const $editRow = $(this).closest('tr');
         const $origRow = $editRow.prev('tr');
@@ -405,17 +406,15 @@ jQuery(document).ready(function($) {
     }
 
     function updateGlossaryTableVisibility() {
-        var $tableWrapper = $('.lmat-glossary-table-wrapper');
-        var $table = $tableWrapper.find('.lmat-glossary-table');
-        var $visibleRows = $table.find('tbody tr:visible');
+        var $visibleRows = $glossaryTable.find('tbody tr:visible');
         if ($visibleRows.length === 0) {
-            $tableWrapper.hide();
+            $glossaryTableWrapper.hide();
             if (!$noResults.length) {
-                $tableWrapper.after('<div id="lmat-no-results" style="text-align:center; margin: 32px 0; color: #888; font-size: 1.2em;">No glossary entries found.</div>');
+                $glossaryTableWrapper.after('<div id="lmat-no-results" style="text-align:center; margin: 32px 0; color: #888; font-size: 1.2em;">No glossary entries found.</div>');
                 $noResults = $('#lmat-no-results');
             }
         } else {
-            $tableWrapper.show();
+            $glossaryTableWrapper.show();
             $noResults.remove();
             $noResults = $();
         }
@@ -450,7 +449,7 @@ jQuery(document).ready(function($) {
 
     // Language Filter Buttons
     $(document).off('click', '.lmat-lang-filter-btn').on('click', '.lmat-lang-filter-btn', function() {
-        $('.lmat-glossary-table-wrapper').show();
+        $glossaryTableWrapper.show();
         $noResults.remove();
         $noResults = $();
         // Reset alphabet filter
@@ -989,7 +988,7 @@ jQuery(document).ready(function($) {
                             <tbody></tbody>
                         </table>
                     `;
-                    $('.lmat-glossary-table-wrapper').html(tableHeader);
+                    $glossaryTableWrapper.html(tableHeader);
                     
                     // Apply current language filter column hiding to headers
                     const currentActiveLang = $('.lmat-lang-filter-btn.active').data('lang');
@@ -1126,7 +1125,7 @@ jQuery(document).ready(function($) {
 
                 // Update the UI (show table, remove no-results, apply zebra striping, etc.)
                 $('.lmat-glossary-table').show();
-                $('.lmat-glossary-table-wrapper').show();
+                $glossaryTableWrapper.show();
                 $noResults.remove();
                 $noResults = $();
                 updateGlossaryTableVisibility();
@@ -1248,11 +1247,11 @@ jQuery(document).ready(function($) {
         });
 
         if (search !== '') {
-            $('.lmat-glossary-table-wrapper').show();
+            $glossaryTableWrapper.show();
             $noResults.remove();
             $noResults = $();
         }else{
-            $('.lmat-glossary-table-wrapper').show();
+            $glossaryTableWrapper.show();
             $noResults.remove();
             $noResults = $();
         }
@@ -1266,7 +1265,7 @@ jQuery(document).ready(function($) {
     $(document).on('change', '.lmat-glossary-type', function() {
         var selectedType = $(this).val();   
         if (selectedType) {
-            $('.lmat-glossary-table-wrapper').show();
+            $glossaryTableWrapper.show();
             $noResults.remove();
             $noResults = $();
         }
@@ -1310,18 +1309,16 @@ jQuery(document).ready(function($) {
 
     // Add this function after the existing functions
     function updateActionsHeaderVisibility() {
-        const $tableWrapper = $('.lmat-glossary-table-wrapper');
-        const $table = $tableWrapper.find('.lmat-glossary-table');
         const $actionsHeader = $('.lmat-actions-header-btn').closest('th');
         
         // Only proceed if the table exists
-        if ($table.length === 0 || !$table[0]) {
+        if ($glossaryTable.length === 0 || !$glossaryTable[0]) {
             $actionsHeader.hide();
             return;
         }
 
         // Check if table has horizontal scroll
-        const hasHorizontalScroll = $table[0].scrollWidth > $tableWrapper[0].clientWidth;
+        const hasHorizontalScroll = $glossaryTable[0].scrollWidth > $glossaryTableWrapper[0].clientWidth;
         
         // Show/hide actions header based on scroll
         $actionsHeader.toggle(hasHorizontalScroll);
@@ -1341,9 +1338,8 @@ jQuery(document).ready(function($) {
     }, 250));
     
     // Observe the table wrapper for changes
-    const $tableWrapper = $('.lmat-glossary-table-wrapper');
-    if ($tableWrapper.length) {
-        observer.observe($tableWrapper[0], {
+    if ($glossaryTableWrapper.length) {
+        observer.observe($glossaryTableWrapper[0], {
             childList: true,
             subtree: true,
             attributes: true
@@ -1352,21 +1348,19 @@ jQuery(document).ready(function($) {
 
     // Function to update button visibility based on scroll position
     function updateScrollButtonVisibility() {
-        const $wrapper = $('.lmat-glossary-table-wrapper');
-        
         // Check if wrapper exists
-        if (!$wrapper.length) {
+        if (!$glossaryTableWrapper.length) {
             return;
         }
 
         // Check if wrapper has content
-        if (!$wrapper[0]) {
+        if (!$glossaryTableWrapper[0]) {
             return;
         }
 
-        const scrollLeft = $wrapper.scrollLeft();
-        const scrollWidth = $wrapper[0].scrollWidth;
-        const clientWidth = $wrapper[0].clientWidth;
+        const scrollLeft = $glossaryTableWrapper.scrollLeft();
+        const scrollWidth = $glossaryTableWrapper[0].scrollWidth;
+        const clientWidth = $glossaryTableWrapper[0].clientWidth;
 
         // Hide left button if at the leftmost position
         if (scrollLeft === 0) {
@@ -1394,7 +1388,7 @@ jQuery(document).ready(function($) {
     });
 
     // Scroll table to the right when actions header button is clicked
-    $('.lmat-glossary-table-wrapper').off('click', '#lmat-actions-header-btn-right').on('click', '#lmat-actions-header-btn-right', function(e) {
+    $glossaryTableWrapper.off('click', '#lmat-actions-header-btn-right').on('click', '#lmat-actions-header-btn-right', function(e) {
         e.preventDefault();
         const $wrapper = $(this).closest('.lmat-glossary-table-wrapper');
         const scrollAmount = 300;
@@ -1404,7 +1398,7 @@ jQuery(document).ready(function($) {
     });
 
     // Scroll table to the left when actions header button is clicked
-    $('.lmat-glossary-table-wrapper').off('click', '#lmat-actions-header-btn-left').on('click', '#lmat-actions-header-btn-left', function(e) {
+    $glossaryTableWrapper.off('click', '#lmat-actions-header-btn-left').on('click', '#lmat-actions-header-btn-left', function(e) {
         e.preventDefault();
         const $wrapper = $(this).closest('.lmat-glossary-table-wrapper');
         const scrollAmount = 300;

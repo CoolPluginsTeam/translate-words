@@ -1,8 +1,6 @@
 <?php
 namespace Linguator\Supported_Blocks;
 
-use Linguator\Modules\Page_Translation\Linguator_Page_Translation_Helper;
-
 use Linguator\Settings\Header\Header;
 use WP_Block_Type_Registry;
 
