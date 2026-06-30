@@ -581,13 +581,14 @@ class Settings extends Abstract_Controller {
 	 * @return true|WP_Error
 	 */
 	private function validate_gemini_api_key( string $api_key ) {
-		// Normalize: Gemini API keys never contain whitespace; remove accidental spaces/newlines from pastes.
+		// Normalize pasted keys: strip accidental whitespace/newlines only.
 		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
 		if ( '' === $key_trimmed ) {
 			return true;
 		}
 
-		if ( preg_match( '/[<>"\']/', $key_trimmed ) ) {
+		// Reject control characters and markup-breaking chars; do not enforce provider-specific format.
+		if ( preg_match( '/[\x00-\x1F\x7F<>"\']/', $key_trimmed ) ) {
 			return new WP_Error(
 				'lmat_api_key_invalid',
 				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
@@ -595,33 +596,16 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		if ( 0 !== strpos( $key_trimmed, 'AIza' ) ) {
+		// Generous upper bound to avoid storing abnormally large pasted strings.
+		if ( strlen( $key_trimmed ) > 512 ) {
 			return new WP_Error(
 				'lmat_api_key_invalid',
-				__( 'Gemini API keys must start with AIza.', 'translate-words' ),
+				__( 'API key is too long. Please check your credentials.', 'translate-words' ),
 				array( 'status' => 400 )
 			);
 		}
 
-		if ( strlen( $key_trimmed ) < 20 ) {
-			return new WP_Error(
-				'lmat_api_key_invalid',
-				__( 'Gemini API keys must be at least 20 characters long.', 'translate-words' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		// Only validate allowed characters after the AIza prefix.
-		$rest = substr( $key_trimmed, 4 );
-		if ( '' === $rest || ! preg_match( '/^[0-9A-Za-z\-_]+$/', $rest ) ) {
-			return new WP_Error(
-				'lmat_api_key_invalid',
-				__( 'Invalid API key format. Please check your credentials.', 'translate-words' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		// Real provider validation using WP AI Client.
+		// Validate against the provider; Google defines the real key format.
 		if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
 			return new WP_Error(
 				'lmat_ai_client_missing',
