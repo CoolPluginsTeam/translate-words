@@ -232,7 +232,7 @@ const AiTranslation = () => {
 												id="gemini-api-key"
 												size="md"
 												type="text"
-												placeholder="AIza…"
+												placeholder={__('Enter your API key', 'translate-words')}
 												disabled={geminiApiKeyInputDisabled}
 												value={geminiApiKeyDisplayValue}
 												onChange={(v) => {

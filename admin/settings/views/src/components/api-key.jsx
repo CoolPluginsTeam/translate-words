@@ -19,7 +19,7 @@ const providerMeta = [
     modelKey: 'gemini_model',
     heading: __('Add Gemini API key', 'translate-words'),
     modelHeading: __('Select Gemini Model', 'translate-words'),
-    placeholder: 'AIza…',
+    placeholder: __('Enter your API key', 'translate-words'),
   },
 ]
 
