@@ -1,5 +1,5 @@
 import ModalStringScroll from "../../string-modal-scroll/index.js";
-import GoogleLanguage from "./google-language.js";
+import GoogleLanguage, { mapToGoogleLanguageCode } from "./google-language.js";
 import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo, selectGlossaryTerms } from "../../../redux-store/features/selectors.js";
 import { store } from "../../../redux-store/store.js";
 import { updateProgressStatus, updateTranslatePostInfo, unsetPendingPost } from "../../../redux-store/features/actions.js";
@@ -140,7 +140,7 @@ class GoogleTranslater {
         try {
             this.googleTranslator = new TranslateElementCtor(
                 {
-                    pageLanguage: this.sourceLang,
+                    pageLanguage: this.filterLanguage(this.sourceLang),
                     autoDisplay: false,
                 },
                 `${this.prefix}-google-translate-btn`
@@ -175,10 +175,37 @@ class GoogleTranslater {
         document.body.classList.add('notranslate');
     }
 
+    /**
+     * Wait for Google Translate widget combo + options to finish loading.
+     */
+    waitForGoogleLanguageSelector = async (langCode, timeoutMs = 15000) => {
+        const started = Date.now();
+        const intervalMs = 250;
+
+        while (Date.now() - started < timeoutMs) {
+            if (this.stopTranslation) {
+                return { selector: null, languageReady: false };
+            }
+
+            const selector = document.querySelector(`#${this.prefix}-google-translate-btn .goog-te-combo`);
+            if (selector && selector.options && selector.options.length > 1) {
+                const languageReady = !!selector.querySelector(`option[value="${langCode}"]`);
+                if (languageReady) {
+                    return { selector, languageReady: true };
+                }
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+
+        const selector = document.querySelector(`#${this.prefix}-google-translate-btn .goog-te-combo`);
+        const languageReady = !!(selector && selector.querySelector(`option[value="${langCode}"]`));
+        return { selector, languageReady };
+    };
+
     translateContent = async () => {
-        const languageSelector = document.querySelector(`#${this.prefix}-google-translate-btn .goog-te-combo`);
-    
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const langCode = this.filterLanguage(this.activeTargetLang);
+        const { selector: languageSelector, languageReady } = await this.waitForGoogleLanguageSelector(langCode);
 
         if (!languageSelector) {
             this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
@@ -198,12 +225,9 @@ class GoogleTranslater {
             return false;
         }
 
-        const langCode = this.filterLanguage(this.activeTargetLang);
-        const languageExist = languageSelector.querySelector(`option[value="${langCode}"]`);
-    
-        if (!languageExist) {
+        if (!languageReady) {
             const languageObject = lmatBulkTranslationGlobal.languageObject;
-    
+
             this.storeDispatch(updateTranslatePostInfo({
                 [`${this.postId}_${this.activeTargetLang}`]: {
                     status: 'error',
@@ -215,12 +239,12 @@ class GoogleTranslater {
             this.storeDispatch(unsetPendingPost(`${this.postId}_${this.activeTargetLang}`));
             return false;
         }
-    
+
         document.body.classList.add(`${this.prefix}-google-translate`);
         languageSelector.value = langCode;
 
         languageSelector.dispatchEvent(new Event('change'));
-    
+
         if (this.stopTranslation) return false;
     
         const container = document.querySelector(`#${this.prefix}-google-translate-strings-container`);
@@ -310,11 +334,7 @@ class GoogleTranslater {
     }
 
     filterLanguage = (lang) => {
-        if (lang === 'zh') {
-            return lmatBulkTranslationGlobal.languageObject['zh']?.locale.replace('_', '-');
-        }
-
-        return lang;
+        return mapToGoogleLanguageCode(lang, lmatBulkTranslationGlobal.languageObject || {});
     }
 
     // Function to initialize translation if conditions are met

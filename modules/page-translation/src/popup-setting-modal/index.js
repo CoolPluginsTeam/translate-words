@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom/client";
 import { useEffect, useState } from "@wordpress/element";
 import PopStringModal from "../popup-string-modal/index.js";
-import googleLanguage from "../component/translate-provider/google/google-language.js";
+import googleLanguage, { mapToGoogleLanguageCode } from "../component/translate-provider/google/google-language.js";
 import ChromeLocalAiTranslator from "../component/translate-provider/local-ai-translator/local-ai-translator.js";
 import SettingModalHeader from "./header.js";
 import SettingModalBody from "./body.js";
@@ -19,7 +19,7 @@ const SettingModal = (props) => {
     const sourceLangName = lmatPageTranslationGlobal.languageObject[sourceLang]['name'];
     const targetLangName = lmatPageTranslationGlobal.languageObject[targetLang]['name'];
     const imgFolder = lmatPageTranslationGlobal.lmat_url + 'admin/assets/images/';
-    const googleSupport = googleLanguage().includes(targetLang === 'zh' ? lmatPageTranslationGlobal.languageObject['zh']?.locale.replace('_', '-') : targetLang);
+    const googleSupport = googleLanguage().includes(mapToGoogleLanguageCode(targetLang, lmatPageTranslationGlobal.languageObject || {}));
     const [serviceModalErrors, setServiceModalErrors] = useState({});
     const [errorModalVisibility, setErrorModalVisibility] = useState(false);
     const [chromeAiBtnDisabled, setChromeAiBtnDisabled] = useState(false);
