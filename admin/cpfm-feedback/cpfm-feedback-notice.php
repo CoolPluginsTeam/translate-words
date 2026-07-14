@@ -38,13 +38,15 @@ class CPFM_Feedback_Notice {
         $args['always_show_on'] = array_values(array_filter(array_map('sanitize_key', (array) $args['always_show_on'])));
         $args['plugin_name']    = sanitize_key($args['plugin_name']);
         
+        // First registrant owns title/pages for this shared category (same as LocoAI / AutoPoly).
+        // Later plugins only append to `plugins` so opt-in still fans out via cpfm_after_opt_in_{plugin}.
         if (!isset(self::$registered_notices[$key])) {
-            self::$registered_notices[$key] = wp_parse_args($args, [
-                'title'   => '',
-                'message' => '',
-                'pages'   => [],
-                'always_show_on' => [],
-            ]);
+            self::$registered_notices[$key] = [
+                'title'          => $args['title'],
+                'message'        => $args['message'],
+                'pages'          => $args['pages'],
+                'always_show_on' => $args['always_show_on'],
+            ];
         }
 
         if(!isset(self::$registered_notices[$key]['plugins'])){
@@ -114,7 +116,8 @@ class CPFM_Feedback_Notice {
             true
 
         );
-        wp_localize_script('cpfm-common-review-script', 'cpfmAdminNotice', [
+        // Use shared `adminNotice` object so LocoAI / AutoPoly JS stays compatible when we host CPFM.
+        wp_localize_script('cpfm-common-review-script', 'adminNotice', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('dismiss_admin_notice'),
             'autoShowPages' => array_unique(
@@ -142,24 +145,19 @@ class CPFM_Feedback_Notice {
         $opt_in_raw         = isset($_POST['opt_in']) ? sanitize_text_field( wp_unslash( $_POST['opt_in'] ) ) : '';
         $opt_in             = ($opt_in_raw === 'yes') ? 'yes' : 'no';
 
-        if (!$category || !isset(self::$registered_notices[$category])) {
-            wp_send_json_error('Invalid notice category.');
+        // Another Cool Plugins CPFM instance may own this category (separate static registry).
+        // Bail quietly so that plugin's handler can process the request.
+        if ( ! $category || ! isset( self::$registered_notices[ $category ] ) ) {
             return;
         }
 
-        if(!isset(self::$registered_notices[$category]['plugins'])){
-            wp_send_json_error('Invalid notice category plugins.');
+        if ( ! isset( self::$registered_notices[ $category ]['plugins'] ) ) {
+            wp_send_json_error( 'Invalid notice category plugins.' );
             return;
         }
 
         update_option("cpfm_opt_in_choice_{$category}", $opt_in);
-        $option = get_option("linguator");
-       
-        // Update the lmat_feedback_data within the linguator option array
-        if (is_array($option)) {
-            $option['lmat_feedback_data'] = $opt_in == 'yes' ? true : false;
-            update_option('linguator', $option);
-        }
+
         $review_option = get_option("cpfm_opt_in_choice_{$category}");
 
         if ($review_option === 'yes') {

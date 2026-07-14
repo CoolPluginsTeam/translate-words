@@ -395,3 +395,26 @@ function linguator_get_allowed_ai_providers() {
 function linguator_is_ai_provider_allowed( $provider ) {
 	return in_array( (string) $provider, linguator_get_allowed_ai_providers(), true );
 }
+
+/**
+ * Shared Cool Plugins CPFM opt-in choice (same category as LocoAI / AutoPoly).
+ *
+ * Falls back to the legacy `cpfm_opt_in_choice_lmat` option and migrates it once.
+ *
+ * @return string|false `yes`, `no`, or false if the user has not chosen yet.
+ */
+function linguator_get_cpfm_opt_in_choice() {
+	$choice = get_option( 'cpfm_opt_in_choice_cool_translations' );
+
+	if ( false !== $choice ) {
+		return $choice;
+	}
+
+	$legacy = get_option( 'cpfm_opt_in_choice_lmat' );
+	if ( false !== $legacy ) {
+		update_option( 'cpfm_opt_in_choice_cool_translations', $legacy );
+		return $legacy;
+	}
+
+	return false;
+}
