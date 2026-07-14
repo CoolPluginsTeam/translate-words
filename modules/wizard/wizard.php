@@ -430,7 +430,8 @@ class Linguator_Wizard
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'polylang_detection' => $polylang_detection,
 					'wpml_detection' => $wpml_detection,
-					'wp_ai_client_available' => function_exists( 'linguator_is_wp_ai_client_exist' ) ? (bool) linguator_is_wp_ai_client_exist() : false,
+					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
+					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 				)
 			);
 

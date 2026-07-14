@@ -70,38 +70,51 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
-if(function_exists('wp_ai_client_prompt') && class_exists('WordPress\AiClient\AiClient')){
-	require_once __DIR__ . '/includes/ai-providers/vendor/autoload.php';
+// Register Gemini (Google AI) provider only when Gemini is in the allowed list
+// (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).
+add_action(
+	'plugins_loaded',
+	static function () {
+		if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+			return;
+		}
 
-	// Register bundled AI providers (when installed as composer packages they don't auto-register).
-	add_action(
-		'init',
-		static function () {
-			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
-				return;
-			}
+		require_once __DIR__ . '/includes/ai-providers/vendor/autoload.php';
 
-			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
-			if ( ! $registry || ! method_exists( $registry, 'registerProvider' ) || ! method_exists( $registry, 'hasProvider' ) ) {
-				return;
-			}
-
-			$providers = array(
-				'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
-			);
-
-			foreach ( $providers as $provider_id => $provider_class ) {
-				if ( $registry->hasProvider( $provider_id ) ) {
-					continue;
+		add_action(
+			'init',
+			static function () {
+				if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+					return;
 				}
-				if ( class_exists( $provider_class ) ) {
-					$registry->registerProvider( $provider_class );
+
+				if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+					return;
 				}
-			}
-		},
-		9
-	);
-}
+
+				$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+				if ( ! $registry || ! method_exists( $registry, 'registerProvider' ) || ! method_exists( $registry, 'hasProvider' ) ) {
+					return;
+				}
+
+				$providers = array(
+					'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
+				);
+
+				foreach ( $providers as $provider_id => $provider_class ) {
+					if ( $registry->hasProvider( $provider_id ) ) {
+						continue;
+					}
+					if ( class_exists( $provider_class ) ) {
+						$registry->registerProvider( $provider_class );
+					}
+				}
+			},
+			9
+		);
+	},
+	20
+);
 
 if ( ! defined( 'LINGUATOR' ) ) {
 	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );

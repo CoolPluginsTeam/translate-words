@@ -675,7 +675,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'sync_options'   => $this->linguator_get_sync_options(),
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'translations_data' => $translations_data,
-					'wp_ai_client_available' => function_exists( 'linguator_is_wp_ai_client_exist' ) ? (bool) linguator_is_wp_ai_client_exist() : false,
+					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
+					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 				)
 			);
 			wp_localize_script(

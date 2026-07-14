@@ -18,11 +18,13 @@ const AiTranslation = () => {
 	const aiTranslation = data?.ai_translation_configuration ?? {};
 	const provider = aiTranslation?.provider ?? {};
 
-	const wpAiClientAvailable = Boolean(window?.lmat_setup?.wp_ai_client_available);
+	const wpAiClientAvailable = Array.isArray(window?.lmat_setup?.allowed_providers)
+		? window.lmat_setup.allowed_providers.includes('gemini')
+		: Boolean(window?.lmat_setup?.wp_ai_client_available);
 
 	const [googleMachineTranslation, setGoogleMachineTranslation] = useState(Boolean(provider?.google));
 	const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(Boolean(provider?.chrome_local_ai));
-	const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini));
+	const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable);
 	const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState('');
 	const geminiMaskedKey = (data?.api_keys_configuration?.keys?.gemini || '').toString();
 	const hasGeminiSavedKey = geminiMaskedKey.trim() !== '';

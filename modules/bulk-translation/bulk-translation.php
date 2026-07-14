@@ -255,10 +255,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				$active_providers[] = 'localAiTranslator';
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
-			} elseif ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
-				if ( 'gemini' === $provider ) {
-					$active_providers[] = $provider;
-				}
+			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
+				$active_providers[] = $provider;
 			}
 		}
 
@@ -266,7 +264,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			'gemini' => false,
 		);
 
-		if ( function_exists( 'linguator_is_wp_ai_client_exist' ) && linguator_is_wp_ai_client_exist() ) {
+		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 			foreach ( $api_keys_status as $key => $status ) {
 				$api_key = get_option( 'connectors_ai_google_api_key', '' );
 				if ( ! empty( $api_key ) ) {

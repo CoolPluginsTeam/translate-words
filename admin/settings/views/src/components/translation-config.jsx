@@ -16,10 +16,13 @@ const TranslationConfig = ({ data, setData }) => {
 
     const aiTranslation = data?.ai_translation_configuration; //store the media option
     const provider = aiTranslation?.provider;
-    const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available);
+    const allowedProviders = Array.isArray(window?.lmat_settings?.allowed_providers)
+        ? window.lmat_settings.allowed_providers
+        : ['chrome_local_ai', 'google'];
+    const wpAiClientAvailable = allowedProviders.includes('gemini');
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
-    const [geminiTranslation, setGeminiTranslation] = useState(provider?.gemini)
+    const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
     const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
