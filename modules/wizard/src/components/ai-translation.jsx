@@ -9,6 +9,7 @@ import SetupContinueButton, { SetupBackButton } from './setup-continue-button';
 import { getNonce } from '../utils';
 
 import { ChromeIcon } from '../../../../assets/logo/chrome';
+import { EdgeIcon } from '../../../../assets/logo/edge';
 import { GeminiIcon } from '../../../../assets/logo/gemini';
 import { GoogleIcon } from '../../../../assets/logo/google';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
@@ -22,8 +23,32 @@ const AiTranslation = () => {
 		? window.lmat_setup.allowed_providers.includes('gemini')
 		: Boolean(window?.lmat_setup?.wp_ai_client_available);
 
+	const browserType = (() => {
+		let type = 'Other';
+		if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
+			navigator.userAgentData.brands.forEach(data => {
+				if (data.brand === 'Google Chrome') {
+					type = 'Chrome';
+				} else if (data.brand === 'Microsoft Edge') {
+					type = 'Edge';
+				}
+			});
+		} else {
+			if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
+				type = 'Edge';
+			} else if (window.hasOwnProperty('chrome')) {
+				type = 'Chrome';
+			}
+		}
+		return type;
+	})();
+
+	const showChromeRow = browserType !== 'Edge';
+	const showEdgeRow = browserType !== 'Chrome';
+
 	const [googleMachineTranslation, setGoogleMachineTranslation] = useState(Boolean(provider?.google));
 	const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(Boolean(provider?.chrome_local_ai));
+	const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(Boolean(provider?.edge_local_ai));
 	const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable);
 	const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState('');
 	const geminiMaskedKey = (data?.api_keys_configuration?.keys?.gemini || '').toString();
@@ -34,6 +59,7 @@ const AiTranslation = () => {
 
 	const lastSavedRef = useRef({
 		chrome_local_ai: Boolean(provider?.chrome_local_ai),
+		edge_local_ai: Boolean(provider?.edge_local_ai),
 		google: Boolean(provider?.google),
 		gemini: Boolean(provider?.gemini),
 	});
@@ -41,10 +67,12 @@ const AiTranslation = () => {
 	useEffect(() => {
 		setGoogleMachineTranslation(Boolean(provider?.google));
 		setChromeLocalAITranslation(Boolean(provider?.chrome_local_ai));
+		setEdgeLocalAITranslation(Boolean(provider?.edge_local_ai));
 		setGeminiTranslation(Boolean(provider?.gemini));
 
 		lastSavedRef.current = {
 			chrome_local_ai: Boolean(provider?.chrome_local_ai),
+			edge_local_ai: Boolean(provider?.edge_local_ai),
 			google: Boolean(provider?.google),
 			gemini: Boolean(provider?.gemini),
 		};
@@ -91,6 +119,7 @@ const AiTranslation = () => {
 
 			const nextProvider = {
 				chrome_local_ai: chromeLocalAITranslation,
+				edge_local_ai: edgeLocalAITranslation,
 				google: googleMachineTranslation,
 				...(wpAiClientAvailable
 					? {
@@ -103,6 +132,7 @@ const AiTranslation = () => {
 			const hasChanges =
 				prevProvider.google !== nextProvider.google ||
 				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
+				prevProvider.edge_local_ai !== nextProvider.edge_local_ai ||
 				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini);
 
 			if (hasChanges) {
@@ -159,22 +189,43 @@ const AiTranslation = () => {
 					/>
 				</div>
 
-				<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb' }}>
-					<div className="flex justify-between items-center">
-						<div className="flex items-center gap-2">
-							<ChromeIcon className="w-4 h-4" />
-							<p className="text-sm/6">{__('Chrome Local AI Translation', 'translate-words')}</p>
+				{showChromeRow && (
+					<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb' }}>
+						<div className="flex justify-between items-center">
+							<div className="flex items-center gap-2">
+								<ChromeIcon className="w-4 h-4" />
+								<p className="text-sm/6">{__('Chrome Local AI Translation', 'translate-words')}</p>
+							</div>
+							<Switch
+								aria-label={__('Chrome Local AI Translation', 'translate-words')}
+								id="chrome-local-ai-translation"
+								onChange={() => setChromeLocalAITranslation((prev) => !prev)}
+								size="sm"
+								value={chromeLocalAITranslation}
+							/>
 						</div>
-						<Switch
-							aria-label={__('Chrome Local AI Translation', 'translate-words')}
-							id="chrome-local-ai-translation"
-							onChange={() => setChromeLocalAITranslation((prev) => !prev)}
-							size="sm"
-							value={chromeLocalAITranslation}
-						/>
+						{chromeLocalAITranslation && <ChromeLocalAINotice />}
 					</div>
-					{chromeLocalAITranslation && <ChromeLocalAINotice />}
-				</div>
+				)}
+
+				{showEdgeRow && (
+					<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+						<div className="flex justify-between items-center">
+							<div className="flex items-center gap-2">
+								<EdgeIcon className="w-4 h-4" />
+								<p className="text-sm/6">{__('Edge Local AI Translation', 'translate-words')}</p>
+							</div>
+							<Switch
+								aria-label={__('Edge Local AI Translation', 'translate-words')}
+								id="edge-local-ai-translation"
+								onChange={() => setEdgeLocalAITranslation((prev) => !prev)}
+								size="sm"
+								value={edgeLocalAITranslation}
+							/>
+						</div>
+						{edgeLocalAITranslation && <ChromeLocalAINotice isEdge={true} />}
+					</div>
+				)}
 
 				{wpAiClientAvailable && (
 					<>

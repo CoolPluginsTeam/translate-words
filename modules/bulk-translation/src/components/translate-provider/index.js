@@ -4,6 +4,7 @@ import GoogleTranslater from "./google/index.js";
 import AiLlmBulkTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
 import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
+import { EdgeIcon } from "../../../../../assets/logo/edge.js";
 import { GoogleIcon } from "../../../../../assets/logo/google.js";
 import { GeminiIcon } from "../../../../../assets/logo/gemini.js";
 
@@ -46,6 +47,19 @@ export default (props) => {
             Logo: <ChromeIcon className="icon-size"  />,
             filterHtmlContent: true
         },
+        edgeLocalAiTranslator: {
+            Provider: localAiTranslator,
+            title: "Edge Built-in AI",
+            SettingBtnText: "Translate",
+            serviceLabel: "Edge AI Translator",
+            heading: sprintf(__("Translate Using %s", 'translate-words'), "Edge built-in API"),
+            Docs: "https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/",
+            BetaEnabled: true,
+            ButtonDisabled: props.edgeLocalAiTranslatorButtonDisabled,
+            ErrorMessage: props.edgeLocalAiTranslatorButtonDisabled ? <div className={`${prefix}-provider-error button button-primary`} onClick={() => openErrorModalHandler(props.edgeLocalAiTranslatorButtonDisabled)}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
+            Logo: <EdgeIcon className="icon-size"  />,
+            filterHtmlContent: true
+        },
         gemini: {
             Provider: AiLlmBulkTranslator,
             title: "Google Gemini",
@@ -61,10 +75,36 @@ export default (props) => {
         }
     };
 
+    const browserType = (() => {
+        let type = 'Other';
+        if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
+            navigator.userAgentData.brands.forEach(data => {
+                if (data.brand === 'Google Chrome') {
+                    type = 'Chrome';
+                } else if (data.brand === 'Microsoft Edge') {
+                    type = 'Edge';
+                }
+            });
+        } else {
+            if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
+                type = 'Edge';
+            } else if (window.hasOwnProperty('chrome')) {
+                type = 'Chrome';
+            }
+        }
+        return type;
+    })();
+
     const validServices={};
 
     providers.forEach((provider) => {
         if (Services[provider]) {
+            if (browserType === 'Chrome' && provider === 'edgeLocalAiTranslator') {
+                return;
+            }
+            if (browserType === 'Edge' && provider === 'localAiTranslator') {
+                return;
+            }
             validServices[provider] = Services[provider];
         }
     });

@@ -38,7 +38,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
             
             stringContent=await extractInnerContent(reactElement);
 
-            if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+            if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                 stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
             }
             

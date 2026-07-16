@@ -2,7 +2,7 @@ import Providers from "./providers.js";
 import TranslateService from "../components/translate-provider/index.js";
 
 const SettingModalBody = (props) => {
-    const { prefix, localAiModalError } = props;
+    const { prefix, localAiModalError, edgeLocalAiModalError } = props;
     const ServiceProviders = TranslateService();
     return (
         <div className={`${prefix}-setting-modal-body`}>
@@ -21,6 +21,8 @@ const SettingModalBody = (props) => {
                             {...props}
                             localAiTranslatorDisabled={localAiModalError}
                             localAiModalError={localAiModalError}
+                            edgeLocalAiTranslatorDisabled={edgeLocalAiModalError}
+                            edgeLocalAiModalError={edgeLocalAiModalError}
                             openErrorModalHandler={props.errorModalHandler}
                             Service={provider}
                         />

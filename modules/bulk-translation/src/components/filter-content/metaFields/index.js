@@ -48,7 +48,7 @@ const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, al
                     let reactElement = filterContent({ content: value, service, contentKey: key, skipTags: [] });
                     value = await extractInnerContent(reactElement);
 
-                    if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+                    if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                         value=await updateGlossaryString({content: value, glossaryTerms});
                     }
 
@@ -74,7 +74,7 @@ const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, al
                     let reactElement = filterContent({ content: filterdValue, service, contentKey: key, skipTags: [] });
                     filterdValue = await extractInnerContent(reactElement);
 
-                    if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+                    if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                         filterdValue=await updateGlossaryString({content: filterdValue, glossaryTerms});
                     }
 

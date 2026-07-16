@@ -253,6 +253,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			// Bulk UI only implements Google Translate and Chrome built-in AI (not LLM API keys).
 			if ( 'chrome_local_ai' === $provider ) {
 				$active_providers[] = 'localAiTranslator';
+			} elseif ( 'edge_local_ai' === $provider ) {
+				$active_providers[] = 'edgeLocalAiTranslator';
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {

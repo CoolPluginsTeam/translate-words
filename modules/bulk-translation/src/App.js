@@ -23,6 +23,7 @@ const App = ({ onDestory, prefix, postIds }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [errorModal, setErrorModal] = useState(false);
     const [localAiModalError, setLocalAiModalError] = useState(false);
+    const [edgeLocalAiModalError, setEdgeLocalAiModalError] = useState(false);
 
     const destroyApp = (e) => {
         setStatusModalVisibility(false);
@@ -33,9 +34,14 @@ const App = ({ onDestory, prefix, postIds }) => {
 
     useEffect(() => {
         const checkStatus = async () => {
-            const status = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi');
-            if (status.type === 'browser-not-supported' || status.type === 'translation-api-not-available' || status.type === 'browser-not-supported') {
-                setLocalAiModalError(__(status.html[0].outerHTML, 'translate-words'));
+            const chromeStatus = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi', false);
+            if (chromeStatus && (chromeStatus.type === 'browser-not-supported' || chromeStatus.type === 'translation-api-not-available')) {
+                setLocalAiModalError(chromeStatus.html[0].outerHTML);
+            }
+
+            const edgeStatus = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi', true);
+            if (edgeStatus && (edgeStatus.type === 'browser-not-supported' || edgeStatus.type === 'translation-api-not-available')) {
+                setEdgeLocalAiModalError(edgeStatus.html[0].outerHTML);
             }
 
             setIsLoading(false);
@@ -150,6 +156,8 @@ const App = ({ onDestory, prefix, postIds }) => {
             onCloseHandler={settingModalVisibilityHandler}
             updateProviderHandler={updateProviderHandler} 
             localAiModalError={localAiModalError}
+            edgeLocalAiModalError={edgeLocalAiModalError}
+            selectedLanguages={selectedLanguages}
         />}
 
         {statusModalVisibility && !settingModalVisibility && (isLoading ?

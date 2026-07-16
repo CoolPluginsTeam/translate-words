@@ -42,6 +42,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
         $data= array(
             'provider' => array(
                 'chrome_local_ai' => false,
+                'edge_local_ai' => false,
                 'google' => true,
                 'gemini' => false,
             ),
@@ -67,6 +68,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                     'type' => 'object',
                     'properties' => array(
                         'chrome_local_ai' => array('type' => 'boolean'),
+                        'edge_local_ai' => array('type' => 'boolean'),
                         'google' => array('type' => 'boolean'),
                         'gemini' => array('type' => 'boolean'),
                     )

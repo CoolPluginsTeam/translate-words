@@ -23,6 +23,9 @@ const SettingModal = (props) => {
     const [serviceModalErrors, setServiceModalErrors] = useState({});
     const [errorModalVisibility, setErrorModalVisibility] = useState(false);
     const [chromeAiBtnDisabled, setChromeAiBtnDisabled] = useState(false);
+    const [edgeAiBtnDisabled, setEdgeAiBtnDisabled] = useState(false);
+    const [chromeAiDownload, setChromeAiDownload] = useState(null);
+    const [edgeAiDownload, setEdgeAiDownload] = useState(null);
     const providers = lmatPageTranslationGlobal.providers;
 
     const openModalOnLoadHandler = (e) => {
@@ -59,17 +62,38 @@ const SettingModal = (props) => {
         e.preventDefault();
 
         if (providers.length > 1) {
+            // Perform language check upfront when modal is opened with multiple providers
+            const errors = await providerErrors();
+
+            if (errors && (errors.chromeAiDownloadPending || errors.edgeAiDownloadPending)) {
+                setSettingVisibility(true);
+                return;
+            }
+
+            // Show provider selection modal - errors will be shown as error messages on provider buttons
             setSettingVisibility(prev => !prev);
         } else if (providers.length < 1) {
             openErrorModalHandler('providerNotConfigured');
         } else {
+            // Single provider case
             const errors = await providerErrors();
+            const providerId = providers[0];
 
-            if(errors && errors[providers[0]]){
+            // Check for download pending
+            if (errors && (errors.chromeAiDownloadPending || errors.edgeAiDownloadPending)) {
+                setSettingVisibility(true);
                 return;
             }
 
-            openModelHandler(providers[0]);
+            // Check for language support errors - open the provider modal to show error on provider button
+            if (errors && errors[providerId]) {
+                // Don't open error modal, let the provider modal show the error inline
+                setSettingVisibility(true);
+                return;
+            }
+
+            // All good, open the provider modal
+            openModelHandler(providerId);
         }
     }
 
@@ -99,16 +123,66 @@ const SettingModal = (props) => {
     const providerErrors = async () => {
         let errors = {};
         const localAiSupportStatus = async () => {
-            const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName);
+            const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, false);
 
             if (localAiTranslatorSupport !== true && typeof localAiTranslatorSupport === 'object') {
-                setChromeAiBtnDisabled(true);
-
-                errors.localAiTranslator = { message: localAiTranslatorSupport, Title: __("Chrome AI Translator", 'translate-words') };
-
-                setServiceModalErrors(prev => ({ ...prev, localAiTranslator: errors.localAiTranslator }));
+                if (localAiTranslatorSupport.hasClass && localAiTranslatorSupport.hasClass('atlt-chromeai-download-pending')) {
+                    const isDownloading = localAiTranslatorSupport.hasClass('atlt-chromeai-downloading');
+                    setChromeAiDownload({
+                        status: isDownloading ? 'downloading' : 'downloadable',
+                        progress: 0,
+                        source: localAiTranslatorSupport.attr('data-source'),
+                        target: localAiTranslatorSupport.attr('data-target'),
+                        sourceLabel: localAiTranslatorSupport.attr('data-source-label'),
+                        targetLabel: localAiTranslatorSupport.attr('data-target-label')
+                    });
+                    errors.chromeAiDownloadPending = true;
+                } else {
+                    setChromeAiBtnDisabled(true);
+                    errors.localAiTranslator = { message: localAiTranslatorSupport, Title: __("Chrome AI Translator", 'translate-words') };
+                    setServiceModalErrors(prev => ({ ...prev, localAiTranslator: errors.localAiTranslator }));
+                }
+            } else {
+                setChromeAiBtnDisabled(false);
+                setChromeAiDownload(null);
+                setServiceModalErrors(prev => {
+                    const next = { ...prev };
+                    delete next.localAiTranslator;
+                    return next;
+                });
             }
         };
+
+        const edgeLocalAiSupportStatus = async () => {
+            const edgeLocalAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, true);
+
+            if (edgeLocalAiTranslatorSupport !== true && typeof edgeLocalAiTranslatorSupport === 'object') {
+                if (edgeLocalAiTranslatorSupport.hasClass && edgeLocalAiTranslatorSupport.hasClass('atlt-chromeai-download-pending')) {
+                    const isDownloading = edgeLocalAiTranslatorSupport.hasClass('atlt-chromeai-downloading');
+                    setEdgeAiDownload({
+                        status: isDownloading ? 'downloading' : 'downloadable',
+                        progress: 0,
+                        source: edgeLocalAiTranslatorSupport.attr('data-source'),
+                        target: edgeLocalAiTranslatorSupport.attr('data-target'),
+                        sourceLabel: edgeLocalAiTranslatorSupport.attr('data-source-label'),
+                        targetLabel: edgeLocalAiTranslatorSupport.attr('data-target-label')
+                    });
+                    errors.edgeAiDownloadPending = true;
+                } else {
+                    setEdgeAiBtnDisabled(true);
+                    errors.edgeLocalAiTranslator = { message: edgeLocalAiTranslatorSupport, Title: __("Edge AI Translator", 'translate-words') };
+                    setServiceModalErrors(prev => ({ ...prev, edgeLocalAiTranslator: errors.edgeLocalAiTranslator }));
+                }
+            } else {
+                setEdgeAiBtnDisabled(false);
+                setEdgeAiDownload(null);
+                setServiceModalErrors(prev => {
+                    const next = { ...prev };
+                    delete next.edgeLocalAiTranslator;
+                    return next;
+                });
+            }
+        }
 
         const googleSupportStatus = async () => {
             if (!googleSupport) {
@@ -133,18 +207,11 @@ const SettingModal = (props) => {
         if (providers.includes('localAiTranslator')) {
             await localAiSupportStatus();
         }
+        if (providers.includes('edgeLocalAiTranslator')) {
+            await edgeLocalAiSupportStatus();
+        }
         if (providers.includes('google')) {
             await googleSupportStatus();
-        }
-
-        if (providers.length < 2 && providers[0]) {
-            const providerId = providers[0];
-
-            if (serviceModalErrors && (serviceModalErrors[providerId] || errors[providerId])) {
-                openErrorModalHandler(providerId);
-            } else {
-                openModelHandler(providerId);
-            }
         }
 
         return errors;
@@ -224,15 +291,51 @@ const SettingModal = (props) => {
         }
 
         const dataService = targetElement.dataset && targetElement.dataset.service;
-        setSettingVisibility(false);
+        const isEdge = dataService === 'edgeLocalAiTranslator';
 
         if (dataService === 'localAiTranslator') {
-            const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName);
+            const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, false);
             if (localAiTranslatorSupport !== true && typeof localAiTranslatorSupport === 'object') {
+                if (localAiTranslatorSupport.hasClass && localAiTranslatorSupport.hasClass('atlt-chromeai-download-pending')) {
+                    const isDownloading = localAiTranslatorSupport.hasClass('atlt-chromeai-downloading');
+                    setChromeAiDownload({
+                        status: isDownloading ? 'downloading' : 'downloadable',
+                        progress: 0,
+                        source: localAiTranslatorSupport.attr('data-source'),
+                        target: localAiTranslatorSupport.attr('data-target'),
+                        sourceLabel: localAiTranslatorSupport.attr('data-source-label'),
+                        targetLabel: localAiTranslatorSupport.attr('data-target-label')
+                    });
+                } else {
+                    setErrorModalVisibility('localAiTranslator');
+                    setServiceModalErrors(prev => ({ ...prev, localAiTranslator: { message: localAiTranslatorSupport[0]?.outerHTML || localAiTranslatorSupport, Title: __("Chrome AI Translator", 'translate-words') } }));
+                }
                 return;
             }
         }
 
+        if (dataService === 'edgeLocalAiTranslator') {
+            const edgeLocalAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, true);
+            if (edgeLocalAiTranslatorSupport !== true && typeof edgeLocalAiTranslatorSupport === 'object') {
+                if (edgeLocalAiTranslatorSupport.hasClass && edgeLocalAiTranslatorSupport.hasClass('atlt-chromeai-download-pending')) {
+                    const isDownloading = edgeLocalAiTranslatorSupport.hasClass('atlt-chromeai-downloading');
+                    setEdgeAiDownload({
+                        status: isDownloading ? 'downloading' : 'downloadable',
+                        progress: 0,
+                        source: edgeLocalAiTranslatorSupport.attr('data-source'),
+                        target: edgeLocalAiTranslatorSupport.attr('data-target'),
+                        sourceLabel: edgeLocalAiTranslatorSupport.attr('data-source-label'),
+                        targetLabel: edgeLocalAiTranslatorSupport.attr('data-target-label')
+                    });
+                } else {
+                    setErrorModalVisibility('edgeLocalAiTranslator');
+                    setServiceModalErrors(prev => ({ ...prev, edgeLocalAiTranslator: { message: edgeLocalAiTranslatorSupport[0]?.outerHTML || edgeLocalAiTranslatorSupport, Title: __("Edge AI Translator", 'translate-words') } }));
+                }
+                return;
+            }
+        }
+
+        setSettingVisibility(false);
         setModalRender(prev => prev + 1);
         setActiveService(dataService);
     };
@@ -246,7 +349,7 @@ const SettingModal = (props) => {
             {errorModalVisibility && serviceModalErrors[errorModalVisibility] &&
                 <ErrorModalBox onClose={closeErrorModal} {...serviceModalErrors[errorModalVisibility]} />
             }
-            {settingVisibility && providers.length > 1 &&
+            {settingVisibility && (providers.length > 1 || chromeAiDownload || edgeAiDownload) &&
                 <div className="modal-container" style={{ display: settingVisibility ? 'flex' : 'none' }}>
                     <div className="lmat-page-translation-settings modal-content">
                         <SettingModalHeader
@@ -263,7 +366,12 @@ const SettingModal = (props) => {
                             postType={props.postType}
                             sourceLangName={sourceLangName}
                             localAiTranslatorDisabled={chromeAiBtnDisabled}
+                            edgeLocalAiTranslatorDisabled={edgeAiBtnDisabled}
                             openErrorModalHandler={openErrorModalHandler}
+                            chromeAiDownload={chromeAiDownload}
+                            setChromeAiDownload={setChromeAiDownload}
+                            edgeAiDownload={edgeAiDownload}
+                            setEdgeAiDownload={setEdgeAiDownload}
                         />
                         <SettingModalFooter
                             targetLangName={targetLangName}

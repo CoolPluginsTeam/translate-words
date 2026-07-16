@@ -7,6 +7,7 @@ import apiFetch from "@wordpress/api-fetch"
 import { getNonce } from '../utils'
 import { toast } from 'sonner'
 import { ChromeIcon } from '../../../../../assets/logo/chrome';
+import { EdgeIcon } from '../../../../../assets/logo/edge';
 import { GoogleIcon } from '../../../../../assets/logo/google';
 import { GeminiIcon } from '../../../../../assets/logo/gemini';
 import ApiKey from './api-key';
@@ -16,14 +17,37 @@ const TranslationConfig = ({ data, setData }) => {
 
     const aiTranslation = data?.ai_translation_configuration; //store the media option
     const provider = aiTranslation?.provider;
+    const browserType = (() => {
+        let type = 'Other';
+        if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
+            navigator.userAgentData.brands.forEach(data => {
+                if (data.brand === 'Google Chrome') {
+                    type = 'Chrome';
+                } else if (data.brand === 'Microsoft Edge') {
+                    type = 'Edge';
+                }
+            });
+        } else {
+            if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
+                type = 'Edge';
+            } else if (window.hasOwnProperty('chrome')) {
+                type = 'Chrome';
+            }
+        }
+        return type;
+    })();
+
+    const showChromeRow = browserType !== 'Edge';
+    const showEdgeRow = browserType !== 'Chrome';
     const allowedProviders = Array.isArray(window?.lmat_settings?.allowed_providers)
         ? window.lmat_settings.allowed_providers
         : ['chrome_local_ai', 'google'];
     const wpAiClientAvailable = allowedProviders.includes('gemini');
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
+    const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation })
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -41,6 +65,7 @@ const TranslationConfig = ({ data, setData }) => {
         let sameChecker = {
             googleMachineTranslation: true,
             chromeLocalAITranslation: true,
+            edgeLocalAITranslation: true,
             geminiTranslation: true,
             bulkTranslationPostStatus: true,
             slugTranslationOption: true,
@@ -53,6 +78,10 @@ const TranslationConfig = ({ data, setData }) => {
 
         if (chromeLocalAITranslation !== provider?.chrome_local_ai) {
             sameChecker.chromeLocalAITranslation = false
+        }
+
+        if (edgeLocalAITranslation !== provider?.edge_local_ai) {
+            sameChecker.edgeLocalAITranslation = false
         }
         
         if (wpAiClientAvailable && geminiTranslation !== provider?.gemini) {
@@ -76,7 +105,7 @@ const TranslationConfig = ({ data, setData }) => {
         }
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
         setHandleButtonDisabled(flag && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -104,6 +133,7 @@ const TranslationConfig = ({ data, setData }) => {
                     provider: {
                         google: googleMachineTranslation,
                         chrome_local_ai: chromeLocalAITranslation,
+                        edge_local_ai: edgeLocalAITranslation,
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
                         } : {}),
@@ -119,10 +149,11 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
+                lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
@@ -266,33 +297,64 @@ const TranslationConfig = ({ data, setData }) => {
                             </Container.Item>
                         </div>
                     </div>
-                    <div style={{ backgroundColor: "#fbfbfb" }}>
-                        <div className='switcher p-6 rounded-lg'>
-                            <Container.Item >
-                                <h3 className='flex items-center gap-2'>
-                                    <ChromeIcon className="w-5 h-5" />
-                                    {__('Chrome Local AI Translation', 'translate-words')}
-                                </h3>
-                                <p>
-                                    {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
-                                </p>
-                            </Container.Item>
-                            <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
-                                <Switch
-                                    aria-label="Switch Element"
-                                    id="chrome-local-ai-translation"
-                                    onChange={() => {
-                                        setChromeLocalAITranslation(!chromeLocalAITranslation)
-                                    }}
-                                    value={chromeLocalAITranslation}
-                                    size="sm"
-                                />
-                            </Container.Item>
+                    {showChromeRow && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item >
+                                    <h3 className='flex items-center gap-2'>
+                                        <ChromeIcon className="w-5 h-5" />
+                                        {__('Chrome Local AI Translation', 'translate-words')}
+                                    </h3>
+                                    <p>
+                                        {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="chrome-local-ai-translation"
+                                        onChange={() => {
+                                            setChromeLocalAITranslation(!chromeLocalAITranslation)
+                                        }}
+                                        value={chromeLocalAITranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {chromeLocalAITranslation && (
+                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
+                            )}
                         </div>
-                        {chromeLocalAITranslation && (
-                            <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
-                        )}
-                    </div>
+                    )}
+                    {showEdgeRow && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item >
+                                    <h3 className='flex items-center gap-2'>
+                                        <EdgeIcon className="w-5 h-5" />
+                                        {__('Edge Local AI Translation', 'translate-words')}
+                                    </h3>
+                                    <p>
+                                        {__('Edge Local AI Translation uses Edge Local AI API to translate text.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="edge-local-ai-translation"
+                                        onChange={() => {
+                                            setEdgeLocalAITranslation(!edgeLocalAITranslation)
+                                        }}
+                                        value={edgeLocalAITranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {edgeLocalAITranslation && (
+                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} isEdge={true} />
+                            )}
+                        </div>
+                    )}
                     {wpAiClientAvailable && (
                         <div style={{ backgroundColor: "#fbfbfb" }}>
                             <div className='switcher p-6 rounded-lg'>

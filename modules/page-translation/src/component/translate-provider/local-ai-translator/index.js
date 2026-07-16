@@ -59,17 +59,20 @@ const localAiTranslator = async (props) => {
         const key = ele.dataset.key;
         const sourceText = ele.closest('tr').querySelector('td[data-source="source_text"]').innerText;
 
-        SaveTranslation({ type: type, key: key, translateContent: translatedText, source: sourceText, provider: 'localAiTranslator', AllowedMetaFields });
+        const serviceKey = props.service || 'localAiTranslator';
+        SaveTranslation({ type: type, key: key, translateContent: translatedText, source: sourceText, provider: serviceKey, AllowedMetaFields });
 
-        const translationEntry = select('block-lmatPageTranslation/translate').getTranslationInfo().translateData?.localAiTranslator;
+        const translationEntry = select('block-lmatPageTranslation/translate').getTranslationInfo().translateData?.[serviceKey];
         const previousTargetStringCount = translationEntry && translationEntry.targetStringCount ? translationEntry.targetStringCount : 0;
         const previousTargetWordCount = translationEntry && translationEntry.targetWordCount ? translationEntry.targetWordCount : 0;
         const previousTargetCharacterCount = translationEntry && translationEntry.targetCharacterCount ? translationEntry.targetCharacterCount : 0;
 
         if (translatedText.trim() !== '' && translatedText.trim().length > 0) {
-            dispatch('block-lmatPageTranslation/translate').translationInfo({ targetStringCount: previousTargetStringCount + sourceText.trim().split(/(?<=[.!?]+)\s+/).length, targetWordCount: previousTargetWordCount + sourceText.trim().split(/\s+/).filter(word => /[^\p{L}\p{N}]/.test(word)).length, targetCharacterCount: previousTargetCharacterCount + sourceText.trim().length, provider: 'localAiTranslator' });
+            dispatch('block-lmatPageTranslation/translate').translationInfo({ targetStringCount: previousTargetStringCount + sourceText.trim().split(/(?<=[.!?]+)\s+/).length, targetWordCount: previousTargetWordCount + sourceText.trim().split(/\s+/).filter(word => /[^\p{L}\p{N}]/.test(word)).length, targetCharacterCount: previousTargetCharacterCount + sourceText.trim().length, provider: serviceKey });
         }
     }
+
+    const isEdge = props.service === 'edgeLocalAiTranslator' || (props.ID && props.ID.includes('edgeLocalAiTranslator'));
 
     const TranslateProvider = await ChromeAiTranslator.Object({
         mainWrapperSelector: "#lmat_page_translation_strings_model",
@@ -85,7 +88,28 @@ const localAiTranslator = async (props) => {
         onStartTranslationProcess: startTranslation,
         onComplete: completeTranslation,
         onBeforeTranslate: beforeTranslate,
-        onAfterTranslate: afterTranslate
+        onAfterTranslate: afterTranslate,
+        onLanguageError: (err) => {
+            console.log("onLanguageError triggered with err:", err);
+            const errorHtml = (err && typeof err.html === 'function') ? err.html() : (err.outerHTML || String(err));
+            console.log("Computed errorHtml:", errorHtml);
+            document.dispatchEvent(
+                new CustomEvent("lmat-page-translation:translation-error", {
+                    detail: {
+                        message: __("Translation Error", "translate-words"),
+                        messagePlain: __("Translation Error", "translate-words"),
+                        recoverable: true,
+                        html: errorHtml,
+                        onTranslateAgain: () => { window.location.reload(); },
+                        onContinue: () => {
+                            document.dispatchEvent(new CustomEvent("lmat-page-translation:translation-error-clear", { bubbles: true }));
+                        }
+                    },
+                    bubbles: true
+                })
+            );
+        },
+        isEdge: isEdge
     });
 
     if (typeof destroyUpdateHandler === 'function') {
@@ -98,7 +122,7 @@ const localAiTranslator = async (props) => {
 
     if (TranslateProvider.hasOwnProperty('init')) {
         TranslateProvider.init();
-        const button = document.querySelector('#lmat_page_translation_localAiTranslator_translate_element .local_ai_translator_btn');
+        const button = document.querySelector(`#lmat_page_translation_${props.service}_translate_element .local_ai_translator_btn`);
 
         if (button && translateStatus) {
             button.disabled = translateStatus;

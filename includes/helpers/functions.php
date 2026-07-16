@@ -371,7 +371,7 @@ function linguator_is_wp_ai_client_exist() {
  * @return string[]
  */
 function linguator_get_allowed_ai_providers() {
-	$allowed = array( 'chrome_local_ai', 'google' );
+	$allowed = array( 'chrome_local_ai', 'edge_local_ai', 'google' );
 
 	global $wp_version;
 	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {

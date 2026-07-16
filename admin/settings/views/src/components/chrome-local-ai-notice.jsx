@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Chrome Translator API compatibility notice (shared by settings + setup wizard).
@@ -8,7 +8,7 @@ import { __ } from '@wordpress/i18n';
  * @param {string} [props.className] Extra classes on the outer card.
  * @param {Object} [props.style]     Extra inline styles (merged after base card styles).
  */
-export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) {
+export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, isEdge = false }) {
 	const noticeType = useMemo(() => {
 		const isHttps = window?.location?.protocol === 'https:';
 		const isSecureContext = Boolean(window?.isSecureContext);
@@ -20,10 +20,18 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 
 		const hasChromeObject = Object.prototype.hasOwnProperty.call(window ?? {}, 'chrome');
 		const userAgent = navigator?.userAgent ?? '';
-		const isChrome = hasChromeObject && userAgent.includes('Chrome') && !userAgent.includes('Edg');
+		
+		const actualIsEdge = userAgent.includes('Edg');
+		const actualIsChrome = hasChromeObject && userAgent.includes('Chrome') && !actualIsEdge;
 
-		if (!isChrome) {
-			return 'browser';
+		if (isEdge) {
+			if (!actualIsEdge) {
+				return 'browser';
+			}
+		} else {
+			if (!actualIsChrome) {
+				return 'browser';
+			}
 		}
 
 		if (!apiAvailable && !isHttps && !isSecureContext) {
@@ -35,11 +43,15 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 		}
 
 		return null;
-	}, []);
+	}, [isEdge]);
 
 	if (!noticeType) {
 		return null;
 	}
+
+	const browserName = isEdge ? 'Edge' : 'Chrome';
+	const scheme = isEdge ? 'edge' : 'chrome';
+	const docUrl = isEdge ? 'https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/' : 'https://developer.chrome.com/docs/ai/translator-api';
 
 	const outerClass = ['flex', 'flex-col', 'gap-4', 'p-6', 'rounded-lg', className].filter(Boolean).join(' ');
 
@@ -58,18 +70,18 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 				{noticeType === 'browser' && (
 					<ul className="list-disc ml-5 mt-2">
 						<li>
-							{__('The Translator API (Chrome Local AI Models) is designed for the Chrome browser.', 'translate-words')}
+							{sprintf(__('The Translator API (%s Local AI Models) is designed for the %s browser.', 'translate-words'), browserName, browserName)}
 						</li>
 						<li>
 							{__(
-								'If you are using a different browser (such as Edge, Firefox, or Safari), the API may not function correctly.',
+								'If you are using a different browser, the API may not function correctly.',
 								'translate-words'
 							)}
 						</li>
 						<li>
 							<a
 								className="underline text-blue-600"
-								href="https://developer.chrome.com/docs/ai/translator-api"
+								href={docUrl}
 								rel="noreferrer noopener"
 								target="_blank"
 							>
@@ -94,8 +106,8 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 								{__('Use a secure connection (https://).', 'translate-words')}
 							</li>
 							<li>
-								{__('Or add your site to Chrome’s “insecure origins treated as secure”.', 'translate-words')}{' '}
-								<code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
+								{sprintf(__('Or add your site to %s’s “insecure origins treated as secure”.', 'translate-words'), browserName)}{' '}
+								<code>{scheme}://flags/#unsafely-treat-insecure-origin-as-secure</code>
 							</li>
 						</ol>
 					</>
@@ -105,8 +117,8 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 					<>
 						<ol className="list-decimal ml-5 mt-2">
 							<li>
-								{__('Open this URL in a new Chrome tab:', 'translate-words')}{' '}
-								<code>chrome://flags/#translation-api</code>
+								{sprintf(__('Open this URL in a new %s tab:', 'translate-words'), browserName)}{' '}
+								<code>{scheme}://flags/#translation-api</code>
 							</li>
 							<li>
 								{__('Set “Experimental translation API” to Enabled.', 'translate-words')}
@@ -121,7 +133,7 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 						<p className="mt-2">
 							<a
 								className="underline text-blue-600"
-								href="https://developer.chrome.com/docs/ai/translator-api"
+								href={docUrl}
 								rel="noreferrer noopener"
 								target="_blank"
 							>
@@ -129,7 +141,7 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {} }) 
 							</a>
 						</p>
 						<p>
-							{__('If the issue persists, please ensure Chrome is up to date and restart the browser.', 'translate-words')}
+							{sprintf(__('If the issue persists, please ensure %s is up to date and restart the browser.', 'translate-words'), browserName)}
 						</p>
 						<p>
 							<a

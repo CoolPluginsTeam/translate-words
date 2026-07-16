@@ -26,6 +26,7 @@ class LocalAiTranslate {
         this.activeTargetLangs='';
         this.prefix=prefix;
         this.serviceProvider=store.getState().serviceProvider;
+        this.isEdge = this.serviceProvider === 'edgeLocalAiTranslator';
         updateDestoryHandler(()=>{
             this.destroy();
         });
@@ -60,6 +61,7 @@ class LocalAiTranslate {
             onBeforeTranslate: this.onBeforeTranslate,
             onComplete: this.onComplete,
             onLanguageError: this.onLanguageError,
+            isEdge: this.isEdge
         });
 
         if(this.localAiTranslator.hasOwnProperty('init')){

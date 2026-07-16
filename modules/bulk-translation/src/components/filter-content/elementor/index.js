@@ -29,7 +29,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                 let reactElement=filterContent({content: value, service, contentKey: uniqueKey, skipTags:['script', 'style']});
                 stringContent=await extractInnerContent(reactElement);
 
-                if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+                if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                     stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
                 }
 

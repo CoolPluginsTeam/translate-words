@@ -21,12 +21,13 @@ class ChromeAiTranslator {
         this.targetLanguage = options.targetLanguage || "hi"; // Default target language
         this.targetLanguageLabel = options.targetLanguageLabel || "Hindi"; // Label for the target language
         this.sourceLanguageLabel = options.sourceLanguageLabel || "English"; // Label for the source language
+        this.isEdge = options.isEdge || false;
     }
 
     // Method to check language support and return relevant data
     extraData = async () => {
         // Check if the language is supported
-        const langSupportedStatus = await ChromeAiTranslator.languageSupportedStatus(this.sourceLanguage, this.targetLanguage, this.targetLanguageLabel, this.sourceLanguageLabel);
+        const langSupportedStatus = await ChromeAiTranslator.languageSupportedStatus(this.sourceLanguage, this.targetLanguage, this.targetLanguageLabel, this.sourceLanguageLabel, this.isEdge);
 
         if (langSupportedStatus !== true) {
             this.onLanguageError(langSupportedStatus); // Handle language error
@@ -47,29 +48,70 @@ class ChromeAiTranslator {
 
     /**
      * Checks if the specified source and target languages are supported by the Local Translator AI modal.
-     * 
-     * @param {string} sourceLanguage - The language code for the source language (e.g., "en" for English).
-     * @param {string} targetLanguage - The language code for the target language (e.g., "hi" for Hindi).
-     * @param {string} targetLanguageLabel - The label for the target language (e.g., "Hindi").
-     * @returns {Promise<boolean|jQuery>} - Returns true if the languages are supported, or a jQuery message if not.
      */
-    static languageSupportedStatus = async (sourceLanguage, targetLanguage, targetLanguageLabel, sourceLanguageLabel) => {
-        const supportedLanguages = ['en', 'es', 'ja', 'ar', 'de', 'bn', 'fr', 'hi', 'it', 'ko', 'nl', 'pl', 'pt', 'ru', 'th', 'tr', 'vi', 'zh', 'zh-hant', 'bg', 'cs', 'da', 'el', 'fi', 'hr', 'hu', 'id', 'iw', 'lt', 'no', 'ro', 'sk', 'sl', 'sv', 'uk','kn','ta','te','mr' ].map(lang => lang.toLowerCase());
+    static languageSupportedStatus = async (sourceLanguage, targetLanguage, targetLanguageLabel, sourceLanguageLabel, isEdge = false) => {
+        let supportedLanguages = ['en', 'es', 'ja', 'ar', 'de', 'bn', 'fr', 'hi', 'it', 'ko', 'nl', 'pl', 'pt', 'ru', 'th', 'tr', 'vi', 'zh', 'zh-hant', 'bg', 'cs', 'da', 'el', 'fi', 'hr', 'hu', 'id', 'iw', 'lt', 'no', 'ro', 'sk', 'sl', 'sv', 'uk','kn','ta','te','mr' ].map(lang => lang.toLowerCase());
+        const edgeOnlyLanguages = ["nb","af","is","fo","lb","pt-pt","ca","gl","oc","la","bs","dsb","hsb","sr-latn","be","mk","sr-cyrl","kk","ky","tg","tt","mn-cyrl","ba","ce","cv","zh-hans","lzh","yue","gu","ml","ur","as","or","pa","ne","si","my","dv","awa","bho","brx","doi","gom","hne","kha","lus","mag","mai","mni","sat","ms","km","lo","jv","su","ceb","fil","mi","fj","haw","sm","to","ty","tet","fa","he","ps","prs","ku","ks","sd","ug","ha","ig","yo","zu","xh","sw","sn","st","tn","nso","run","rw","ln","mg","so","am","ti","nya","et","lv","mt","eu","cy","ga","sq","hy","ka","az","uz","tk","bo","dzo","fr-ca","ht","ikt","iu-latn","iu","kmr","lug","luo","mn-mong","mww","otq","sa","tlh-latn","yua"].map(lang => lang.toLowerCase());
+
+        if (isEdge) {
+            supportedLanguages = [...supportedLanguages, ...edgeOnlyLanguages];
+        }
 
         const safeBrowser = window.location.protocol === 'https:';
         const browserContentSecure=window?.isSecureContext;
 
+        const getBrowserType = () => {
+            let type='Other';
+            if(navigator && navigator.userAgentData && navigator.userAgentData.brands){
+                navigator.userAgentData.brands.forEach(data=>{
+                    if(data.brand === 'Google Chrome'){
+                        type='Chrome';
+                    }else if(data.brand === 'Microsoft Edge'){
+                        type='Edge';
+                    }
+                });
+            }else{
+            if(navigator.userAgent.includes('Edg')){
+                type='Edge';
+            }else if(window.hasOwnProperty('chrome')){
+                type='Chrome';
+            }
+            }
+
+            return type;
+        }
+
+        const browserType = getBrowserType();
+        const scheme = isEdge ? 'edge' : 'chrome';
+        const browserName = isEdge ? 'Edge' : 'Chrome';
+        const docUrl = isEdge ? 'https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/' : 'https://developer.chrome.com/docs/ai/translator-api';
+        const edgeLangRef = `<a href="https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/" target="_blank" rel="noopener"><strong style="color: #2271b1;">test your language on the Edge Translator API playground</strong></a>`;
+
         // Browser check
-        if (!window.hasOwnProperty('chrome') || !navigator.userAgent.includes('Chrome') || navigator.userAgent.includes('Edg')) {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
-                <strong>Important Notice:</strong>
-                <ol>
-                    <li>The Translator API, which leverages Chrome local AI models, is designed specifically for use with the Chrome browser.</li>
-                    <li>For comprehensive information about the Translator API, <a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">click here</a>.</li>
-                </ol>
-                <p>Please ensure you are using the Chrome browser for optimal performance and compatibility.</p>
-            </span>`);
-            return message;
+        if (isEdge) {
+            if (browserType !== 'Edge') {
+                const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+                    <strong>Important Notice:</strong>
+                    <ol>
+                        <li>The Translator API, which leverages Edge local AI models, is designed specifically for use with the Microsoft Edge browser.</li>
+                        <li>For comprehensive information about Edge built-in AI translation, <a href="${docUrl}" target="_blank" rel="noopener">open the Edge Translator API playground</a>.</li>
+                    </ol>
+                    <p>Please ensure you are using the Microsoft Edge browser for optimal performance and compatibility.</p>
+                </span>`);
+                return message;
+            }
+        } else {
+            if (browserType !== 'Chrome') {
+                const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+                    <strong>Important Notice:</strong>
+                    <ol>
+                        <li>The Translator API, which leverages Chrome local AI models, is designed specifically for use with the Chrome browser.</li>
+                        <li>For comprehensive information about the Translator API, <a href="${docUrl}" target="_blank">click here</a>.</li>
+                    </ol>
+                    <p>Please ensure you are using the Chrome browser for optimal performance and compatibility.</p>
+                </span>`);
+                return message;
+            }
         }
 
         if (!('translation' in self && 'createTranslator' in self.translation) && !('ai' in self && 'translator' in self.ai ) && !("Translator" in self && "create" in self.Translator) && !safeBrowser && !browserContentSecure) {
@@ -81,8 +123,8 @@ class ChromeAiTranslator {
                     </li>
                     <li>
                         Please switch to a secure connection (HTTPS) or add this URL to the list of insecure origins treated as secure by visiting 
-                        <span data-clipboard-text="chrome://flags/#unsafely-treat-insecure-origin-as-secure" target="_blank" class="chrome-ai-translator-flags">
-                            chrome://flags/#unsafely-treat-insecure-origin-as-secure ${ChromeAiTranslator.svgIcons('copy')}
+                        <span data-clipboard-text="${scheme}://flags/#unsafely-treat-insecure-origin-as-secure" target="_blank" class="chrome-ai-translator-flags">
+                            ${scheme}://flags/#unsafely-treat-insecure-origin-as-secure ${ChromeAiTranslator.svgIcons('copy')}
                         </span>.
                         Click on the URL to copy it, then open a new window and paste this URL to access the settings.
                     </li>
@@ -96,12 +138,12 @@ class ChromeAiTranslator {
             const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
                 <h4>Steps to Enable the Translator AI Modal:</h4>
                 <ol>
-                    <li>Open this URL in a new Chrome tab: <strong><span data-clipboard-text="chrome://flags/#translation-api" target="_blank" class="chrome-ai-translator-flags">chrome://flags/#translation-api ${ChromeAiTranslator.svgIcons('copy')}</span></strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
+                    <li>Open this URL in a new ${browserName} tab: <strong><span data-clipboard-text="${scheme}://flags/#translation-api" target="_blank" class="chrome-ai-translator-flags">${scheme}://flags/#translation-api ${ChromeAiTranslator.svgIcons('copy')}</span></strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
                     <li>Ensure that the <strong>Experimental translation API</strong> option is set to <strong>Enabled</strong>.</li>
                     <li>Click on the <strong>Save</strong> button to apply the changes.</li>
                     <li>The Translator AI modal should now be enabled and ready for use.</li>
                 </ol>
-                <p>For more information, please refer to the <a href="https://developer.chrome.com/docs/ai/translator-api" target="_blank">documentation</a>.</p>   
+                <p>For more information, please refer to the <a href="${docUrl}" target="_blank">documentation</a>.</p>   
                 <p>If the issue persists, please ensure that your browser is up to date and restart your browser.</p>
                 <p>If you continue to experience issues after following the above steps, please <a href="https://my.coolplugins.net/account/support-tickets/" target="_blank" rel="noopener">open a support ticket</a> with our team. We are here to help you resolve any problems and ensure a smooth translation experience.</p>
             </span>`);
@@ -113,9 +155,9 @@ class ChromeAiTranslator {
             const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
                 <strong>Language Support Information:</strong>
                 <ol>
-                    <li>The current version of Chrome AI Translator does not support the Target Language <strong>${targetLanguageLabel} (${targetLanguage})</strong></li>
-                    <li>To view the list of supported languages, please <span data-clipboard-text="chrome://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">chrome://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
-                    <li>Ensure your Chrome browser is updated to the latest version for optimal performance.</li>
+                    <li>The current version of ${browserName} AI Translator does not support the Target Language <strong>${targetLanguageLabel} (${targetLanguage})</strong></li>
+                    ${isEdge ? `<li>To check if this language is available in Edge, ${edgeLangRef}.</li>` : `<li>To view the list of supported languages, please <span data-clipboard-text="${scheme}://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">${scheme}://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>`}
+                    <li>Ensure your ${browserName} browser is updated to the latest version for optimal performance.</li>
                 </ol>
             </span>`);
             return message;
@@ -126,9 +168,9 @@ class ChromeAiTranslator {
             const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
                 <strong>Language Support Information:</strong>
                 <ol>
-                    <li>The current version of Chrome AI Translator does not support the Source Language <strong>${sourceLanguageLabel} (${sourceLanguage})</strong></li>
-                    <li>To view the list of supported languages, please <span data-clipboard-text="chrome://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">chrome://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
-                    <li>Ensure your Chrome browser is updated to the latest version for optimal performance.</li>
+                    <li>The current version of ${browserName} AI Translator does not support the Source Language <strong>${sourceLanguageLabel} (${sourceLanguage})</strong></li>
+                    ${isEdge ? `<li>To check if this language is available in Edge, ${edgeLangRef}.</li>` : `<li>To view the list of supported languages, please <span data-clipboard-text="${scheme}://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">${scheme}://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>`}
+                    <li>Ensure your ${browserName} browser is updated to the latest version for optimal performance.</li>
                 </ol>
             </span>`);
             return message;
@@ -138,7 +180,16 @@ class ChromeAiTranslator {
         const status = await ChromeAiTranslator.languagePairAvality(sourceLanguage, targetLanguage);
 
         // Handle case for language pack after download
-        if (status === "after-download" || status === "downloadable" || status === "unavailable") {
+        if (status === "after-download" || status === "downloadable") {
+            return jQuery('<span class="atlt-chromeai-download-pending"></span>')
+                .attr('data-source', sourceLanguage)
+                .attr('data-target', targetLanguage)
+                .attr('data-source-label', sourceLanguageLabel || sourceLanguage)
+                .attr('data-target-label', targetLanguageLabel || targetLanguage);
+        }
+
+        // Handle case where the language pack is unavailable (cannot be downloaded automatically)
+        if (status === "unavailable") {
             const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
                 <h4>Installation Instructions for Language Packs:</h4>
                 <ol>
@@ -146,15 +197,13 @@ class ChromeAiTranslator {
                         To proceed, please install the language pack for <strong>${targetLanguageLabel} (${targetLanguage})</strong> or <strong>${sourceLanguageLabel} (${sourceLanguage})</strong>.
                     </li>
                     <li>
-                        After installing the language pack, add this language to your browser's system languages in Chrome settings.<br>
+                        After installing the language pack, add this language to your browser's system languages in ${browserName} settings.<br>
                         Go to <strong>Settings &gt; Languages &gt; Add languages</strong> and add <strong>${targetLanguageLabel}</strong> or <strong>${sourceLanguageLabel}</strong> to your preferred languages list & reload the page.
                     </li>
                     <li>
                         You can install it by visiting the following link: 
                         <strong>
-                            <span data-clipboard-text="chrome://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">
-                                chrome://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}
-                            </span>
+                            ${isEdge ? `<span data-clipboard-text="${scheme}://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">${scheme}://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>` : `<span data-clipboard-text="${scheme}://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">${scheme}://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span>`}
                         </strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.
                     </li>
                     <li>
@@ -163,7 +212,7 @@ class ChromeAiTranslator {
                     <li>
                         You need to install both language packs for translation to work. You can search for each language by its language code: <strong>${sourceLanguage}</strong> and <strong>${targetLanguage}</strong>.
                     </li>
-                    <li>For more help, refer to the <a href="https://developer.chrome.com/docs/ai/translator-api#supported-languages" target="_blank">documentation to check supported languages</a>.</li>
+                    <li>For more help, refer to the <a href="${isEdge ? 'https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/' : 'https://developer.chrome.com/docs/ai/translator-api#supported-languages'}" target="_blank">documentation to check supported languages</a>.</li>
                 </ol>
             </span>`);
             return message;
@@ -171,40 +220,11 @@ class ChromeAiTranslator {
 
         // Handle case for language pack downloadable
         if (status === "downloading") {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
-                <h4>Language Pack Download In Progress:</h4>
-                <ol>
-                    <li>
-                        The language pack for <strong>${targetLanguageLabel} (${targetLanguage})</strong> or <strong>${sourceLanguageLabel} (${sourceLanguage})</strong> is already being downloaded.
-                    </li>
-                    <li>
-                        <strong>You do not need to start the download again.</strong> Please wait for the download to complete. Once finished, the translation feature will become available automatically.
-                    </li>
-                    <li>
-                        You can check the download progress by opening:
-                        <strong>
-                            <span data-clipboard-text="chrome://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">
-                                chrome://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}
-                            </span>
-                        </strong>
-                        . Click on the URL to copy it, then open a new window and paste this URL in Chrome to view the status.
-                    </li>
-                    <li>
-                        <strong>What to do next:</strong>
-                        <ul style="margin-top: .5em;">
-                            <li>Wait for the download to finish. The status will change to <strong>Ready</strong> or <strong>Installed</strong> in the <strong>Language Packs</strong> section.</li>
-                            <li>After the language pack is installed, you may need to <strong>reload</strong> or <strong>restart</strong> your browser for the changes to take effect.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        For more help, refer to the <a href="https://developer.chrome.com/docs/ai/translator-api#supported-languages" target="_blank">documentation to check supported languages</a>.
-                    </li>
-                </ol>
-                <div style="text-align: right;">
-                    <button onclick="location.reload()" class="lmat-page-translation-error-reload-btn">Reload Page</button>
-                </div>
-            </span>`);
-            return message;
+            return jQuery('<span class="atlt-chromeai-download-pending atlt-chromeai-downloading"></span>')
+                .attr('data-source', sourceLanguage)
+                .attr('data-target', targetLanguage)
+                .attr('data-source-label', sourceLanguageLabel || sourceLanguage)
+                .attr('data-target-label', targetLanguageLabel || targetLanguage);
         }
 
         // Handle case for language pack not readily available
@@ -213,8 +233,8 @@ class ChromeAiTranslator {
                 <h4>Language Pack Installation Required</h4>
                 <ol>
                     <li>Please ensure that the language pack for <strong>${targetLanguageLabel} (${targetLanguage})</strong> or <strong>${sourceLanguageLabel} (${sourceLanguage})</strong> is installed and set as a preferred language in your browser.</li>
-                    <li>To install the language pack, visit <strong><span data-clipboard-text="chrome://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">chrome://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span></strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
-                    <li>If you encounter any issues, please refer to the <a href="https://developer.chrome.com/docs/ai/translator-api#supported-languages" target="_blank">documentation to check supported languages</a> for further assistance.</li>
+                    <li>To install the language pack, ${isEdge ? `visit the Edge settings to install language packs. For more info, ${edgeLangRef}.` : `visit <strong><span data-clipboard-text="${scheme}://on-device-translation-internals" target="_blank" class="chrome-ai-translator-flags">${scheme}://on-device-translation-internals ${ChromeAiTranslator.svgIcons('copy')}</span></strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.`}</li>
+                    <li>If you encounter any issues, please refer to the <a href="${isEdge ? 'https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/' : 'https://developer.chrome.com/docs/ai/translator-api#supported-languages'}" target="_blank">documentation to check supported languages</a> for further assistance.</li>
                 </ol>
             </span>`);
             return message;
@@ -260,6 +280,49 @@ class ChromeAiTranslator {
         }
 
         return false;
+    }
+
+    static downloadLanguagePair = async (source, target, onProgress) => {
+        try {
+            if ('translation' in self && 'createTranslator' in self.translation) {
+                await self.translation.createTranslator({ sourceLanguage: source, targetLanguage: target });
+            } else if ('ai' in self && 'translator' in self.ai) {
+                await self.ai.translator.create({ sourceLanguage: source, targetLanguage: target });
+            } else if ('Translator' in self && 'create' in self.Translator) {
+                await self.Translator.create({
+                    sourceLanguage: source,
+                    targetLanguage: target,
+                    monitor(m) {
+                        m.addEventListener('downloadprogress', (e) => {
+                            if (typeof onProgress === 'function') {
+                                onProgress(e);
+                            }
+                            console.log(`Downloaded ${e.loaded * 100}%`);
+                        });
+                    },
+                });
+            }
+        } catch (err) {
+            console.log('Language pack download error:', err);
+        }
+
+        // Re-check availability after the download attempt.
+        if ('translation' in self && 'createTranslator' in self.translation) {
+            return await self.translation.canTranslate({ sourceLanguage: source, targetLanguage: target });
+        } else if ('ai' in self && 'translator' in self.ai) {
+            const capabilities = await self.ai.translator.capabilities();
+            return await capabilities.languagePairAvailable(source, target);
+        } else if ('Translator' in self && 'create' in self.Translator) {
+            return await self.Translator.availability({ sourceLanguage: source, targetLanguage: target });
+        }
+
+        return false;
+    }
+
+    static startLanguagePackDownload = async (source, target, onProgress) => {
+        const finalStatus = await ChromeAiTranslator.downloadLanguagePair(source, target, onProgress);
+        const ok = finalStatus === 'available' || finalStatus === 'readily' || finalStatus === true;
+        return { ok, status: finalStatus };
     }
 
     AITranslator=async (targetLanguage)=>{
@@ -434,10 +497,15 @@ class ChromeAiTranslator {
     }
 
     stringTranslationBatch = async (originalString, index) => {
-        const translatedString = await this.translator.translate(originalString[index].nodeValue); // Translate the string
+        try {
+            const sourceText = originalString[index].nodeValue;
+            const translatedString = await this.translator.translate(sourceText); // Translate the string
 
-        if (translatedString && '' !== translatedString) {
-            originalString[index].nodeValue = translatedString; // Set the translated string
+            if (translatedString && '' !== translatedString) {
+                originalString[index].nodeValue = translatedString; // Set the translated string
+            }
+        } catch (error) {
+            console.error("Error during translation in stringTranslationBatch:", error);
         }
 
         if (index < originalString.length - 1) {
