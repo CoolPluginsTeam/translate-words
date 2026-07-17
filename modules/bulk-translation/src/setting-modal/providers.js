@@ -1,7 +1,4 @@
 import TranslateService from "../components/translate-provider/index.js";
-import ChromeLocalAiTranslator from "../components/translate-provider/local-ai/local-ai-translate.js";
-import { __ } from "@wordpress/i18n";
-import { useEffect } from "@wordpress/element";
 
 const Providers = (props) => {
     const service = props.Service;
@@ -17,83 +14,6 @@ const Providers = (props) => {
     const serviceId = service.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/[^a-z0-9-]/g, '');
     const btnId = `${prefix}-${serviceId}-btn`;
 
-    const downloadState = service === 'localAiTranslator' ? props.chromeAiDownload : (service === 'edgeLocalAiTranslator' ? props.edgeAiDownload : null);
-    const setDownloadState = service === 'localAiTranslator' ? props.setChromeAiDownload : (service === 'edgeLocalAiTranslator' ? props.setEdgeAiDownload : null);
-
-    const handleDownload = async (e) => {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        if (!downloadState || downloadState.status === 'downloading') return;
-
-        setDownloadState(prev => ({ ...prev, status: 'downloading', progress: 0 }));
-
-        try {
-            const result = await ChromeLocalAiTranslator.startLanguagePackDownload(
-                downloadState.source,
-                downloadState.target,
-                (evt) => {
-                    const pct = Math.round((evt && evt.loaded ? evt.loaded : 0) * 100);
-                    setDownloadState(prev => prev ? ({ ...prev, progress: pct }) : null);
-                }
-            );
-
-            if (result && result.ok) {
-                setDownloadState(null);
-                // Recheck/trigger next steps in SettingModal
-                props.checkAllProviderErrors();
-            } else {
-                setDownloadState(prev => prev ? ({ ...prev, status: 'failed' }) : null);
-            }
-        } catch (err) {
-            console.error("Language pack download failed:", err);
-            setDownloadState(prev => prev ? ({ ...prev, status: 'failed' }) : null);
-        }
-    };
-
-    useEffect(() => {
-        if (downloadState && downloadState.status === 'downloadable') {
-            handleDownload();
-        }
-    }, [downloadState]);
-
-    const renderDownloadButton = () => {
-        if (downloadState.status === 'downloading') {
-            return (
-                <button
-                    type="button"
-                    className={`${prefix}-service-btn button button-primary disabled`}
-                    disabled
-                    style={{ opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}
-                >
-                    <span className="lmat-loading-spinner-mini" style={{
-                        width: '12px',
-                        height: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTop: '2px solid #fff',
-                        borderRadius: '50%',
-                        display: 'inline-block'
-                    }}></span>
-                    {__('Downloading…', 'translate-words')} {downloadState.progress}%
-                </button>
-            );
-        }
-
-        const btnText = downloadState.status === 'failed' ? __('Retry Download', 'translate-words') : `${__('Download', 'translate-words')} ${downloadState.targetLabel}`;
-
-        return (
-            <button
-                type="button"
-                onClick={handleDownload}
-                className={`${prefix}-service-btn button button-primary`}
-            >
-                {btnText}
-            </button>
-        );
-    };
-
     return (
         <tr>
             <td className={`${prefix}-provider-name`}>
@@ -101,18 +21,17 @@ const Providers = (props) => {
                 <span>{ActiveService.title}</span>
             </td>
             <td>
-                {downloadState ? renderDownloadButton() : (
-                    ActiveService.ButtonDisabled ? ActiveService.ErrorMessage : (
-                        <button
-                            id={btnId}
-                            onClick={props.startTranslationHandler}
-                            className={`${prefix}-service-btn button button-primary`}
-                            data-service={service}
-                            data-service-label={ActiveService.serviceLabel}
-                        >
-                            {ActiveService.SettingBtnText}
-                        </button>
-                    )
+                {ActiveService.ButtonDisabled ? ActiveService.ErrorMessage : (
+                    <button
+                        id={btnId}
+                        type="button"
+                        onClick={props.startTranslationHandler}
+                        className={`${prefix}-service-btn button button-primary`}
+                        data-service={service}
+                        data-service-label={ActiveService.serviceLabel}
+                    >
+                        {ActiveService.SettingBtnText}
+                    </button>
                 )}
             </td>
             <td>

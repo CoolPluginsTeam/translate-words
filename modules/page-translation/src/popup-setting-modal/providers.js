@@ -24,9 +24,12 @@ const Providers = (props) => {
             e.stopPropagation();
         }
 
-        if (!downloadState || downloadState.status === 'downloading') return;
+        if (!downloadState || !setDownloadState) return;
+        if (downloadState.status === 'checking') return;
+        if (downloadState.status === 'downloading' && downloadState.downloadStarted) return;
+        if (!downloadState.source || !downloadState.target) return;
 
-        setDownloadState(prev => ({ ...prev, status: 'downloading', progress: 0 }));
+        setDownloadState(prev => prev ? ({ ...prev, status: 'downloading', progress: prev.progress || 0, downloadStarted: true }) : null);
 
         try {
             const result = await ChromeLocalAiTranslator.startLanguagePackDownload(
@@ -42,38 +45,46 @@ const Providers = (props) => {
                 // Download successful - reset download state so button shows "Translate"
                 setDownloadState(null);
             } else {
-                setDownloadState(prev => prev ? ({ ...prev, status: 'failed' }) : null);
+                setDownloadState(prev => prev ? ({ ...prev, status: 'failed', downloadStarted: false }) : null);
             }
         } catch (err) {
             console.error("Language pack download failed:", err);
-            setDownloadState(prev => prev ? ({ ...prev, status: 'failed' }) : null);
+            setDownloadState(prev => prev ? ({ ...prev, status: 'failed', downloadStarted: false }) : null);
         }
     };
 
     useEffect(() => {
-        if (downloadState && downloadState.status === 'downloadable') {
+        if (!downloadState) return;
+        if (downloadState.status === 'downloadable' || (downloadState.status === 'downloading' && !downloadState.downloadStarted)) {
             handleDownload();
         }
     }, [downloadState]);
 
+    const renderLoadingButton = (label) => (
+        <div
+            className="lmat-page-translation-service-btn button button-primary lmat-page-translation-btn-downloading"
+            style={{ pointerEvents: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+            <span className="lmat-loading-spinner-mini" style={{
+                width: '12px',
+                height: '12px',
+                border: '2px solid rgba(255,255,255,0.3)',
+                borderTop: '2px solid #fff',
+                borderRadius: '50%',
+                display: 'inline-block',
+                boxSizing: 'border-box'
+            }}></span>
+            {label}
+        </div>
+    );
+
     const renderDownloadButton = () => {
+        if (downloadState.status === 'checking') {
+            return renderLoadingButton(__('Loading…', 'translate-words'));
+        }
+
         if (downloadState.status === 'downloading') {
-            return (
-                <div
-                    className="lmat-page-translation-service-btn button button-primary disabled lmat-page-translation-btn-downloading"
-                    style={{ pointerEvents: 'none', opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                    <span className="lmat-loading-spinner-mini" style={{
-                        width: '12px',
-                        height: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTop: '2px solid #fff',
-                        borderRadius: '50%',
-                        display: 'inline-block'
-                    }}></span>
-                    {__('Downloading…', 'translate-words')} {downloadState.progress}%
-                </div>
-            );
+            return renderLoadingButton(__('Loading…', 'translate-words'));
         }
 
         const btnText = downloadState.status === 'failed' ? __('Retry Download', 'translate-words') : `${__('Download', 'translate-words')} ${props.targetLangName}`;

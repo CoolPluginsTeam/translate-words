@@ -415,9 +415,22 @@ button.lmat-page-translation-error-reload-btn:hover {
     color: #fff;
 }
 
+.lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn.lmat-page-translation-btn-downloading {
+    background: #ee4237;
+    border-color: #dd362b;
+    color: #fff;
+    cursor: default;
+}
+
 .lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn:hover {
     background: #37a737;
     border-color: #238b23;
+}
+
+.lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn.lmat-page-translation-btn-downloading:hover {
+    background: #ee4237;
+    border-color: #dd362b;
+    color: #fff;
 }
 
 .lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-provider-error {

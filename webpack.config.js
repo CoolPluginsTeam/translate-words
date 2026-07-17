@@ -20,7 +20,6 @@ const __dirname = path.dirname(__filename);
  * @param {boolean} [opts.generateAssets=false]// enable DependencyExtractionWebpackPlugin
  * @param {'.js'|'.ts'|string} [opts.ext='.js']
  * @param {boolean} [opts.styleLoader=false]   // add CSS pipeline for inline translation UIs
- * @param {boolean} [opts.clean=false]         // wipe outDir before emit (use for dedicated folders)
  */
 function createConfig({ srcDir, outDir, sourceFiles }, opts = {}) {
   const {
@@ -29,7 +28,6 @@ function createConfig({ srcDir, outDir, sourceFiles }, opts = {}) {
     generateAssets = false,
     ext = '.js',
     styleLoader = false,
-    clean = false,
   } = opts;
 
   const entry = {};
@@ -80,7 +78,7 @@ function createConfig({ srcDir, outDir, sourceFiles }, opts = {}) {
     output: {
       path: path.resolve(__dirname, outDir),
       filename: '[name].js',
-      clean,
+      clean: false,
     },
     module: {
       rules: [
@@ -266,14 +264,12 @@ export default (env, options) => {
   ];
 
   // --- Other frontend assets: single regular .js with dependency extraction
-  // Setup output cleans its folder so orphaned wp-scripts/dev dumps cannot accumulate.
   const assetBuilds = configs.slice(2).map((cfg) =>
     createConfig(cfg, {
       fileMinimize: false,
       minimize: true,
       generateAssets: true,
       ext: '.js', // <-- important: pass a real extension, not boolean
-      clean: cfg.outDir === 'admin/assets/frontend/setup',
     })
   );
 

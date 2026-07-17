@@ -122,6 +122,18 @@ const SettingModal = (props) => {
 
     const providerErrors = async () => {
         let errors = {};
+
+        if (providers.includes('localAiTranslator')) {
+            setChromeAiDownload(prev => prev && (prev.status === 'downloadable' || prev.status === 'downloading' || prev.status === 'failed')
+                ? prev
+                : { status: 'checking', progress: 0 });
+        }
+        if (providers.includes('edgeLocalAiTranslator')) {
+            setEdgeAiDownload(prev => prev && (prev.status === 'downloadable' || prev.status === 'downloading' || prev.status === 'failed')
+                ? prev
+                : { status: 'checking', progress: 0 });
+        }
+
         const localAiSupportStatus = async () => {
             const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, false);
 
@@ -131,6 +143,7 @@ const SettingModal = (props) => {
                     setChromeAiDownload({
                         status: isDownloading ? 'downloading' : 'downloadable',
                         progress: 0,
+                        downloadStarted: false,
                         source: localAiTranslatorSupport.attr('data-source'),
                         target: localAiTranslatorSupport.attr('data-target'),
                         sourceLabel: localAiTranslatorSupport.attr('data-source-label'),
@@ -139,6 +152,7 @@ const SettingModal = (props) => {
                     errors.chromeAiDownloadPending = true;
                 } else {
                     setChromeAiBtnDisabled(true);
+                    setChromeAiDownload(null);
                     errors.localAiTranslator = { message: localAiTranslatorSupport, Title: __("Chrome AI Translator", 'translate-words') };
                     setServiceModalErrors(prev => ({ ...prev, localAiTranslator: errors.localAiTranslator }));
                 }
@@ -162,6 +176,7 @@ const SettingModal = (props) => {
                     setEdgeAiDownload({
                         status: isDownloading ? 'downloading' : 'downloadable',
                         progress: 0,
+                        downloadStarted: false,
                         source: edgeLocalAiTranslatorSupport.attr('data-source'),
                         target: edgeLocalAiTranslatorSupport.attr('data-target'),
                         sourceLabel: edgeLocalAiTranslatorSupport.attr('data-source-label'),
@@ -170,6 +185,7 @@ const SettingModal = (props) => {
                     errors.edgeAiDownloadPending = true;
                 } else {
                     setEdgeAiBtnDisabled(true);
+                    setEdgeAiDownload(null);
                     errors.edgeLocalAiTranslator = { message: edgeLocalAiTranslatorSupport, Title: __("Edge AI Translator", 'translate-words') };
                     setServiceModalErrors(prev => ({ ...prev, edgeLocalAiTranslator: errors.edgeLocalAiTranslator }));
                 }
@@ -301,6 +317,7 @@ const SettingModal = (props) => {
                     setChromeAiDownload({
                         status: isDownloading ? 'downloading' : 'downloadable',
                         progress: 0,
+                        downloadStarted: false,
                         source: localAiTranslatorSupport.attr('data-source'),
                         target: localAiTranslatorSupport.attr('data-target'),
                         sourceLabel: localAiTranslatorSupport.attr('data-source-label'),
@@ -322,6 +339,7 @@ const SettingModal = (props) => {
                     setEdgeAiDownload({
                         status: isDownloading ? 'downloading' : 'downloadable',
                         progress: 0,
+                        downloadStarted: false,
                         source: edgeLocalAiTranslatorSupport.attr('data-source'),
                         target: edgeLocalAiTranslatorSupport.attr('data-target'),
                         sourceLabel: edgeLocalAiTranslatorSupport.attr('data-source-label'),

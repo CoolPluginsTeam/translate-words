@@ -244,20 +244,9 @@ class ChromeAiTranslator {
     }
 
     static languagePairAvality=async (source, target)=>{
-
-        try {
-            const translator = await self.Translator.create({
-                sourceLanguage: source,
-                targetLanguage: target,
-                monitor(m) {
-                    m.addEventListener('downloadprogress', (e) => {
-                        console.log(`Downloaded ${e.loaded * 100}%`);
-                    });
-                },
-            });
-
-        } catch (err) { console.log('err', err) }
-
+        // Availability only — do not call Translator.create() here.
+        // create() starts a silent model download and blocks until finished,
+        // which keeps the UI on "Translate" while console shows Downloaded %.
         if(('translation' in self && 'createTranslator' in self.translation)){
             const status = await self.translation.canTranslate({
                 sourceLanguage: source,
