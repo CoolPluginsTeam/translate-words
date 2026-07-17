@@ -8,10 +8,10 @@ import { setupContext } from '../pages/setup-page';
 import SetupContinueButton, { SetupBackButton } from './setup-continue-button';
 import { getNonce } from '../utils';
 
-import { ChromeIcon } from '../../../../assets/logo/chrome';
-import { EdgeIcon } from '../../../../assets/logo/edge';
-import { GeminiIcon } from '../../../../assets/logo/gemini';
-import { GoogleIcon } from '../../../../assets/logo/google';
+import { ChromeIcon } from '../../../../assets/js/src/icons/chrome';
+import { EdgeIcon } from '../../../../assets/js/src/icons/edge';
+import { GeminiIcon } from '../../../../assets/js/src/icons/gemini';
+import { GoogleIcon } from '../../../../assets/js/src/icons/google';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
 
 const AiTranslation = () => {

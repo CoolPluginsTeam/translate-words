@@ -64,14 +64,6 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 		}
 
 		/**
-		 * Set active tab
-		 * @param mixed $tab
-		 */
-		public function set_active_tab( $tab ) {
-			$this->active_tab = $tab;
-		}
-
-		/**
 		 * True when Polylang or WPML left migratable data in the database (same rules as migration detect endpoints).
 		 *
 		 * @return bool

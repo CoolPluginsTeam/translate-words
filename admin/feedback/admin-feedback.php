@@ -15,23 +15,37 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Linguator_Admin_Feedback {
 
-    private $plugin_url     = LINGUATOR_URL;
+	private $plugin_url     = LINGUATOR_URL;
 	private $plugin_version = LINGUATOR_VERSION;
 	private $plugin_name    = 'Linguator AI – Auto Translate & Create Multilingual Sites';
 	private $plugin_slug    = 'twlmat';
 	protected $options;
-    
-    /*
+
+	/**
+	 * Linguator bootstrap instance when constructed from the main plugin.
+	 *
+	 * @var object|null
+	 */
+	protected $linguator;
+
+	/*
 	|-----------------------------------------------------------------|
 	|   Use this constructor to fire all actions and filters          |
 	|-----------------------------------------------------------------|
 	*/
-    public function __construct() {
-        $this->options = get_option('linguator');
-        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
+	/**
+	 * @param object|null $linguator Optional Linguator instance from the main bootstrap.
+	 */
+	public function __construct( $linguator = null ) {
+		$this->linguator = $linguator;
+		$this->options   = ( $linguator && isset( $linguator->options ) )
+			? $linguator->options
+			: get_option( 'linguator' );
+
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
 		add_action( 'admin_head', array( $this, 'show_deactivate_feedback_popup' ) );
 		add_action( 'wp_ajax_' . $this->plugin_slug . '_submit_deactivation_response', array( $this, 'submit_deactivation_response' ) );
-    }
+	}
 
     /*
 	|-----------------------------------------------------------------|

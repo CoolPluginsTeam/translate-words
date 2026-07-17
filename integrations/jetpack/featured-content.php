@@ -41,24 +41,6 @@ class Linguator_Featured_Content {
 	}
 
 	/**
-	 * Get the theme featured posts filter name
-	 *
-	 *  
-	 *
-	 * @return string
-	 */
-	protected function get_featured_posts_filter() {
-		$theme_support = get_theme_support( 'featured-content' );
-
-		if ( isset( $theme_support[0]['featured_content_filter'] ) ) {
-			$theme_support[0]['filter'] = $theme_support[0]['featured_content_filter'];
-			unset( $theme_support[0]['featured_content_filter'] );
-		}
-
-		return $theme_support[0]['filter'];
-	}
-
-	/**
 	 * Rewrites the function Featured_Content::get_featured_post_ids()
 	 *
 	 *  

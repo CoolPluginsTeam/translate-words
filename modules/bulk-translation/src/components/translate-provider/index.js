@@ -3,10 +3,10 @@ import localAiTranslator from "./local-ai/index.js";
 import GoogleTranslater from "./google/index.js";
 import AiLlmBulkTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
-import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
-import { EdgeIcon } from "../../../../../assets/logo/edge.js";
-import { GoogleIcon } from "../../../../../assets/logo/google.js";
-import { GeminiIcon } from "../../../../../assets/logo/gemini.js";
+import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
+import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
+import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
+import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
 
 /**
  * Provides translation services using Yandex Translate.

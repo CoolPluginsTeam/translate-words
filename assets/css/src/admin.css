@@ -41,21 +41,6 @@ td.column-default_lang .icon-default-lang:before,
 	text-align: left;
 	width: 15px;
 }
-.lmat-circle:before{
-	content: "\25cf";
-}
-
-/* about Linguator metabox */
-#lmat-about-box p,
-#lmat-recommended p {
-	text-align: justify;
-}
-
-#lmat-about-box input {
-	margin: 0;
-	padding: 0;
-	float: right;
-}
 
 /* strings translation table */
 .stringstranslations .column-name,
@@ -160,14 +145,6 @@ td.column-default_lang .icon-default-lang:before,
 }
 
 /* settings Activation keys */
-.lmat-table-top td {
-	vertical-align: top;
-}
-
-#lmat-licenses-table label {
-	font-size: 1em;
-	font-weight: 600;
-}
 
 .lmat-configure .lmat-deactivate-license {
 	margin: 0 0 0 20px;
@@ -285,11 +262,6 @@ td.column-default_lang .icon-default-lang:before,
 	color: #23282d;
 }
 
-#add-term-translations,
-#edit-term-translations {
-	width: 95%;
-}
-
 #term-translations .lmat-language-column {
 	line-height: 28px;
 	width: 20%;
@@ -395,30 +367,6 @@ td.column-default_lang .icon-default-lang:before,
 	.translation input,
 	.translation textarea {
 		width: 95%;
-	}
-
-	/* hide selected language flag and translations language name */
-	#select-add-term-language .lmat-select-flag,
-	#select-edit-term-language .lmat-select-flag,
-	#edit-term-translations .lmat-language-name {
-		display: none;
-	}
-
-	#edit-term-translations {
-		width: 100%;
-	}
-
-	#add-term-translations .lmat-language-column {
-		line-height: 38px;
-	}
-
-	#edit-term-translations td {
-		padding: 8px 10px;
-	}
-
-	#edit-term-translations .lmat-language-column,
-	#edit-term-translations .lmat-edit-column {
-		width: 20px;
 	}
 
 	/* translations tables should be kept as table */

@@ -6,10 +6,10 @@ import { __, sprintf } from '@wordpress/i18n'
 import apiFetch from "@wordpress/api-fetch"
 import { getNonce } from '../utils'
 import { toast } from 'sonner'
-import { ChromeIcon } from '../../../../../assets/logo/chrome';
-import { EdgeIcon } from '../../../../../assets/logo/edge';
-import { GoogleIcon } from '../../../../../assets/logo/google';
-import { GeminiIcon } from '../../../../../assets/logo/gemini';
+import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
+import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
+import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
+import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ApiKey from './api-key';
 import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 

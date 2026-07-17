@@ -39,18 +39,16 @@ if(!class_exists('Custom_Fields')) {
 				$header = Header::get_instance('custom-fields', LMAT()->model);
 				$header->header_assets();
 
-                wp_enqueue_script( 'lmat-datatable-script', plugins_url( 'admin/assets/js/dataTables.min.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
-                wp_enqueue_style( 'lmat-editor-custom-fields', plugins_url( 'admin/assets/css/lmat-custom-data-table.min.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
-                wp_enqueue_script( 'lmat-editor-custom-fields', plugins_url( 'admin/assets/js/lmat-custom-data-table.js', LINGUATOR_ROOT_FILE ), array('lmat-datatable-script'), LINGUATOR_VERSION, true );
-            
-                wp_localize_script( 'lmat-editor-custom-fields', 'lmatCustomTableDataObject', array(
-                    'admin_url' => esc_url(admin_url('admin-ajax.php')),
-                    'save_button_handler' => 'lmat_update_custom_fields_content',
-                    'save_button_nonce' => wp_create_nonce('lmat_save_custom_fields'),
-                    'save_button_enabled'=>true,
-                    'save_button_text'=>__('Save Fields', 'translate-words'),
-                    'save_button_class'=>'lmat-save-custom-fields',
-                ) );
+				$datatable_handle = linguator_enqueue_datatable_assets();
+
+				wp_localize_script( $datatable_handle, 'lmatCustomTableDataObject', array(
+					'admin_url' => esc_url(admin_url('admin-ajax.php')),
+					'save_button_handler' => 'lmat_update_custom_fields_content',
+					'save_button_nonce' => wp_create_nonce('lmat_save_custom_fields'),
+					'save_button_enabled'=>true,
+					'save_button_text'=>__('Save Fields', 'translate-words'),
+					'save_button_class'=>'lmat-save-custom-fields',
+				) );
 				
 				return false;
 			}

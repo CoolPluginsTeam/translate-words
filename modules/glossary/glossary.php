@@ -93,7 +93,27 @@ if (!class_exists('Glossary')) {
 				$header->header_assets();
 
 				wp_enqueue_style( 'lmat-glossary-style', plugins_url( 'admin/assets/css/lmat-glossary.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
-				wp_enqueue_script( 'lmat-glossary-script', plugins_url( 'admin/assets/js/lmat-glossary.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
+
+				$glossary_js_base = plugins_url( 'admin/assets/js/glossary/', LINGUATOR_ROOT_FILE );
+				wp_enqueue_script( 'lmat-glossary-core', $glossary_js_base . 'glossary-core.js', array( 'jquery' ), LINGUATOR_VERSION, true );
+				wp_enqueue_script( 'lmat-glossary-ui', $glossary_js_base . 'glossary-ui.js', array( 'lmat-glossary-core', 'underscore' ), LINGUATOR_VERSION, true );
+				wp_enqueue_script( 'lmat-glossary-filters', $glossary_js_base . 'glossary-filters.js', array( 'lmat-glossary-core' ), LINGUATOR_VERSION, true );
+				wp_enqueue_script( 'lmat-glossary-crud', $glossary_js_base . 'glossary-crud.js', array( 'lmat-glossary-core', 'underscore' ), LINGUATOR_VERSION, true );
+				wp_enqueue_script( 'lmat-glossary-import-export', $glossary_js_base . 'glossary-import-export.js', array( 'lmat-glossary-core' ), LINGUATOR_VERSION, true );
+				wp_enqueue_script(
+					'lmat-glossary-script',
+					plugins_url( 'admin/assets/js/lmat-glossary.js', LINGUATOR_ROOT_FILE ),
+					array(
+						'jquery',
+						'lmat-glossary-core',
+						'lmat-glossary-ui',
+						'lmat-glossary-filters',
+						'lmat-glossary-crud',
+						'lmat-glossary-import-export',
+					),
+					LINGUATOR_VERSION,
+					true
+				);
 
                 wp_localize_script('lmat-glossary-script', 'lmat_glossary', array(
                     'ajaxurl' => admin_url('admin-ajax.php'),

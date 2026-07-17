@@ -49,10 +49,15 @@ tsconfig.json
 .cursor
 *js.LICENSE.txt
 *.scss
+assets/js/src
 admin/settings/views/src
 modules/bulk-translation/src
 modules/page-translation/src
 modules/inline-translation/src
 modules/wizard/src
+# Only ship the wizard setup bundle from this folder (ignore orphaned webpack dumps)
+admin/assets/frontend/setup/*
+!admin/assets/frontend/setup/setup.js
+!admin/assets/frontend/setup/setup.asset.php
 .claude/
 .codex/

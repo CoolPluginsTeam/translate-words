@@ -46,11 +46,7 @@
 .lmat-custom-data-table-wrapper.lmat-custom-fields .lmat-save-custom-fields:focus {
   box-shadow: none;
 }
-.lmat-custom-data-table-wrapper .lmat-custom-data-table-filters {
-  display: flex;
-  align-items: center;
-  column-gap: 1rem;
-}
+.lmat-custom-data-table-wrapper .lmat-custom-data-table-filters,
 .lmat-custom-data-table-wrapper .lmat-custom-data-table-filters .lmat-filter-tab {
   display: flex;
   align-items: center;
@@ -156,41 +152,7 @@
 #lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging {
   margin: 1rem 0;
 }
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button {
-  padding: 0.5em 1em;
-  margin: 0 0.2em;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  color: #0073aa;
-  text-decoration: none;
-  background-color: #fff;
-  transition: background-color 0.3s;
-  cursor: pointer;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button.current {
-  background-color: #0073aa;
-  color: #fff;
-  border: 1px solid #0073aa;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button:hover:not(.current) {
-  background-color: #f0f0f0;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button.disabled {
-  color: #aaa;
-  cursor: not-allowed;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button.dots {
-  padding: 0;
-  color: #555;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .dt-paging-button.next {
-  margin-left: auto;
-  font-weight: bold;
-}
-#lmat-custom-datatable_wrapper .dt-layout-row:has(.dt-paging) .dt-paging .ellipsis {
-  padding: 0 1em;
-  color: #555;
-}
+/* Consolidated pagination rules - both selectors use identical styles */
 #lmat-custom-datatable_wrapper .dt-paging {
   margin: 1rem 0;
 }
@@ -240,12 +202,7 @@
   flex-direction: row-reverse;
   align-items: center;
 }
-#lmat-custom-datatable_wrapper .dt-layout-row:nth-child(2) label {
-  margin: 0 0.5rem 0 0;
-  font-size: 15px;
-  font-weight: 600;
-  text-transform: capitalize;
-}
+/* Label rule consolidated with .lmat-filter-tab label above */
 
 #lmat-copy-btn {
   z-index: 999999;
