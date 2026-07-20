@@ -120,46 +120,6 @@ if ( ! defined( 'LINGUATOR' ) ) {
 	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
 }
 
-// Load legacy Translate Words functionality only for legacy users
-add_action( 'init', function() {
-
-	if(!get_option('linguator_install_date')){
-		add_option('linguator_install_date', gmdate('Y-m-d h:i:s'));
-	}
-
-	if(!get_option('linguator_initial_version')){
-		add_option('linguator_initial_version', LINGUATOR_VERSION);
-	}
-
-
-	// Check if user has legacy Translate Words data
-	$legacy_flag = get_option( 'tww_is_legacy_user' );
-
-	if($legacy_flag==='yes' && get_option('linguator_initial_version')>'1.2.6'){
-		update_option('linguator_initial_version', '1.2.6');
-	}
-	
-	// If flag doesn't exist, check if they have existing translations
-	if ( false === $legacy_flag ) {
-		$existing_translations = get_option( 'tww_options_lines' );
-		
-		// If they have translations, they're a legacy user
-		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
-			update_option( 'tww_is_legacy_user', 'yes' );
-			$legacy_flag = 'yes';
-		} else {
-			// No translations found, mark as new user (not legacy)
-			update_option( 'tww_is_legacy_user', 'no' );
-			$legacy_flag = 'no';
-		}
-	}
-	
-	// Only load Translate Words files for legacy users
-	if ( 'yes' === $legacy_flag ) {
-		require_once __DIR__ . '/translate-words/tww.php';
-	}
-}, 1 );
-
 // Handle redirect after activation and language switcher visibility
 add_action('admin_init', function() {
 	// Don't redirect to wizard if Polylang is detected
