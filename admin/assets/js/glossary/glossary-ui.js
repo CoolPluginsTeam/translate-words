@@ -1,16 +1,16 @@
-(function($, G) {
+(function($, LmatGlossary) {
     'use strict';
 
-    G.Ui = {
+    LmatGlossary.Ui = {
         init: function() {
-            G.initCache();
+            LmatGlossary.initCache();
 
-            const $addBtn = G.$addBtn;
-            const $importBtn = G.$importBtn;
-            const $addGlossaryForm = G.$addGlossaryForm;
-            const $addGlossarySuccess = G.$addGlossarySuccess;
-            const $glossaryTable = G.$glossaryTable;
-            const $glossaryTableWrapper = G.$glossaryTableWrapper;
+            const $addBtn = LmatGlossary.$addBtn;
+            const $importBtn = LmatGlossary.$importBtn;
+            const $addGlossaryForm = LmatGlossary.$addGlossaryForm;
+            const $addGlossarySuccess = LmatGlossary.$addGlossarySuccess;
+            const $glossaryTable = LmatGlossary.$glossaryTable;
+            const $glossaryTableWrapper = LmatGlossary.$glossaryTableWrapper;
 
             // Open modal
             $addBtn.on('click', function() {
@@ -23,7 +23,7 @@
                 $addGlossaryForm[0].reset();
             });
             $importBtn.on('click', function() {
-                G.resetImportModalUI();
+                LmatGlossary.resetImportModalUI();
                 $('#lmat-glossary-modal-import').removeClass('lmat-hidden').addClass('active');
             });
 
@@ -40,7 +40,7 @@
                 $addGlossarySuccess.addClass('lmat-hidden');
 
                 $('body').removeClass('lmat-modal-open');
-                G.resetImportModalUI();
+                LmatGlossary.resetImportModalUI();
             });
 
             // Add close button handler for success message
@@ -56,16 +56,16 @@
             });
 
             // Initial check for actions header visibility
-            G.updateActionsHeaderVisibility();
+            LmatGlossary.updateActionsHeaderVisibility();
 
             // Update on window resize
             $(window).on('resize', _.debounce(function() {
-                G.updateActionsHeaderVisibility();
+                LmatGlossary.updateActionsHeaderVisibility();
             }, 250));
 
             // Update after any content changes that might affect table width
             const observer = new MutationObserver(_.debounce(function() {
-                G.updateActionsHeaderVisibility();
+                LmatGlossary.updateActionsHeaderVisibility();
             }, 250));
 
             // Observe the table wrapper for changes
@@ -79,12 +79,12 @@
 
             // Call this function on page load
             $(document).ready(function() {
-                G.updateScrollButtonVisibility();
+                LmatGlossary.updateScrollButtonVisibility();
             });
 
             // Call this function after scrolling
             $glossaryTable.on('scroll', function() {
-                G.updateScrollButtonVisibility();
+                LmatGlossary.updateScrollButtonVisibility();
             });
 
             // Scroll table to the right when actions header button is clicked
@@ -94,7 +94,7 @@
                 const scrollAmount = 300;
                 $wrapper.animate({
                     scrollLeft: $wrapper.scrollLeft() + scrollAmount
-                }, 400, G.updateScrollButtonVisibility);
+                }, 400, LmatGlossary.updateScrollButtonVisibility);
             });
 
             // Scroll table to the left when actions header button is clicked
@@ -104,41 +104,41 @@
                 const scrollAmount = 300;
                     $wrapper.animate({
                     scrollLeft: $wrapper.scrollLeft() - scrollAmount
-                }, 400, G.updateScrollButtonVisibility);
+                }, 400, LmatGlossary.updateScrollButtonVisibility);
             });
         }
     };
 
-    G.updateActionsHeaderVisibility = function() {
+    LmatGlossary.updateActionsHeaderVisibility = function() {
         const $actionsHeader = $('.lmat-actions-header-btn').closest('th');
 
         // Only proceed if the table exists
-        if (G.$glossaryTable.length === 0 || !G.$glossaryTable[0]) {
+        if (LmatGlossary.$glossaryTable.length === 0 || !LmatGlossary.$glossaryTable[0]) {
             $actionsHeader.hide();
             return;
         }
 
         // Check if table has horizontal scroll
-        const hasHorizontalScroll = G.$glossaryTable[0].scrollWidth > G.$glossaryTableWrapper[0].clientWidth;
+        const hasHorizontalScroll = LmatGlossary.$glossaryTable[0].scrollWidth > LmatGlossary.$glossaryTableWrapper[0].clientWidth;
 
         // Show/hide actions header based on scroll
         $actionsHeader.toggle(hasHorizontalScroll);
     };
 
-    G.updateScrollButtonVisibility = function() {
+    LmatGlossary.updateScrollButtonVisibility = function() {
         // Check if wrapper exists
-        if (!G.$glossaryTableWrapper.length) {
+        if (!LmatGlossary.$glossaryTableWrapper.length) {
             return;
         }
 
         // Check if wrapper has content
-        if (!G.$glossaryTableWrapper[0]) {
+        if (!LmatGlossary.$glossaryTableWrapper[0]) {
             return;
         }
 
-        const scrollLeft = G.$glossaryTableWrapper.scrollLeft();
-        const scrollWidth = G.$glossaryTableWrapper[0].scrollWidth;
-        const clientWidth = G.$glossaryTableWrapper[0].clientWidth;
+        const scrollLeft = LmatGlossary.$glossaryTableWrapper.scrollLeft();
+        const scrollWidth = LmatGlossary.$glossaryTableWrapper[0].scrollWidth;
+        const clientWidth = LmatGlossary.$glossaryTableWrapper[0].clientWidth;
 
         // Hide left button if at the leftmost position
         if (scrollLeft === 0) {

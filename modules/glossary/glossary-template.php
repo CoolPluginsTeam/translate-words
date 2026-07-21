@@ -35,12 +35,13 @@ foreach ($glossary_data as $entry) {
     }
 
     if (!isset($grouped_entries[$key])) {
+        $kind = \Linguator\Modules\Glossary\Glossary::sanitize_glossary_kind( $entry['kind'] ?? 'general' );
         $grouped_entries[$key] = [
             'term' => $term,
             'original_language_code' => $lang,
             'desc' => $entry['description'],
-            'type' => $entry['kind'],
-            'type_label' => ucfirst($entry['kind']),
+            'type' => $kind,
+            'type_label' => ucfirst( $kind ),
             'translations' => [],
         ];
     }

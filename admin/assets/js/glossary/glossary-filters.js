@@ -1,26 +1,26 @@
-(function($, G) {
+(function($, LmatGlossary) {
     'use strict';
 
-    G.Filters = {
+    LmatGlossary.Filters = {
         init: function() {
-            G.initCache();
+            LmatGlossary.initCache();
 
             // Language Filter Buttons
             $(document).off('click', '.lmat-lang-filter-btn').on('click', '.lmat-lang-filter-btn', function() {
-                G.$glossaryTableWrapper.show();
-                G.$noResults.remove();
-                G.$noResults = $();
+                LmatGlossary.$glossaryTableWrapper.show();
+                LmatGlossary.$noResults.remove();
+                LmatGlossary.$noResults = $();
                 // Reset alphabet filter
-                G.$alphabet.find('.lmat-alphabet-btn').removeClass('active');
+                LmatGlossary.$alphabet.find('.lmat-alphabet-btn').removeClass('active');
 
                 var $btn = $(this);
                 var selectedLang = $btn.data('lang');
-                var $table = G.$glossaryTable;
+                var $table = LmatGlossary.$glossaryTable;
                 var defaultLang = $table.data('default-lang');
-                var previousSelectedLang = G.getActiveLangFilterBtn().data('lang');
+                var previousSelectedLang = LmatGlossary.getActiveLangFilterBtn().data('lang');
 
                 // Update active state
-                G.$languageFilters.find('.lmat-lang-filter-btn').removeClass('active');
+                LmatGlossary.$languageFilters.find('.lmat-lang-filter-btn').removeClass('active');
                 $btn.addClass('active');
 
                 // First show all columns
@@ -38,7 +38,7 @@
                 }
 
                 // Apply filters to rows
-                G.refreshGlossaryRows().each(function() {
+                LmatGlossary.refreshGlossaryRows().each(function() {
                     var $row = $(this);
                     var rowOriginalLang = $row.data('original-language');
                     var rowType = $row.data('type');
@@ -66,7 +66,7 @@
                     }
 
                     // Apply type filter if active
-                    var currentType = G.$glossaryType.val();
+                    var currentType = LmatGlossary.$glossaryType.val();
                     if (show && currentType) {
                         show = (rowType === currentType);
                     }
@@ -79,14 +79,14 @@
                     $row.toggle(show);
                 });
 
-                G.updateGlossaryTableVisibility();
-                G.updateAlphabetButtonStates();
-                G.applyZebraStriping();
+                LmatGlossary.updateGlossaryTableVisibility();
+                LmatGlossary.updateAlphabetButtonStates();
+                LmatGlossary.applyZebraStriping();
             });
 
             // On page load, if filter buttons exist, trigger click on the first one
-            if (G.$languageFilters.length && G.$languageFilters.find('.lmat-lang-filter-btn').length > 0) {
-                G.$languageFilters.find('.lmat-lang-filter-btn').first().trigger('click');
+            if (LmatGlossary.$languageFilters.length && LmatGlossary.$languageFilters.find('.lmat-lang-filter-btn').length > 0) {
+                LmatGlossary.$languageFilters.find('.lmat-lang-filter-btn').first().trigger('click');
             }
 
             // Alphabet filter functionality
@@ -95,21 +95,21 @@
                 if ($btn.hasClass('active')) {
                     $btn.removeClass('active');
                 } else {
-                    G.$alphabet.find('.lmat-alphabet-btn').removeClass('active');
+                    LmatGlossary.$alphabet.find('.lmat-alphabet-btn').removeClass('active');
                     $btn.addClass('active');
                 }
-                G.filterGlossaryRows();
+                LmatGlossary.filterGlossaryRows();
             });
 
             // --- GLOSSARY SEARCH FUNCTIONALITY ---
             $(document).on('input', '.lmat-search', function() {
-                clearTimeout(G.searchDebounceTimer);
-                G.searchDebounceTimer = setTimeout(function() {
-                    G.$glossaryTableWrapper.show();
-                    G.$noResults.remove();
-                    G.$noResults = $();
+                clearTimeout(LmatGlossary.searchDebounceTimer);
+                LmatGlossary.searchDebounceTimer = setTimeout(function() {
+                    LmatGlossary.$glossaryTableWrapper.show();
+                    LmatGlossary.$noResults.remove();
+                    LmatGlossary.$noResults = $();
                     // filterGlossaryRows is the single source of truth (lang/type/letter/search)
-                    G.filterGlossaryRows();
+                    LmatGlossary.filterGlossaryRows();
                 }, 150);
             });
 
@@ -117,11 +117,11 @@
             $(document).on('change', '.lmat-glossary-type', function() {
                 var selectedType = $(this).val();
                 if (selectedType) {
-                    G.$glossaryTableWrapper.show();
-                    G.$noResults.remove();
-                    G.$noResults = $();
+                    LmatGlossary.$glossaryTableWrapper.show();
+                    LmatGlossary.$noResults.remove();
+                    LmatGlossary.$noResults = $();
                 }
-                G.filterGlossaryRows();
+                LmatGlossary.filterGlossaryRows();
             });
         }
     };

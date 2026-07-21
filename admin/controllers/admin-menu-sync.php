@@ -554,7 +554,7 @@ class Linguator_Admin_Menu_Sync {
 		}
 
 		// Create or get target menu with unique name handling
-		$base_menu_name = $source_menu->name . ' (' . $lang->name . ')';
+		$base_menu_name = $this->linguator_format_menu_name( $source_menu->name, $lang->name );
 		$target_menu = wp_get_nav_menu_object( $base_menu_name );
 
 		if ( $target_menu ) {
@@ -866,6 +866,38 @@ class Linguator_Admin_Menu_Sync {
 	}
 
 	/**
+	 * Format a nav menu name as "Base (Language)[ extra]" within WordPress's 200-char term name limit.
+	 *
+	 * @param string $base_name Base menu name.
+	 * @param string $lang_name Language display name used in the suffix.
+	 * @param string $extra     Optional uniqueness suffix (counter or timestamp).
+	 * @return string Formatted menu name (max 200 characters).
+	 */
+	private function linguator_format_menu_name( $base_name, $lang_name, $extra = '' ) {
+		$base_name = sanitize_text_field( (string) $base_name );
+		$lang_name = sanitize_text_field( (string) $lang_name );
+		$extra     = '' !== (string) $extra ? sanitize_text_field( (string) $extra ) : '';
+
+		$max_length = 200;
+		$suffix     = ' (' . $lang_name . ')';
+		if ( '' !== $extra ) {
+			$suffix .= ' ' . $extra;
+		}
+
+		// Extreme case: language/extra alone exceed the limit — keep a truncated suffix.
+		if ( strlen( $suffix ) >= $max_length ) {
+			return substr( $suffix, 0, $max_length );
+		}
+
+		$available = $max_length - strlen( $suffix );
+		if ( strlen( $base_name ) > $available ) {
+			$base_name = rtrim( substr( $base_name, 0, $available ) );
+		}
+
+		return $base_name . $suffix;
+	}
+
+	/**
 	 * Generate a unique menu name to avoid collisions
 	 * Handles cases where menu name already exists with different language assignment
 	 *
@@ -874,21 +906,21 @@ class Linguator_Admin_Menu_Sync {
 	 * @return string Unique menu name.
 	 */
 	private function linguator_generate_unique_menu_name( $base_name, $lang_name ) {
-		$menu_name = $base_name . ' (' . $lang_name . ')';
-		$counter = 1;
-		
-		// Keep incrementing counter until we find a unique name
+		$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name );
+		$counter   = 1;
+
+		// Keep incrementing counter until we find a unique name.
 		while ( wp_get_nav_menu_object( $menu_name ) ) {
-			$menu_name = $base_name . ' (' . $lang_name . ') ' . $counter;
+			$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name, (string) $counter );
 			$counter++;
-			
-			// Safety limit to prevent infinite loops
+
+			// Safety limit to prevent infinite loops — fall back to timestamp.
 			if ( $counter > 100 ) {
-				$menu_name = $base_name . ' (' . $lang_name . ') ' . time();
+				$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name, (string) time() );
 				break;
 			}
 		}
-		
+
 		return $menu_name;
 	}
 

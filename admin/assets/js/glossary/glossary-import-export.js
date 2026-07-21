@@ -1,7 +1,7 @@
-(function($, G) {
+(function($, LmatGlossary) {
     'use strict';
 
-    G.resetImportModalUI = function() {
+    LmatGlossary.resetImportModalUI = function() {
         $('#lmat-import-success-ui').addClass('lmat-hidden');
         $('#lmat-import-glossary-ui').show();
         $('#file-name-display').text('Select a CSV file to upload');
@@ -9,9 +9,9 @@
         $('#lmat-csv-upload').val('');
     };
 
-    G.ImportExport = {
+    LmatGlossary.ImportExport = {
         init: function() {
-            G.initCache();
+            LmatGlossary.initCache();
 
             // File input change
             $('#lmat-csv-upload').on('change', function(e) {

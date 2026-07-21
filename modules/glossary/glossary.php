@@ -27,6 +27,27 @@ if (!class_exists('Glossary')) {
         private static $glossary_data_cache = null;
 
         /**
+         * Allowed glossary entry kinds (maps to CSS badge classes).
+         *
+         * @return string[]
+         */
+        public static function get_allowed_kinds() {
+            return array( 'general', 'name' );
+        }
+
+        /**
+         * Sanitize glossary kind against the allowed whitelist.
+         *
+         * @param string $kind Raw kind value.
+         * @return string One of the allowed kinds; defaults to 'general'.
+         */
+        public static function sanitize_glossary_kind( $kind ) {
+            $kind = sanitize_key( (string) $kind );
+            $allowed = self::get_allowed_kinds();
+            return in_array( $kind, $allowed, true ) ? $kind : 'general';
+        }
+
+        /**
          * Instance
          * @return object
          */
@@ -217,7 +238,7 @@ if (!class_exists('Glossary')) {
          * Store glossary entry 
          */
         public static function store_glossary_data($glossary_data = array()) {
-            $glossary_type = sanitize_text_field($glossary_data['type'] ?? '');
+            $glossary_type = self::sanitize_glossary_kind( $glossary_data['type'] ?? 'general' );
             $glossary_term = sanitize_text_field($glossary_data['term'] ?? '');
             $glossary_desc = sanitize_textarea_field($glossary_data['description'] ?? '');
             $source_language_code = sanitize_key($glossary_data['source_lang'] ?? '');
@@ -281,7 +302,7 @@ if (!class_exists('Glossary')) {
                 }
                 $all_glossaries[] = array(
                     'description' => $glossary_desc,
-                    'kind' => sanitize_text_field($glossary_data['type'] ?? 'general'),
+                    'kind' => $glossary_type,
                     'original_language_code' => $source_language_code,
                     'original_term' => $glossary_term,
                     'translations' => $translations,
@@ -317,7 +338,7 @@ if (!class_exists('Glossary')) {
 
                         // Create glossary entry with proper mapping
                         $glossary_entry = array(
-                            'type' => $row_data['type'] ?? 'general', // Get type from CSV
+                            'type' => self::sanitize_glossary_kind( $row_data['type'] ?? 'general' ),
                             'term' => $row_data['original_term'] ?? '',
                             'description' => $row_data['description'] ?? '',
                             'source_lang' => $row_data['original_language_code'] ?? '',
@@ -382,7 +403,7 @@ if (!class_exists('Glossary')) {
          * Update glossary entry
          */
         public static function update_glossary_data($glossary_data = array()) {
-            $glossary_type = sanitize_text_field($glossary_data['type'] ?? '');
+            $glossary_type = self::sanitize_glossary_kind( $glossary_data['type'] ?? 'general' );
             $glossary_term = sanitize_text_field($glossary_data['term'] ?? '');
             $glossary_desc = sanitize_textarea_field($glossary_data['description'] ?? '');
             $source_language_code = sanitize_key($glossary_data['source_lang'] ?? '');
@@ -481,7 +502,7 @@ if (!class_exists('Glossary')) {
             $data     = is_array( $raw_data ) ? $raw_data : array();
 
             // Sanitize expected fields at the boundary.
-            $data['type']        = isset( $data['type'] ) ? sanitize_text_field( (string) $data['type'] ) : '';
+            $data['type']        = self::sanitize_glossary_kind( $data['type'] ?? 'general' );
             $data['term']        = isset( $data['term'] ) ? sanitize_text_field( (string) $data['term'] ) : '';
             $data['description'] = isset( $data['description'] ) ? sanitize_textarea_field( (string) $data['description'] ) : '';
 
@@ -625,7 +646,7 @@ if (!class_exists('Glossary')) {
             if (!current_user_can('manage_options')) {
                 wp_send_json_error('Permission denied');
             }
-            $type = isset($_POST['type']) ? sanitize_text_field(wp_unslash($_POST['type'])) : '';
+            $type = self::sanitize_glossary_kind( isset( $_POST['type'] ) ? wp_unslash( $_POST['type'] ) : 'general' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via sanitize_glossary_kind().
             $term = isset($_POST['term']) ? sanitize_text_field(wp_unslash($_POST['term'])) : '';
             $description = ! empty( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
             $source_lang = ! empty( $_POST['source_lang'] ) ? sanitize_key( wp_unslash( $_POST['source_lang'] ) ) : '';

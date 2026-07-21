@@ -61,50 +61,18 @@ const TranslationConfig = ({ data, setData }) => {
         }
     }, [geminiTranslation])
 
+    const hasChanges = () => {
+        return googleMachineTranslation !== provider?.google ||
+            chromeLocalAITranslation !== provider?.chrome_local_ai ||
+            edgeLocalAITranslation !== provider?.edge_local_ai ||
+            geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
+            slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
+    };
+
     useEffect(() => {
-        let sameChecker = {
-            googleMachineTranslation: true,
-            chromeLocalAITranslation: true,
-            edgeLocalAITranslation: true,
-            geminiTranslation: true,
-            bulkTranslationPostStatus: true,
-            slugTranslationOption: true,
-        }
-
-        if (googleMachineTranslation !== provider?.google) {
-            sameChecker.googleMachineTranslation = false
-
-        }
-
-        if (chromeLocalAITranslation !== provider?.chrome_local_ai) {
-            sameChecker.chromeLocalAITranslation = false
-        }
-
-        if (edgeLocalAITranslation !== provider?.edge_local_ai) {
-            sameChecker.edgeLocalAITranslation = false
-        }
-        
-        if (wpAiClientAvailable && geminiTranslation !== provider?.gemini) {
-            sameChecker.geminiTranslation = false
-        }
-
-        if (bulkTranslationPostStatus !== aiTranslation?.bulk_translation_post_status) {
-            sameChecker.bulkTranslationPostStatus = false
-        }
-
-        if (slugTranslationOption !== aiTranslation?.slug_translation_option) {
-            sameChecker.slugTranslationOption = false
-        }
-
-        let flag = true;
-        for (const key in sameChecker) {
-            if (!sameChecker[key]) {
-                flag = false;
-                break;
-            }
-        }
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
-        setHandleButtonDisabled(flag && !(geminiSectionOpen && apiKeyDirty))
+        setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
     }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
 

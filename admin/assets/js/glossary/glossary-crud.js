@@ -1,4 +1,4 @@
-(function($, G) {
+(function($, LmatGlossary) {
     'use strict';
 
     function toggleTranslationsSection($form) {
@@ -26,13 +26,13 @@
         }
     }
 
-    G.Crud = {
+    LmatGlossary.Crud = {
         init: function() {
-            G.initCache();
+            LmatGlossary.initCache();
 
-            const $glossaryTableWrapper = G.$glossaryTableWrapper;
-            const $addGlossaryForm = G.$addGlossaryForm;
-            const $addGlossarySuccess = G.$addGlossarySuccess;
+            const $glossaryTableWrapper = LmatGlossary.$glossaryTableWrapper;
+            const $addGlossaryForm = LmatGlossary.$addGlossaryForm;
+            const $addGlossarySuccess = LmatGlossary.$addGlossarySuccess;
 
             $(document).off('click', '.lmat-edit-btn, .lmat-edit-btn-svg').on('click', '.lmat-edit-btn, .lmat-edit-btn-svg', function(e) {
                 e.preventDefault();
@@ -78,7 +78,7 @@
 
                 const safeTerm = typeof term === 'string' ? term : '';
                 const safeDesc = typeof desc === 'string' ? desc : '';
-                const safeType = typeof type === 'string' ? type : 'general';
+                const safeType = LmatGlossary.sanitizeGlossaryKind(type);
                 const safeSourceLang = typeof source_lang === 'string' ? source_lang : '';
 
                 try {
@@ -103,7 +103,7 @@
                     $row.after(editRowHtml);
                     $row.hide();
                     $row.next('.lmat-glossary-edit-row').show();
-                    G.refreshGlossaryRows();
+                    LmatGlossary.refreshGlossaryRows();
 
                 } catch (error) {
                     console.error('Error generating edit row:', error, {
@@ -119,7 +119,7 @@
 
 
             // Add input event handler for real-time validation
-            G.$glossaryTable.on('input', '.lmat-edit-translation, .lmat-edit-term, .lmat-edit-desc', function() {
+            LmatGlossary.$glossaryTable.on('input', '.lmat-edit-translation, .lmat-edit-term, .lmat-edit-desc', function() {
                 const $textarea = $(this);
                 const $error = $textarea.next('.lmat-translation-error');
                 const value = $textarea.val().trim();
@@ -214,17 +214,19 @@
                             const updatedEntry = resp.data.updated_entry;
 
                             // Update the original row with data from server response
+                            const sanitizedKind = LmatGlossary.sanitizeGlossaryKind(updatedEntry.kind);
                             $origRow.data('term', updatedEntry.original_term);
-                            $origRow.data('type', updatedEntry.kind);
+                            $origRow.data('type', sanitizedKind);
 
                             // Update term and description from server data
                             $origRow.find('.lmat-entry-title').text(updatedEntry.original_term);
                             $origRow.find('.lmat-entry-desc').text(updatedEntry.description || '');
 
-                            // Update type badge from server data
+                            // Update type badge from server data (kind is whitelisted before class use)
                             $origRow.find('.lmat-type-badge')
-                                .attr('class', 'lmat-type-badge ' + updatedEntry.kind)
-                                .text(updatedEntry.kind.charAt(0).toUpperCase() + updatedEntry.kind.slice(1));
+                                .removeClass(LmatGlossary.allowedGlossaryKinds.join(' '))
+                                .addClass('lmat-type-badge ' + sanitizedKind)
+                                .text(sanitizedKind.charAt(0).toUpperCase() + sanitizedKind.slice(1));
 
                             // Update translations from server data
                             if (updatedEntry.translations && Array.isArray(updatedEntry.translations)) {
@@ -250,20 +252,19 @@
                                         if (translatedTerm && translatedTerm.trim() !== '') {
                                             // Has translation - show it
                                             const truncatedText = translatedTerm.length > 7 ? translatedTerm.substring(0, 7) + '…' : translatedTerm;
-                                            const safeTranslation = G.escapeHtml(translatedTerm);
-                                            const safeTruncated = G.escapeHtml(truncatedText);
+                                            const safeTruncated = LmatGlossary.escapeHtml(truncatedText);
 
                                             $cell.html(`
                                                 <span class="lmat-translated-term"
-                                                      data-full-text="${safeTranslation}"
-                                                      title="${safeTranslation}">
+                                                      data-full-text="${LmatGlossary.escapeAttr(translatedTerm)}"
+                                                      title="${LmatGlossary.escapeAttr(translatedTerm)}">
                                                     ${safeTruncated}
                                                 </span>
                                             `);
                                         } else {
                                             // No translation - show add button
                                             $cell.html(`
-                                                <button type="button" class="lmat-edit-btn-svg" data-term="${G.escapeHtml(updatedEntry.original_term)}" data-source-lang="${G.escapeHtml(updatedEntry.original_language_code)}">
+                                                <button type="button" class="lmat-edit-btn-svg" data-term="${LmatGlossary.escapeAttr(updatedEntry.original_term)}" data-source-lang="${LmatGlossary.escapeAttr(updatedEntry.original_language_code)}">
                                                     <img src="${lmat_glossary.url}assets/images/file.svg" alt="Add Translation" />
                                                 </button>
                                             `);
@@ -275,13 +276,13 @@
                             // Show the updated row and remove edit row
                             $origRow.show();
                             $editRow.remove();
-                            G.refreshGlossaryRows();
+                            LmatGlossary.refreshGlossaryRows();
 
                             // Reapply filters and update UI
-                            G.filterGlossaryRows();
-                            G.updateGlossaryTableVisibility();
-                            G.updateAlphabetButtonStates();
-                            G.applyZebraStriping();
+                            LmatGlossary.filterGlossaryRows();
+                            LmatGlossary.updateGlossaryTableVisibility();
+                            LmatGlossary.updateAlphabetButtonStates();
+                            LmatGlossary.applyZebraStriping();
                         } else {
                             alert('Update failed: ' + (resp.data?.message || resp.data || 'Unknown error'));
                         }
@@ -322,26 +323,26 @@
                     if (resp.success) {
                         $row.fadeOut(300, function() {
                             $(this).remove();
-                            G.refreshGlossaryRows();
+                            LmatGlossary.refreshGlossaryRows();
 
                             // After row removal, check if any rows are visible
-                            var $visibleRows = G.$glossaryRows.filter(':visible');
+                            var $visibleRows = LmatGlossary.$glossaryRows.filter(':visible');
                             if ($visibleRows.length === 0) {
-                                var $langBtns = G.$languageFilters.find('.lmat-lang-filter-btn');
+                                var $langBtns = LmatGlossary.$languageFilters.find('.lmat-lang-filter-btn');
                                 var $activeBtn = $langBtns.filter('.active');
                                 var idx = $langBtns.index($activeBtn);
 
                                 // Remove the filter button for the language with no data
                                 $activeBtn.remove();
-                                $langBtns = G.$languageFilters.find('.lmat-lang-filter-btn'); // Refresh after removal
+                                $langBtns = LmatGlossary.$languageFilters.find('.lmat-lang-filter-btn'); // Refresh after removal
 
                                 // Disable and deactivate all alphabet buttons if no data
-                                var $alphabetBtns = G.$alphabet.find('.lmat-alphabet-btn');
+                                var $alphabetBtns = LmatGlossary.$alphabet.find('.lmat-alphabet-btn');
                                 $alphabetBtns.removeClass('active').prop('disabled', true);
 
                                 // Hide language filter if only one button remains
                                 if ($langBtns.length <= 1) {
-                                    G.$languageFilters.hide();
+                                    LmatGlossary.$languageFilters.hide();
                                 }
 
                                 // After removal, $langBtns is refreshed
@@ -350,10 +351,10 @@
                                     var newIdx = Math.min(idx, $langBtns.length - 1);
                                     $langBtns.eq(newIdx).trigger('click');
                                 } else {
-                                    G.updateGlossaryTableVisibility();
+                                    LmatGlossary.updateGlossaryTableVisibility();
                                 }
                             } else {
-                                G.updateGlossaryTableVisibility();
+                                LmatGlossary.updateGlossaryTableVisibility();
                             }
                         });
                     } else {
@@ -405,8 +406,8 @@
 
                 const $termField = $form.find('.lmat-add-term');
                 const $descField = $form.find('.lmat-add-desc');
-                const term = G.sanitizeInput($termField.val().trim());
-                const desc = G.sanitizeInput($descField.val().trim());
+                const term = LmatGlossary.sanitizeInput($termField.val().trim());
+                const desc = LmatGlossary.sanitizeInput($descField.val().trim());
 
                 let hasError = false;
 
@@ -433,7 +434,7 @@
                 $form.find('.lmat-add-translation').each(function() {
                     const $textarea = $(this);
                     const originalValue = $textarea.val().trim();
-                    const sanitizedValue = G.sanitizeInput(originalValue);
+                    const sanitizedValue = LmatGlossary.sanitizeInput(originalValue);
 
                     if (originalValue !== sanitizedValue) {
                         $textarea.addClass('error');
@@ -486,7 +487,7 @@
                 (lmat_glossary.lmat_languages || []).forEach(function(lang) {
                     const langCode = lang.code;
                     if (langCode === data.source_lang) return;
-                    const translationValue = G.sanitizeInput($form.find('[name="translation_' + langCode + '"]').val().trim());
+                    const translationValue = LmatGlossary.sanitizeInput($form.find('[name="translation_' + langCode + '"]').val().trim());
                     // Only include non-empty translations
                     if (translationValue !== '' && translationValue.trim() !== '') {
                         data.translations[langCode] = translationValue;
@@ -550,7 +551,7 @@
 
                             if (langCode === savedSourceLang) {
                                 // Source language - show the original term (only when not in single language mode)
-                                const safeTerm = G.escapeHtml(savedTerm);
+                                const safeTerm = LmatGlossary.escapeHtml(savedTerm);
                                 translationsHtml += `
                                     <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}" data-is-source="true">
                                         <span class="lmat-source-term">
@@ -566,7 +567,7 @@
                                     // No translation - show add button
                                     translationsHtml += `
                                         <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}">
-                                            <button type="button" class="lmat-edit-btn-svg" data-term="${G.escapeHtml(savedTerm)}" data-source-lang="${G.escapeHtml(savedSourceLang)}">
+                                            <button type="button" class="lmat-edit-btn-svg" data-term="${LmatGlossary.escapeAttr(savedTerm)}" data-source-lang="${LmatGlossary.escapeAttr(savedSourceLang)}">
                                                 <img src="${lmat_glossary.url}assets/images/file.svg" alt="Add Translation" />
                                             </button>
                                         </td>
@@ -574,13 +575,12 @@
                                 } else {
                                     // Has translation - show it
                                     const truncatedText = savedTranslation.length > 7 ? savedTranslation.substring(0, 7) + '…' : savedTranslation;
-                                    const safeTranslation = G.escapeHtml(savedTranslation);
-                                    const safeTruncated = G.escapeHtml(truncatedText);
+                                    const safeTruncated = LmatGlossary.escapeHtml(truncatedText);
                                     translationsHtml += `
                                         <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}">
                                             <span class="lmat-translated-term"
-                                                  data-full-text="${safeTranslation}"
-                                                  title="${safeTranslation}">
+                                                  data-full-text="${LmatGlossary.escapeAttr(savedTranslation)}"
+                                                  title="${LmatGlossary.escapeAttr(savedTranslation)}">
                                                 ${safeTruncated}
                                             </span>
                                         </td>
@@ -590,25 +590,29 @@
                         });
 
                         const firstLetter = savedTerm ? (isNaN(savedTerm[0]) ? savedTerm[0].toUpperCase() : '123') : '';
-                        const safeTerm = G.escapeHtml(savedTerm);
-                        const safeDesc = G.escapeHtml(savedDesc);
-                        const safeType = G.escapeHtml(savedType);
-                        const safeSourceLang = G.escapeHtml(savedSourceLang);
+                        const sanitizedKind = LmatGlossary.sanitizeGlossaryKind(savedType);
+                        const safeTerm = LmatGlossary.escapeHtml(savedTerm);
+                        const safeDesc = LmatGlossary.escapeHtml(savedDesc);
+                        const safeType = LmatGlossary.escapeHtml(sanitizedKind);
+                        const safeTermAttr = LmatGlossary.escapeAttr(savedTerm);
+                        const safeTypeAttr = LmatGlossary.escapeAttr(sanitizedKind);
+                        const safeSourceLangAttr = LmatGlossary.escapeAttr(savedSourceLang);
+                        const firstLetterAttr = LmatGlossary.escapeAttr(firstLetter);
 
                         const newEntryHtml = `
-                            <tr data-term="${safeTerm}" data-original-language="${safeSourceLang}" data-type="${safeType}" data-letter="${firstLetter}">
+                            <tr data-term="${safeTermAttr}" data-original-language="${safeSourceLangAttr}" data-type="${safeTypeAttr}" data-letter="${firstLetterAttr}">
                                 <td>
                                     <div class="lmat-entry-title">${safeTerm}</div>
                                     <div class="lmat-entry-desc">${safeDesc}</div>
                                 </td>
                                 <td>
-                                    <span class="lmat-type-badge ${safeType}">${safeType.charAt(0).toUpperCase() + safeType.slice(1)}</span>
+                                    <span class="lmat-type-badge ${safeTypeAttr}">${safeType.charAt(0).toUpperCase() + safeType.slice(1)}</span>
                                 </td>
                                 ${translationsHtml}
                                 <td class="lmat-actions-cell">
                                     <div class="lmat-action-buttons">
-                                        <button type="button" class="lmat-edit-btn" data-term="${safeTerm}" data-source-lang="${safeSourceLang}">Edit</button>
-                                        <button type="button" class="lmat-delete-btn" data-term="${safeTerm}" data-source-lang="${safeSourceLang}">Delete</button>
+                                        <button type="button" class="lmat-edit-btn" data-term="${safeTermAttr}" data-source-lang="${safeSourceLangAttr}">Edit</button>
+                                        <button type="button" class="lmat-delete-btn" data-term="${safeTermAttr}" data-source-lang="${safeSourceLangAttr}">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -664,7 +668,7 @@
                                     <tbody></tbody>
                                 </table>
                             `;
-                            G.$glossaryTableWrapper.html(tableHeader);
+                            LmatGlossary.$glossaryTableWrapper.html(tableHeader);
 
                             // Apply current language filter column hiding to headers
                             const currentActiveLang = $('.lmat-lang-filter-btn.active').data('lang');
@@ -730,7 +734,7 @@
                                             newTranslationsHtml += `
                                                 <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}" data-is-source="true">
                                                     <span class="lmat-source-term">
-                                                        ${G.escapeHtml(rowTerm)}
+                                                        ${LmatGlossary.escapeHtml(rowTerm)}
                                                     </span>
                                                 </td>
                                             `;
@@ -743,9 +747,9 @@
                                                 newTranslationsHtml += `
                                                     <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}">
                                                         <span class="lmat-translated-term"
-                                                              data-full-text="${G.escapeHtml(existingTranslation)}"
-                                                              title="${G.escapeHtml(existingTranslation)}">
-                                                            ${G.escapeHtml(truncatedText)}
+                                                              data-full-text="${LmatGlossary.escapeAttr(existingTranslation)}"
+                                                              title="${LmatGlossary.escapeAttr(existingTranslation)}">
+                                                            ${LmatGlossary.escapeHtml(truncatedText)}
                                                         </span>
                                                     </td>
                                                 `;
@@ -753,7 +757,7 @@
                                                 // No translation - show add button
                                                 newTranslationsHtml += `
                                                     <td colspan="2" class="lmat-lang-col-${langCode}" data-lang="${langCode}">
-                                                        <button type="button" class="lmat-edit-btn-svg" data-term="${G.escapeHtml(rowTerm)}" data-source-lang="${G.escapeHtml(rowOriginalLang)}">
+                                                        <button type="button" class="lmat-edit-btn-svg" data-term="${LmatGlossary.escapeAttr(rowTerm)}" data-source-lang="${LmatGlossary.escapeAttr(rowOriginalLang)}">
                                                             <img src="${lmat_glossary.url}assets/images/file.svg" alt="Add Translation" />
                                                         </button>
                                                     </td>
@@ -787,10 +791,10 @@
 
                         // Append the new entry to the glossary table
                         $('.lmat-glossary-table tbody').append(newEntryHtml);
-                        G.refreshGlossaryRows();
+                        LmatGlossary.refreshGlossaryRows();
 
                         // Apply current language filter column hiding to the new row
-                        const currentActiveLang = G.getActiveLangFilterBtn().data('lang');
+                        const currentActiveLang = LmatGlossary.getActiveLangFilterBtn().data('lang');
                         if (currentActiveLang) {
                             const $newRow = $('.lmat-glossary-table tbody tr:last');
                             // Hide the source language column for the new row
@@ -798,21 +802,21 @@
                         }
 
                         // Re-select the new table
-                        G.$glossaryTable = $('.lmat-glossary-table');
+                        LmatGlossary.$glossaryTable = $('.lmat-glossary-table');
 
                         // Update the UI (show table, remove no-results, apply zebra striping, etc.)
                         $('.lmat-glossary-table').show();
-                        G.$glossaryTableWrapper.show();
-                        G.$noResults.remove();
-                        G.$noResults = $();
-                        G.updateGlossaryTableVisibility();
-                        G.applyZebraStriping();
+                        LmatGlossary.$glossaryTableWrapper.show();
+                        LmatGlossary.$noResults.remove();
+                        LmatGlossary.$noResults = $();
+                        LmatGlossary.updateGlossaryTableVisibility();
+                        LmatGlossary.applyZebraStriping();
 
                         // Update scroll button visibility
-                        G.updateScrollButtonVisibility();
+                        LmatGlossary.updateScrollButtonVisibility();
 
                         // Update language filter buttons, passing the saved language
-                        G.updateLanguageFilterButtons(savedSourceLang);
+                        LmatGlossary.updateLanguageFilterButtons(savedSourceLang);
 
                         // After adding, check if there are now two or more unique original languages and show filter bar if needed
                         const $rows = $('.lmat-glossary-table tbody tr');
@@ -862,7 +866,7 @@
                             $('.lmat-lang-filter-btn.active').trigger('click');
                         }
                         // Update alphabet buttons
-                        G.updateAlphabetButtonStates();
+                        LmatGlossary.updateAlphabetButtonStates();
                         } else {
                             // Fallback: Success but no server data - use original method with request data
                             console.warn('Success but no server data returned, using fallback method');
@@ -877,7 +881,7 @@
             });
 
             // Add cancel edit handler
-            G.$glossaryTable.on('click', '.lmat-cancel-edit-btn', function(e) {
+            LmatGlossary.$glossaryTable.on('click', '.lmat-cancel-edit-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -886,7 +890,7 @@
 
                 $originalRow.show();
                 $editRow.remove();
-                G.refreshGlossaryRows();
+                LmatGlossary.refreshGlossaryRows();
             });
 
             // Add input event handler for add form fields

@@ -104,6 +104,10 @@
       $("body").append(dialogHTML);
 
       this.$syncDialog = $("#lmat-sync-dialog");
+      if (!this.$syncDialog.length) {
+        console.error("Menu sync dialog failed to create");
+        return;
+    }
       this.$syncError = this.$syncDialog.find(".lmat-sync-error");
       this.$syncLanguages = this.$syncDialog.find(".lmat-sync-languages");
       this.$toggleAll = this.$syncDialog.find(".lmat-toggle-all");
