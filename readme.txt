@@ -193,9 +193,6 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = Version 2.1.9 | 30 June 2026 =
 * Fixed: Validation issue of Google Gemini API key.
 
-= Version 2.1.9 | 30 June 2026 =
-* Fixed: Validation issue of Google Gemini API key.
-
 = Version 2.1.8 | 15 June 2026 =
 * Improved: User Opt-in code improvements
 
