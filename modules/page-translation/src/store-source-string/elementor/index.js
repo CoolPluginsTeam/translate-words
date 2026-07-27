@@ -36,6 +36,40 @@ const ElementorSaveSource = (content) => {
         'opacity', 'width', 'height', 'display', 'position', 'z_index', 'visibility', 'align', 'max_width', 'content_typography_typography', 'flex_justify_content', 'title_color', 'description_color', 'email_content'
     ];
 
+    /**
+     * Handles Elementor Atomic Widget settings.
+     *
+     * Atomic widgets store translatable values as typed objects with a `$$type`
+     * property instead of plain strings. This function detects the two common
+     * atomic value shapes and dispatches them to `translateContent`:
+     *
+     *  - `$$type === 'string'`   → plain text stored in `.value`
+     *  - `$$type === 'html-v3'`  → rich text stored in `.value.content.value`
+     *
+     * @param {Object} element - The atomic widget value object (has `$$type`).
+     * @param {Array}  ids     - The current ID path used to build the unique key.
+     */
+    const storeAtomicWidgetStrings = (element, ids=[]) => {
+        const currentKey = ids[ids.length - 1];
+        // Keys that are always translatable for atomic widgets even if they don't
+        // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
+        const validAtomicKeys = ['placeholder', 'paragraph'];
+
+        if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
+            return;
+        }
+
+        if(element?.$$type === 'html-v3'){
+            if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
+                translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
+            }
+        } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                translateContent([...ids, 'value'], element.value);
+            }
+        }
+    }
+
     const storeWidgetStrings = (element, index, ids=[]) => {
         const settings = element.settings;
         ids.push(index);
@@ -51,10 +85,13 @@ const ElementorSaveSource = (content) => {
 
                 if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
+                    // Plain string setting — classic Elementor widget field.
                     translateContent([...ids, 'settings', key],settings[key]);
-                }
-
-                if(Array.isArray(settings[key]) && settings[key].length > 0){
+                } else if(settings[key] && typeof settings[key] === 'object' && Object.hasOwn(settings[key], '$$type') ){
+                    // Atomic Widget typed object — e.g. { $$type: 'string', value: '...' }
+                    storeAtomicWidgetStrings(settings[key], [...ids, 'settings', key]);
+                } else if(Array.isArray(settings[key]) && settings[key].length > 0){
+                    // Repeater / array fields.
                     const settingsLoop=(item, index)=>{
                         if(typeof item === 'object' && item !== null){
                             const settingsItemsLoop= (repeaterKey)=>{
@@ -66,6 +103,9 @@ const ElementorSaveSource = (content) => {
                                 if(subStringsToCheck(repeaterKey) &&
                                     typeof item[repeaterKey] === 'string' && item[repeaterKey].trim() !== '') {
                                     translateContent([...ids, 'settings', key, index, repeaterKey],item[repeaterKey]);
+                                } else if(item[repeaterKey] && typeof item[repeaterKey] === 'object' && Object.hasOwn(item[repeaterKey], '$$type') ){
+                                    // Atomic Widget typed object inside a repeater field.
+                                    storeAtomicWidgetStrings(item[repeaterKey], [...ids, 'settings', key, index, repeaterKey]);
                                 }
                             }
 
