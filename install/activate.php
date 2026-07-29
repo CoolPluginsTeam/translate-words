@@ -79,6 +79,10 @@ class Linguator_Activate extends Linguator_Abstract_Activate {
 			}
 		}
 
+		if (!get_option('lmat_initial_version')) {
+			update_option('lmat_initial_version', LINGUATOR_VERSION);
+		}
+
 		if ( empty( $options['version'] ) ) {
 			// If this is a fresh install, set the current plugin version.
 			$options['version'] = static::get_plugin_version();

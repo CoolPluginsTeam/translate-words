@@ -95,6 +95,8 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		// Early instantiated to be able to correctly initialize language properties.
 		$this->static_pages = new Linguator_Admin_Static_Pages( $this );
 		$this->model->set_languages_ready();
+		
+		add_action('admin_print_scripts', array($this, 'lmat_hide_unrelated_notices'));
 	}
 
 	/**
@@ -789,5 +791,77 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		}
 
 		return 'manage_options';
+	}
+
+	/**
+	 * Hides unrelated admin notices on Linguator pages.
+	 *
+	 * @return void
+	 */
+	public function lmat_hide_unrelated_notices() {
+		$is_lmat_page = false;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+
+		if (strpos($page, 'lmat') === 0) {
+			$is_lmat_page = true;
+		}
+
+		if ($is_lmat_page) {
+			global $wp_filter;
+			// Define rules to remove callbacks.
+			$rules = [
+				'user_admin_notices' => [], // remove all callbacks.
+				'admin_notices'      => [],
+				'all_admin_notices'  => [],
+				'admin_footer'       => [
+					'render_delayed_admin_notices', // remove this particular callback.
+				],
+			];
+			$notice_types = array_keys($rules);
+			foreach ($notice_types as $notice_type) {
+				if (empty($wp_filter[$notice_type]->callbacks) || ! is_array($wp_filter[$notice_type]->callbacks)) {
+					continue;
+				}
+				$remove_all_filters = empty($rules[$notice_type]);
+				foreach ($wp_filter[$notice_type]->callbacks as $priority => $hooks) {
+					foreach ($hooks as $name => $arr) {
+						if (is_object($arr['function']) && is_callable($arr['function'])) {
+							if ($remove_all_filters) {
+								unset($wp_filter[$notice_type]->callbacks[$priority][$name]);
+							}
+							continue;
+						}
+						$class = ! empty($arr['function'][0]) && is_object($arr['function'][0]) ? strtolower(get_class($arr['function'][0])) : '';
+						
+						// Keep our own plugin's notices
+						if ($remove_all_filters && strpos($class, 'linguator') === false) {
+							unset($wp_filter[$notice_type]->callbacks[$priority][$name]);
+							continue;
+						}
+						$cb = is_array($arr['function']) ? $arr['function'][1] : $arr['function'];
+						// Remove a specific callback.
+						if (! $remove_all_filters) {
+							if (in_array($cb, $rules[$notice_type], true)) {
+								unset($wp_filter[$notice_type]->callbacks[$priority][$name]);
+							}
+							continue;
+						}
+					}
+				}
+			}
+			
+			add_action( 'admin_notices', [ $this, 'lmat_admin_notices' ], PHP_INT_MAX );
+		}
+	}
+
+	/**
+	 * Fire a custom hook for admin notices on Linguator pages.
+	 *
+	 * @return void
+	 */
+	public function lmat_admin_notices() {
+		do_action( 'lmat_display_admin_notices' );
 	}
 }
