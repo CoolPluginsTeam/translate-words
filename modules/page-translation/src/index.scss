@@ -473,6 +473,27 @@ button.lmat-page-translation-error-reload-btn:hover {
     height: 28px;
 }
 
+/* No-provider message (matches bulk translation empty state) */
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-message {
+    padding: 16px 25px;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text {
+    color: #cc1818;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text a {
+    color: #2271b1;
+    text-decoration: underline;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text a:hover {
+    color: #135e96;
+}
+
 #lmat-page-translation-setting-modal .lmat-page-translation-translator-row .lmat-page-translation-translator-footer .lmat-page-translation-localai-disabled-message:hover {
     background: red;
 }

@@ -21,8 +21,24 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 		const hasChromeObject = Object.prototype.hasOwnProperty.call(window ?? {}, 'chrome');
 		const userAgent = navigator?.userAgent ?? '';
 		
-		const actualIsEdge = userAgent.includes('Edg');
-		const actualIsChrome = hasChromeObject && userAgent.includes('Chrome') && !actualIsEdge;
+		let actualIsEdge = false;
+		let actualIsChrome = false;
+
+		if (navigator?.userAgentData?.brands) {
+			navigator.userAgentData.brands.forEach((data) => {
+				if (data.brand === 'Google Chrome') {
+					actualIsChrome = true;
+				} else if (data.brand === 'Microsoft Edge') {
+					actualIsEdge = true;
+				}
+			});
+		} else {
+			if (userAgent.includes('Edg')) {
+				actualIsEdge = true;
+			} else if (hasChromeObject) {
+				actualIsChrome = true;
+			}
+		}
 
 		if (isEdge) {
 			if (!actualIsEdge) {
@@ -70,23 +86,24 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 				{noticeType === 'browser' && (
 					<ul className="list-disc ml-5 mt-2">
 						<li>
-							{sprintf(__('The Translator API (%s Local AI Models) is designed for the %s browser.', 'translate-words'), browserName, browserName)}
+							{__('The ', 'translate-words')}<strong>{__('Translator API', 'translate-words')}</strong>{__(', which uses ', 'translate-words')}{browserName}{__(' Local AI Models, is designed exclusively for use with the ', 'translate-words')}<strong>{browserName}{__(' browser', 'translate-words')}</strong>.
 						</li>
 						<li>
 							{__(
-								'If you are using a different browser, the API may not function correctly.',
+								'If you are using a different browser (such as Firefox, or Safari), the API may not function correctly.',
 								'translate-words'
 							)}
 						</li>
 						<li>
+							{__('Learn more in the ', 'translate-words')}
 							<a
 								className="underline text-blue-600"
 								href={docUrl}
 								rel="noreferrer noopener"
 								target="_blank"
 							>
-								{__('Learn more in the official documentation.', 'translate-words')}
-							</a>
+								{__('official documentation', 'translate-words')}
+							</a>.
 						</li>
 					</ul>
 				)}

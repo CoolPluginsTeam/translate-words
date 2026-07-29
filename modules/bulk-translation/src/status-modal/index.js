@@ -512,7 +512,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                             <span className={`${prefix}-view-link`}>
                                                                 {allPostStatus(info.parentPostId) ? (
                                                                     <a
-                                                                        href={info.postEditLink}
+                                                                        href={info.elementorEditLink || info.postEditLink}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="button button-primary"

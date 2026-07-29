@@ -3,6 +3,7 @@ import SettingModalHeader from "./header.js";
 import SettingModalBody from "./body.js";
 import SettingModalFooter from "./footer.js";
 import ErrorModalBox from "../components/error-modal-box/index.js";
+import TranslateService from "../components/translate-provider/index.js";
 
 const AI_PROVIDERS = ['localAiTranslator', 'edgeLocalAiTranslator'];
 
@@ -10,12 +11,16 @@ const SettingModal = (props) => {
     const prefix = props.prefix || 'lmat-bulk-translate';
     const imgFolder = lmatBulkTranslationGlobal.lmat_url + 'admin/assets/images/';
     const [errorModal, setErrorModal] = useState(false);
-    const providers = lmatBulkTranslationGlobal.providers || [];
     const [isChecking, setIsChecking] = useState(true);
 
-    const singleProvider = providers.length === 1 ? providers[0] : null;
+    // Use the browser-filtered provider list so incompatible providers
+    // (e.g. Chrome AI shown in Edge) are excluded from auto-start logic.
+    const validProviders = Object.keys(TranslateService());
+    const singleProvider = validProviders.length === 1 ? validProviders[0] : null;
     // Always show provider UI for AI so Translate is a real user gesture (packs may still be warming from Bulk Translate hover).
-    const requireProviderClick = !singleProvider || AI_PROVIDERS.includes(singleProvider);
+    // Also show when no compatible providers exist so the empty-state message is visible.
+    const requireProviderClick = validProviders.length === 0 || !singleProvider || AI_PROVIDERS.includes(singleProvider);
+
 
     useEffect(() => {
         setIsChecking(false);
@@ -45,7 +50,7 @@ const SettingModal = (props) => {
                 props.updateProviderHandler(singleProvider);
             }
         }
-    }, [providers, isChecking, singleProvider]);
+    }, [validProviders.join(','), isChecking, singleProvider]);
 
     const startTranslationHandler = (e) => {
         let targetElement = !e.target.classList.contains(`${prefix}-service-btn`) ? e.target.closest(`.${prefix}-service-btn`) : e.target;
@@ -81,6 +86,7 @@ const SettingModal = (props) => {
                     <SettingModalHeader
                         setSettingVisibility={props.onDestory}
                         prefix={prefix}
+                        hasProviders={validProviders.length > 0}
                     />
                     <SettingModalBody
                         startTranslationHandler={startTranslationHandler}

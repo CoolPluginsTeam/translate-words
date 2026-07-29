@@ -1770,6 +1770,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
 			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
 
+			// Build Elementor editor link if the translated post uses Elementor.
+			$elementor_edit_link = false;
+			if ( defined( 'ELEMENTOR_VERSION' ) && 'builder' === get_post_meta( $new_post_id, '_elementor_edit_mode', true ) ) {
+				$elementor_edit_link = add_query_arg(
+					array(
+						'post'   => $new_post_id,
+						'action' => 'elementor',
+					),
+					admin_url( 'post.php' )
+				);
+			}
+
 			return rest_ensure_response(
 				array(
 					'post_id'                     => $new_post_id,
@@ -1777,6 +1789,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'post_link'                   => $post_link,
 					'post_title'                  => $post_title_out,
 					'post_edit_link'              => $post_edit_link,
+					'elementor_edit_link'         => $elementor_edit_link,
 					'update_translate_data_nonce' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
 				)
 			);

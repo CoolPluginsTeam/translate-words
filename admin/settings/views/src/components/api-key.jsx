@@ -412,7 +412,6 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
                       value={models[p.modelKey] || ''}
                       onChange={(e) => setModels((prev) => ({ ...prev, [p.modelKey]: e.target.value }))}
                     >
-                      <option value="">{__('Select model…', 'translate-words')}</option>
                       {providerModelList.map((id) => (
                         <option key={id} value={id}>{getModelLabel(id)}</option>
                       ))}

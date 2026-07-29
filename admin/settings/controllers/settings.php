@@ -629,9 +629,12 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			$translations_data=array('total_string_count' => 0, 'total_character_count' => 0, 'total_time_taken' => 0, 'service_providers' => array());
 			if(Linguator_Translation_Dashboard::class){
 				$avilable_service_providers = array(
-					'google'            => 'Google',
-					'localAiTranslator' => 'Chrome AI Translator',
-					'gemini'            => 'Gemini',
+					'chrome_local_ai'      => 'Chrome AI',
+					'edge_local_ai'        => 'Edge AI',
+					'google'               => 'Google',
+					'gemini'               => 'Gemini AI',
+					'localAiTranslator'    => 'Chrome AI',
+					'edgeLocalAiTranslator' => 'Edge AI',
 				);
 				$cpt_dashboard_data=Linguator_Translation_Dashboard::get_translation_data('lmat');
 				$translation_providers=(isset($cpt_dashboard_data['service_providers']) && is_array($cpt_dashboard_data['service_providers'])) ? $cpt_dashboard_data['service_providers'] : array();

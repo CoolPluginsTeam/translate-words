@@ -215,7 +215,7 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
             updateTranslateData({provider: service, sourceLang, targetLang: lang, currentPostId: successPayload.post_id, parentPostId: postId, editorType, updateTranslateDataNonce: successPayload.update_translate_data_nonce, extraData, signal});
 
             successPayload.post_title = '' === successPayload.post_title ? __('N/A', 'translate-words') : successPayload.post_title;
-            updateData={targetPostId: successPayload.post_id, targetPostTitle: successPayload.post_title, targetLanguage: lang, postLink: successPayload.post_link, postEditLink: successPayload.post_edit_link, status: 'completed', messageClass: 'success'};
+            updateData={targetPostId: successPayload.post_id, targetPostTitle: successPayload.post_title, targetLanguage: lang, postLink: successPayload.post_link, postEditLink: successPayload.post_edit_link, elementorEditLink: successPayload.elementor_edit_link || false, status: 'completed', messageClass: 'success'};
             storeDispatch(updateCountInfo({postsTranslated: store.getState().countInfo.postsTranslated+1}));
         }else{
             if(data.data && data.data.error){

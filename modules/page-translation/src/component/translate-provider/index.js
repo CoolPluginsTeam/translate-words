@@ -71,13 +71,16 @@ export default (props) => {
     const browserType = (() => {
         let type = 'Other';
         if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
-            navigator.userAgentData.brands.forEach(data => {
-                if (data.brand === 'Google Chrome') {
-                    type = 'Chrome';
-                } else if (data.brand === 'Microsoft Edge') {
-                    type = 'Edge';
-                }
-            });
+            // Edge is Chromium-based, so its brands array contains BOTH
+            // "Microsoft Edge" AND "Google Chrome". Check for Edge first
+            // so it takes priority and isn't misidentified as Chrome.
+            const brands = navigator.userAgentData.brands;
+            const isEdgeBrowser = brands.some(data => data.brand === 'Microsoft Edge');
+            if (isEdgeBrowser) {
+                type = 'Edge';
+            } else if (brands.some(data => data.brand === 'Google Chrome')) {
+                type = 'Chrome';
+            }
         } else {
             if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
                 type = 'Edge';

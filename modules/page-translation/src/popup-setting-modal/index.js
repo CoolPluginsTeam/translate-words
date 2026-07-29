@@ -14,6 +14,7 @@ const SettingModal = (props) => {
     const [activeService, setActiveService] = useState({});
     const [modalRender, setModalRender] = useState(0);
     const [settingVisibility, setSettingVisibility] = useState(false);
+    const [noValidProvider, setNoValidProvider] = useState(false);
     const sourceLang = lmatPageTranslationGlobal.source_lang;
     const targetLang = props.targetLang;
     const sourceLangName = lmatPageTranslationGlobal.languageObject[sourceLang]['name'];
@@ -27,6 +28,15 @@ const SettingModal = (props) => {
     const [chromeAiDownload, setChromeAiDownload] = useState(null);
     const [edgeAiDownload, setEdgeAiDownload] = useState(null);
     const providers = lmatPageTranslationGlobal.providers;
+    const validProviders = Object.keys(TranslateService());
+
+    const showNoCompatibleProviderModal = () => {
+        if (providers.length < 1) {
+            openErrorModalHandler('providerNotConfigured');
+            return;
+        }
+        setNoValidProvider(true);
+    };
 
     const openModalOnLoadHandler = (e) => {
         e.preventDefault();
@@ -61,7 +71,13 @@ const SettingModal = (props) => {
     const handleMetaFieldBtnClick = async (e) => {
         e.preventDefault();
 
-        if (providers.length > 1) {
+        // No enabled provider, or none compatible with this browser (e.g. Chrome AI on Edge).
+        if (validProviders.length < 1) {
+            showNoCompatibleProviderModal();
+            return;
+        }
+
+        if (validProviders.length > 1) {
             // Perform language check upfront when modal is opened with multiple providers
             const errors = await providerErrors();
 
@@ -72,12 +88,10 @@ const SettingModal = (props) => {
 
             // Show provider selection modal - errors will be shown as error messages on provider buttons
             setSettingVisibility(prev => !prev);
-        } else if (providers.length < 1) {
-            openErrorModalHandler('providerNotConfigured');
         } else {
-            // Single provider case
+            // Single compatible provider
             const errors = await providerErrors();
-            const providerId = providers[0];
+            const providerId = validProviders[0];
 
             // Check for download pending
             if (errors && (errors.chromeAiDownloadPending || errors.edgeAiDownloadPending)) {
@@ -123,12 +137,12 @@ const SettingModal = (props) => {
     const providerErrors = async () => {
         let errors = {};
 
-        if (providers.includes('localAiTranslator')) {
+        if (validProviders.includes('localAiTranslator')) {
             setChromeAiDownload(prev => prev && (prev.status === 'downloadable' || prev.status === 'downloading' || prev.status === 'failed')
                 ? prev
                 : { status: 'checking', progress: 0 });
         }
-        if (providers.includes('edgeLocalAiTranslator')) {
+        if (validProviders.includes('edgeLocalAiTranslator')) {
             setEdgeAiDownload(prev => prev && (prev.status === 'downloadable' || prev.status === 'downloading' || prev.status === 'failed')
                 ? prev
                 : { status: 'checking', progress: 0 });
@@ -220,13 +234,13 @@ const SettingModal = (props) => {
 
         }
 
-        if (providers.includes('localAiTranslator')) {
+        if (validProviders.includes('localAiTranslator')) {
             await localAiSupportStatus();
         }
-        if (providers.includes('edgeLocalAiTranslator')) {
+        if (validProviders.includes('edgeLocalAiTranslator')) {
             await edgeLocalAiSupportStatus();
         }
-        if (providers.includes('google')) {
+        if (validProviders.includes('google')) {
             await googleSupportStatus();
         }
 
@@ -360,23 +374,28 @@ const SettingModal = (props) => {
 
     const handleSettingVisibility = (visibility) => {
         setSettingVisibility(visibility);
+        if (!visibility) {
+            setNoValidProvider(false);
+        }
     }
+
+    const hasProviders = validProviders.length > 0;
+    const isSettingModalOpen = settingVisibility || noValidProvider;
 
     return (
         <>
             {errorModalVisibility && serviceModalErrors[errorModalVisibility] &&
                 <ErrorModalBox onClose={closeErrorModal} {...serviceModalErrors[errorModalVisibility]} />
             }
-            {settingVisibility && (providers.length > 1 || chromeAiDownload || edgeAiDownload) &&
-                <div className="modal-container" style={{ display: settingVisibility ? 'flex' : 'none' }}>
+            {isSettingModalOpen &&
+                <div className="modal-container" style={{ display: 'flex' }}>
                     <div className="lmat-page-translation-settings modal-content">
                         <SettingModalHeader
                             setSettingVisibility={handleSettingVisibility}
-                            postType={props.postType}
-                            sourceLangName={sourceLangName}
-                            targetLangName={targetLangName}
+                            hasProviders={hasProviders}
                         />
                         <SettingModalBody
+                            hasProviders={hasProviders}
                             googleDisabled={!googleSupport}
                             fetchContent={fetchContent}
                             imgFolder={imgFolder}
@@ -392,6 +411,7 @@ const SettingModal = (props) => {
                             setEdgeAiDownload={setEdgeAiDownload}
                         />
                         <SettingModalFooter
+                            hasProviders={hasProviders}
                             targetLangName={targetLangName}
                             postType={props.postType}
                             sourceLangName={sourceLangName}

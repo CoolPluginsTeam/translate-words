@@ -134,6 +134,7 @@
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container.lmat-bulk-translate-setting-modal-active {
+  width: clamp(200px, 560px, 90%);
   height: auto;
   max-height: 90vh;
 }
@@ -332,6 +333,30 @@
   width: 20px;
   height: 28px;
 }
+
+/* ── No-provider message ─────────────────────────────────────────────── */
+#lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-setting-modal-container .lmat-bulk-translate-setting-modal-content .lmat-bulk-translate-setting-modal-body .lmat-bulk-translate-no-provider-message {
+  padding: 16px 25px;
+}
+
+#lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-setting-modal-container .lmat-bulk-translate-setting-modal-content .lmat-bulk-translate-setting-modal-body .lmat-bulk-translate-no-provider-text {
+  color: #cc1818;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+#lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-setting-modal-container .lmat-bulk-translate-setting-modal-content .lmat-bulk-translate-setting-modal-body .lmat-bulk-translate-no-provider-text a {
+  color: #2271b1;
+  text-decoration: underline;
+}
+
+#lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-setting-modal-container .lmat-bulk-translate-setting-modal-content .lmat-bulk-translate-setting-modal-body .lmat-bulk-translate-no-provider-text a:hover {
+  color: #135e96;
+}
+/* ─────────────────────────────────────────────────────────────────────── */
+
+
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-setting-modal-container .lmat-bulk-translate-setting-modal-content .lmat-bulk-translate-setting-modal-footer {
   background: 0 0;
