@@ -274,6 +274,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Google Translate';
             case 'localAiTranslator':
                 return 'Chrome AI Translator';
+            case 'edgeLocalAiTranslator':
+                return 'Edge AI Translator';
             case 'gemini':
                 return 'Google Gemini';
             default:

@@ -81,6 +81,8 @@ const popStringModal = (props) => {
 
         if (serviceProvider === 'localAiTranslator') {
             return 'Chrome AI Translator';
+        } else if (serviceProvider === 'edgeLocalAiTranslator') {
+            return 'Edge AI Translator';
         } else {
             return serviceProvider.replace(/^\w/, c => c.toUpperCase()) + ' Translate';
         }

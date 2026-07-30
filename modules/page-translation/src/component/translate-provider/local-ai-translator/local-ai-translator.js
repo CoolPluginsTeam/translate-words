@@ -515,7 +515,7 @@ class ChromeAiTranslator {
                     Wahooo! You have saved your valuable time via auto translating 
                     <strong class="totalChars">0</strong> characters using 
                     <strong>
-                        Chrome Built-in AI
+                        ${this.isEdge ? 'Edge Built-in AI' : 'Chrome Built-in AI'}
                     </strong>
                 </div>
             `);

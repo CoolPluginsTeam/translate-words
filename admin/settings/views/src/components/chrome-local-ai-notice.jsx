@@ -134,6 +134,11 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 					<>
 						<ol className="list-decimal ml-5 mt-2">
 							<li>
+								{isEdge 
+                                    ? __('Ensure your Edge browser is updated to version 140 or newer.', 'translate-words') 
+                                    : __('Ensure your Chrome browser is updated to version 131 or newer.', 'translate-words')}
+							</li>
+							<li>
 								{sprintf(__('Open this URL in a new %s tab:', 'translate-words'), browserName)}{' '}
 								<code>{scheme}://flags/#translation-api</code>
 							</li>
@@ -143,6 +148,16 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 							<li>
 								{__('Click Relaunch to apply changes.', 'translate-words')}
 							</li>
+                            <li>
+                                {isEdge
+                                    ? __('Visit the Edge settings to install the required language packs.', 'translate-words')
+                                    : (
+                                        <>
+                                            {__('To install the language pack, open a new tab and paste this URL:', 'translate-words')}{' '}
+                                            <code>{scheme}://on-device-translation-internals</code>
+                                        </>
+                                    )}
+                            </li>
 							<li>
 								{__('The Translator AI option should now be enabled.', 'translate-words')}
 							</li>
