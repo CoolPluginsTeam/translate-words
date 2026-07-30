@@ -32,7 +32,7 @@ const Sidebar = () => {
                   <h4 className='text-sm text-gray-700 m-0'>{__('Time Taken', 'translate-words')}</h4>
                   <p className='text-sm font-medium text-gray-900 m-0'>{window.lmat_settings?.translations_data?.total_time || 0}</p>
                 </div>
-                <div className='flex justify-between gap-2'>
+                <div className='flex flex-col gap-2'>
                   <div className='flex flex-col gap-1'>
                     <h4 className='text-sm text-gray-700 m-0 text-nowrap'>{__('Service Providers', 'translate-words')}</h4>
                   </div>

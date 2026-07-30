@@ -46,9 +46,15 @@
 .lmat-custom-data-table-wrapper.lmat-custom-fields .lmat-save-custom-fields:focus {
   box-shadow: none;
 }
-.lmat-custom-data-table-wrapper .lmat-custom-data-table-filters,
+.lmat-custom-data-table-wrapper .lmat-custom-data-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
 .lmat-custom-data-table-wrapper .lmat-custom-data-table-filters .lmat-filter-tab {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   column-gap: 1rem;
 }
@@ -61,6 +67,7 @@
 .lmat-custom-data-table-wrapper .lmat-custom-table-lists {
   margin: 20px 0px;
   font-family: Arial, sans-serif;
+  overflow-x: auto;
 }
 .lmat-custom-data-table-wrapper .lmat-custom-table-lists .lmat-custom-data-table-table {
   width: 100%;

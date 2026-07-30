@@ -27,7 +27,15 @@
 
 .switcher {
     display: grid;
-    grid-template-columns: 80% 20%;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .switcher {
+        grid-template-columns: 80% 20%;
+        gap: 0;
+    }
 }
 
 .active::after {

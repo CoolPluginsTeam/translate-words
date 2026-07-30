@@ -215,7 +215,7 @@ const TranslationConfig = ({ data, setData }) => {
     return (
         <Container className='bg-white p-10 rounded-lg' cols="1" containerType='grid'>
             <Container className='flex items-center'>
-                <Container.Item className='flex w-full justify-between px-4 gap-6'>
+                <Container.Item className='flex flex-wrap items-center w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Translation Settings', 'translate-words')}</h1>
                     <Button
                         disabled={handleButtonDisabled || isSaving}
@@ -252,7 +252,7 @@ const TranslationConfig = ({ data, setData }) => {
                                     {__('Google Machine Translation uses the Google Translate API to translate text.', 'translate-words')}
                                 </p>
                             </Container.Item>
-                            <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                            <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                 <Switch
                                     aria-label="Switch Element"
                                     id="google-machine-translation"
@@ -277,7 +277,7 @@ const TranslationConfig = ({ data, setData }) => {
                                         {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
                                     </p>
                                 </Container.Item>
-                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                     <Switch
                                         aria-label="Switch Element"
                                         id="chrome-local-ai-translation"
@@ -306,7 +306,7 @@ const TranslationConfig = ({ data, setData }) => {
                                         {__('Edge Local AI Translation uses Edge Local AI API to translate text.', 'translate-words')}
                                     </p>
                                 </Container.Item>
-                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                     <Switch
                                         aria-label="Switch Element"
                                         id="edge-local-ai-translation"
@@ -335,7 +335,7 @@ const TranslationConfig = ({ data, setData }) => {
                                         {__('Google Gemini AI uses Google Gemini API to translate your content.', 'translate-words')}
                                     </p>
                                 </Container.Item>
-                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                     <Switch
                                         aria-label="Switch Element"
                                         id="gemini-translation"
@@ -374,7 +374,7 @@ const TranslationConfig = ({ data, setData }) => {
                     {__('This is the default post and page status for bulk translation.', 'translate-words')}
                 </Label>
                 <div style={{ marginTop: "20px" }}>
-                    <RadioButton.Group>
+                    <RadioButton.Group className="flex flex-col sm:flex-row gap-4 flex-wrap">
                         {postStatusOptions.map((postStatus, index) => (
                             <RadioButton.Button
                                 badgeItem={<Badge className="mr-2" size="sm" type="rounded" variant="green" />}
@@ -402,7 +402,7 @@ const TranslationConfig = ({ data, setData }) => {
                 </Label>
                 <Label variant='help'>{__('Choose how post slugs (URLs) are generated when content is translated.', 'translate-words')}</Label>
                 <div style={{ marginTop: "20px" }}>
-                    <RadioButton.Group>
+                    <RadioButton.Group className="flex flex-col sm:flex-row gap-4 flex-wrap">
                         {slugTranslationOptions.map((slugOption, index) => (
                             <RadioButton.Button
                                 badgeItem={<Badge className="mr-2" size="sm" type="rounded" variant="green" />}

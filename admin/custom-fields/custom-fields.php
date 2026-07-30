@@ -90,14 +90,16 @@ if(!class_exists('Custom_Fields')) {
                 $s_no                        = 1;
                 ?>
                 <div class="lmat-custom-data-table-wrapper lmat-custom-fields">
-                    <h3><?php echo esc_html__('Custom Fields Translation Settings', 'translate-words'); ?>
-                    <br>
-                    <p><?php 
-						// translators: %s: Linguator.
-						printf( esc_html__( 'Select which custom fields will be translated by %s.', 'translate-words' ), 'Linguator' ); 
-					?></p>
-                    </h3>
-                    <button class="button button-primary lmat-save-custom-fields"><?php esc_html_e( 'Save Fields', 'translate-words' ); ?></button>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 20px;">
+                        <h3 style="margin: 0;"><?php echo esc_html__('Custom Fields Translation Settings', 'translate-words'); ?>
+                        <br>
+                        <p style="margin-top: 5px;"><?php 
+                            // translators: %s: Linguator.
+                            printf( esc_html__( 'Select which custom fields will be translated by %s.', 'translate-words' ), 'Linguator' ); 
+                        ?></p>
+                        </h3>
+                        <button class="button button-primary lmat-save-custom-fields" style="float: none; margin: 0; align-self: flex-start;"><?php esc_html_e( 'Save Fields', 'translate-words' ); ?></button>
+                    </div>
                     <div class="lmat-custom-data-table-filters">
                         <div class="lmat-filter-tab" data-column="3" data-default="all">
                             <label for="lmat-fields-filter"><?php esc_html_e( 'Show Fields:', 'translate-words' ); ?></label>

@@ -362,7 +362,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
                 {p.heading}
               </h3>
               <div className="flex items-start gap-3">
-                <div className="flex-1">
+                <div className="flex-1" style={{ maxWidth: 400 }}>
                   <Input
                     aria-label={`${p.key}-api-key`}
                     id={`${p.key}-api-key`}
