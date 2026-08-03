@@ -191,8 +191,8 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 == Changelog ==
 
 = Version 2.1.10 | 03 August 2026 =
-* Improved: Code Improvements & Optimization
 * Added: New Translation Provider - Edge AI for Edge Browser
+* Improved: Code Improvements & Optimization
 
 = Version 2.1.9 | 30 June 2026 =
 * Fixed: Validation issue of Google Gemini API key.
