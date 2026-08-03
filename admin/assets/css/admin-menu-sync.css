@@ -81,15 +81,6 @@
 	justify-content: flex-end !important;
 }
 
-/* Larger close button for error dialog */
-#lmat-error-dialog .lmat-error-close {
-	font-size: 32px !important;
-	width: 40px !important;
-	height: 40px !important;
-	min-width: 40px !important;
-	min-height: 40px !important;
-}
-
 /* Error dialog body - reduced padding */
 #lmat-error-dialog .lmat-sync-body {
 	padding: 0 !important;

@@ -98,8 +98,9 @@ class Linguator_Choose_Lang_Url extends Linguator_Choose_Lang {
 	 * @return array modified query vars
 	 */
 	public function request( $qv ) {
-		// FIXME take care not to break untranslated content
-		// FIXME media ?
+		// Don't add the language query var to untranslated content (post types,
+		// taxonomies and media), otherwise it would be wrongly filtered out.
+		// These cases are handled by the early returns below.
 
 		// Untranslated post types
 		if ( isset( $qv['post_type'] ) && ! $this->model->is_translated_post_type( $qv['post_type'] ) ) {

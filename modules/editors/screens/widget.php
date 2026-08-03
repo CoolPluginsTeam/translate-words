@@ -9,12 +9,8 @@ namespace Linguator\Modules\Editors\Screens;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-use Linguator\Includes\Other\Linguator_Model;
-use Linguator\Includes\Base\Linguator_Base;
 use WP_Screen;
 use Linguator\Includes\Other\Linguator_Language;
-use Linguator\Admin\Controllers\Linguator_Admin_Block_Editor;
 
 /**
  * Class to manage Widget editor scripts.

@@ -19,7 +19,7 @@ if (!class_exists('Linguator_cronjob')) {
            
         static public function linguator_send_data() {
             // Respect explicit user consent before collecting/transmitting telemetry.
-            if ( 'yes' !== get_option( 'cpfm_opt_in_choice_lmat' ) ) {
+            if ( 'yes' !== linguator_get_cpfm_opt_in_choice() ) {
                 return;
             }
 
@@ -32,10 +32,10 @@ if (!class_exists('Linguator_cronjob')) {
             $server_info    = $extra_data_details['server_info'];
             $extra_details  = $extra_data_details['extra_details'];
             $site_url       = esc_url( site_url() );
-            $install_date   = get_option('linguator_install_date');
+            $install_date   = get_option('lmat_install_date');
             $uni_id         = '153';
             $site_id        = $site_url . '-' . $install_date . '-' . $uni_id;
-            $initial_version = get_option('linguator_initial_version');
+            $initial_version = get_option('lmat_initial_version');
             $initial_version = is_string($initial_version) ? sanitize_text_field($initial_version) : 'N/A';
             $plugin_version = defined('LINGUATOR_VERSION') ? LINGUATOR_VERSION : 'N/A';
             $admin_email    = sanitize_email(get_option('admin_email') ?: 'N/A');
@@ -70,7 +70,7 @@ if (!class_exists('Linguator_cronjob')) {
             $decoded        = json_decode($response_body, true);
             
             // Schedule the cron job for future updates
-            if ( 'yes' === get_option( 'cpfm_opt_in_choice_lmat' ) && !wp_next_scheduled('lmat_extra_data_update') ) {
+            if ( 'yes' === linguator_get_cpfm_opt_in_choice() && !wp_next_scheduled('lmat_extra_data_update') ) {
                 wp_schedule_event(time(), 'every_30_days', 'lmat_extra_data_update');
             }
         }

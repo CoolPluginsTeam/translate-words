@@ -3,7 +3,7 @@
  * Plugin Name:       Linguator AI – Auto Translate & Create Multilingual Sites
  * Plugin URI:        https://linguator.com/
  * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Auto Translate & Create Multilingual Sites.
- * Version:           2.1.9
+ * Version:           2.1.10
  * Requires at least: 6.8
  * Requires PHP:      7.2
  * Author:            Cool Plugins
@@ -40,7 +40,7 @@ use Linguator\Install\Linguator_Usable;
 
 // Linguator constants - wrapped in checks to prevent redeclaration
 if ( ! defined( 'LINGUATOR_VERSION' ) ) {
-	define( 'LINGUATOR_VERSION', '2.1.9' );
+	define( 'LINGUATOR_VERSION', '2.1.10' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
 	define( 'LMAT_MIN_WP_VERSION', '6.8' );
@@ -70,82 +70,55 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
-if(function_exists('wp_ai_client_prompt') && class_exists('WordPress\AiClient\AiClient')){
-	require_once __DIR__ . '/includes/ai-providers/vendor/autoload.php';
+// Register Gemini (Google AI) provider only when Gemini is in the allowed list
+// (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).
+add_action(
+	'plugins_loaded',
+	static function () {
+		if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+			return;
+		}
 
-	// Register bundled AI providers (when installed as composer packages they don't auto-register).
-	add_action(
-		'init',
-		static function () {
-			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
-				return;
-			}
+		require_once __DIR__ . '/includes/ai-providers/vendor/autoload.php';
 
-			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
-			if ( ! $registry || ! method_exists( $registry, 'registerProvider' ) || ! method_exists( $registry, 'hasProvider' ) ) {
-				return;
-			}
-
-			$providers = array(
-				'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
-			);
-
-			foreach ( $providers as $provider_id => $provider_class ) {
-				if ( $registry->hasProvider( $provider_id ) ) {
-					continue;
+		add_action(
+			'init',
+			static function () {
+				if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+					return;
 				}
-				if ( class_exists( $provider_class ) ) {
-					$registry->registerProvider( $provider_class );
+
+				if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+					return;
 				}
-			}
-		},
-		9
-	);
-}
+
+				$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+				if ( ! $registry || ! method_exists( $registry, 'registerProvider' ) || ! method_exists( $registry, 'hasProvider' ) ) {
+					return;
+				}
+
+				$providers = array(
+					'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
+				);
+
+				foreach ( $providers as $provider_id => $provider_class ) {
+					if ( $registry->hasProvider( $provider_id ) ) {
+						continue;
+					}
+					if ( class_exists( $provider_class ) ) {
+						$registry->registerProvider( $provider_class );
+					}
+				}
+			},
+			9
+		);
+	},
+	20
+);
 
 if ( ! defined( 'LINGUATOR' ) ) {
 	define( 'LINGUATOR', ucwords( str_replace( '-', ' ', dirname( LINGUATOR_BASENAME ) ) ) );
 }
-
-// Load legacy Translate Words functionality only for legacy users
-add_action( 'init', function() {
-
-	if(!get_option('linguator_install_date')){
-		add_option('linguator_install_date', gmdate('Y-m-d h:i:s'));
-	}
-
-	if(!get_option('linguator_initial_version')){
-		add_option('linguator_initial_version', LINGUATOR_VERSION);
-	}
-
-
-	// Check if user has legacy Translate Words data
-	$legacy_flag = get_option( 'tww_is_legacy_user' );
-
-	if($legacy_flag==='yes' && get_option('linguator_initial_version')>'1.2.6'){
-		update_option('linguator_initial_version', '1.2.6');
-	}
-	
-	// If flag doesn't exist, check if they have existing translations
-	if ( false === $legacy_flag ) {
-		$existing_translations = get_option( 'tww_options_lines' );
-		
-		// If they have translations, they're a legacy user
-		if ( ! empty( $existing_translations ) && is_array( $existing_translations ) ) {
-			update_option( 'tww_is_legacy_user', 'yes' );
-			$legacy_flag = 'yes';
-		} else {
-			// No translations found, mark as new user (not legacy)
-			update_option( 'tww_is_legacy_user', 'no' );
-			$legacy_flag = 'no';
-		}
-	}
-	
-	// Only load Translate Words files for legacy users
-	if ( 'yes' === $legacy_flag ) {
-		require_once __DIR__ . '/translate-words/tww.php';
-	}
-}, 1 );
 
 // Handle redirect after activation and language switcher visibility
 add_action('admin_init', function() {

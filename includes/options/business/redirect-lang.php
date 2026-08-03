@@ -9,7 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-use WP_Error;
 use Linguator\Includes\Options\Primitive\Abstract_Boolean;
 use Linguator\Includes\Options\Options;
 

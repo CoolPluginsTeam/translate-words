@@ -142,38 +142,8 @@ class Linguator {
 
 		// Initialize feedback functionality
 		$this->feedback = new \Linguator\Admin\Feedback\Linguator_Admin_Feedback( $this );
-		$this->cpfm_feedback_notice = new \Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice();
 		$this->linguator_cronjob = new \Linguator\Admin\cpfm_feedback\cron\Linguator_cronjob();
-		add_action('cpfm_register_notice', function () {
-
-			if (!class_exists('Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice') || !current_user_can('manage_options')) {
-				return;
-			}
-			$notice = [
-				'title' => __('Linguator AI – Auto Translate & Create Multilingual Sites', 'translate-words'),
-				'message' => __('Help us make this plugin more compatible with your site by sharing non-sensitive site data.', 'translate-words'),
-				'pages' => ['lmat_settings'],
-				'always_show_on' => ['lmat_settings'], // This enables auto-show
-				'plugin_name'=>'lmat',
-				
-			];
-			\Linguator\Admin\cpfm_feedback\CPFM_Feedback_Notice::cpfm_register_notice('lmat', $notice);
-				if (!isset($GLOBALS['cool_plugins_feedback'])) {
-					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-					$GLOBALS['cool_plugins_feedback'] = [];
-				}
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-				$GLOBALS['cool_plugins_feedback']['lmat'][] = $notice;
-	   
-		});
-		add_action('cpfm_after_opt_in_lmat', function($category) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-			if ($category === 'lmat') {
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-				\Linguator\Admin\cpfm_feedback\cron\Linguator_cronjob::linguator_send_data();
-			}
-		});
-
+		$this->cpfm_feedback_notice = ( new \Linguator\Admin\cpfm_feedback\Feedback_Bootstrap() )->register_hooks();
 
 		/*
 		 * Loads the compatibility with some plugins and themes.

@@ -300,8 +300,13 @@ class Linguator_Admin_Notices {
 					// Find the header container
 					var headerContainer = $('#lmat-settings-header');
 					if (headerContainer.length > 0) {
-						// Move notices after the header
-						notices.detach().insertAfter(headerContainer);
+						// Move notices after the screen options if present, otherwise after header
+						var screenMetaLinks = $('#screen-meta-links');
+						if (screenMetaLinks.length > 0) {
+							notices.detach().insertAfter(screenMetaLinks);
+						} else {
+							notices.detach().insertAfter(headerContainer);
+						}
 						// Add class to make notices visible
 						notices.addClass('lmat-moved-notice');
 					}

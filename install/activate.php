@@ -65,12 +65,6 @@ class Linguator_Activate extends Linguator_Abstract_Activate {
 			// This is a safety net in case flush_rewrite_rules() during activation doesn't work
 			update_option('lmat_needs_rewrite_flush', 'yes');
 			
-			// Mark new installations as non-legacy users (won't see Translate Words)
-			// Only set if not already set to avoid overriding existing user status
-			if ( false === get_option( 'tww_is_legacy_user' ) ) {
-				update_option( 'tww_is_legacy_user', 'no' );
-			}
-			
 			// Ensure language switcher meta box is visible for new installations
 			$user_id = get_current_user_id();
 			if ($user_id) {
@@ -83,6 +77,10 @@ class Linguator_Activate extends Linguator_Abstract_Activate {
 				$hidden_meta_boxes = array_diff($hidden_meta_boxes, array('lmat_lang_switch_box'));
 				update_user_meta($user_id, 'metaboxhidden_nav-menus', $hidden_meta_boxes);
 			}
+		}
+
+		if (!get_option('lmat_initial_version')) {
+			update_option('lmat_initial_version', LINGUATOR_VERSION);
 		}
 
 		if ( empty( $options['version'] ) ) {

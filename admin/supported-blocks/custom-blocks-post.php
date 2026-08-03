@@ -1,6 +1,5 @@
 <?php
 namespace Linguator\Supported_Blocks;
-use Linguator\Modules\Page_Translation\Linguator_Page_Translation_Helper;
 
 /**
  * Do not access the page directly
@@ -55,7 +54,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 			$current_screen = get_current_screen();
 			if ( 'lmat_add_blocks' === $current_screen->post_type && is_object( $current_screen ) && 'post.php' === $hook && $current_screen->is_block_editor ) {
 				wp_enqueue_script( 'lmat-add-new-block', plugins_url('admin/assets/js/lmat-add-new-custom-block.min.js', LINGUATOR_ROOT_FILE), array( 'jquery','wp-data', 'wp-element' ), LINGUATOR_VERSION, true );
-				wp_enqueue_style( 'lmat-supported-blocks', plugins_url('admin/assets/css/lmat-custom-data-table.min.css', LINGUATOR_ROOT_FILE), array(), LINGUATOR_VERSION, 'all' );
+				linguator_enqueue_datatable_assets();
 
 				wp_localize_script( 'lmat-add-new-block', 'lmatAddBlockVars', array(
 					'lmat_demo_page_url' => esc_url('https://coolplugins.net/product/automatic-translations-for-polylang/'),

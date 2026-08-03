@@ -6,8 +6,6 @@
  */
 namespace Linguator\Modules\Bulk_Translation;
 
-use Linguator\Admin\Controllers\Linguator_Admin;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Don't access directly
 }

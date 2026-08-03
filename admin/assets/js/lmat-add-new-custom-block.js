@@ -3,6 +3,7 @@
 (() => {
     const { createBlock } = wp.blocks;
     const { dispatch, select } = wp.data;
+    const EXCLUDED_TAGS = ['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE', 'NOSCRIPT'];
     class lmatCreateNewBlock {
         constructor() {
             this.updateBlockStore = {};
@@ -135,7 +136,7 @@
                         }
 
                         i++;
-                        if (["SCRIPT", "STYLE", "META", "LINK", "TITLE", "NOSCRIPT", "STYLE", "SCRIPT", "NOSCRIPT", "STYLE", "SCRIPT", "NOSCRIPT", "STYLE", "SCRIPT", "NOSCRIPT"].includes(innerElement.tagName)) {
+                        if (EXCLUDED_TAGS.includes(innerElement.tagName)) {
                             continue;
                         }
 

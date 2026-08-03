@@ -39,6 +39,13 @@
         }
     }
 
+    select:focus,
+    input[type="text"]:focus,
+    input[type="search"]:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
     &.lmat-custom-fields {
 
         .lmat-save-custom-fields {
@@ -55,20 +62,13 @@
 
     .lmat-custom-data-table-filters {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        column-gap: 1rem;
+        gap: 1rem;
 
-        .lmat-search-tab {
-            margin-left: auto;
-
-            #lmat-blocks-search {
-                min-width: 220px;
-            }
-        }
-
-        .lmat-filter-tab,
-        .lmat-search-tab {
+        .lmat-filter-tab {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             column-gap: 1rem;
 
@@ -84,6 +84,7 @@
     .lmat-custom-table-lists {
         margin: 20px 0px;
         font-family: Arial, sans-serif;
+        overflow-x: auto;
 
         .lmat-custom-data-table-table {
             width: 100%;
@@ -109,11 +110,6 @@
 
             tbody {
                 tr {
-                    .lmat-search-highlight {
-                        background-color: orange;
-                        color: black;
-                    }
-
                     &:nth-child(even) {
                         background-color: #f9f9f9;
                     }
@@ -145,44 +141,6 @@
         }
     }
 
-    .lmat-pagination {
-        margin: 20px 0px;
-        font-size: 14px;
-        text-align: end;
-
-        .page-numbers {
-            display: inline-block;
-            padding: 0.5em 1em;
-            margin: 0 0.2em;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            color: #0073aa;
-            text-decoration: none;
-            background-color: #fff;
-            transition: background-color 0.3s;
-
-            &.current {
-                background-color: #0073aa;
-                color: #fff;
-                border: 1px solid #0073aa;
-            }
-
-            &:hover:not(.current) {
-                background-color: #f0f0f0;
-            }
-
-            &.dots {
-                padding: 0;
-                color: #555;
-            }
-
-            &.next {
-                margin-left: auto;
-                font-weight: bold;
-            }
-        }
-    }
-
     /* Keyframes: subtle pop + fade */
     @keyframes savingBlink {
 
@@ -210,7 +168,7 @@
 
     /* Accessibility: honor reduced motion */
     @media (prefers-reduced-motion: reduce) {
-        .saving-dot {
+        .saving-text .dot {
             animation: none;
             opacity: 1;
         }

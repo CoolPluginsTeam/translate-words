@@ -55,19 +55,6 @@ class Linguator_Admin_Site_Health {
 	 * Returns a list of keys to exclude from the site health information.
 	 *
 	 *
-	 * @return string[] List of option keys to ignore.
-	 */
-	protected function exclude_options_keys() {
-		return array(
-			'uninstall',
-			'first_activation',
-		);
-	}
-
-	/**
-	 * Returns a list of keys to exclude from the site health information.
-	 *
-	 *
 	 * @return string[] List of language keys to ignore.
 	 */
 	protected function exclude_language_keys() {

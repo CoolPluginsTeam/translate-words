@@ -16,8 +16,6 @@ use Linguator\Settings\Controllers\Linguator_Settings_Module;
 use Linguator\Settings\Tables\Linguator_Table_Languages;
 use Linguator\Settings\Tables\Linguator_Table_String;
 use Linguator\Settings\Header\Header;
-use Linguator\Supported_Blocks\Supported_Blocks;
-use Linguator\Custom_Fields\Custom_Fields;
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
 
 use WP_Error;
@@ -631,9 +629,12 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			$translations_data=array('total_string_count' => 0, 'total_character_count' => 0, 'total_time_taken' => 0, 'service_providers' => array());
 			if(Linguator_Translation_Dashboard::class){
 				$avilable_service_providers = array(
-					'google'            => 'Google',
-					'localAiTranslator' => 'Chrome AI Translator',
-					'gemini'            => 'Gemini',
+					'chrome_local_ai'      => 'Chrome AI',
+					'edge_local_ai'        => 'Edge AI',
+					'google'               => 'Google',
+					'gemini'               => 'Gemini AI',
+					'localAiTranslator'    => 'Chrome AI',
+					'edgeLocalAiTranslator' => 'Edge AI',
 				);
 				$cpt_dashboard_data=Linguator_Translation_Dashboard::get_translation_data('lmat');
 				$translation_providers=(isset($cpt_dashboard_data['service_providers']) && is_array($cpt_dashboard_data['service_providers'])) ? $cpt_dashboard_data['service_providers'] : array();
@@ -677,7 +678,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'sync_options'   => $this->linguator_get_sync_options(),
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'translations_data' => $translations_data,
-					'wp_ai_client_available' => function_exists( 'linguator_is_wp_ai_client_exist' ) ? (bool) linguator_is_wp_ai_client_exist() : false,
+					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
+					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 				)
 			);
 			wp_localize_script(

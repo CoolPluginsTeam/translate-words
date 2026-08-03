@@ -84,7 +84,7 @@ const Switcher = ({ data, setData }) => {
     return (
         <Container className='bg-white p-10 rounded-lg' cols="1" containerType='grid'>
             <Container className='flex items-center'>
-                <Container.Item className='flex w-full justify-between px-4 gap-6'>
+                <Container.Item className='flex flex-wrap items-center w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Language Switcher Widget Configuration', 'translate-words')}</h1>
                     <Button
                         disabled={handleButtonDisabled || isSaving}

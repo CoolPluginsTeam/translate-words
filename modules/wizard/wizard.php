@@ -14,7 +14,6 @@ use Linguator\Admin\Controllers\Linguator_Admin_Notices;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Admin\Controllers\Linguator_Admin_Model;
 use Linguator\Includes\Core\Linguator;
-use WP_Error;
 
 
 
@@ -431,7 +430,8 @@ class Linguator_Wizard
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'polylang_detection' => $polylang_detection,
 					'wpml_detection' => $wpml_detection,
-					'wp_ai_client_available' => function_exists( 'linguator_is_wp_ai_client_exist' ) ? (bool) linguator_is_wp_ai_client_exist() : false,
+					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
+					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 				)
 			);
 
@@ -458,16 +458,6 @@ class Linguator_Wizard
 				$linguator->enqueue_linguator_font();
 			}
 		}
-	}
-
-	/**
-	 * Get the suffix used for built assets.
-	 *
-	 * @return string Always '.min' (minified assets).
-	 */
-	public function get_suffix()
-	{
-		return '.min';
 	}
 
 	/**
@@ -499,37 +489,6 @@ class Linguator_Wizard
 			delete_option('lmat_needs_rewrite_flush');
 			update_option('lmat_rewrite_rules_flushed', 'yes');
 		}
-	}
-
-	/**
-	 * Create home page translations for each language defined.
-	 *
-	 *  
-	 *
-	 * @param string   $default_language       Slug of the default language; null if no default language is defined.
-	 * @param int      $home_page              Post ID of the home page if it's defined, false otherwise.
-	 * @param string   $home_page_title        Home page title if it's defined, 'Homepage' otherwise.
-	 * @param string   $home_page_language     Slug of the home page if it's defined, false otherwise.
-	 * @param string[] $untranslated_languages Array of languages which needs to have a home page translated.
-	 * @return void
-	 */
-	public function create_home_page_translations($default_language, $home_page, $home_page_title, $home_page_language, $untranslated_languages)
-	{
-		$translations = $this->model->post->get_translations($home_page);
-
-		foreach ($untranslated_languages as $language) {
-			$language_properties = $this->model->get_language($language);
-			$id = wp_insert_post(
-				array(
-					'post_title'  => $home_page_title . ' - ' . $language_properties->name,
-					'post_type'   => 'page',
-					'post_status' => 'publish',
-				)
-			);
-			$translations[$language] = $id;
-			linguator_set_post_language($id, $language);
-		}
-		linguator_save_post_translations($translations);
 	}
 }
 

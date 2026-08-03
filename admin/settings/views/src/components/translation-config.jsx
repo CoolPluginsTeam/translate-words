@@ -6,9 +6,10 @@ import { __, sprintf } from '@wordpress/i18n'
 import apiFetch from "@wordpress/api-fetch"
 import { getNonce } from '../utils'
 import { toast } from 'sonner'
-import { ChromeIcon } from '../../../../../assets/logo/chrome';
-import { GoogleIcon } from '../../../../../assets/logo/google';
-import { GeminiIcon } from '../../../../../assets/logo/gemini';
+import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
+import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
+import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
+import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ApiKey from './api-key';
 import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 
@@ -16,11 +17,37 @@ const TranslationConfig = ({ data, setData }) => {
 
     const aiTranslation = data?.ai_translation_configuration; //store the media option
     const provider = aiTranslation?.provider;
-    const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available);
+    const browserType = (() => {
+        let type = 'Other';
+        if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
+            navigator.userAgentData.brands.forEach(data => {
+                if (data.brand === 'Google Chrome') {
+                    type = 'Chrome';
+                } else if (data.brand === 'Microsoft Edge') {
+                    type = 'Edge';
+                }
+            });
+        } else {
+            if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
+                type = 'Edge';
+            } else if (window.hasOwnProperty('chrome')) {
+                type = 'Chrome';
+            }
+        }
+        return type;
+    })();
+
+    const showChromeRow = browserType !== 'Edge';
+    const showEdgeRow = browserType !== 'Chrome';
+    const allowedProviders = Array.isArray(window?.lmat_settings?.allowed_providers)
+        ? window.lmat_settings.allowed_providers
+        : ['chrome_local_ai', 'google'];
+    const wpAiClientAvailable = allowedProviders.includes('gemini');
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
-    const [geminiTranslation, setGeminiTranslation] = useState(provider?.gemini)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation })
+    const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
+    const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -34,46 +61,19 @@ const TranslationConfig = ({ data, setData }) => {
         }
     }, [geminiTranslation])
 
+    const hasChanges = () => {
+        return googleMachineTranslation !== provider?.google ||
+            chromeLocalAITranslation !== provider?.chrome_local_ai ||
+            edgeLocalAITranslation !== provider?.edge_local_ai ||
+            geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
+            slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
+    };
+
     useEffect(() => {
-        let sameChecker = {
-            googleMachineTranslation: true,
-            chromeLocalAITranslation: true,
-            geminiTranslation: true,
-            bulkTranslationPostStatus: true,
-            slugTranslationOption: true,
-        }
-
-        if (googleMachineTranslation !== provider?.google) {
-            sameChecker.googleMachineTranslation = false
-
-        }
-
-        if (chromeLocalAITranslation !== provider?.chrome_local_ai) {
-            sameChecker.chromeLocalAITranslation = false
-        }
-        
-        if (wpAiClientAvailable && geminiTranslation !== provider?.gemini) {
-            sameChecker.geminiTranslation = false
-        }
-
-        if (bulkTranslationPostStatus !== aiTranslation?.bulk_translation_post_status) {
-            sameChecker.bulkTranslationPostStatus = false
-        }
-
-        if (slugTranslationOption !== aiTranslation?.slug_translation_option) {
-            sameChecker.slugTranslationOption = false
-        }
-
-        let flag = true;
-        for (const key in sameChecker) {
-            if (!sameChecker[key]) {
-                flag = false;
-                break;
-            }
-        }
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
-        setHandleButtonDisabled(flag && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+        setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -101,6 +101,7 @@ const TranslationConfig = ({ data, setData }) => {
                     provider: {
                         google: googleMachineTranslation,
                         chrome_local_ai: chromeLocalAITranslation,
+                        edge_local_ai: edgeLocalAITranslation,
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
                         } : {}),
@@ -116,10 +117,11 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
+                lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
@@ -213,7 +215,7 @@ const TranslationConfig = ({ data, setData }) => {
     return (
         <Container className='bg-white p-10 rounded-lg' cols="1" containerType='grid'>
             <Container className='flex items-center'>
-                <Container.Item className='flex w-full justify-between px-4 gap-6'>
+                <Container.Item className='flex flex-wrap items-center w-full justify-between px-4 gap-6'>
                     <h1 className='font-bold'>{__('Translation Settings', 'translate-words')}</h1>
                     <Button
                         disabled={handleButtonDisabled || isSaving}
@@ -250,7 +252,7 @@ const TranslationConfig = ({ data, setData }) => {
                                     {__('Google Machine Translation uses the Google Translate API to translate text.', 'translate-words')}
                                 </p>
                             </Container.Item>
-                            <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                            <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                 <Switch
                                     aria-label="Switch Element"
                                     id="google-machine-translation"
@@ -263,33 +265,64 @@ const TranslationConfig = ({ data, setData }) => {
                             </Container.Item>
                         </div>
                     </div>
-                    <div style={{ backgroundColor: "#fbfbfb" }}>
-                        <div className='switcher p-6 rounded-lg'>
-                            <Container.Item >
-                                <h3 className='flex items-center gap-2'>
-                                    <ChromeIcon className="w-5 h-5" />
-                                    {__('Chrome Local AI Translation', 'translate-words')}
-                                </h3>
-                                <p>
-                                    {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
-                                </p>
-                            </Container.Item>
-                            <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
-                                <Switch
-                                    aria-label="Switch Element"
-                                    id="chrome-local-ai-translation"
-                                    onChange={() => {
-                                        setChromeLocalAITranslation(!chromeLocalAITranslation)
-                                    }}
-                                    value={chromeLocalAITranslation}
-                                    size="sm"
-                                />
-                            </Container.Item>
+                    {showChromeRow && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item >
+                                    <h3 className='flex items-center gap-2'>
+                                        <ChromeIcon className="w-5 h-5" />
+                                        {__('Chrome Local AI Translation', 'translate-words')}
+                                    </h3>
+                                    <p>
+                                        {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="chrome-local-ai-translation"
+                                        onChange={() => {
+                                            setChromeLocalAITranslation(!chromeLocalAITranslation)
+                                        }}
+                                        value={chromeLocalAITranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {chromeLocalAITranslation && (
+                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
+                            )}
                         </div>
-                        {chromeLocalAITranslation && (
-                            <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
-                        )}
-                    </div>
+                    )}
+                    {showEdgeRow && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item >
+                                    <h3 className='flex items-center gap-2'>
+                                        <EdgeIcon className="w-5 h-5" />
+                                        {__('Edge Local AI Translation', 'translate-words')}
+                                    </h3>
+                                    <p>
+                                        {__('Edge Local AI Translation uses Edge Local AI API to translate text.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id="edge-local-ai-translation"
+                                        onChange={() => {
+                                            setEdgeLocalAITranslation(!edgeLocalAITranslation)
+                                        }}
+                                        value={edgeLocalAITranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {edgeLocalAITranslation && (
+                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} isEdge={true} />
+                            )}
+                        </div>
+                    )}
                     {wpAiClientAvailable && (
                         <div style={{ backgroundColor: "#fbfbfb" }}>
                             <div className='switcher p-6 rounded-lg'>
@@ -302,7 +335,7 @@ const TranslationConfig = ({ data, setData }) => {
                                         {__('Google Gemini AI uses Google Gemini API to translate your content.', 'translate-words')}
                                     </p>
                                 </Container.Item>
-                                <Container.Item className='flex items-center justify-end' style={{ paddingRight: '30%' }}>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
                                     <Switch
                                         aria-label="Switch Element"
                                         id="gemini-translation"
@@ -341,7 +374,7 @@ const TranslationConfig = ({ data, setData }) => {
                     {__('This is the default post and page status for bulk translation.', 'translate-words')}
                 </Label>
                 <div style={{ marginTop: "20px" }}>
-                    <RadioButton.Group>
+                    <RadioButton.Group className="flex flex-col sm:flex-row gap-4 flex-wrap">
                         {postStatusOptions.map((postStatus, index) => (
                             <RadioButton.Button
                                 badgeItem={<Badge className="mr-2" size="sm" type="rounded" variant="green" />}
@@ -369,7 +402,7 @@ const TranslationConfig = ({ data, setData }) => {
                 </Label>
                 <Label variant='help'>{__('Choose how post slugs (URLs) are generated when content is translated.', 'translate-words')}</Label>
                 <div style={{ marginTop: "20px" }}>
-                    <RadioButton.Group>
+                    <RadioButton.Group className="flex flex-col sm:flex-row gap-4 flex-wrap">
                         {slugTranslationOptions.map((slugOption, index) => (
                             <RadioButton.Button
                                 badgeItem={<Badge className="mr-2" size="sm" type="rounded" variant="green" />}

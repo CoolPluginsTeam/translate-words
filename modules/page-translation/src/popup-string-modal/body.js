@@ -17,7 +17,7 @@ const StringPopUpBody = (props) => {
     const translateContent = select("block-lmatPageTranslation/translate").getTranslationEntries();
     const StringModalBodyNotice = props.stringModalBodyNotice;
 
-    const imgFolder = lmatPageTranslationGlobal.lmat_url + 'admin/assets/images/';
+    const imgFolder = lmatPageTranslationGlobal.lmat_url + 'assets/images/';
 
 
     // Add refs and state for popup
@@ -434,7 +434,7 @@ const StringPopUpBody = (props) => {
 
         if (translateContent.length > 0 && props.postDataFetchStatus) {
             const ServiceSetting = TranslateService({ Service: service });
-            const run = ServiceSetting.Provider({ sourceLang: props.sourceLang, targetLang: props.targetLang, translateStatusHandler: props.translateStatusHandler, ID: id, translateStatus: props.translateStatus, modalRenderId: props.modalRender, destroyUpdateHandler: props.updateDestroyHandler, translationAbortSignal: props.translationAbortSignal });
+            const run = ServiceSetting.Provider({ sourceLang: props.sourceLang, targetLang: props.targetLang, translateStatusHandler: props.translateStatusHandler, ID: id, translateStatus: props.translateStatus, modalRenderId: props.modalRender, destroyUpdateHandler: props.updateDestroyHandler, translationAbortSignal: props.translationAbortSignal, service: service });
             if (run && typeof run.then === "function") {
                 run.catch(() => {});
             }
@@ -676,7 +676,7 @@ const StringPopUpBody = (props) => {
         } else if (translation) {
             return translation;
         } else {
-            if (['google', 'yandex', 'localAiTranslator', 'gemini'].includes(props.service)) {
+            if (['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator', 'gemini'].includes(props.service)) {
                 // Use FilterTargetContent for pending translations with supported services
                 if (props.translatePendingStatus && !props.service.includes('_ai')) {
                     if (data.filteredString) {
@@ -739,7 +739,7 @@ const StringPopUpBody = (props) => {
                                     <div
                                         className="lmat_page_translation_error_popup_html"
                                         dangerouslySetInnerHTML={{
-                                            __html: DOMPurify.sanitize(translationError.html, { ADD_ATTR: ["target", "rel"] }),
+                                            __html: DOMPurify.sanitize(translationError.html, { ADD_ATTR: ["target", "rel", "data-clipboard-text"] }),
                                         }}
                                     />
                                 ) : (
@@ -837,8 +837,8 @@ const StringPopUpBody = (props) => {
                                                                         handleTdClick(e, 2, index, data);
                                                                     }}
                                                                     style={{ cursor: 'pointer' }}
-                                                                    translate={(savedValues[cellKey] && props.service === 'google' || savedValues[cellKey] && props.service === 'yandex') ? "no" : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? "yes" : 'yes'}
-                                                                    className={`${!isEditingThisCell && !savedValues[cellKey] && !originalTranslation ? 'lmat-page-translation-empty-translation-cell' : ''} ${savedValues[cellKey] && props.service === 'localAiTranslator' || savedValues[cellKey] && props.service === 'google' ? 'notranslate' : (props.translatePendingStatus && props.service === 'gemini') ? 'notranslate' : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? 'translate' : 'translate'} ${isEditingThisCell ? 'lmat-page-translation-editing-cell' : ''}`}
+                                                                    translate={(savedValues[cellKey] && props.service === 'google' || savedValues[cellKey] && props.service === 'yandex') ? "no" : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? "yes" : 'yes'}
+                                                                    className={`${!isEditingThisCell && !savedValues[cellKey] && !originalTranslation ? 'lmat-page-translation-empty-translation-cell' : ''} ${savedValues[cellKey] && (props.service === 'localAiTranslator' || props.service === 'edgeLocalAiTranslator') || savedValues[cellKey] && props.service === 'google' ? 'notranslate' : (props.translatePendingStatus && props.service === 'gemini') ? 'notranslate' : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? 'translate' : 'translate'} ${isEditingThisCell ? 'lmat-page-translation-editing-cell' : ''}`}
                                                                     data-translate-status={props.translatePendingStatus ? 'pending' : 'translated'}
                                                                 >
                                                                     {isEditingThisCell ? (

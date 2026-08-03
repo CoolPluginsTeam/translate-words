@@ -5,6 +5,70 @@ import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
 import { __ } from "@wordpress/i18n";
 
+/** postId_lang → { resolve, reject, sourceLanguage, targetLanguage, isEdge } */
+const packInstallWaiters = new Map();
+
+/**
+ * Called from the status modal when the user clicks "Install language pack".
+ * Starts the download under that click, then resumes automatic translation.
+ */
+export async function installLanguagePackFromStatus(postId, targetLang, storeDispatch) {
+    const key = `${postId}_${targetLang}`;
+    const waiter = packInstallWaiters.get(key);
+    if (!waiter) {
+        return false;
+    }
+
+    const preservedErrorHtml = false;
+    const preservedErrorMessage = '';
+
+    storeDispatch(updateTranslatePostInfo({
+        [key]: {
+            status: 'running',
+            messageClass: '',
+            errorMessage: __('Loading language…', 'translate-words'),
+            errorHtml: false,
+            needsLanguagePack: false,
+        }
+    }));
+
+    try {
+        const result = await ChromeAiTranslator.installLanguagePackFromClick(
+            waiter.sourceLanguage,
+            waiter.targetLanguage
+        );
+
+        if (!result.ok) {
+            storeDispatch(updateTranslatePostInfo({
+                [key]: {
+                    status: 'needs-pack',
+                    messageClass: '',
+                    errorMessage: preservedErrorMessage,
+                    errorHtml: preservedErrorHtml,
+                    needsLanguagePack: true,
+                }
+            }));
+            return false;
+        }
+
+        packInstallWaiters.delete(key);
+        waiter.resolve(true);
+        return true;
+    } catch (err) {
+        console.error('Install language pack failed:', err);
+        storeDispatch(updateTranslatePostInfo({
+            [key]: {
+                status: 'needs-pack',
+                messageClass: '',
+                errorMessage: preservedErrorMessage,
+                errorHtml: preservedErrorHtml,
+                needsLanguagePack: true,
+            }
+        }));
+        return false;
+    }
+}
+
 // Define a class for LocalAiTranslate
 class LocalAiTranslate {
     constructor({sourceLang = 'en', targetLangs = false, updateContent, totalPosts, storeDispatch, postId, prefix, updateDestoryHandler}) {
@@ -26,6 +90,7 @@ class LocalAiTranslate {
         this.activeTargetLangs='';
         this.prefix=prefix;
         this.serviceProvider=store.getState().serviceProvider;
+        this.isEdge = this.serviceProvider === 'edgeLocalAiTranslator';
         updateDestoryHandler(()=>{
             this.destroy();
         });
@@ -34,9 +99,42 @@ class LocalAiTranslate {
 
     destroy=()=>{
         this.stopTranslation=true;
+        // Reject any waiting pack installs so the chain can unwind.
+        packInstallWaiters.forEach((waiter, key) => {
+            if (key.startsWith(this.postId + '_')) {
+                waiter.resolve(false);
+                packInstallWaiters.delete(key);
+            }
+        });
         if(this.localAiTranslator && this.localAiTranslator.hasOwnProperty('stopTranslation')){
             this.localAiTranslator.stopTranslation();
         }
+    }
+
+    /**
+     * Pause translation until the user clicks Install language pack in the status table.
+     */
+    onLanguagePackRequired = (packInfo) => {
+        const key = `${this.postId}_${this.activeTargetLangs}`;
+
+        return new Promise((resolve) => {
+            packInstallWaiters.set(key, {
+                resolve,
+                sourceLanguage: packInfo.sourceLanguage,
+                targetLanguage: packInfo.targetLanguage,
+                isEdge: packInfo.isEdge,
+            });
+
+            this.storeDispatch(updateTranslatePostInfo({
+                [key]: {
+                    status: 'needs-pack',
+                    messageClass: '',
+                    errorMessage: '',
+                    errorHtml: false,
+                    needsLanguagePack: true,
+                }
+            }));
+        });
     }
 
     // Function to create Local AI Translator
@@ -51,15 +149,28 @@ class LocalAiTranslate {
         this.completedPostStatus=selectProgressStatus(store.getState());
 
         this.activeTargetLangs=targetLang;
+        this.storeDispatch(updateTranslatePostInfo({
+            [this.postId+'_'+targetLang]: {
+                status: 'running',
+                messageClass: '',
+                errorMessage: '',
+                errorHtml: false,
+                needsLanguagePack: false,
+            }
+        }));
+
         this.localAiTranslator = await ChromeAiTranslator.Object({
             sourceLanguage: this.sourceLang,
             targetLanguage: targetLang,
-            sourceLanguageLabel: languageObject[this.sourceLang].name,
-            targetLanguageLabel: languageObject[targetLang].name,
+            sourceLanguageLabel: languageObject?.[this.sourceLang]?.name || this.sourceLang,
+            targetLanguageLabel: languageObject?.[targetLang]?.name || targetLang,
             onAfterTranslate: this.onAfterTranslate,
             onBeforeTranslate: this.onBeforeTranslate,
             onComplete: this.onComplete,
             onLanguageError: this.onLanguageError,
+            onLanguageLoading: this.onLanguageLoading,
+            onLanguagePackRequired: this.onLanguagePackRequired,
+            isEdge: this.isEdge
         });
 
         if(this.localAiTranslator.hasOwnProperty('init')){
@@ -72,7 +183,7 @@ class LocalAiTranslate {
                 })
             }
 
-            this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+targetLang]: { status: 'running', messageClass: ''}}));
+            this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+targetLang]: { status: 'running', messageClass: '', errorMessage: '', needsLanguagePack: false}}));
             await this.translateContent(0);
 
             if (!this.stopTranslation) {
@@ -86,14 +197,49 @@ class LocalAiTranslate {
     }
 
     onLanguageError = (data) => {
-        let html=false;
-        if(data.html){
-            html=data.html[0]?.outerHTML;
+        let html = false;
+        const message = (data && data.message) ? data.message : __('Language error', 'translate-words');
+
+        if (data && data.html) {
+            // jQuery object or DOM node
+            if (data.html[0] && data.html[0].outerHTML) {
+                html = data.html[0].outerHTML;
+            } else if (typeof data.html === 'string') {
+                html = data.html;
+            }
+        }
+
+        // Pending/download marker spans have no visible text — don't use them as the modal body.
+        const htmlText = html ? String(html).replace(/<[^>]*>/g, '').trim() : '';
+        if (!htmlText) {
+            html = `<p>${message}</p>`;
         }
 
         this.storeDispatch(unsetPendingPost(this.postId+'_'+this.activeTargetLangs));
         this.storeDispatch(updateProgressStatus(100 / this.totalPosts));
-        this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+this.activeTargetLangs]: { status: 'error', messageClass: 'error', errorMessage: data.message, errorHtml: html}}));
+        this.storeDispatch(updateTranslatePostInfo({
+            [this.postId+'_'+this.activeTargetLangs]: {
+                status: 'error',
+                messageClass: 'error',
+                errorMessage: message,
+                errorHtml: html,
+                needsLanguagePack: false,
+            }
+        }));
+    }
+
+    onLanguageLoading = (isLoading) => {
+        if(this.stopTranslation) return;
+
+        this.storeDispatch(updateTranslatePostInfo({
+            [this.postId+'_'+this.activeTargetLangs]: {
+                status: 'running',
+                messageClass: '',
+                errorMessage: isLoading ? __('Loading language…', 'translate-words') : '',
+                errorHtml: false,
+                needsLanguagePack: false,
+            }
+        }));
     }
 
     onBeforeTranslate = (ele) => {

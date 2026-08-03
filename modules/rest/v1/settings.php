@@ -492,8 +492,8 @@ class Settings extends Abstract_Controller {
 		$response['lmat_video_status'] = get_option('lmat_video_status');
 		$response['lmat_migration_completed'] = get_option('lmat_migration_completed', false);
 		$response['lmat_setup_complete'] = $this->sanitize_boolean_param( get_option( 'lmat_setup_complete', false ) );
-		// Check if CPFM opt-in choice exists for LMAT
-		$cpfm_opt_in_choice = get_option( 'cpfm_opt_in_choice_lmat' );
+		// Check if CPFM opt-in choice exists (shared cool_translations category with LocoAI / AutoPoly).
+		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
 		
 		if ( $cpfm_opt_in_choice === false ) {
 			// Remove the Usage Data Sharing setting if CPFM opt-in choice doesn't exist
@@ -537,15 +537,6 @@ class Settings extends Abstract_Controller {
 		);
 		
 		return $response;
-	}
-
-	/**
-	 * Whether get_item should call the Gemini provider API for model discovery (~4s cap).
-	 *
-	 * @return bool
-	 */
-	private function should_run_ai_model_discovery(): bool {
-		return $this->ai_gemini_model_refresh_needed;
 	}
 
 	/**
@@ -881,7 +872,7 @@ class Settings extends Abstract_Controller {
 	 *  
 	 */
 	private function handle_cron_scheduling() {
-		$cpfm_opt_in_choice = get_option( 'cpfm_opt_in_choice_lmat' );
+		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
 		$lmat_feedback_data = $this->options->get( 'lmat_feedback_data' );
 		
 		// Determine if cron should be scheduled based on the conditions
@@ -1107,7 +1098,7 @@ class Settings extends Abstract_Controller {
 		}
 		
 		// Apply CPFM opt-in choice logic for lmat_feedback_data
-		$cpfm_opt_in_choice = get_option( 'cpfm_opt_in_choice_lmat' );
+		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
 		
 		if ( $cpfm_opt_in_choice === false ) {
 			// Remove the Usage Data Sharing setting if CPFM opt-in choice doesn't exist

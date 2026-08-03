@@ -16,7 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Includes\Models\Languages;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Includes\Options\Options;
-use WP_Error;
 
 /**
  * Handles migration from Polylang to Linguator

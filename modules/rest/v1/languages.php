@@ -14,7 +14,6 @@ use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Modules\REST\Abstract_Controller;
 use Linguator\Includes\Models\Translatable\Linguator_Translatable_Objects;
 use ReflectionClass;
-use stdClass;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;

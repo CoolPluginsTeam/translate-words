@@ -3,51 +3,77 @@ import { useEffect } from "@wordpress/element";
 import { __ } from "@wordpress/i18n";
 import DOMPurify from 'dompurify';
 
+const PURIFY_OPTS = { ADD_ATTR: ['target', 'rel', 'data-clipboard-text'] };
+
 const ErrorModalBox = ({ message, onClose, Title, prefix, children }) => {
 
-    let dummyElement = jQuery('<div>').append(message);
-    const stringifiedMessage = dummyElement.html();
-    dummyElement.remove();
-    dummyElement = null;
+    let stringifiedMessage = '';
+    if (message) {
+        let dummyElement = jQuery('<div>').append(message);
+        stringifiedMessage = dummyElement.html() || (typeof message === 'string' ? message : '');
+        dummyElement.remove();
+        dummyElement = null;
+    }
+
+    if (!stringifiedMessage || !String(stringifiedMessage).replace(/<[^>]*>/g, '').trim()) {
+        stringifiedMessage = __('An unexpected error occurred during bulk translation.', 'translate-words');
+    }
 
     useEffect(() => {
         const clipboardElements = document.querySelectorAll('.chrome-ai-translator-flags');
 
+        const onClipboardClick = (e) => {
+            e.preventDefault();
+            const element = e.currentTarget;
+            const toolTipExists = element.querySelector(`.${prefix}-tooltip`);
+
+            if (toolTipExists) {
+                return;
+            }
+
+            let toolTipElement = document.createElement('span');
+            toolTipElement.textContent = "Text to be copied.";
+            toolTipElement.className = `${prefix}-tooltip`;
+            element.appendChild(toolTipElement);
+
+            CopyClipboard({
+                text: element.getAttribute('data-clipboard-text'),
+                startCopyStatus: () => {
+                    toolTipElement.classList.add(`${prefix}-tooltip-active`);
+                },
+                endCopyStatus: () => {
+                    setTimeout(() => {
+                        toolTipElement.remove();
+                    }, 800);
+                }
+            });
+        };
+
         if (clipboardElements.length > 0) {
             clipboardElements.forEach(element => {
-
                 element.classList.add(`${prefix}-tooltip-element`);
-
-                element.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const toolTipExists = element.querySelector(`.${prefix}-tooltip`);
-                    
-                    if(toolTipExists){
-                        return;
-                    }
-
-                    let toolTipElement = document.createElement('span');
-                    toolTipElement.textContent = "Text to be copied.";
-                    toolTipElement.className = `${prefix}-tooltip`;
-                    element.appendChild(toolTipElement);
-
-                    CopyClipboard({ text: element.getAttribute('data-clipboard-text'), startCopyStatus: () => {
-                        toolTipElement.classList.add(`${prefix}-tooltip-active`);
-                    }, endCopyStatus: () => {
-                        setTimeout(() => {
-                            toolTipElement.remove();
-                        }, 800);
-                    } });
-                });
+                element.addEventListener('click', onClipboardClick);
             });
-
-            return () => {
-                clipboardElements.forEach(element => {
-                    element.removeEventListener('click', () => { });
-                });
-            };
         }
-    }, []);
+
+        const onReloadClick = (e) => {
+            const btn = e.target.closest(`.${prefix}-error-reload-btn`);
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            window.location.reload();
+        };
+
+        document.addEventListener('click', onReloadClick);
+
+        return () => {
+            clipboardElements.forEach(element => {
+                element.removeEventListener('click', onClipboardClick);
+            });
+            document.removeEventListener('click', onReloadClick);
+        };
+    }, [prefix, stringifiedMessage]);
 
     return (
         <div className={`${prefix}-error-modal-box-container`}>
@@ -57,7 +83,7 @@ const ErrorModalBox = ({ message, onClose, Title, prefix, children }) => {
                     {Title && <h3>{Title}</h3>}
                 </div>
                 <div className={`${prefix}-error-modal-box-body`}>
-                    <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stringifiedMessage) }} />
+                    <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stringifiedMessage, PURIFY_OPTS) }} />
                     {children}
                 </div>
                 <div className={`${prefix}-error-modal-box-footer`}>

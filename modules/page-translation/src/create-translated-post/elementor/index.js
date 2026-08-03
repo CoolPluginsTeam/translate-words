@@ -11,7 +11,35 @@ const lmatUpdateWidgetContent = (translations) => {
         const model = lmatFindModelById(elementor.elements.models, translation.ID);
         if (model) {
             const settings = model.get('settings');
-            
+            const isAtomic = translation?.isAtomic;
+
+            // Handle Elementor Atomic Widget fields.
+            // Atomic widgets store values as nested typed objects ({ $$type, value }).
+            // We split the key path and traverse the attribute tree to set the leaf.
+            if(isAtomic){
+                const settingKey = translation.key.split('_lmat_page_translation_');
+                let totalKeys = settingKey.length - 1;
+
+                if(settingKey && settingKey.length > 0){
+                    const atomicAttributes = settings.get(settingKey[0]);
+                    if(atomicAttributes){
+                        let currentObject = atomicAttributes;
+                        const lastKey = settingKey[totalKeys];
+                        for(let i = 1; i < totalKeys; i++){
+                            currentObject = currentObject[settingKey[i]];
+                            if(!currentObject) break;
+                        }
+
+                        if(currentObject && lastKey && currentObject[lastKey] !== undefined){
+                            currentObject[lastKey] = translation.translatedContent;
+                            settings.set(settingKey[0], atomicAttributes);
+                            model?.renderRemoteServer();
+                            return;
+                        }
+                    }
+                }
+            }
+
             // Check for normal fields (title, text, editor, etc.)
             if (settings.get(translation.key)) {
                 settings.set(translation.key, translation.translatedContent);  // Set the translated content
@@ -192,6 +220,54 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         return dynamicSubStrings.some(substring => strings.toLowerCase().includes(substring)) || staticSubStrings.some(substring => strings === substring);
     }
 
+    /**
+     * Handles Elementor Atomic Widget typed values within storeSourceStrings.
+     *
+     * Atomic widgets store translatable fields as objects with a `$$type` property
+     * (e.g. `{ $$type: 'string', value: 'Hello' }` or `{ $$type: 'html-v3', ... }`).
+     * This helper extracts the inner string, looks up its translation, and pushes a
+     * translation entry marked with `isAtomic: true` so the apply phase knows to
+     * traverse the nested attribute path.
+     *
+     * @param {Object}      element  - The atomic widget value object (has `$$type`).
+     * @param {Array}       ids      - Current ID path (used to build uniqueKey lookup).
+     * @param {string|null} widgetId - The Elementor widget element ID for model lookup.
+     */
+    const storeAtomicWidgetStrings = (element, ids=[], widgetId=null) => {
+        const currentKey = ids[ids.length - 1];
+        // Keys that are always translatable for atomic widgets even if they don't
+        // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
+        const validAtomicKeys = ['placeholder', 'paragraph'];
+
+        if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
+            return;
+        }
+
+        if(element?.$$type === 'html-v3'){
+            if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
+                const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value_lmat_page_translation_content_lmat_page_translation_value';
+                const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value.content.value, uniqueKey, service);
+                translations.push({
+                    ID: widgetId,
+                    key: `${currentKey}_lmat_page_translation_value_lmat_page_translation_content_lmat_page_translation_value`,
+                    translatedContent: translatedData,
+                    isAtomic: true
+                });
+            }
+        } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
+                const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
+                translations.push({
+                    ID: widgetId,
+                    key: `${currentKey}_lmat_page_translation_value`,
+                    translatedContent: translatedData,
+                    isAtomic: true
+                });
+            }
+        }
+    }
+
     const storeSourceStrings = (element,index, ids=[]) => {
         const widgetId = element.id;
         const settings = element.settings;
@@ -199,7 +275,6 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
 
         // Check if settings is an object
         if (typeof settings === 'object' && settings !== null) {
-            // Define the substrings to check for translatable content
 
             // Iterate through the keys in settings
             Object.keys(settings).forEach(key => {
@@ -208,7 +283,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                     return; // Skip this property and continue to the next one
                 }
 
-                // Check if the key includes any of the specified substrings
+                // Check if the key includes any of the specified substrings — plain string (classic widget).
                 if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
                     const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_settings_lmat_page_translation_' + key;
@@ -220,10 +295,11 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                         key: key,
                         translatedContent: translatedData
                     })
-                }
-
-                // Check for arrays (possible repeater fields) within settings
-                if (Array.isArray(settings[key])) {
+                } else if(settings[key] && typeof settings[key] === 'object' && Object.hasOwn(settings[key], '$$type')){
+                    // Atomic Widget typed object — e.g. { $$type: 'string', value: '...' }
+                    storeAtomicWidgetStrings(settings[key], [...ids, 'settings', key], widgetId);
+                } else if (Array.isArray(settings[key])) {
+                    // Repeater / array fields.
                     settings[key].forEach((item, index) => {
                         if (typeof item === 'object' && item !== null) {
                             // Check for translatable content in repeater fields
@@ -246,6 +322,9 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                                         key: fieldKey,
                                         translatedContent: translatedData
                                     })
+                                } else if(item[repeaterKey] && typeof item[repeaterKey] === 'object' && Object.hasOwn(item[repeaterKey], '$$type')){
+                                    // Atomic Widget typed object inside a repeater field.
+                                    storeAtomicWidgetStrings(item[repeaterKey], [...ids, 'settings', key, index, repeaterKey], widgetId);
                                 }
                             });
                         }

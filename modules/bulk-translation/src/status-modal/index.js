@@ -7,6 +7,7 @@ import ErrorModalBox from '../components/error-modal-box/index.js';
 import { store } from '../redux-store/store.js';
 import DOMPurify from 'dompurify';
 import { geminiTranslateAgain, geminiTranslateComplete } from '../gemini-bulk-recovery.js';
+import { installLanguagePackFromStatus } from '../components/translate-provider/local-ai/index.js';
 
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
 const PURIFY_ERROR_HTML = { ADD_ATTR: ['target', 'rel'] };
@@ -20,6 +21,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     const [progressBarVisibility, setProgressBarVisibility] = useState(true);
     const [charactersCountVisibility, setCharactersCountVisibility] = useState(false);
     const [bulkStatus, setBulkStatus] = useState('status');
+    const [installingPackKey, setInstallingPackKey] = useState(null);
     const [emptyPostMessage, setEmptyPostMessage] = useState(
         sprintf(
             __(
@@ -97,6 +99,19 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- postIds/selectedLanguages are fixed for this modal session
     }, []);
 
+    const handleInstallLanguagePack = async (info) => {
+        if (!info || !info.parentPostId || !info.targetLanguage || installingPackKey) {
+            return;
+        }
+        const key = `${info.parentPostId}_${info.targetLanguage}`;
+        setInstallingPackKey(key);
+        try {
+            await installLanguagePackFromStatus(info.parentPostId, info.targetLanguage, storeDispatch);
+        } finally {
+            setInstallingPackKey(null);
+        }
+    };
+
     const handleErrorModal = (data) => {
         setErrorModalData(data);
         setErrorModal(true);
@@ -155,7 +170,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             const runLoop=(items, index)=>{
                 const status=translatePostInfo[items[index]].status;
 
-                if(status === 'running' || status === 'in-progress' || status === 'pending'){
+                if(status === 'running' || status === 'in-progress' || status === 'pending' || status === 'needs-pack'){
                     running=true;
                     bulkStatus !== 'running' && updateBulkStatus('running');
                     return;
@@ -259,6 +274,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Google Translate';
             case 'localAiTranslator':
                 return 'Chrome AI Translator';
+            case 'edgeLocalAiTranslator':
+                return 'Edge AI Translator';
             case 'gemini':
                 return 'Google Gemini';
             default:
@@ -275,7 +292,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         }
 
         for(let i=0; i<targetLangsArr.length; i++){
-            if(!translatePostInfo[postId + '_' + targetLangsArr[i]] || ['pending', 'in-progress', 'running'].includes(translatePostInfo[postId + '_' + targetLangsArr[i]].status)){
+            if(!translatePostInfo[postId + '_' + targetLangsArr[i]] || ['pending', 'in-progress', 'running', 'needs-pack'].includes(translatePostInfo[postId + '_' + targetLangsArr[i]].status)){
                 allPostStatus=false;
                 break;
             }
@@ -285,7 +302,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     }
 
     return (
-        errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
+        errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
             {errorModalData.aiError && serviceProvider === 'gemini' && (
                 <div className={`${prefix}-ai-error-buttons`}>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
@@ -400,6 +417,9 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                         const info = translatePostInfo[key];
                                         const rows = [];
                                         const workingStatus=info.status === 'running' || info.status === 'in-progress' ? true : false;
+                                        const needsPack = info.status === 'needs-pack' || info.needsLanguagePack;
+                                        const packRowKey = `${info.parentPostId}_${info.targetLanguage}`;
+                                        const isInstallingPack = installingPackKey === packRowKey;
 
                                         if (info.firstPostLanguage) {
                                             rows.push(
@@ -440,12 +460,31 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                         </td>
                                                     )}
                                                 </> :
+                                                needsPack ? (
+                                                <>
+                                                    <td colSpan="3" className={`${prefix}-status-pack-actions`}>
+                                                        <button
+                                                            type="button"
+                                                            className={`${prefix}-status-install-pack-button${isInstallingPack ? ` ${prefix}-status-install-pack-button-loading` : ''}`}
+                                                            disabled={!!installingPackKey}
+                                                            onClick={() => { handleInstallLanguagePack(info); }}
+                                                        >
+                                                            {isInstallingPack
+                                                                ? __('Loading…', 'translate-words')
+                                                                : __('Install language pack', 'translate-words')}
+                                                        </button>
+                                                    </td>
+                                                </>
+                                                ) :
                                                 <>
                                                     <td>
                                                         <span className={`${prefix}-status ${info.messageClass} ${info.status}`}>
                                                             {info.status === 'pending' && __('Pending', 'translate-words')}
                                                             {info.status === 'completed' && __('Completed', 'translate-words')}
-                                                            {workingStatus && <div className={`${prefix}-progress-bar-circular`} data-id={info.parentPostId + '_' + info.targetLanguage}>
+                                                            {workingStatus && info.errorMessage && (
+                                                                <span className={`${prefix}-language-loading`}>{info.errorMessage}</span>
+                                                            )}
+                                                            {workingStatus && !info.errorMessage && <div className={`${prefix}-progress-bar-circular`} data-id={info.parentPostId + '_' + info.targetLanguage}>
                                                                 <svg className={`${prefix}-circle`} viewBox="0 0 36 36">
                                                                     <path className={`${prefix}-bg`} d="M18 2.0845
                                                                     a 15.9155 15.9155 0 0 1 0 31.831
@@ -475,7 +514,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                             <span className={`${prefix}-view-link`}>
                                                                 {allPostStatus(info.parentPostId) ? (
                                                                     <a
-                                                                        href={info.postEditLink}
+                                                                        href={info.elementorEditLink || info.postEditLink}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="button button-primary"

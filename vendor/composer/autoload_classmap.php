@@ -29,6 +29,7 @@ return array(
     'Linguator\\Admin\\Controllers\\Linguator_Admin_View_Language_Links' => $baseDir . '/admin/controllers/admin-view-language-links.php',
     'Linguator\\Admin\\Feedback\\Linguator_Admin_Feedback' => $baseDir . '/admin/feedback/admin-feedback.php',
     'Linguator\\Admin\\cpfm_feedback\\CPFM_Feedback_Notice' => $baseDir . '/admin/cpfm-feedback/cpfm-feedback-notice.php',
+    'Linguator\\Admin\\cpfm_feedback\\Feedback_Bootstrap' => $baseDir . '/admin/cpfm-feedback/feedback-bootstrap.php',
     'Linguator\\Admin\\cpfm_feedback\\cron\\Linguator_cronjob' => $baseDir . '/admin/cpfm-feedback/cron/class-cron.php',
     'Linguator\\Custom_Fields\\Custom_Fields' => $baseDir . '/admin/custom-fields/custom-fields.php',
     'Linguator\\Frontend\\Controllers\\Linguator_Choose_Lang' => $baseDir . '/frontend/controllers/choose-lang.php',

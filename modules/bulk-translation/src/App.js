@@ -7,11 +7,16 @@ import { selectCountInfo } from './redux-store/features/selectors.js';
 import ChromeAiTranslator from './components/translate-provider/local-ai/local-ai-translate.js';
 import ErrorModalBox from './components/error-modal-box/index.js';
 import SettingModal from './setting-modal/index.js';
+import SettingModalHeader from './setting-modal/header.js';
+import SettingModalFooter from './setting-modal/footer.js';
+import TranslateService from './components/translate-provider/index.js';
 import DOMPurify from 'dompurify';
 import Notice from './components/notice/index.js';
 
 const App = ({ onDestory, prefix, postIds }) => {
     const dispatch = useDispatch();
+    const validProviders = Object.keys(TranslateService());
+    const hasValidProviders = validProviders.length > 0;
     const { languageObject = {} } = lmatBulkTranslationGlobal || {};
     const postLabelSingular = lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label;
     const emptyPostIdsErrorMessage = sprintf(__('Please select at least one %s for translation.', 'translate-words'), postLabelSingular);
@@ -23,19 +28,29 @@ const App = ({ onDestory, prefix, postIds }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [errorModal, setErrorModal] = useState(false);
     const [localAiModalError, setLocalAiModalError] = useState(false);
+    const [edgeLocalAiModalError, setEdgeLocalAiModalError] = useState(false);
 
     const destroyApp = (e) => {
         setStatusModalVisibility(false);
         setSettingModalVisibility(false);
-        onDestory(e);
+        if (e && typeof e.preventDefault === 'function') {
+            onDestory(e);
+            return;
+        }
+        onDestory({ preventDefault: () => {} });
     }
 
 
     useEffect(() => {
         const checkStatus = async () => {
-            const status = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi');
-            if (status.type === 'browser-not-supported' || status.type === 'translation-api-not-available' || status.type === 'browser-not-supported') {
-                setLocalAiModalError(__(status.html[0].outerHTML, 'translate-words'));
+            const chromeStatus = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi', false);
+            if (chromeStatus && (chromeStatus.type === 'browser-not-supported' || chromeStatus.type === 'translation-api-not-available')) {
+                setLocalAiModalError(chromeStatus.html[0].outerHTML);
+            }
+
+            const edgeStatus = await ChromeAiTranslator.languageSupportedStatus('en', 'hi', 'English', 'Hindi', true);
+            if (edgeStatus && (edgeStatus.type === 'browser-not-supported' || edgeStatus.type === 'translation-api-not-available')) {
+                setEdgeLocalAiModalError(edgeStatus.html[0].outerHTML);
             }
 
             setIsLoading(false);
@@ -140,6 +155,39 @@ const App = ({ onDestory, prefix, postIds }) => {
         return;
       }
 
+    // No compatible provider: show error immediately, skip language selection
+    if (!hasValidProviders) {
+        const settingsUrl = (lmatBulkTranslationGlobal.admin_url || '') + 'admin.php?page=lmat_settings&tab=translation';
+        return <div
+            id={`${prefix}-container`}
+            className={`${prefix}-setting-modal-active`}>
+            <div id={`${prefix}-setting-modal-container`}>
+                <div className={`${prefix}-setting-modal-content`}>
+                    <SettingModalHeader
+                        setSettingVisibility={destroyApp}
+                        prefix={prefix}
+                        hasProviders={false}
+                    />
+                    <div className={`${prefix}-setting-modal-body`}>
+                        <div className={`${prefix}-no-provider-message`}>
+                            <p className={`${prefix}-no-provider-text`}>
+                                {__('You have not enabled any translation provider. Please enable at least one service provider to use bulk translation. Go to the', 'translate-words')}{' '}
+                                <a href={settingsUrl} target="_blank" rel="noopener noreferrer">
+                                    {__('Translation Settings', 'translate-words')}
+                                </a>
+                                {' '}{__('to configure a translation provider.', 'translate-words')}
+                            </p>
+                        </div>
+                    </div>
+                    <SettingModalFooter
+                        setSettingVisibility={destroyApp}
+                        prefix={prefix}
+                    />
+                </div>
+            </div>
+        </div>;
+    }
+
     return <div
         id={`${prefix}-container`}
         className={containerCls()}>
@@ -150,6 +198,8 @@ const App = ({ onDestory, prefix, postIds }) => {
             onCloseHandler={settingModalVisibilityHandler}
             updateProviderHandler={updateProviderHandler} 
             localAiModalError={localAiModalError}
+            edgeLocalAiModalError={edgeLocalAiModalError}
+            selectedLanguages={selectedLanguages}
         />}
 
         {statusModalVisibility && !settingModalVisibility && (isLoading ?

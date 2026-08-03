@@ -80,6 +80,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Admin\\Controllers\\Linguator_Admin_View_Language_Links' => __DIR__ . '/../..' . '/admin/controllers/admin-view-language-links.php',
         'Linguator\\Admin\\Feedback\\Linguator_Admin_Feedback' => __DIR__ . '/../..' . '/admin/feedback/admin-feedback.php',
         'Linguator\\Admin\\cpfm_feedback\\CPFM_Feedback_Notice' => __DIR__ . '/../..' . '/admin/cpfm-feedback/cpfm-feedback-notice.php',
+        'Linguator\\Admin\\cpfm_feedback\\Feedback_Bootstrap' => __DIR__ . '/../..' . '/admin/cpfm-feedback/feedback-bootstrap.php',
         'Linguator\\Admin\\cpfm_feedback\\cron\\Linguator_cronjob' => __DIR__ . '/../..' . '/admin/cpfm-feedback/cron/class-cron.php',
         'Linguator\\Custom_Fields\\Custom_Fields' => __DIR__ . '/../..' . '/admin/custom-fields/custom-fields.php',
         'Linguator\\Frontend\\Controllers\\Linguator_Choose_Lang' => __DIR__ . '/../..' . '/frontend/controllers/choose-lang.php',

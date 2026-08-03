@@ -82,7 +82,7 @@ class Linguator_Admin_Menu_Sync {
 
 
 	/**
-	 * Enqueue scripts and styles
+	 * Enqueue scripts and styles for the menu sync UI.
 	 *
 	 * @return void
 	 */
@@ -94,160 +94,240 @@ class Linguator_Admin_Menu_Sync {
 			return;
 		}
 
-		// Enqueue CSS
+		$this->enqueue_assets();
+
+		$source_menu    = wp_get_nav_menu_object( $nav_menu_selected_id );
+		$base_menu_name = $this->get_base_menu_name( $source_menu );
+
+		// If no menu selected, skip synced menu detection
+		if ( ! $source_menu || empty( $base_menu_name ) ) {
+			wp_localize_script(
+				'lmat-menu-sync',
+				'lmatMenuSync',
+				array(
+					'ajaxurl'    => admin_url( 'admin-ajax.php' ),
+					'nonce'      => wp_create_nonce( 'lmat_sync_menu' ),
+					'languages'  => $this->build_language_data( $nav_menu_selected_id, true ),
+					'menuId'     => $nav_menu_selected_id,
+					'menuLang'   => '', // No language selected
+					'syncButton' => __( 'Sync Menu', 'translate-words' ),
+				)
+			);
+			return;
+		}
+
+		// Get menu ID and language for sync button
+		$menu_id   = $nav_menu_selected_id ? absint( $nav_menu_selected_id ) : 0;
+		$menu_lang = $menu_id ? $this->linguator_get_menu_language( $menu_id ) : '';
+
+		// Localize script
+		wp_localize_script(
+			'lmat-menu-sync',
+			'lmatMenuSync',
+			array(
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( 'lmat_sync_menu' ),
+				'menuId'    => $menu_id,
+				'menuLang'  => $menu_lang,
+				'languages' => $this->build_language_data( $nav_menu_selected_id, false ),
+				'strings'   => array(
+					'syncButton'          => __( 'Sync Menu', 'translate-words' ),
+					'selectLanguages'     => __( 'Select languages to sync', 'translate-words' ),
+					'selectAll'           => __( 'Select All', 'translate-words' ),
+					'deselectAll'         => __( 'Unselect All', 'translate-words' ),
+					'sync'                => __( 'Sync', 'translate-words' ),
+					'cancel'              => __( 'Cancel', 'translate-words' ),
+					'syncing'             => __( 'Syncing...', 'translate-words' ),
+					'success'             => __( 'Menu synced successfully!', 'translate-words' ),
+					'error'               => __( 'Error syncing menu. Please try again.', 'translate-words' ),
+					'noLanguages'         => __( 'Please select at least one language.', 'translate-words' ),
+					'confirmReplace'      => __( 'This will replace existing menus in the selected languages. Continue?', 'translate-words' ),
+					'emptyMenuError'      => __( 'The source menu is empty. Please add menu items before syncing.', 'translate-words' ),
+					'noTranslatedContent' => __( 'No translated content is available for selected menu items. Please add and translate content in other languages first.', 'translate-words' ),
+					'permissionError'     => __( 'You do not have permission to sync menus.', 'translate-words' ),
+					'invalidMenuError'    => __( 'Invalid menu selected.', 'translate-words' ),
+					'noTranslationsError' => __( 'No menu items could be synced. Please ensure translations exist for your menu items.', 'translate-words' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Enqueue menu sync CSS and JS assets.
+	 *
+	 * @return void
+	 */
+	private function enqueue_assets() {
 		wp_enqueue_style(
 			'lmat-menu-sync',
 			plugins_url( 'admin/assets/css/admin-menu-sync.css', LINGUATOR_ROOT_FILE ),
 			array(),
-			LINGUATOR_VERSION . '.' . time()
+			LINGUATOR_VERSION
 		);
 
-		// Enqueue JavaScript
 		wp_enqueue_script(
 			'lmat-menu-sync',
 			plugins_url( 'admin/assets/js/admin-menu-sync.js', LINGUATOR_ROOT_FILE ),
 			array( 'jquery' ),
-			LINGUATOR_VERSION . '.' . time(),
+			LINGUATOR_VERSION,
 			true
 		);
+	}
 
-		// Get available languages
-		$languages = $this->model->languages->get_list();
-		$lang_data = array();
-		
-	// Get source menu object to check for existing synced menus
-	$source_menu = wp_get_nav_menu_object( $nav_menu_selected_id );
-	
-	// Extract base menu name (remove language suffix if present)
-	$base_menu_name = '';
-	if ( $source_menu ) {
-		$base_menu_name = $source_menu->name;
-		// Remove language suffix pattern like " (Language)" or " (भाषा)"
-		$base_menu_name = preg_replace( '/\s*\([^)]+\)\s*$/', '', $base_menu_name );
-	}
-	
-	// If no menu selected, skip synced menu detection
-	if ( ! $source_menu || empty( $base_menu_name ) ) {
-		// Load predefined languages for English labels
-		$predefined_languages = include LINGUATOR_DIR . '/admin/settings/controllers/languages.php';
-		
-		foreach ( $languages as $lang ) {
-			// Get English label from predefined languages
-			$english_name = $lang->name;
-			$native_name = $lang->name;
-			
-			$lookup_key = $lang->slug;
-			if ( isset( $predefined_languages[ $lookup_key ] ) && isset( $predefined_languages[ $lookup_key ]['label'] ) ) {
-				$english_name = $predefined_languages[ $lookup_key ]['label'];
-				if ( isset( $predefined_languages[ $lookup_key ]['name'] ) ) {
-					$native_name = $predefined_languages[ $lookup_key ]['name'];
-				}
-			}
-			
-		$lang_data[ $lang->slug ] = array(
-			'name'            => $english_name,
-			'native_name'     => $native_name,
-			'locale'          => isset( $lang->locale ) ? $lang->locale : $lang->slug,
-			'flag'            => isset( $lang->flag )
-				? wp_kses(
-					(string) $lang->flag,
-					array(
-						'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
-						'span' => array( 'class' => true, 'style' => true ),
-					),
-					array_merge( wp_allowed_protocols(), array( 'data' ) )
-				)
-				: '',
-			'has_synced_menu' => false,
-		);
+	/**
+	 * Strip a trailing "(Language)" suffix from a menu name.
+	 *
+	 * @param object|false $source_menu Nav menu term object, or false.
+	 * @return string Base menu name, or empty string when unavailable.
+	 */
+	private function get_base_menu_name( $source_menu ) {
+		$base_menu_name = '';
+
+		if ( $source_menu ) {
+			$base_menu_name = $source_menu->name;
+			// Remove language suffix pattern like " (Language)" or " (भाषा)"
+			$base_menu_name = preg_replace( '/\s*\([^)]+\)\s*$/', '', $base_menu_name );
 		}
-		
-		wp_localize_script( 'lmat-menu-sync', 'lmatMenuSync', array(
-			'ajaxurl'    => admin_url( 'admin-ajax.php' ),
-			'nonce'      => wp_create_nonce( 'lmat_sync_menu' ),
-			'languages'  => $lang_data,
-			'menuId'     => $nav_menu_selected_id,
-			'menuLang'   => '', // No language selected
-			'syncButton' => __( 'Sync Menu', 'translate-words' ),
-		) );
-		
-		return;
+
+		return $base_menu_name;
 	}
-	
-	// Get all menus to check for existing synced versions
-	// Get terms directly to bypass any language filtering
-	$all_menus = get_terms( array(
-		'taxonomy'   => 'nav_menu',
-		'hide_empty' => false,
-		'orderby'    => 'name',
-	) );
-	
-	// Fallback to wp_get_nav_menus if get_terms fails
-	if ( is_wp_error( $all_menus ) || empty( $all_menus ) ) {
-		$all_menus = wp_get_nav_menus();
-	}
-	
-	$existing_menu_langs = array();
-	
-	// Get the locations of the current menu being edited
-	$current_menu_locations = $this->linguator_get_menu_locations( $nav_menu_selected_id );
-	
-	// Only check for conflicts if the current menu is assigned to at least one location
-	if ( ! empty( $current_menu_locations ) ) {
-		// Check menus for existing synced versions in the SAME location(s)
-		foreach ( $all_menus as $menu ) {
-			// Skip the current menu itself
-			if ( $menu->term_id === $nav_menu_selected_id ) {
+
+	/**
+	 * Build language payload for wp_localize_script.
+	 *
+	 * @param int|string $menu_id    Selected menu term ID.
+	 * @param bool       $simplified When true, return slug-keyed entries without sync eligibility checks.
+	 * @return array
+	 */
+	private function build_language_data( $menu_id, $simplified = false ) {
+		$languages            = $this->model->languages->get_list();
+		$predefined_languages = include LINGUATOR_DIR . '/admin/settings/controllers/languages.php';
+		$lang_data            = array();
+
+		if ( $simplified ) {
+			foreach ( $languages as $lang ) {
+				$names = $this->get_language_display_names( $lang, $predefined_languages );
+
+				$lang_data[ $lang->slug ] = array(
+					'name'            => $names['english'],
+					'native_name'     => $names['native'],
+					'locale'          => isset( $lang->locale ) ? $lang->locale : $lang->slug,
+					'flag'            => $this->sanitize_language_flag( $lang ),
+					'has_synced_menu' => false,
+				);
+			}
+
+			return $lang_data;
+		}
+
+		$existing_menu_langs = $this->get_existing_synced_menu_langs( $menu_id, $languages );
+		$source_items        = wp_get_nav_menu_items( $menu_id );
+		$current_menu_lang   = $this->linguator_get_menu_language( $menu_id );
+
+		foreach ( $languages as $lang ) {
+			// Skip the current menu's language (can't sync to itself)
+			if ( $lang->slug === $current_menu_lang ) {
 				continue;
 			}
-			
-			// Get the language assigned to this menu using its ID
-			$menu_lang = $this->linguator_get_menu_language( $menu->term_id );
-			
-			// If this menu has a language, check if it's in the same location(s)
-			if ( $menu_lang ) {
-				$menu_locations = $this->linguator_get_menu_locations( $menu->term_id );
-				
-				// Check if there's any overlap in locations
-				$has_common_location = ! empty( array_intersect( $current_menu_locations, $menu_locations ) );
-				
-				if ( $has_common_location ) {
-					// This menu is in the same location(s) and has a language assigned
-					foreach ( $languages as $lang ) {
-						if ( $menu_lang === $lang->slug ) {
-							$existing_menu_langs[ $lang->slug ] = true;
-							break;
+
+			// Check if this language has translated content in general
+			if ( ! $this->linguator_language_has_content( $lang->slug ) ) {
+				continue;
+			}
+
+			// Only include this language if it has translations for menu items
+			if ( ! $this->menu_has_syncable_item( $source_items, $lang ) ) {
+				continue;
+			}
+
+			$names = $this->get_language_display_names( $lang, $predefined_languages );
+
+			$lang_data[] = array(
+				'slug'            => $lang->slug,
+				'name'            => $names['english'], // English name for display
+				'native_name'     => $names['native'], // Native name
+				'locale'          => isset( $lang->locale ) ? $lang->locale : $lang->slug, // Locale code
+				'is_default'      => ! empty( $lang->is_default ),
+				'has_synced_menu' => isset( $existing_menu_langs[ $lang->slug ] ),
+			);
+		}
+
+		return $lang_data;
+	}
+
+	/**
+	 * Languages that already have a menu in an overlapping theme location.
+	 *
+	 * @param int|string $menu_id   Current menu term ID.
+	 * @param array      $languages Available language objects.
+	 * @return array<string, true> Slug => true map.
+	 */
+	private function get_existing_synced_menu_langs( $menu_id, $languages ) {
+		$existing_menu_langs = array();
+
+		// Get all menus to check for existing synced versions
+		// Get terms directly to bypass any language filtering
+		$all_menus = get_terms(
+			array(
+				'taxonomy'   => 'nav_menu',
+				'hide_empty' => false,
+				'orderby'    => 'name',
+			)
+		);
+
+		// Fallback to wp_get_nav_menus if get_terms fails
+		if ( is_wp_error( $all_menus ) || empty( $all_menus ) ) {
+			$all_menus = wp_get_nav_menus();
+		}
+
+		// Get the locations of the current menu being edited
+		$current_menu_locations = $this->linguator_get_menu_locations( $menu_id );
+
+		// Only check for conflicts if the current menu is assigned to at least one location
+		if ( ! empty( $current_menu_locations ) ) {
+			// Check menus for existing synced versions in the SAME location(s)
+			foreach ( $all_menus as $menu ) {
+				// Skip the current menu itself
+				if ( $menu->term_id === $menu_id ) {
+					continue;
+				}
+
+				// Get the language assigned to this menu using its ID
+				$menu_lang = $this->linguator_get_menu_language( $menu->term_id );
+
+				// If this menu has a language, check if it's in the same location(s)
+				if ( $menu_lang ) {
+					$menu_locations = $this->linguator_get_menu_locations( $menu->term_id );
+
+					// Check if there's any overlap in locations
+					$has_common_location = ! empty( array_intersect( $current_menu_locations, $menu_locations ) );
+
+					if ( $has_common_location ) {
+						// This menu is in the same location(s) and has a language assigned
+						foreach ( $languages as $lang ) {
+							if ( $menu_lang === $lang->slug ) {
+								$existing_menu_langs[ $lang->slug ] = true;
+								break;
+							}
 						}
 					}
 				}
 			}
 		}
+
+		return $existing_menu_langs;
 	}
-		
-	// Get source menu items to check for available translations
-	$source_items = wp_get_nav_menu_items( $nav_menu_selected_id );
-	
-	// Get current menu's language to exclude it from the list
-	$current_menu_lang = $this->linguator_get_menu_language( $nav_menu_selected_id );
-	
-	// Load predefined languages for English labels
-	$predefined_languages = include LINGUATOR_DIR . '/admin/settings/controllers/languages.php';
-	
-	// Build language data for JavaScript
-	foreach ( $languages as $lang ) {
-		// Skip the current menu's language (can't sync to itself)
-		if ( $lang->slug === $current_menu_lang ) {
-			continue;
-		}
-		
-		// Check if this language has translated content in general
-		if ( ! $this->linguator_language_has_content( $lang->slug ) ) {
-			continue;
-		}
-		
-		// Check if at least one menu item can be synced to this language
+
+	/**
+	 * Whether at least one source menu item can sync to the target language.
+	 *
+	 * @param array|false $source_items Menu items.
+	 * @param object      $lang         Target language.
+	 * @return bool
+	 */
+	private function menu_has_syncable_item( $source_items, $lang ) {
 		$has_translations = false;
-		
+
 		if ( ! empty( $source_items ) ) {
 			foreach ( $source_items as $item ) {
 				if ( $this->linguator_can_sync_item( $item, $lang ) ) {
@@ -256,16 +336,21 @@ class Linguator_Admin_Menu_Sync {
 				}
 			}
 		}
-		
-		// Only include this language if it has translations for menu items
-		if ( ! $has_translations ) {
-			continue;
-		}
-		
-		// Get English label from predefined languages
+
+		return $has_translations;
+	}
+
+	/**
+	 * Resolve English and native display names for a language.
+	 *
+	 * @param object $lang                 Language object.
+	 * @param array  $predefined_languages Predefined language catalog.
+	 * @return array{english: string, native: string}
+	 */
+	private function get_language_display_names( $lang, $predefined_languages ) {
 		$english_name = $lang->name; // Fallback to current name
-		$native_name = $lang->name;
-		
+		$native_name  = $lang->name;
+
 		// Look up by slug first, then by locale code
 		$lookup_key = $lang->slug;
 		if ( isset( $predefined_languages[ $lookup_key ] ) && isset( $predefined_languages[ $lookup_key ]['label'] ) ) {
@@ -274,51 +359,43 @@ class Linguator_Admin_Menu_Sync {
 				$native_name = $predefined_languages[ $lookup_key ]['name'];
 			}
 		}
-		
-	$lang_data[] = array(
-		'slug' => $lang->slug,
-		'name' => $english_name, // English name for display
-		'native_name' => $native_name, // Native name
-		'locale' => isset( $lang->locale ) ? $lang->locale : $lang->slug, // Locale code
-		'is_default' => ! empty( $lang->is_default ),
-		'has_synced_menu' => isset( $existing_menu_langs[ $lang->slug ] ),
-	);
+
+		return array(
+			'english' => $english_name,
+			'native'  => $native_name,
+		);
 	}
 
-		// Get menu ID and language for sync button
-		$menu_id = $nav_menu_selected_id ? absint( $nav_menu_selected_id ) : 0;
-		$menu_lang = $menu_id ? $this->linguator_get_menu_language( $menu_id ) : '';
-
-		// Localize script
-		wp_localize_script(
-			'lmat-menu-sync',
-			'lmatMenuSync',
-			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce' => wp_create_nonce( 'lmat_sync_menu' ),
-				'menuId' => $menu_id,
-				'menuLang' => $menu_lang,
-				'languages' => $lang_data,
-				'strings' => array(
-					'syncButton' => __( 'Sync Menu', 'translate-words' ),
-					'selectLanguages' => __( 'Select languages to sync', 'translate-words' ),
-					'selectAll' => __( 'Select All', 'translate-words' ),
-					'deselectAll' => __( 'Unselect All', 'translate-words' ),
-					'sync' => __( 'Sync', 'translate-words' ),
-					'cancel' => __( 'Cancel', 'translate-words' ),
-					'syncing' => __( 'Syncing...', 'translate-words' ),
-					'success' => __( 'Menu synced successfully!', 'translate-words' ),
-					'error' => __( 'Error syncing menu. Please try again.', 'translate-words' ),
-					'noLanguages' => __( 'Please select at least one language.', 'translate-words' ),
-					'confirmReplace' => __( 'This will replace existing menus in the selected languages. Continue?', 'translate-words' ),
-					'emptyMenuError' => __( 'The source menu is empty. Please add menu items before syncing.', 'translate-words' ),
-					'noTranslatedContent' => __( 'No translated content is available for selected menu items. Please add and translate content in other languages first.', 'translate-words' ),
-					'permissionError' => __( 'You do not have permission to sync menus.', 'translate-words' ),
-					'invalidMenuError' => __( 'Invalid menu selected.', 'translate-words' ),
-					'noTranslationsError' => __( 'No menu items could be synced. Please ensure translations exist for your menu items.', 'translate-words' ),
+	/**
+	 * Sanitize language flag HTML for script localization.
+	 *
+	 * @param object $lang Language object.
+	 * @return string
+	 */
+	private function sanitize_language_flag( $lang ) {
+		return isset( $lang->flag )
+			? wp_kses(
+				(string) $lang->flag,
+				array(
+					'img'  => array(
+						'src'      => true,
+						'alt'      => true,
+						'class'    => true,
+						'width'    => true,
+						'height'   => true,
+						'style'    => true,
+						'decoding' => true,
+						'loading'  => true,
+						'title'    => true,
+					),
+					'span' => array(
+						'class' => true,
+						'style' => true,
+					),
 				),
+				array_merge( wp_allowed_protocols(), array( 'data' ) )
 			)
-		);
+			: '';
 	}
 
 	/**
@@ -477,7 +554,7 @@ class Linguator_Admin_Menu_Sync {
 		}
 
 		// Create or get target menu with unique name handling
-		$base_menu_name = $source_menu->name . ' (' . $lang->name . ')';
+		$base_menu_name = $this->linguator_format_menu_name( $source_menu->name, $lang->name );
 		$target_menu = wp_get_nav_menu_object( $base_menu_name );
 
 		if ( $target_menu ) {
@@ -789,6 +866,38 @@ class Linguator_Admin_Menu_Sync {
 	}
 
 	/**
+	 * Format a nav menu name as "Base (Language)[ extra]" within WordPress's 200-char term name limit.
+	 *
+	 * @param string $base_name Base menu name.
+	 * @param string $lang_name Language display name used in the suffix.
+	 * @param string $extra     Optional uniqueness suffix (counter or timestamp).
+	 * @return string Formatted menu name (max 200 characters).
+	 */
+	private function linguator_format_menu_name( $base_name, $lang_name, $extra = '' ) {
+		$base_name = sanitize_text_field( (string) $base_name );
+		$lang_name = sanitize_text_field( (string) $lang_name );
+		$extra     = '' !== (string) $extra ? sanitize_text_field( (string) $extra ) : '';
+
+		$max_length = 200;
+		$suffix     = ' (' . $lang_name . ')';
+		if ( '' !== $extra ) {
+			$suffix .= ' ' . $extra;
+		}
+
+		// Extreme case: language/extra alone exceed the limit — keep a truncated suffix.
+		if ( strlen( $suffix ) >= $max_length ) {
+			return substr( $suffix, 0, $max_length );
+		}
+
+		$available = $max_length - strlen( $suffix );
+		if ( strlen( $base_name ) > $available ) {
+			$base_name = rtrim( substr( $base_name, 0, $available ) );
+		}
+
+		return $base_name . $suffix;
+	}
+
+	/**
 	 * Generate a unique menu name to avoid collisions
 	 * Handles cases where menu name already exists with different language assignment
 	 *
@@ -797,21 +906,21 @@ class Linguator_Admin_Menu_Sync {
 	 * @return string Unique menu name.
 	 */
 	private function linguator_generate_unique_menu_name( $base_name, $lang_name ) {
-		$menu_name = $base_name . ' (' . $lang_name . ')';
-		$counter = 1;
-		
-		// Keep incrementing counter until we find a unique name
+		$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name );
+		$counter   = 1;
+
+		// Keep incrementing counter until we find a unique name.
 		while ( wp_get_nav_menu_object( $menu_name ) ) {
-			$menu_name = $base_name . ' (' . $lang_name . ') ' . $counter;
+			$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name, (string) $counter );
 			$counter++;
-			
-			// Safety limit to prevent infinite loops
+
+			// Safety limit to prevent infinite loops — fall back to timestamp.
 			if ( $counter > 100 ) {
-				$menu_name = $base_name . ' (' . $lang_name . ') ' . time();
+				$menu_name = $this->linguator_format_menu_name( $base_name, $lang_name, (string) time() );
 				break;
 			}
 		}
-		
+
 		return $menu_name;
 	}
 

@@ -106,20 +106,6 @@ if(!class_exists('Linguator_Translation_Dashboard')){
         }
 
         /**
-         * Sort column data
-         * @param array $columns
-         * @param array $value
-         * @return array
-         */
-        public function sort_column_data($columns, $value){
-            $result = array();
-            foreach($columns as $key => $label) {
-                $result[$key] = isset($value[$key]) ? sanitize_text_field($value[$key]) : '';
-            }
-            return $result;
-        }
-
-        /**
          * Store options
          * @param string $plugin_name
          * @param string $prefix

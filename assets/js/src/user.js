@@ -8,8 +8,9 @@ jQuery(
 	function ( $ ) {
 		// biography
 		// FIXME there is probably a more efficient way to do this
-		var td = $( '#description' ).parent();
-		var d = $( '#description' ).clone();
+		var $desc = $( '#description' );
+		var td = $desc.parent();
+		var d = $desc.clone();
 		var span = td.children( '.description' ).clone();
 		td.children().remove();
 

@@ -29,7 +29,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                 let reactElement=filterContent({content: value, service, contentKey: uniqueKey, skipTags:['script', 'style']});
                 stringContent=await extractInnerContent(reactElement);
 
-                if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+                if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                     stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
                 }
 
@@ -43,6 +43,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
             }
         }
     }
+
     // Define a list of properties to exclude
     const cssProperties = [
         'content_width', 'title_size', 'font_size', 'margin', 'padding', 'background', 'border', 'color', 'text_align',
@@ -57,13 +58,46 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
         return dynamicSubStrings.some(substring => strings.toLowerCase().includes(substring)) || staticSubStrings.some(substring => strings === substring);
     }
 
+    /**
+     * Handles Elementor Atomic Widget settings for bulk translation.
+     *
+     * Atomic widgets store translatable values as typed objects with a `$$type`
+     * property instead of plain strings. This function detects the two common
+     * atomic value shapes and dispatches them to `translateContent`:
+     *
+     *  - `$$type === 'string'`   → plain text stored in `.value`
+     *  - `$$type === 'html-v3'`  → rich text stored in `.value.content.value`
+     *
+     * @param {Object} element - The atomic widget value object (has `$$type`).
+     * @param {Array}  ids     - The current ID path used to build the unique key.
+     */
+    const storeAtomicWidgetStrings = async (element, ids=[]) => {
+        const currentKey = ids[ids.length - 1];
+        // Keys that are always translatable for atomic widgets even if they don't
+        // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
+        const validAtomicKeys = ['placeholder', 'paragraph'];
+
+        if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
+            return;
+        }
+
+        if(element?.$$type === 'html-v3'){
+            if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
+                await translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
+            }
+        } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                await translateContent([...ids, 'value'], element.value);
+            }
+        }
+    }
+
     const storeWidgetStrings = async(element, index, ids=[]) => {
         const settings = element.settings;
         ids.push(index);
 
         // Check if settings is an object
         if (typeof settings === 'object' && settings !== null && Object.keys(settings).length > 0) {
-            // Define the substrings to check for translatable content
 
             const keysLoop=async (key, index)=>{
                 if (cssProperties.some(substring => key.toLowerCase().includes(substring))) {
@@ -72,10 +106,13 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
 
                 if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
+                    // Plain string setting — classic Elementor widget field.
                     await translateContent([...ids, 'settings', key],settings[key]);
-                }
-
-                if(Array.isArray(settings[key]) && settings[key].length > 0){
+                } else if(settings[key] && typeof settings[key] === 'object' && Object.hasOwn(settings[key], '$$type')){
+                    // Atomic Widget typed object — e.g. { $$type: 'string', value: '...' }
+                    await storeAtomicWidgetStrings(settings[key], [...ids, 'settings', key]);
+                } else if(Array.isArray(settings[key]) && settings[key].length > 0){
+                    // Repeater / array fields.
                     const settingsLoop=async(item, index)=>{
                         if(typeof item === 'object' && item !== null){
                             const settingsItemsLoop=async (repeaterKey)=>{
@@ -87,6 +124,9 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                                 if(subStringsToCheck(repeaterKey) &&
                                     typeof item[repeaterKey] === 'string' && item[repeaterKey].trim() !== '') {
                                     await translateContent([...ids, 'settings', key, index, repeaterKey],item[repeaterKey]);
+                                } else if(item[repeaterKey] && typeof item[repeaterKey] === 'object' && Object.hasOwn(item[repeaterKey], '$$type')){
+                                    // Atomic Widget typed object inside a repeater field.
+                                    await storeAtomicWidgetStrings(item[repeaterKey], [...ids, 'settings', key, index, repeaterKey]);
                                 }
                             }
 
@@ -121,3 +161,4 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
 }
 
 export default FilterElementorContent;
+

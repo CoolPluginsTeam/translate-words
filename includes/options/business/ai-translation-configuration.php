@@ -42,6 +42,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
         $data= array(
             'provider' => array(
                 'chrome_local_ai' => false,
+                'edge_local_ai' => false,
                 'google' => true,
                 'gemini' => false,
             ),
@@ -67,6 +68,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                     'type' => 'object',
                     'properties' => array(
                         'chrome_local_ai' => array('type' => 'boolean'),
+                        'edge_local_ai' => array('type' => 'boolean'),
                         'google' => array('type' => 'boolean'),
                         'gemini' => array('type' => 'boolean'),
                     )
@@ -98,11 +100,15 @@ class Ai_Translation_Configuration extends Abstract_Option {
         
         if(isset($value['provider'])){
             $filtered_value['provider'] = array();
-            foreach($value['provider'] as $key => $provider_value){
+            $allowed_providers = function_exists( 'linguator_get_allowed_ai_providers' )
+                ? linguator_get_allowed_ai_providers()
+                : array( 'chrome_local_ai', 'google' );
 
-                if(in_array($key, $provider_data)){
-                    $filtered_value['provider'][$key] = filter_var($provider_value, FILTER_VALIDATE_BOOLEAN);
+            foreach($value['provider'] as $key => $provider_value){
+                if ( ! in_array( $key, $provider_data, true ) || ! in_array( $key, $allowed_providers, true ) ) {
+                    continue;
                 }
+                $filtered_value['provider'][$key] = filter_var($provider_value, FILTER_VALIDATE_BOOLEAN);
             }
         }
 

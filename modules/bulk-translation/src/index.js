@@ -33,17 +33,17 @@ import { __, sprintf } from '@wordpress/i18n';
             }
 
             const selectedPostIds=document.querySelectorAll(checkboxClass);
-            const postIds=Array.from(selectedPostIds).map(postId=>postId.value);
+            const selectedIds=Array.from(selectedPostIds).map(postId=>postId.value);
 
-            setPostIds(postIds);
-            
+            setPostIds(selectedIds);
+
             if(providers.length < 1){
                 setProviderConfigError(prev => !prev);
                 return;
             }
 
             setModalVisible(prev => !prev);
-            
+
             const googleWidget=document.querySelector('.skiptranslate iframe[id=":1.container"]');
             document.body.classList.remove(prefix+'-google-translate');
 
@@ -55,7 +55,7 @@ import { __, sprintf } from '@wordpress/i18n';
             }
 
         }
-        
+
         useEffect(() => {
             const doActionsBtn=document.querySelectorAll(`.${prefix}-btn`);
             if(doActionsBtn){
@@ -88,7 +88,7 @@ import { __, sprintf } from '@wordpress/i18n';
              ) : providerConfigError ? <div id={`${prefix}-container`}><ErrorModalBox message={providerConfigMsg} onDestroy={handleModalVisibility} onClose={handleModalVisibility} Title='Translation Provider Not Configured' prefix={prefix} /></div> : null
         );
     }
-    
+
     window.addEventListener('load', async () => {
         const prefix='lmat-bulk-translate';
 

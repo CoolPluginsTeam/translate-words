@@ -2,6 +2,14 @@
    Glossary Pages
 ================================================ */
 
+:root {
+  --lmat-primary: #0073aa;
+  --lmat-primary-alt: #007baf;
+  --lmat-brand: #2496b8;
+  --lmat-glossary-green: #1ca97c;
+  --lmat-glossary-mint: #7ed6bf;
+}
+
 .lmat-glossary {
     width: calc(100% - 4rem);
     margin-inline: 2rem;
@@ -38,7 +46,7 @@
   }
   
   .lmat-header a {
-    color: #0073aa;
+    color: var(--lmat-primary);
     text-decoration: none;
   }
   
@@ -55,7 +63,6 @@
     padding: 8px;
   }
   
-  .lmat-update-btn,
   .lmat-add-btn,
   .lmat-import-btn,
   .lmat-export-btn {
@@ -67,16 +74,10 @@
     border-radius: 4px;
   }
   
-  .lmat-update-btn:hover,
   .lmat-add-btn:hover,
   .lmat-import-btn:hover,
   .lmat-export-btn:hover {
     background-color: #005a8c;
-  }
-  
-  .lmat-status {
-    font-size: 14px;
-    color: #555;
   }
   
   .lmat-alphabet {
@@ -108,8 +109,9 @@
     cursor: pointer;
   }
   
-  .lmat-alphabet button.active:not([disabled]) {
-    color: #0073aa;
+  .lmat-alphabet button.active:not([disabled]),
+  .lmat-alphabet-btn.active:not([disabled]) {
+    color: var(--lmat-primary);
     font-weight: bold;
     background-color: rgba(51, 135, 158, 0.15);
     border-radius: 100%;
@@ -180,6 +182,7 @@
   .lmat-glossary-modal-content label {
     display: block;
     font-weight: 500;
+    margin-top: 16px;
   }
   
   .lmat-glossary-modal-content textarea,
@@ -192,10 +195,6 @@
     font-size: 14px;
     font-family: inherit;
     resize: vertical;
-  }
-
-  .lmat-glossary-modal-content label {
-    margin-top: 16px;
   }
   
   .lmat-glossary-modal-actions .lmat-glossary-modal-actions-left {
@@ -240,18 +239,12 @@
   
   .lmat-upload-area span {
     display: block;
-    color: #007baf;
+    color: var(--lmat-primary-alt);
     font-weight: 600;
   }
   
-  
-  .lmat-help-text {
-    font-size: 13px;
-    color: #666;
-  }
-  
   .lmat-download-link {
-    color: #007baf;
+    color: var(--lmat-primary-alt);
     font-size: 14px;
     text-decoration: underline;
     cursor: pointer;
@@ -273,7 +266,7 @@
   .lmat-close-button {
     margin-top: 15px;
     padding: 8px 16px;
-    background: #007baf;
+    background: var(--lmat-primary-alt);
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -294,8 +287,8 @@
     margin: 20px auto 0 auto;
     padding: 8px 24px;
     background: #fff;
-    color: #007baf;
-    border: 1px solid #007baf;
+    color: var(--lmat-primary-alt);
+    border: 1px solid var(--lmat-primary-alt);
     border-radius: 6px;
     font-size: 15px;
     font-weight: 500;
@@ -304,26 +297,26 @@
   }
   
   .lmat-import-close-btn:hover {
-    background: #007baf;
+    background: var(--lmat-primary-alt);
     color: #fff;
   }
   
-  .lmat-import-success-icon {
+  .lmat-import-success .import-success-icon {
     margin-bottom: 18px;
   }
   
-  .lmat-import-success-file {
+  .lmat-import-success .import-success-file {
     font-size: 15px;
     color: #222;
     margin-bottom: 10px;
   }
   
-  #lmat-importing-file-label {
+  #importing-file-label {
     color: #222;
     margin-right: 4px;
   }
   
-  #lmat-importing-file-name {
+  #importing-file-name {
     color: #222;
     font-weight: 500;
     word-break: break-all;
@@ -400,6 +393,8 @@
     font-size: 13px;
     border-radius: 4px;
     text-decoration: none;
+    position: relative;
+    z-index: 3;
 }
 
 .lmat-edit-btn:hover {
@@ -415,6 +410,8 @@
     font-size: 13px;
     text-decoration: none;
     border-radius: 4px;
+    position: relative;
+    z-index: 3;
 }
 
 .lmat-delete-btn:hover {
@@ -469,7 +466,7 @@
 
 /* Save/Cancel buttons in edit mode */
 .lmat-save-edit-btn {
-    background: #2496b8;
+    background: var(--lmat-brand);
     color: #fff;
     border: none;
     border-radius: 7px;
@@ -494,19 +491,10 @@
     font-weight: 500;
     transition: background 0.2s;
     text-decoration: underline;
-    transition: background 0.2s;
 }
 
 .lmat-cancel-edit-btn:hover {
     color: #414141;
-}
-  
-.lmat-icon-doc {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
-    background: url('doc-icon.svg') center/contain no-repeat;
-    vertical-align: middle;
 }
   
 .lmat-lang-header img {
@@ -556,7 +544,7 @@
 .lmat-lang-filter-btn:hover {
     background: #eaf6fa;
     border-color: #7ed6df;
-    color: #0073aa;
+    color: var(--lmat-primary);
 }
   
 /* ================================================
@@ -598,8 +586,8 @@
     min-width: 71px;
     padding: 3px 20px 3px 10px;
     border-radius: 10px;
-    border: 1.5px solid #7ed6bf;
-    color: #1ca97c;
+    border: 1.5px solid var(--lmat-glossary-mint);
+    color: var(--lmat-glossary-green);
     font-weight: 600;
     font-size: 0.9em;
     position: relative;
@@ -609,9 +597,6 @@
     appearance: none;
     cursor: pointer;
     text-align: center;
-}
-  
-.lmat-glossary-edit-row .lmat-edit-type {
     background-image: url("data:image/svg+xml;utf8,<svg fill='none' stroke='%231ca97c' stroke-width='2' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'><path d='M6 8l4 4 4-4'/></svg>");
     background-repeat: no-repeat;
     background-position: right 4px center;
@@ -622,14 +607,14 @@
     display: none;
 }
 .lmat-glossary-edit-row .lmat-edit-type:focus {
-    border-color: #1ca97c;
+    border-color: var(--lmat-glossary-green);
     outline: none;
     box-shadow: 0 0 0 2px #1ca97c22;
     background: #eafaf0;
 }
   
 .lmat-glossary-edit-row .lmat-save-edit-btn {
-    background: #2496b8;
+    background: var(--lmat-brand);
     color: #fff;
     border: none;
     border-radius: 7px;
@@ -637,27 +622,13 @@
     font-size: 1em;
     cursor: pointer;
     margin-bottom: 0;
-    box-shadow: 0 2px 8px #2496b81a;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lmat-brand) 10%, transparent);
     transition: background 0.2s;
     display: block;
 }
   
 .lmat-glossary-edit-row .lmat-save-edit-btn:hover {
     background: #1b7a97;
-}
-  
-.lmat-glossary-edit-row .lmat-cancel-edit-link {
-    color: #666;
-    text-decoration: underline;
-    font-size: 1em;
-    margin-left: 0;
-    cursor: pointer;
-    display: block;
-    transition: color 0.2s;
-}
-  
-.lmat-glossary-edit-row .lmat-cancel-edit-link:hover {
-    text-decoration: underline;
 }
   
 .lmat-glossary-edit-row td textarea:last-child {
@@ -687,13 +658,6 @@
 .lmat-glossary-table th:not(:first-child) {
     text-align: center !important;
     vertical-align: middle !important;
-}
-  
-.lmat-alphabet button.active:not([disabled]) {
-    color: #0073aa;
-    font-weight: bold;
-    background-color: rgba(51, 135, 158, 0.15);
-    border-radius: 100%;
 }
   
 .lmat-add-translations label {
@@ -727,11 +691,6 @@
     margin-top: 20px;
 }
   
-.lmat-translations-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-}
 .lmat-translation-field {
   flex: 1 1 0;
   min-width: 160px;
@@ -773,7 +732,7 @@
     transition: color 0.2s;
 }
 .lmat-modal-close-btn:hover {
-    color: #2496b8;
+    color: var(--lmat-brand);
 }
 
 .lmat-translation-field.lmat-hidden {
@@ -786,13 +745,6 @@
 
 .lmat-controls .lmat-glossary-type {
     vertical-align: middle;
-}
-
-.lmat-alphabet-btn.active:not([disabled]) {
-    color: #0073aa;
-    font-weight: bold;
-    background-color: rgba(51, 135, 158, 0.15);
-    border-radius: 100%;
 }
 
 .lmat-glossary-table thead th {
@@ -824,8 +776,10 @@
     padding: 8px 8px;
     z-index: 2;
     display: flex;
-    gap: 25px;
+    gap: 32px;
     justify-content: center;
+    align-items: center;
+    height: 100%;
     min-width: 100px;
 }
 
@@ -853,39 +807,23 @@
     width: 10px;
 }
 
-.lmat-edit-btn,
-.lmat-delete-btn {
-    position: relative;
-    z-index: 3;
-}
-
-.lmat-actions-cell {
-  position: sticky;
-  right: 0;
-  background: #fff;
-  z-index: 10;
-  min-width: 120px;
-  padding: 0;
-}
-.lmat-action-buttons {
-  display: flex;
-  gap: 32px;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 8px 8px;
-  background: transparent;
-}
-
 /* Sticky Actions header and cell */
 .lmat-glossary-table th.lmat-actions-cell,
 .lmat-glossary-table td.lmat-actions-cell {
     position: sticky;
     right: 0;
-    background: #fff;
     z-index: 20;
     min-width: 120px;
     box-shadow: -2px 0 4px -2px rgba(0,0,0,0.04);
+}
+
+.lmat-glossary-table th.lmat-actions-cell {
+    background: #fff;
+}
+
+.lmat-glossary-table td.lmat-actions-cell {
+    background: #fff !important;
+    padding: 0;
 }
 
 .lmat-glossary-table thead tr:nth-child(2) th:last-child {
@@ -895,11 +833,6 @@
     z-index: 19;
     min-width: 120px;
     box-shadow: -2px 0 4px -2px rgba(0,0,0,0.04);
-}
-
-/* Sticky actions cell matches row background */
-.lmat-glossary-table td.lmat-actions-cell {
-    background: #fff !important;
 }
 
 /* .lmat-add-translation, */
@@ -949,10 +882,6 @@
     background: #f7f7f7 !important;
 }
 
-/* Sticky actions cell matches row background */
-.lmat-glossary-table td.lmat-actions-cell {
-    background: #fff !important;
-}
 .lmat-glossary-table tbody tr.lmat-row-striped td.lmat-actions-cell {
     background: #f7f7f7 !important;
 }
@@ -1029,15 +958,11 @@ tr.lmat-glossary-edit-row > td.lmat-actions-cell {
     align-items: center;
 }
 
-.lmat-glossary-loader.active {
-    display: flex;
-}
-
 .lmat-glossary-loader-spinner {
     width: 50px;
     height: 50px;
     border: 3px solid #f3f3f3;
-    border-top: 3px solid #0073aa;
+    border-top: 3px solid var(--lmat-primary);
     border-radius: 50%;
     animation: lmat-spin 1s linear infinite;
 }

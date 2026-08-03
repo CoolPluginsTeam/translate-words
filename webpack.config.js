@@ -171,7 +171,7 @@ const configs = [
   },
   {
     srcDir: 'modules/wizard/src',
-    outDir: 'admin/Assets/frontend/setup',
+    outDir: 'admin/assets/frontend/setup',
     sourceFiles: ['setup'],
   },
 ];

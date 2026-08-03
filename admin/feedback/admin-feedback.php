@@ -15,23 +15,37 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Linguator_Admin_Feedback {
 
-    private $plugin_url     = LINGUATOR_URL;
+	private $plugin_url     = LINGUATOR_URL;
 	private $plugin_version = LINGUATOR_VERSION;
 	private $plugin_name    = 'Linguator AI – Auto Translate & Create Multilingual Sites';
 	private $plugin_slug    = 'twlmat';
 	protected $options;
-    
-    /*
+
+	/**
+	 * Linguator bootstrap instance when constructed from the main plugin.
+	 *
+	 * @var object|null
+	 */
+	protected $linguator;
+
+	/*
 	|-----------------------------------------------------------------|
 	|   Use this constructor to fire all actions and filters          |
 	|-----------------------------------------------------------------|
 	*/
-    public function __construct() {
-        $this->options = get_option('linguator');
-        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
+	/**
+	 * @param object|null $linguator Optional Linguator instance from the main bootstrap.
+	 */
+	public function __construct( $linguator = null ) {
+		$this->linguator = $linguator;
+		$this->options   = ( $linguator && isset( $linguator->options ) )
+			? $linguator->options
+			: get_option( 'linguator' );
+
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
 		add_action( 'admin_head', array( $this, 'show_deactivate_feedback_popup' ) );
 		add_action( 'wp_ajax_' . $this->plugin_slug . '_submit_deactivation_response', array( $this, 'submit_deactivation_response' ) );
-    }
+	}
 
     /*
 	|-----------------------------------------------------------------|
@@ -231,7 +245,7 @@ class Linguator_Admin_Feedback {
 		$sanitized_message = empty( $_POST['message'] ) || sanitize_text_field( wp_unslash( $_POST['message'] ) ) === '' ? 'N/A' : sanitize_text_field( wp_unslash( $_POST['message'] ) );
 		$admin_email       = sanitize_email( get_option( 'admin_email' ) );
 		$site_url          = esc_url( site_url() );
-		$install_date 		= get_option('linguator_install_date');
+		$install_date 		= get_option('lmat_install_date');
 		$unique_key     	= '153';  // Ensure this key is unique per plugin to prevent collisions when site URL and install date are the same across plugins
 		$site_id        	= $site_url . '-' . $install_date . '-' . $unique_key;
 		$feedback_url      = LINGUATOR_FEEDBACK_API .'wp-json/coolplugins-feedback/v1/feedback';
@@ -245,7 +259,7 @@ class Linguator_Admin_Feedback {
 				'body'    => array(
 					'server_info' => wp_json_encode($server_info), 
 					'extra_details' => wp_json_encode($extra_details),
-					'plugin_initial'  => sanitize_text_field(get_option('linguator_initial_version')),
+					'plugin_initial'  => sanitize_text_field(get_option('lmat_initial_version')),
 					'plugin_version' => sanitize_text_field($this->plugin_version),
 					'plugin_name'    => sanitize_text_field($this->plugin_name),
 					'reason'         => sanitize_text_field($deativation_reason),

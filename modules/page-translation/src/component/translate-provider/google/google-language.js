@@ -1,5 +1,4 @@
-export default () => {
-    const languages = [
+const GOOGLE_LANGUAGES = [
         "ab",
         "ace",
         "ach",
@@ -249,8 +248,20 @@ export default () => {
         "yua",
         "zap",
         "zu"
+];
 
-    ];
-
-    return languages;
+/**
+ * Map Linguator slug/locale to a Google Translate language code.
+ * Regional variants (pt_pt, en_gb, es_mx, …) → base code via first segment after `-`.
+ *
+ * @param {string} lang Linguator language slug.
+ * @param {Object} languageObject Site language map with locale per slug.
+ * @returns {string}
+ */
+export function mapToGoogleLanguageCode(lang, languageObject = {}) {
+    const locale = languageObject[lang]?.locale || '';
+    const normalized = (locale || lang).replace(/_/g, '-');
+    return normalized.split('-')[0].toLowerCase();
 }
+
+export default () => GOOGLE_LANGUAGES;

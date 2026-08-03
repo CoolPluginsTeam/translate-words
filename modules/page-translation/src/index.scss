@@ -1,4 +1,4 @@
-:is(#lmat-page-translation-modal-open-warning-wrapper, #lmat-page-translation-setting-modal, #lmat_page_translation_strings_model) .modal-container {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                :is(#lmat-page-translation-modal-open-warning-wrapper, #lmat-page-translation-setting-modal, #lmat_page_translation_strings_model) .modal-container {
     display: none;
     position: fixed;
     z-index: 99999;
@@ -415,9 +415,22 @@ button.lmat-page-translation-error-reload-btn:hover {
     color: #fff;
 }
 
+.lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn.lmat-page-translation-btn-downloading {
+    background: #ee4237;
+    border-color: #dd362b;
+    color: #fff;
+    cursor: default;
+}
+
 .lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn:hover {
     background: #37a737;
     border-color: #238b23;
+}
+
+.lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-service-btn.lmat-page-translation-btn-downloading:hover {
+    background: #ee4237;
+    border-color: #dd362b;
+    color: #fff;
 }
 
 .lmat-page-translation-setting-modal-body tbody .button.lmat-page-translation-provider-error {
@@ -458,6 +471,27 @@ button.lmat-page-translation-error-reload-btn:hover {
 .lmat-page-translation-setting-modal-body tbody .lmat-page-translation-doc-icon svg {
     width: 20px;
     height: 28px;
+}
+
+/* No-provider message (matches bulk translation empty state) */
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-message {
+    padding: 16px 25px;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text {
+    color: #cc1818;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text a {
+    color: #2271b1;
+    text-decoration: underline;
+}
+
+.lmat-page-translation-setting-modal-body .lmat-page-translation-no-provider-text a:hover {
+    color: #135e96;
 }
 
 #lmat-page-translation-setting-modal .lmat-page-translation-translator-row .lmat-page-translation-translator-footer .lmat-page-translation-localai-disabled-message:hover {
@@ -1297,12 +1331,12 @@ body>div.skiptranslate iframe.skiptranslate[frameborder][src][style="visibility:
     }
 }
 
-:where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .translator-widget {
+:where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-edgeLocalAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .translator-widget {
     justify-content: space-between;
     align-items: center;
 }
 
-#lmat_page_translation_strings_model #lmat-page-translation-localAiTranslator-strings-modal h3 {
+#lmat_page_translation_strings_model :where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-edgeLocalAiTranslator-strings-modal) h3 {
     margin: 20px 0px;
 }
 
@@ -1310,7 +1344,7 @@ body>div.skiptranslate iframe.skiptranslate[frameborder][src][style="visibility:
     width: 100% !important;
 }
 
-#lmat_page_translation_strings_model :where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .lmat_page_translation_string_container {
+#lmat_page_translation_strings_model :where(#lmat-page-translation-localAiTranslator-strings-modal, #lmat-page-translation-edgeLocalAiTranslator-strings-modal, #lmat-page-translation-yandex-strings-modal, #lmat-page-translation-google-strings-modal, #lmat-page-translation-gemini-strings-modal) .lmat_page_translation_string_container {
     max-height: calc(100vh - 300px - var(--lmat-page-translation-notice-wrapper-height, 0px));
     box-shadow: 0 -1px 4px #0000005e inset;
 }
@@ -2101,4 +2135,20 @@ body.rtl #lmat_page_translation_strings_model .save_btn_cont {
 
 .lmat-page-translation-btn-secondary:hover {
     background: #444;
+}
+
+.lmat-page-translation-add-translation-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes lmat-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.lmat-loading-spinner-mini {
+    animation: lmat-spin 0.8s linear infinite;
 }

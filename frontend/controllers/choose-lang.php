@@ -254,10 +254,10 @@ abstract class Linguator_Choose_Lang {
 			 */
 			do_action( 'lmat_home_requested' );
 		}
-		// Redirect to the home page in the right language
-		// Test to avoid crash if get_home_url returns something wrong
-		// FIXME why this happens? http://wordpress.org/support/topic/linguator-crashes-1
-		// Don't redirect if $_POST is not empty as it could break other plugins
+		// Redirect to the home page in the right language.
+		// The is_string() guard avoids a fatal error when the language data is corrupted
+		// (e.g. after recreating languages) and get_home_url() returns a WP_Error instead
+		// of a URL string. Don't redirect if $_POST is not empty as it could break other plugins.
 		elseif ( is_string( $redirect = $this->curlang->get_home_url() ) && empty( $_POST ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			// Don't forget the query string which may be added by plugins
 			$query_string = wp_parse_url( linguator_get_requested_url(), PHP_URL_QUERY );

@@ -71,7 +71,7 @@ const FilterClassicContent = async ({content, service, postId, storeDispatch, fi
                     let reactElement=filterContent({content: text, service, contentKey: 'content_classic_index_'+index, skipTags:[]});
                     stringContent=await extractInnerContent(reactElement);
 
-                    if(['google','localAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
+                    if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
                         stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
                     }
 

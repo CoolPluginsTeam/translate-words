@@ -2,9 +2,10 @@ import GoogleTranslater from "./google/index.js";
 import localAiTranslator from "./local-ai-translator/index.js";
 import createAiLlmPageTranslator from "./ai-llm/index.js";
 import { sprintf, __ } from "@wordpress/i18n";
-import { ChromeIcon } from "../../../../../assets/logo/chrome.js";
-import { GoogleIcon } from "../../../../../assets/logo/google.js";
-import { GeminiIcon } from "../../../../../assets/logo/gemini.js";
+import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
+import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
+import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
+import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
 
 /**
  * Provides translation services using Yandex Translate.
@@ -41,6 +42,18 @@ export default (props) => {
             ErrorMessage: props.localAiTranslatorButtonDisabled ? <div className="lmat-page-translation-provider-error button button-primary" onClick={() => openErrorModalHandler("localAiTranslator")}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
             Logo: <ChromeIcon className="icon-size"/>
         },
+        edgeLocalAiTranslator: {
+            Provider: localAiTranslator,
+            title: "Edge Built-in AI",
+            SettingBtnText: "Translate",
+            serviceLabel: "Edge AI Translator",
+            heading: sprintf(__("Translate Using %s", "translate-words"), "Edge built-in API"),
+            Docs: "https://microsoftedge.github.io/Demos/built-in-ai/playgrounds/translator-api/",
+            BetaEnabled: true,
+            ButtonDisabled: props.edgeLocalAiTranslatorButtonDisabled,
+            ErrorMessage: props.edgeLocalAiTranslatorButtonDisabled ? <div className="lmat-page-translation-provider-error button button-primary" onClick={() => openErrorModalHandler("edgeLocalAiTranslator")}><img src={errorIcon} alt="error" /> {__('View Error', 'translate-words')}</div> : <></>,
+            Logo: <EdgeIcon className="icon-size"/>
+        },
         gemini: {
             Provider: createAiLlmPageTranslator("gemini"),
             title: "Google Gemini",
@@ -55,10 +68,39 @@ export default (props) => {
         }
     };
 
+    const browserType = (() => {
+        let type = 'Other';
+        if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
+            // Edge is Chromium-based, so its brands array contains BOTH
+            // "Microsoft Edge" AND "Google Chrome". Check for Edge first
+            // so it takes priority and isn't misidentified as Chrome.
+            const brands = navigator.userAgentData.brands;
+            const isEdgeBrowser = brands.some(data => data.brand === 'Microsoft Edge');
+            if (isEdgeBrowser) {
+                type = 'Edge';
+            } else if (brands.some(data => data.brand === 'Google Chrome')) {
+                type = 'Chrome';
+            }
+        } else {
+            if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
+                type = 'Edge';
+            } else if (window.hasOwnProperty('chrome')) {
+                type = 'Chrome';
+            }
+        }
+        return type;
+    })();
+
     const validServices={};
 
     providers.forEach((provider) => {
         if (Services[provider]) {
+            if (browserType === 'Chrome' && provider === 'edgeLocalAiTranslator') {
+                return;
+            }
+            if (browserType === 'Edge' && provider === 'localAiTranslator') {
+                return;
+            }
             validServices[provider] = Services[provider];
         }
     });

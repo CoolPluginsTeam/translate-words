@@ -1,5 +1,6 @@
 import ModalStringScroll from "../../string-modal-scroll/index.js";
 import { __ } from "@wordpress/i18n";
+import { mapToGoogleLanguageCode } from "./google-language.js";
 
 /**
  * Initializes Google Translate functionality on specific elements based on provided data.
@@ -9,16 +10,9 @@ const GoogleTranslater = (data) => {
 
     const { sourceLang, targetLang, ID, translateStatusHandler, modalRenderId, destroyUpdateHandler } = data;
 
-    let lang=targetLang;
-    let srcLang=sourceLang;
-    
-    if(lang === 'zh'){
-        lang=lmatPageTranslationGlobal.languageObject['zh']?.locale.replace('_', '-');
-    }
-
-    if(srcLang === 'zh'){
-        srcLang=lmatPageTranslationGlobal.languageObject['zh']?.locale.replace('_', '-');
-    }
+    const languageObject = lmatPageTranslationGlobal.languageObject || {};
+    const lang = mapToGoogleLanguageCode(targetLang, languageObject);
+    const srcLang = mapToGoogleLanguageCode(sourceLang, languageObject);
 
     const g = typeof window !== "undefined" ? window.google : undefined;
     const TranslateElementCtor = g?.translate?.TranslateElement;

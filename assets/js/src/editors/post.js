@@ -40,6 +40,59 @@ const getSettings = () => {
     return { lang: null, translations_table: {} };
 };
 
+/**
+ * Returns the language of the currently edited post.
+ * Falls back to the lang/new_lang URL parameter when the post has no language yet.
+ *
+ * @return {string} Language slug, or empty string when unknown.
+ */
+const getCurrentLanguage = () => {
+    const settings = getSettings();
+    if ( settings?.lang?.slug ) {
+        return settings.lang.slug;
+    }
+
+    const params = new URLSearchParams( window.location.search );
+    return params.get( 'lang' ) || params.get( 'new_lang' ) || '';
+};
+
+/**
+ * Filters REST API requests for translatable entities (categories, tags, etc.)
+ * to add the current post language, so the editor only lists terms in that language.
+ *
+ * `lmatFilteredRoutes` is provided by PHP via Linguator_Filter_REST_Routes::add_inline_script().
+ */
+apiFetch.use( ( options, next ) => {
+    // `options.url` means a direct (non-REST) call, and we need the filtered routes list.
+    // eslint-disable-next-line no-undef
+    if ( 'undefined' !== typeof options.url || 'undefined' === typeof lmatFilteredRoutes ) {
+        return next( options );
+    }
+
+    const cleanPath = options.path.split( '?' )[0].replace( /^\/+|\/+$/g, '' );
+    // eslint-disable-next-line no-undef
+    const isFiltered = Object.values( lmatFilteredRoutes ).some( ( path ) => cleanPath === path );
+
+    if ( ! isFiltered ) {
+        return next( options );
+    }
+
+    const lang = getCurrentLanguage();
+    if ( ! lang ) {
+        return next( options );
+    }
+
+    if ( 'undefined' === typeof options.data || null === options.data ) {
+        // GET request: add the language to the query string.
+        options.path += ( ( options.path.indexOf( '?' ) >= 0 ) ? '&lang=' : '?lang=' ) + lang;
+    } else {
+        // POST/PUT request: add the language to the body.
+        options.data.lang = lang;
+    }
+
+    return next( options );
+} );
+
 const LanguageSection = ( { lang, allLanguages } ) => {
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState('');

@@ -403,17 +403,50 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
+			$model_id = $this->ai_translate_resolve_llm_model_id( $model_override );
+
+			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
+			if ( is_wp_error( $provider_setup ) ) {
+				return $provider_setup;
+			}
+
+			$registry    = $provider_setup['registry'];
+			$provider_id = $provider_setup['provider_id'];
+
+			$instruction = $this->ai_translate_build_llm_prompt( $source_lang, $target_lang, $strings );
+			if ( is_wp_error( $instruction ) ) {
+				return $instruction;
+			}
+
+			$text = $this->ai_translate_call_llm_provider( $registry, $provider_id, $model_id, $instruction );
+			if ( is_wp_error( $text ) ) {
+				return $this->ai_translate_handle_llm_call_error(
+					$text,
+					$provider,
+					$source_lang,
+					$target_lang,
+					$strings,
+					$api_key,
+					$model_override,
+					$split_depth
+				);
+			}
+
+			return $this->ai_translate_parse_llm_response( (string) $text, $strings );
+		}
+
+		/**
+		 * Resolve Gemini model id from override, options, or default.
+		 *
+		 * @param string $model_override Optional model override.
+		 * @return string
+		 */
+		private function ai_translate_resolve_llm_model_id( string $model_override = '' ): string {
 			$models = array();
-			$ai_config = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
 				$m = LMAT()->model->options->get( 'api_keys' );
 				if ( is_array( $m ) ) {
 					$models = $m;
-				}
-
-				$cfg = LMAT()->model->options->get( 'ai_translation_configuration' );
-				if ( is_array( $cfg ) ) {
-					$ai_config = $cfg;
 				}
 			}
 
@@ -429,7 +462,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$model_id = $model_defaults[ $model_key ];
 			}
 
-			// Ensure the selected provider is actually configured in the WP AI Client registry.
+			return $model_id;
+		}
+
+		/**
+		 * Validate AI client/provider and inject API key authentication.
+		 *
+		 * @param string $provider Provider slug (gemini maps to google).
+		 * @param string $api_key  API key.
+		 * @return array{registry: object, provider_id: string}|\WP_Error
+		 */
+		private function ai_translate_prepare_llm_provider( string $provider, string $api_key ) {
 			$provider_id = ( 'gemini' === $provider ) ? 'google' : $provider;
 			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
 				return new WP_Error(
@@ -460,89 +503,27 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			// Inject key for this request so prompt builder can resolve models.
 			$registry->setProviderRequestAuthentication( $provider_id, new $auth_class( trim( $api_key ) ) );
 
+			return array(
+				'registry'    => $registry,
+				'provider_id' => $provider_id,
+			);
+		}
+
+		/**
+		 * Build glossary-aware translation prompt for the LLM.
+		 *
+		 * @param string               $source_lang Source language slug.
+		 * @param string               $target_lang Target language slug.
+		 * @param array<string,string> $strings     Key => source text.
+		 * @return string|\WP_Error
+		 */
+		private function ai_translate_build_llm_prompt( string $source_lang, string $target_lang, array $strings ) {
 			$payload = wp_json_encode( $strings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			if ( false === $payload ) {
 				return new WP_Error( 'lmat_ai_encode_error', __( 'Could not prepare translation payload.', 'translate-words' ), array( 'status' => 500 ) );
 			}
 
-			$glossary_data         = get_option( 'lmat_glossary_data', array() );
-			$glossary_instructions = '';
-			$matched_terms         = array();
-			$has_glossary_terms    = false;
-
-			if ( ! empty( $glossary_data ) && is_array( $glossary_data ) ) {
-				foreach ( $strings as $string ) {
-					foreach ( $glossary_data as $entry ) {
-						if (
-							is_array( $entry ) &&
-							! empty( $entry['original_term'] ) &&
-							isset( $entry['original_language_code'] ) &&
-							$entry['original_language_code'] === $source_lang &&
-							stripos( (string) $string, (string) $entry['original_term'] ) !== false
-						) {
-							$has_glossary_terms = true;
-							break 2;
-						}
-					}
-				}
-
-				if ( $has_glossary_terms ) {
-					foreach ( $glossary_data as $entry ) {
-						if (
-							! is_array( $entry ) ||
-							empty( $entry['original_language_code'] ) ||
-							empty( $entry['original_term'] ) ||
-							empty( $entry['translations'] ) ||
-							$entry['original_language_code'] !== $source_lang
-						) {
-							continue;
-						}
-
-						$translations_by_code = array();
-						foreach ( $entry['translations'] as $translation ) {
-							if (
-								is_array( $translation ) &&
-								! empty( $translation['target_language_code'] ) &&
-								! empty( $translation['translated_term'] )
-							) {
-								$translations_by_code[ $translation['target_language_code'] ] = $translation['translated_term'];
-							}
-						}
-
-						$term_found = false;
-						foreach ( $strings as $string ) {
-							if ( stripos( (string) $string, (string) $entry['original_term'] ) !== false ) {
-								$term_found = true;
-								break;
-							}
-						}
-
-						if ( $term_found && isset( $translations_by_code[ $target_lang ] ) ) {
-							$matched_terms[] = array(
-								'term'        => $entry['original_term'],
-								'translation' => $translations_by_code[ $target_lang ],
-								'description' => $entry['description'] ?? '',
-							);
-						}
-					}
-				}
-			}
-
-			if ( $has_glossary_terms && ! empty( $matched_terms ) ) {
-				$glossary_instructions = "Please use the following glossary terms in your translation:\n";
-
-				foreach ( $matched_terms as $term ) {
-					$src_term    = isset( $term['term'] ) ? (string) $term['term'] : '';
-					$translation = isset( $term['translation'] ) ? (string) $term['translation'] : '';
-					$description = isset( $term['description'] ) ? (string) $term['description'] : '';
-
-					$glossary_instructions .= '- "' . $src_term . '" -> "' . $translation . '"';
-					if ( '' !== $description ) {
-						$glossary_instructions .= ' - Note: ' . $description;
-					}
-					$glossary_instructions .= "\n";
-				}
-			}
+			$glossary_instructions = $this->ai_translate_build_glossary_instructions( $source_lang, $target_lang, $strings );
 
 			$instruction = sprintf(
 				'You are a professional translator.
@@ -571,9 +552,116 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			);
 
 			if ( '' !== $glossary_instructions ) {
-				$instruction       .= 'Instruction 9: ' . $glossary_instructions;
+				$instruction .= 'Instruction 9: ' . $glossary_instructions;
 			}
-			
+
+			return $instruction;
+		}
+
+		/**
+		 * Build glossary instruction block when matched terms exist for the payload.
+		 *
+		 * @param string               $source_lang Source language slug.
+		 * @param string               $target_lang Target language slug.
+		 * @param array<string,string> $strings     Key => source text.
+		 * @return string
+		 */
+		private function ai_translate_build_glossary_instructions( string $source_lang, string $target_lang, array $strings ): string {
+			$glossary_data = get_option( 'lmat_glossary_data', array() );
+			if ( empty( $glossary_data ) || ! is_array( $glossary_data ) ) {
+				return '';
+			}
+
+			$has_glossary_terms = false;
+			foreach ( $strings as $string ) {
+				foreach ( $glossary_data as $entry ) {
+					if (
+						is_array( $entry ) &&
+						! empty( $entry['original_term'] ) &&
+						isset( $entry['original_language_code'] ) &&
+						$entry['original_language_code'] === $source_lang &&
+						stripos( (string) $string, (string) $entry['original_term'] ) !== false
+					) {
+						$has_glossary_terms = true;
+						break 2;
+					}
+				}
+			}
+
+			if ( ! $has_glossary_terms ) {
+				return '';
+			}
+
+			$matched_terms = array();
+			foreach ( $glossary_data as $entry ) {
+				if (
+					! is_array( $entry ) ||
+					empty( $entry['original_language_code'] ) ||
+					empty( $entry['original_term'] ) ||
+					empty( $entry['translations'] ) ||
+					$entry['original_language_code'] !== $source_lang
+				) {
+					continue;
+				}
+
+				$translations_by_code = array();
+				foreach ( $entry['translations'] as $translation ) {
+					if (
+						is_array( $translation ) &&
+						! empty( $translation['target_language_code'] ) &&
+						! empty( $translation['translated_term'] )
+					) {
+						$translations_by_code[ $translation['target_language_code'] ] = $translation['translated_term'];
+					}
+				}
+
+				$term_found = false;
+				foreach ( $strings as $string ) {
+					if ( stripos( (string) $string, (string) $entry['original_term'] ) !== false ) {
+						$term_found = true;
+						break;
+					}
+				}
+
+				if ( $term_found && isset( $translations_by_code[ $target_lang ] ) ) {
+					$matched_terms[] = array(
+						'term'        => $entry['original_term'],
+						'translation' => $translations_by_code[ $target_lang ],
+						'description' => $entry['description'] ?? '',
+					);
+				}
+			}
+
+			if ( empty( $matched_terms ) ) {
+				return '';
+			}
+
+			$glossary_instructions = "Please use the following glossary terms in your translation:\n";
+			foreach ( $matched_terms as $term ) {
+				$src_term    = isset( $term['term'] ) ? (string) $term['term'] : '';
+				$translation = isset( $term['translation'] ) ? (string) $term['translation'] : '';
+				$description = isset( $term['description'] ) ? (string) $term['description'] : '';
+
+				$glossary_instructions .= '- "' . $src_term . '" -> "' . $translation . '"';
+				if ( '' !== $description ) {
+					$glossary_instructions .= ' - Note: ' . $description;
+				}
+				$glossary_instructions .= "\n";
+			}
+
+			return $glossary_instructions;
+		}
+
+		/**
+		 * Call the WP AI Client provider to generate translation text.
+		 *
+		 * @param object $registry    AI client registry.
+		 * @param string $provider_id Provider id in the registry.
+		 * @param string $model_id    Optional model id.
+		 * @param string $instruction Prompt text.
+		 * @return string|\WP_Error
+		 */
+		private function ai_translate_call_llm_provider( $registry, string $provider_id, string $model_id, string $instruction ) {
 			$ai_request_timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
 			if ( $ai_request_timeout < 1 ) {
 				$ai_request_timeout = 120;
@@ -658,53 +746,77 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 			}
 
-			if ( is_wp_error( $text ) ) {
-				if ( $this->ai_translate_is_timeout_error( $text ) ) {
-					$string_count = count( $strings );
-					if ( $string_count > 1 && $split_depth < 3 ) {
-						$chunks = $this->ai_translate_split_string_map( $strings );
-						if ( 2 === count( $chunks ) ) {
-							$left = $this->ai_translate_strings_with_llm(
-								$provider,
-								$source_lang,
-								$target_lang,
-								$chunks[0],
-								$api_key,
-								$model_override,
-								$split_depth + 1
-							);
-							if ( is_wp_error( $left ) ) {
-								return $left;
-							}
+			return $text;
+		}
 
-							$right = $this->ai_translate_strings_with_llm(
-								$provider,
-								$source_lang,
-								$target_lang,
-								$chunks[1],
-								$api_key,
-								$model_override,
-								$split_depth + 1
-							);
-							if ( is_wp_error( $right ) ) {
-								return $right;
-							}
-
-							return $left + $right;
+		/**
+		 * Handle LLM call failures, including recursive split retries on timeout.
+		 *
+		 * @param \WP_Error            $error          Provider/call error.
+		 * @param string               $provider       Provider slug.
+		 * @param string               $source_lang    Source language slug.
+		 * @param string               $target_lang    Target language slug.
+		 * @param array<string,string> $strings        Key => source text.
+		 * @param string               $api_key        API key.
+		 * @param string               $model_override Model override.
+		 * @param int                  $split_depth    Current recursion depth.
+		 * @return array<string,string>|\WP_Error
+		 */
+		private function ai_translate_handle_llm_call_error( WP_Error $error, string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override, int $split_depth ) {
+			if ( $this->ai_translate_is_timeout_error( $error ) ) {
+				$string_count = count( $strings );
+				if ( $string_count > 1 && $split_depth < 3 ) {
+					$chunks = $this->ai_translate_split_string_map( $strings );
+					if ( 2 === count( $chunks ) ) {
+						$left = $this->ai_translate_strings_with_llm(
+							$provider,
+							$source_lang,
+							$target_lang,
+							$chunks[0],
+							$api_key,
+							$model_override,
+							$split_depth + 1
+						);
+						if ( is_wp_error( $left ) ) {
+							return $left;
 						}
-					}
 
-					return new WP_Error(
-						'lmat_ai_request_timeout',
-						__( 'The AI provider request timed out. Please retry in a moment or translate fewer strings at once.', 'translate-words' ),
-						array( 'status' => 503 )
-					);
+						$right = $this->ai_translate_strings_with_llm(
+							$provider,
+							$source_lang,
+							$target_lang,
+							$chunks[1],
+							$api_key,
+							$model_override,
+							$split_depth + 1
+						);
+						if ( is_wp_error( $right ) ) {
+							return $right;
+						}
+
+						return $left + $right;
+					}
 				}
 
-				return $text;
+				return new WP_Error(
+					'lmat_ai_request_timeout',
+					__( 'The AI provider request timed out. Please retry in a moment or translate fewer strings at once.', 'translate-words' ),
+					array( 'status' => 503 )
+				);
 			}
 
-			$clean_text = preg_replace( '/(^```json\n|```$)/', '', (string) $text );
+			return $error;
+		}
+
+		/**
+		 * Parse LLM text response into a key => translated string map.
+		 *
+		 * @param string               $text    Raw provider response text.
+		 * @param array<string,string> $strings Original key => source text map.
+		 * @return array<string,string>|\WP_Error
+		 */
+		private function ai_translate_parse_llm_response( string $text, array $strings ) {
+			$clean_text = preg_replace( '/(^```json\n|```$)/', '', $text );
 			$final_text = preg_replace( '/\\\\{2,}([\'"n])/', '\\\$1', (string) $clean_text );
 
 			if ( is_string( $final_text ) ) {
@@ -1658,6 +1770,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
 			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
 
+			// Build Elementor editor link if the translated post uses Elementor.
+			$elementor_edit_link = false;
+			if ( defined( 'ELEMENTOR_VERSION' ) && 'builder' === get_post_meta( $new_post_id, '_elementor_edit_mode', true ) ) {
+				$elementor_edit_link = add_query_arg(
+					array(
+						'post'   => $new_post_id,
+						'action' => 'elementor',
+					),
+					admin_url( 'post.php' )
+				);
+			}
+
 			return rest_ensure_response(
 				array(
 					'post_id'                     => $new_post_id,
@@ -1665,6 +1789,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'post_link'                   => $post_link,
 					'post_title'                  => $post_title_out,
 					'post_edit_link'              => $post_edit_link,
+					'elementor_edit_link'         => $elementor_edit_link,
 					'update_translate_data_nonce' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
 				)
 			);

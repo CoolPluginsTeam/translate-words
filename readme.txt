@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 7.2
-Stable tag: 2.1.9
+Stable tag: 2.1.10
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -169,8 +169,6 @@ There is no limit. You can add as many languages as you want to your website usi
 = Transition Notice =
 Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
 
-The current Translate Words feature set will remain available until 6 months. After this period, the plugin will fully transition to Linguator.
-
 If you want to continue using a manual string translation workflow, we recommend migrating to the Loco Translate plugin, which offers enhanced stability, better performance, and active development.
 
 You are not required to take immediate action. Your website will continue working normally during the transition period. A detailed migration panel is included inside the plugin settings with all guidance and support information.
@@ -190,10 +188,14 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
 * **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
+**Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
+
 == Changelog ==
-> **Translate Words is evolving to Linguator**, our new AI-based multilingual solution.
-> The current functionality will remain available until **6 months**.
-> If you prefer a manual string translation workflow, we recommend **Loco Translate**.
+
+= Version 2.1.10 | 03 August 2026 =
+* Added: New Translation Provider - Edge AI for Edge Browser
+* Improved: Code Improvements & Optimization
+* Removed: Deprecated Translate Words legacy functionality
 
 = Version 2.1.9 | 30 June 2026 =
 * Fixed: Validation issue of Google Gemini API key.
@@ -337,5 +339,3 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * Initial release.
 
 == Upgrade Notice ==
-= 2.0.0 =
-Translate Words is transitioning to our new AI-powered multilingual plugin Linguator AI. Existing functionality will remain available until around 31 December 2026. For manual string-based translation workflows, we recommend migrating to Loco Translate.

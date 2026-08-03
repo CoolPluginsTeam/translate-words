@@ -64,14 +64,6 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 		}
 
 		/**
-		 * Set active tab
-		 * @param mixed $tab
-		 */
-		public function set_active_tab( $tab ) {
-			$this->active_tab = $tab;
-		}
-
-		/**
 		 * True when Polylang or WPML left migratable data in the database (same rules as migration detect endpoints).
 		 *
 		 * @return bool
@@ -191,6 +183,15 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			echo '</div>';
 			echo '</div>';
 			echo '</div>';
+			echo '<script>
+				(function() {
+					var header = document.getElementById("lmat-settings-header");
+					var wpbodyContent = document.getElementById("wpbody-content");
+					if (header && wpbodyContent) {
+						wpbodyContent.insertBefore(header, wpbodyContent.firstChild);
+					}
+				})();
+			</script>';
 		}
 
 		/**

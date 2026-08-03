@@ -103,6 +103,18 @@
 
       $("body").append(dialogHTML);
 
+      this.$syncDialog = $("#lmat-sync-dialog");
+      if (!this.$syncDialog.length) {
+        console.error("Menu sync dialog failed to create");
+        return;
+    }
+      this.$syncError = this.$syncDialog.find(".lmat-sync-error");
+      this.$syncLanguages = this.$syncDialog.find(".lmat-sync-languages");
+      this.$toggleAll = this.$syncDialog.find(".lmat-toggle-all");
+      this.$syncSpinner = this.$syncDialog.find(".lmat-sync-spinner");
+      this.$syncConfirm = this.$syncDialog.find(".lmat-sync-confirm");
+      this.$syncCheckboxes = this.$syncDialog.find('input[type="checkbox"]');
+
       // Populate languages
       this.populateLanguages();
 
@@ -111,7 +123,7 @@
     },
 
     populateLanguages: function () {
-      var $container = $("#lmat-sync-dialog .lmat-sync-languages");
+      var $container = this.$syncLanguages;
       var html = "";
 
       // Get current menu's language from the button data attribute
@@ -151,6 +163,7 @@
       });
 
       $container.html(html);
+      this.$syncCheckboxes = this.$syncDialog.find('input[type="checkbox"]');
     },
 
     /**
@@ -171,7 +184,7 @@
       // Toggle select/unselect all
       $(document).on("click", ".lmat-toggle-all", function () {
         var $button = $(this);
-        var $checkboxes = $('#lmat-sync-dialog input[type="checkbox"]');
+        var $checkboxes = self.$syncCheckboxes;
         var allChecked =
           $checkboxes.length === $checkboxes.filter(":checked").length;
 
@@ -191,9 +204,16 @@
         self.performSync();
       });
 
-      // ESC key to close
+      // ESC key closes whichever menu-sync dialog is visible
       $(document).on("keyup", function (e) {
-        if (e.key === "Escape" && $("#lmat-sync-dialog").is(":visible")) {
+        if (e.key !== "Escape") {
+          return;
+        }
+        if (self.$errorDialog && self.$errorDialog.is(":visible")) {
+          self.$errorDialog.fadeOut(200);
+          return;
+        }
+        if (self.$syncDialog.is(":visible")) {
           self.hideDialog();
         }
       });
@@ -203,20 +223,19 @@
         "change",
         '#lmat-sync-dialog input[type="checkbox"]',
         function () {
-          var $button = $(".lmat-toggle-all");
-          var $checkboxes = $('#lmat-sync-dialog input[type="checkbox"]');
+          var $checkboxes = self.$syncCheckboxes;
           var allChecked =
             $checkboxes.length === $checkboxes.filter(":checked").length;
 
           if (allChecked) {
-            $button.text(lmatMenuSync.strings.deselectAll);
+            self.$toggleAll.text(lmatMenuSync.strings.deselectAll);
           } else {
-            $button.text(lmatMenuSync.strings.selectAll);
+            self.$toggleAll.text(lmatMenuSync.strings.selectAll);
           }
           
           // Hide error message when a language is selected
           if ($checkboxes.filter(":checked").length > 0) {
-            $(".lmat-sync-error").slideUp(200);
+            self.$syncError.slideUp(200);
           }
         }
       );
@@ -263,27 +282,28 @@
       }
 
       // Reset checkboxes
-      $('#lmat-sync-dialog input[type="checkbox"]').prop("checked", false);
+      this.$syncCheckboxes.prop("checked", false);
 
       // Reset button text to "Select All"
-      $(".lmat-toggle-all").text(lmatMenuSync.strings.selectAll);
+      this.$toggleAll.text(lmatMenuSync.strings.selectAll);
       
       // Hide error message
-      $(".lmat-sync-error").hide();
+      this.$syncError.hide();
 
       // Regenerate language list to reflect current menu's synced languages
       this.populateLanguages();
 
       // Show dialog
-      $("#lmat-sync-dialog").fadeIn(200);
+      this.$syncDialog.fadeIn(200);
     },
 
     /**
      * Show error dialog
      */
     showErrorDialog: function (message) {
-      // Create error dialog if it doesn't exist
-      if (!$("#lmat-error-dialog").length) {
+      var self = this;
+
+      if (!this.$errorDialog || !this.$errorDialog.length) {
         var errorDialogHTML =
           '<div id="lmat-error-dialog" style="display:none;">' +
           '<div class="lmat-sync-overlay"></div>' +
@@ -299,30 +319,26 @@
 
         $("body").append(errorDialogHTML);
 
-        // Bind close events
+        this.$errorDialog = $("#lmat-error-dialog");
+        this.$errorMessage = this.$errorDialog.find(".lmat-error-message");
+        this.$errorClose = this.$errorDialog.find(".lmat-error-close");
+
         $(document).on(
           "click",
           ".lmat-error-close, #lmat-error-dialog .lmat-sync-overlay",
           function () {
-            $("#lmat-error-dialog").fadeOut(200);
+            self.$errorDialog.fadeOut(200);
           }
         );
-
-        // ESC key to close
-        $(document).on("keyup", function (e) {
-          if (e.key === "Escape" && $("#lmat-error-dialog").is(":visible")) {
-            $("#lmat-error-dialog").fadeOut(200);
-          }
-        });
       }
 
       // Set message and show dialog
-      $("#lmat-error-dialog .lmat-error-message").html(
+      this.$errorMessage.html(
         '<p style="margin: 0; font-size: 18px; line-height: 1.6; color: #d63638; font-weight: 500;">' + message + "</p>"
       );
       
       // Force close button styling
-      $("#lmat-error-dialog .lmat-error-close").css({
+      this.$errorClose.css({
         'background': 'none',
         'border': 'none',
         'font-size': '32px',
@@ -352,22 +368,22 @@
         }
       );
       
-      $("#lmat-error-dialog").fadeIn(200);
+      this.$errorDialog.fadeIn(200);
     },
 
     /**
      * Hide dialog
      */
     hideDialog: function () {
-      $("#lmat-sync-dialog").fadeOut(200);
+      this.$syncDialog.fadeOut(200);
       // Hide error message when dialog closes
-      $(".lmat-sync-error").hide();
+      this.$syncError.hide();
     },
 
     /**
      * Perform sync
      */
-    performSync: function () {
+    performSync: function () {        
       var self = this;
       var $btn = $("#lmat-sync-menu-btn");
       var menuId = $btn.data("menu-id");
@@ -375,25 +391,25 @@
 
 
       // Get selected languages
-      $('#lmat-sync-dialog input[type="checkbox"]:checked').each(function () {
+      this.$syncCheckboxes.filter(":checked").each(function () {
         selectedLangs.push($(this).val());
       });
 
 
       // Validate
       if (selectedLangs.length === 0) {
-        $(".lmat-sync-error")
+        this.$syncError
           .html(lmatMenuSync.strings.noLanguages)
           .slideDown(200);
         return;
       }
       
       // Hide error message if languages are selected
-      $(".lmat-sync-error").slideUp(200);
+      this.$syncError.slideUp(200);
 
       // Show loading
-      $(".lmat-sync-spinner").addClass("is-active");
-      var $confirmBtn = $(".lmat-sync-confirm");
+      this.$syncSpinner.addClass("is-active");
+      var $confirmBtn = this.$syncConfirm;
       $confirmBtn.prop("disabled", true);
       $confirmBtn.data("original-text", $confirmBtn.text()); // Store original text
       $confirmBtn.text(lmatMenuSync.strings.syncing); // Change to "Syncing..."
@@ -491,8 +507,8 @@
           self.showResult("error", errorMsg);
         },
         complete: function () {
-          $(".lmat-sync-spinner").removeClass("is-active");
-          var $confirmBtn = $(".lmat-sync-confirm");
+          self.$syncSpinner.removeClass("is-active");
+          var $confirmBtn = self.$syncConfirm;
           $confirmBtn.prop("disabled", false);
           // Restore original button text
           var originalText = $confirmBtn.data("original-text");

@@ -183,12 +183,10 @@ class BlockFilterSorter {
         }
       })
       .catch(error => {
-        console.log(error);
         if (error.data.message) {
-          this.appendMessageNotice(data.data.message, 'error');
+          this.appendMessageNotice(error.data.message, 'error');
         }
         saveBtns.removeClass('saving').html(this.saveButtonText, true);
-        console.error(error);
       });
   }
 

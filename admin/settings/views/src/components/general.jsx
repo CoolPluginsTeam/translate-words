@@ -492,7 +492,7 @@ const General = ({ data, setData }) => {
         <>
             <Container className='bg-white p-10 rounded-lg shadow-sm' cols="1" containerType='grid'>
                 <Container className='flex items-center'>
-                    <Container.Item className='flex w-full justify-between px-4 gap-6'>
+                    <Container.Item className='flex flex-wrap items-center w-full justify-between px-4 gap-6'>
                         <h1 className='font-bold'>General Settings</h1>
                         <Button
                             disabled={handleButtonDisabled || isSaving}
@@ -518,7 +518,7 @@ const General = ({ data, setData }) => {
                         </Label>
                         <Label variant='help'>{__('Decide how your website’s URLs will display different languages for visitors.', 'translate-words')}</Label>
                     </Container.Item>
-                    <Container cols="2" containerType='grid'>
+                    <Container containerType='grid' className='grid-cols-1 xl:grid-cols-2 gap-4'>
                         <Container.Item >
                             <RadioButton.Group
                                 columns={1}
@@ -604,6 +604,7 @@ const General = ({ data, setData }) => {
                                 forceLang === 1 &&
                                 <RadioButton.Group
                                     columns={1}
+                                    className="break-all"
                                     size="sm">
                                     {
                                         directoryNamesLinks.map((checkbox, index) => (
@@ -642,7 +643,7 @@ const General = ({ data, setData }) => {
                         <p>{__("Choose the custom post types you want to enable for translation. For example, if you have a 'Portfolio' post type, check the box to enable it for translation.", 'translate-words')}</p>
                        </div>
                         {AvailablePostTypes.length > 0 && (
-                            <div className='flex justify-end gap-2' style={{paddingRight: '30%'}}>
+                            <div className='flex justify-end gap-2 pr-0 lg:pr-[30%]'>
                                 <Label size='sm' className='cursor-pointer items-start' htmlFor="select-all-post-types">
                                     {__('Select All', 'translate-words')}
                                 </Label>

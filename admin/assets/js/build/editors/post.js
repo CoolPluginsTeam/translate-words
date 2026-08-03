@@ -234,6 +234,56 @@ var getSettings = function getSettings() {
     translations_table: {}
   };
 };
+
+/**
+ * Returns the language of the currently edited post.
+ * Falls back to the lang/new_lang URL parameter when the post has no language yet.
+ *
+ * @return {string} Language slug, or empty string when unknown.
+ */
+var getCurrentLanguage = function getCurrentLanguage() {
+  var _settings$lang;
+  var settings = getSettings();
+  if (settings !== null && settings !== void 0 && (_settings$lang = settings.lang) !== null && _settings$lang !== void 0 && _settings$lang.slug) {
+    return settings.lang.slug;
+  }
+  var params = new URLSearchParams(window.location.search);
+  return params.get('lang') || params.get('new_lang') || '';
+};
+
+/**
+ * Filters REST API requests for translatable entities (categories, tags, etc.)
+ * to add the current post language, so the editor only lists terms in that language.
+ *
+ * `lmatFilteredRoutes` is provided by PHP via Linguator_Filter_REST_Routes::add_inline_script().
+ */
+external_wp_apiFetch_namespaceObject.use(function (options, next) {
+  // `options.url` means a direct (non-REST) call, and we need the filtered routes list.
+  // eslint-disable-next-line no-undef
+  if ('undefined' !== typeof options.url || 'undefined' === typeof lmatFilteredRoutes) {
+    return next(options);
+  }
+  var cleanPath = options.path.split('?')[0].replace(/^\/+|\/+$/g, '');
+  // eslint-disable-next-line no-undef
+  var isFiltered = Object.values(lmatFilteredRoutes).some(function (path) {
+    return cleanPath === path;
+  });
+  if (!isFiltered) {
+    return next(options);
+  }
+  var lang = getCurrentLanguage();
+  if (!lang) {
+    return next(options);
+  }
+  if ('undefined' === typeof options.data || null === options.data) {
+    // GET request: add the language to the query string.
+    options.path += (options.path.indexOf('?') >= 0 ? '&lang=' : '?lang=') + lang;
+  } else {
+    // POST/PUT request: add the language to the body.
+    options.data.lang = lang;
+  }
+  return next(options);
+});
 var LanguageSection = function LanguageSection(_ref) {
   var _select, _select$getCurrentPos;
   var lang = _ref.lang,

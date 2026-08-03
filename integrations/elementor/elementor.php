@@ -8,10 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-
-use Linguator\Frontend\Controllers\Linguator_Frontend;
 use Linguator\Includes\Capabilities\Capabilities;
-use Linguator\Includes\Other\Linguator_Model;
 use WP_Error;
 use WP_REST_Request;
 

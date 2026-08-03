@@ -340,19 +340,90 @@ function linguator_content_path_to_url( $file ) {
 }
 
 /**
- * Optional site-local JSON config from `LMAT_LOCAL_DIR/lmat-config.json`.
- * Populated on `plugins_loaded` priority 0; returns an empty array before that hook runs.
+ * Translation providers allowed in Linguator settings / workflows.
  *
- * @return array<string, mixed>
+ * WP &lt; 7.0: Google + Chrome only.
+ * WP 7.0+: Google + Chrome + Gemini.
+ *
+ * @return string[]
  */
-function linguator_get_local_config() {
-	if ( isset( $GLOBALS['lmat_local_config'] ) && is_array( $GLOBALS['lmat_local_config'] ) ) {
-		return $GLOBALS['lmat_local_config'];
+function linguator_get_allowed_ai_providers() {
+	$allowed = array( 'chrome_local_ai', 'edge_local_ai', 'google' );
+
+	global $wp_version;
+	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {
+		$allowed[] = 'gemini';
 	}
 
-	return array();
+	/**
+	 * Filter which AI translation providers Linguator may expose.
+	 *
+	 * @param string[] $allowed Provider keys.
+	 */
+	return array_values( array_unique( (array) apply_filters( 'linguator_allowed_ai_providers', $allowed ) ) );
 }
 
-function linguator_is_wp_ai_client_exist(){
-	return function_exists('wp_ai_client_prompt') && class_exists('WordPress\AiClient\AiClient');
+/**
+ * Whether a given AI translation provider is currently allowed.
+ *
+ * @param string $provider Provider key (google|chrome_local_ai|gemini).
+ * @return bool
+ */
+function linguator_is_ai_provider_allowed( $provider ) {
+	return in_array( (string) $provider, linguator_get_allowed_ai_providers(), true );
+}
+
+/**
+ * Shared Cool Plugins CPFM opt-in choice (same category as LocoAI / AutoPoly).
+ *
+ * Falls back to the legacy `cpfm_opt_in_choice_lmat` option and migrates it once.
+ *
+ * @return string|false `yes`, `no`, or false if the user has not chosen yet.
+ */
+function linguator_get_cpfm_opt_in_choice() {
+	$choice = get_option( 'cpfm_opt_in_choice_cool_translations' );
+
+	if ( false !== $choice ) {
+		return $choice;
+	}
+
+	$legacy = get_option( 'cpfm_opt_in_choice_lmat' );
+	if ( false !== $legacy ) {
+		update_option( 'cpfm_opt_in_choice_cool_translations', $legacy );
+		return $legacy;
+	}
+
+	return false;
+}
+
+/**
+ * Enqueue shared DataTables + custom data-table assets (single handles for all admin screens).
+ *
+ * @return string Script handle used for wp_localize_script (lmat-custom-data-table).
+ */
+function linguator_enqueue_datatable_assets() {
+	wp_enqueue_script(
+		'lmat-datatable-script',
+		plugins_url( 'admin/assets/js/dataTables.min.js', LINGUATOR_ROOT_FILE ),
+		array(),
+		LINGUATOR_VERSION,
+		true
+	);
+
+	wp_enqueue_style(
+		'lmat-custom-data-table',
+		plugins_url( 'admin/assets/css/lmat-custom-data-table.min.css', LINGUATOR_ROOT_FILE ),
+		array(),
+		LINGUATOR_VERSION
+	);
+
+	wp_enqueue_script(
+		'lmat-custom-data-table',
+		plugins_url( 'admin/assets/js/lmat-custom-data-table.js', LINGUATOR_ROOT_FILE ),
+		array( 'lmat-datatable-script' ),
+		LINGUATOR_VERSION,
+		true
+	);
+
+	return 'lmat-custom-data-table';
 }

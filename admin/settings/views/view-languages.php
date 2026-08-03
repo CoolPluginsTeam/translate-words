@@ -13,6 +13,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 // retrieve errors from transient
 // add them back to settings errors
 // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+if ( isset($header) && $header instanceof \Linguator\Settings\Header\Header ) {
+	$header->header();
+}
+
 $transient_errors = get_transient( 'lmat_settings_errors' );
 if ( ! empty( $transient_errors ) && is_array( $transient_errors ) ) {
 	foreach ( $transient_errors as $error ) {
