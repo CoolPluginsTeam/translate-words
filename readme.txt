@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 7.2
-Stable tag: 2.1.9
+Stable tag: 2.1.10
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -189,6 +189,10 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
 == Changelog ==
+
+= Version 2.1.10 | 03 August 2026 =
+* Improved: Code Improvements & Optimization
+* Added: New Translation Provider - Edge AI for Edge Browser
 
 = Version 2.1.9 | 30 June 2026 =
 * Fixed: Validation issue of Google Gemini API key.
