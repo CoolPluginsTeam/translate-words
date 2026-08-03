@@ -188,7 +188,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
 * **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
-**Legacy Version:** You can download the legacy code of Translate Words that was removed in recent updates from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
+**Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.9 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
 == Changelog ==
 
