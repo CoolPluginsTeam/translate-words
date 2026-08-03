@@ -99,16 +99,22 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 			$inner_nav_link_blocks = array();
 			$top_level_lang        = reset( $switcher_elements );
 			foreach ( $switcher_elements as $switcher_element ) {
+				if ( $switcher_element['current_lang'] && ! $attributes['hide_current'] ) {
+					$top_level_lang = $switcher_element;
+				}
+			}
+
+			foreach ( $switcher_elements as $switcher_element ) {
+				if ( $switcher_element['slug'] === $top_level_lang['slug'] ) {
+					continue; // Skip the active language so it's not repeated in the dropdown list
+				}
+
 				$nav_link_block_args = array(
 					'blockName' => 'core/navigation-link',
 					'attrs'     => $this->linguator_get_core_block_attributes( $attributes, $switcher_element ),
 				);
 
 				$inner_nav_link_blocks[] = new \WP_Block( $nav_link_block_args, $block->context );
-
-				if ( $switcher_element['current_lang'] && ! $attributes['hide_current'] ) {
-					$top_level_lang = $switcher_element;
-				}
 			}
 
 			$attributes               = $this->linguator_get_core_block_attributes( $attributes, $top_level_lang );

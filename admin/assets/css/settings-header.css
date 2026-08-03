@@ -19,14 +19,10 @@
     width:100%;
 }
 .toplevel_page_lmat .show-settings:not(.screen-meta-active){
-    margin-top:63px;
-
 }
 .toplevel_page_lmat .show-settings.screen-meta-active{
-    margin-top:0;
 }
 .toplevel_page_lmat #screen-meta{
-    margin-top:65px;
     margin-right:0;
 }
 .toplevel_page_lmat #wpbody{

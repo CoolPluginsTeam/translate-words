@@ -1,5 +1,94 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { __, sprintf } from '@wordpress/i18n';
+
+function CopyableCode({ text }) {
+	const [copied, setCopied] = useState(false);
+	const timeoutRef = useRef(null);
+
+	const handleCopy = () => {
+		const onSuccess = () => {
+			setCopied(true);
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+			timeoutRef.current = setTimeout(() => setCopied(false), 2000);
+		};
+
+		if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopyTextToClipboard(text, onSuccess));
+		} else {
+			fallbackCopyTextToClipboard(text, onSuccess);
+		}
+	};
+
+	const fallbackCopyTextToClipboard = (text, onSuccess) => {
+		const textArea = document.createElement("textarea");
+		textArea.value = text;
+		
+		// Avoid scrolling to bottom
+		textArea.style.top = "0";
+		textArea.style.left = "0";
+		textArea.style.position = "fixed";
+
+		document.body.appendChild(textArea);
+		textArea.focus();
+		textArea.select();
+
+		try {
+			const successful = document.execCommand('copy');
+			if (successful) {
+				onSuccess();
+			}
+		} catch (err) {
+			console.error('Fallback: Oops, unable to copy', err);
+		}
+
+		document.body.removeChild(textArea);
+	};
+
+	return (
+		<span style={{ position: 'relative', display: 'inline-block' }}>
+			<code
+				onClick={handleCopy}
+				style={{ cursor: 'pointer', transition: 'opacity 0.2s', padding: '2px 6px', background: '#e5e7eb', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+				onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.7')}
+				onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+				title={__('Click to copy', 'translate-words')}
+			>
+				<span>{text}</span>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.8 }}>
+					<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+					<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+				</svg>
+			</code>
+			{copied && (
+				<span style={{
+					position: 'absolute',
+					bottom: '120%',
+					left: '50%',
+					transform: 'translateX(-50%)',
+					backgroundColor: '#1f2937',
+					color: '#fff',
+					padding: '4px 8px',
+					borderRadius: '4px',
+					fontSize: '12px',
+					whiteSpace: 'nowrap',
+					zIndex: 9999,
+					boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+				}}>
+					{__('Copied to clipboard', 'translate-words')}
+					<span style={{
+						position: 'absolute',
+						top: '100%',
+						left: '50%',
+						transform: 'translateX(-50%)',
+						borderWidth: '5px',
+						borderStyle: 'solid',
+						borderColor: '#1f2937 transparent transparent transparent'
+					}}></span>
+				</span>
+			)}
+		</span>
+	);
+}
 
 /**
  * Chrome Translator API compatibility notice (shared by settings + setup wizard).
@@ -124,7 +213,7 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 							</li>
 							<li>
 								{sprintf(__('Or add your site to %s’s “insecure origins treated as secure”.', 'translate-words'), browserName)}{' '}
-								<code>{scheme}://flags/#unsafely-treat-insecure-origin-as-secure</code>
+								<CopyableCode text={`${scheme}://flags/#unsafely-treat-insecure-origin-as-secure`} />
 							</li>
 						</ol>
 					</>
@@ -140,7 +229,7 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
 							</li>
 							<li>
 								{sprintf(__('Open this URL in a new %s tab:', 'translate-words'), browserName)}{' '}
-								<code>{scheme}://flags/#translation-api</code>
+								<CopyableCode text={`${scheme}://flags/#translation-api`} />
 							</li>
 							<li>
 								{__('Set “Experimental translation API” to Enabled.', 'translate-words')}
@@ -154,7 +243,7 @@ export function ChromeLocalAINotice({ className = '', style: extraStyle = {}, is
                                     : (
                                         <>
                                             {__('To install the language pack, open a new tab and paste this URL:', 'translate-words')}{' '}
-                                            <code>{scheme}://on-device-translation-internals</code>
+                                            <CopyableCode text={`${scheme}://on-device-translation-internals`} />
                                         </>
                                     )}
                             </li>

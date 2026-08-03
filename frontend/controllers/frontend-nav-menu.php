@@ -147,6 +147,10 @@ class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 
 				$i = 0; // for incrementation of menu order only in case of dropdown
 				foreach ( $the_languages as $lang ) {
+					// In a dropdown, the parent item is the current language, so we don't need it in the submenu list.
+					if ( ! empty( $options['dropdown'] ) && $lang['current_lang'] ) {
+						continue;
+					}
 					++$i;
 					$lang_item = clone $item;
 					$lang_item->ID = $lang_item->ID . '-' . $lang['slug']; // A unique ID

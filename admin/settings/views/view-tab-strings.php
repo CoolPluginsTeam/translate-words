@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Admin\Controllers\Linguator_Admin_Base;
 ?>
 <div class="form-wrap">
-	<?php $header && $header instanceof \Linguator\Settings\Header\Header && $header->header(); ?>
 	<form id="string-translation" method="post" action="<?php echo esc_url( add_query_arg( 'noheader', 'true' ) ); ?>">
 		<input type="hidden" name="lmat_action" value="string-translation" />
 		<?php

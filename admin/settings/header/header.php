@@ -183,6 +183,15 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			echo '</div>';
 			echo '</div>';
 			echo '</div>';
+			echo '<script>
+				(function() {
+					var header = document.getElementById("lmat-settings-header");
+					var wpbodyContent = document.getElementById("wpbody-content");
+					if (header && wpbodyContent) {
+						wpbodyContent.insertBefore(header, wpbodyContent.firstChild);
+					}
+				})();
+			</script>';
 		}
 
 		/**

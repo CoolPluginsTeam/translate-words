@@ -304,6 +304,11 @@
             font-weight: 600;
             text-transform: capitalize;
         }
+
+        .dt-search input[type="search"]:focus {
+            outline: none;
+            box-shadow: none;
+        }
     }
 }
 
