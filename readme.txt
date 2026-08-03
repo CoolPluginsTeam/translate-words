@@ -188,11 +188,14 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 * **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
 * **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
+**Legacy Version:** You can download the legacy code of Translate Words that was removed in recent updates from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
+
 == Changelog ==
 
 = Version 2.1.10 | 03 August 2026 =
 * Added: New Translation Provider - Edge AI for Edge Browser
 * Improved: Code Improvements & Optimization
+* Removed: Deprecated Translate Words legacy functionality
 
 = Version 2.1.9 | 30 June 2026 =
 * Fixed: Validation issue of Google Gemini API key.
