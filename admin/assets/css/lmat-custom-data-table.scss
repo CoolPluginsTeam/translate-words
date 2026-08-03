@@ -39,6 +39,13 @@
         }
     }
 
+    select:focus,
+    input[type="text"]:focus,
+    input[type="search"]:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
     &.lmat-custom-fields {
 
         .lmat-save-custom-fields {
@@ -303,11 +310,6 @@
             font-size: 15px;
             font-weight: 600;
             text-transform: capitalize;
-        }
-
-        .dt-search input[type="search"]:focus {
-            outline: none;
-            box-shadow: none;
         }
     }
 }
