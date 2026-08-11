@@ -54,10 +54,14 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 * **WooCommerce Translation:** Translate WooCommerce product titles, descriptions, categories, and other customer-facing content. 
 
 * **ACF & Custom Fields Support:** Translate content stored in Advanced Custom Fields (ACF) and other WordPress custom fields while keeping the original field structure intact.
+
 * **Custom Post Type Translation:** Translate custom post types created by themes or plugins, including portfolios, services, testimonials, listings, and other custom content.
+
 * **SEO Plugin Compatibility:** Linguator works with Rank Math SEO and Yoast SEO, allowing you to translate supported SEO titles, meta descriptions, and other SEO data for each language.
+
 * **Google Gemini AI Integration:**  Translate your website using advanced Google Gemini AI technology with better context and natural language accuracy. (available for WordPress 7.0+).
 
+**Trusted by 80,000+ users worldwide** - Linguator is built by experts in AI translation  the same team behind [**LocoAI – Auto Translate for Loco Translate**](https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate).
 With [**580+ five-star reviews**](https://wordpress.org/plugins/automatic-translator-addon-for-loco-translate/#reviews), our plugins are proven to deliver quality and user satisfaction.
 
 ### Perfect For
