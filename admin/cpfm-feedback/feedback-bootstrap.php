@@ -37,7 +37,6 @@ class Feedback_Bootstrap {
 
 		$this->maybe_boot_notice();
 
-		add_action( 'cpfm_register_notice', array( $this, 'register_notice' ) );
 		add_action( 'cpfm_after_opt_in_lmat', array( $this, 'after_opt_in' ) );
 		add_action( 'add_option_cpfm_opt_in_choice_cool_translations', array( $this, 'sync_lmat_feedback_data_on_add' ), 10, 2 );
 		add_action( 'update_option_cpfm_opt_in_choice_cool_translations', array( $this, 'sync_lmat_feedback_data_on_update' ), 10, 2 );
@@ -60,34 +59,6 @@ class Feedback_Bootstrap {
 		if ( ! class_exists( 'CPFM_Feedback_Notice', false ) ) {
 			class_alias( CPFM_Feedback_Notice::class, 'CPFM_Feedback_Notice' );
 		}
-	}
-
-	/**
-	 * Register Linguator notice with the shared CPFM feedback system.
-	 *
-	 * @return void
-	 */
-	public function register_notice() {
-		if ( ! class_exists( 'CPFM_Feedback_Notice' ) || ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		$notice = array(
-			'title'          => __( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'translate-words' ),
-			'message'        => __( 'Help us make this plugin more compatible with your site by sharing non-sensitive site data.', 'translate-words' ),
-			'pages'          => array( 'lmat_settings' ),
-			'always_show_on' => array( 'lmat_settings' ),
-			'plugin_name'    => 'lmat',
-		);
-
-		\CPFM_Feedback_Notice::cpfm_register_notice( 'cool_translations', $notice );
-
-		if ( ! isset( $GLOBALS['cool_plugins_feedback'] ) ) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-			$GLOBALS['cool_plugins_feedback'] = array();
-		}
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-		$GLOBALS['cool_plugins_feedback']['cool_translations'][] = $notice;
 	}
 
 	/**

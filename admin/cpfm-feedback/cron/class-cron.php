@@ -26,7 +26,8 @@ if (!class_exists('Linguator_cronjob')) {
             $feedback_url = LINGUATOR_FEEDBACK_API . 'wp-json/coolplugins-feedback/v1/site';
             require_once LINGUATOR_DIR . '/admin/feedback/admin-feedback.php';
             
-            $extra_data         = new \Linguator\Admin\Feedback\Linguator_Admin_Feedback();
+            $linguator_instance = function_exists( 'LMAT' ) ? LMAT() : ( isset( $GLOBALS['linguator'] ) ? $GLOBALS['linguator'] : null );
+            $extra_data         = new \Linguator\Admin\Feedback\Linguator_Admin_Feedback( $linguator_instance );
             $extra_data_details = $extra_data->cpfm_get_user_info();
             
             $server_info    = $extra_data_details['server_info'];

@@ -34,6 +34,15 @@ class Feedback_Data extends Abstract_Boolean {
 	}
 
 	/**
+	 * Returns the default value.
+	 *
+	 * @return bool
+	 */
+	protected function get_default() {
+		return true;
+	}
+
+	/**
 	 * Returns the description used in the JSON schema.
 	 *
 	 *  
