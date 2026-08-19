@@ -41,10 +41,6 @@ class Linguator_Admin_Feedback {
 		$this->options   = ( $linguator && isset( $linguator->options ) )
 			? $linguator->options
 			: get_option( 'linguator' );
-
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
-		add_action( 'admin_head', array( $this, 'show_deactivate_feedback_popup' ) );
-		add_action( 'wp_ajax_' . $this->plugin_slug . '_submit_deactivation_response', array( $this, 'submit_deactivation_response' ) );
 	}
 
     /*

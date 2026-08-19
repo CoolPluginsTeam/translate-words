@@ -93,10 +93,6 @@ class Linguator {
 	 */
 	public $cpfm_feedback_notice;
 
-	/**
-	 * @var Linguator_cronjob|null
-	 */
-	public $linguator_cronjob;
 
 	/**
 	 * @var Options|null
@@ -142,7 +138,6 @@ class Linguator {
 
 		// Initialize feedback functionality
 		$this->feedback = new \Linguator\Admin\Feedback\Linguator_Admin_Feedback( $this );
-		$this->linguator_cronjob = new \Linguator\Admin\cpfm_feedback\cron\Linguator_cronjob();
 		$this->cpfm_feedback_notice = ( new \Linguator\Admin\cpfm_feedback\Feedback_Bootstrap() )->register_hooks();
 
 		/*
