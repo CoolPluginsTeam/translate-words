@@ -608,7 +608,7 @@ class Linguator {
 	 * Check if the user consented to telemetry.
 	 */
 	public function has_usage_tracking_consent() {
-		return 'yes' === get_option( 'cpfm_opt_in_choice_cool_translations' );
+		return 'no' !== get_option( 'cpfm_opt_in_choice_cool_translations' );
 	}
 
 	/**
