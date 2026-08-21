@@ -53,7 +53,7 @@ const ElementorSaveSource = (content) => {
         const currentKey = ids[ids.length - 1];
         // Keys that are always translatable for atomic widgets even if they don't
         // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
-        const validAtomicKeys = ['placeholder', 'paragraph'];
+        const validAtomicKeys = ['placeholder', 'paragraph', 'override_value'];
 
         if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
             return;
@@ -66,6 +66,21 @@ const ElementorSaveSource = (content) => {
         } else if(element?.$$type === 'string'){
             if(element.value && '' !== element.value){
                 translateContent([...ids, 'value'], element.value);
+            }
+        }
+    }
+
+    const storeComponentInstanceOverrides = (element, ids=[]) => {
+        if (element?.$$type === 'component-instance' && element.value && element.value.overrides) {
+            const overrides = element.value.overrides;
+            if (overrides.$$type === 'overrides' && Array.isArray(overrides.value)) {
+                overrides.value.forEach((override, overrideIndex) => {
+                    if (override.$$type === 'override' && override.value && override.value.override_value) {
+                        const overrideValue = override.value.override_value;
+                        const baseIds = [...ids, 'value', 'overrides', 'value', overrideIndex, 'value', 'override_value'];
+                        storeAtomicWidgetStrings(overrideValue, baseIds);
+                    }
+                });
             }
         }
     }
@@ -83,7 +98,9 @@ const ElementorSaveSource = (content) => {
                     return; // Skip this property and continue to the next one
                 }
 
-                if (subStringsToCheck(key) &&
+                if (key === 'component_instance') {
+                    storeComponentInstanceOverrides(settings[key], [...ids, 'settings', key]);
+                } else if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
                     // Plain string setting — classic Elementor widget field.
                     translateContent([...ids, 'settings', key],settings[key]);
@@ -121,7 +138,8 @@ const ElementorSaveSource = (content) => {
         }
 
         // If there are nested elements, process them recursively
-        if (element.elements && Array.isArray(element.elements) && element.elements.length > 0) {
+        const isComponentDoc = window.lmatPageTranslationGlobal?.post_type === 'elementor_component';
+        if ((isComponentDoc || element.widgetType !== 'e-component') && element.elements && Array.isArray(element.elements) && element.elements.length > 0) {
             const runLoop=(childElement, index)=>{
                 storeWidgetStrings(childElement, index, [...ids, 'elements']);
             }

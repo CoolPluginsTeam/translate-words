@@ -61,7 +61,7 @@ class Linguator_Template_Translation {
      * @return array Modified array of post types.
      */
     public function linguator_register_supported_post_types($types, $is_settings) {
-        $custom_post_types = ['elementor_library'];
+        $custom_post_types = ['elementor_library', 'elementor_component'];
         return array_merge($types, array_combine($custom_post_types, $custom_post_types));
     }
 
@@ -216,12 +216,26 @@ class Linguator_Template_Translation {
      * @param \Elementor\Element_Base $element Element instance.
      */
     public function linguator_translate_widget_template_id($element) {
-        if ('template' !== $element->get_name()) {
+        $widget_name = $element->get_name();
+
+        if ('template' === $widget_name) {
+            $template_id = linguator_get_post($element->get_settings('template_id')) ?: $element->get_settings('template_id');
+            $element->set_settings('template_id', $template_id);
             return;
         }
 
-        $template_id = linguator_get_post($element->get_settings('template_id')) ?: $element->get_settings('template_id');
-        $element->set_settings('template_id', $template_id);
+        if ('e-component' === $widget_name) {
+            $component_instance = $element->get_settings('component_instance');
+            if (is_array($component_instance) && isset($component_instance['value']['component_id']['value'])) {
+                $component_id = absint($component_instance['value']['component_id']['value']);
+                $translated_component_id = linguator_get_post($component_id);
+                if ($translated_component_id && $translated_component_id !== $component_id) {
+                    $component_instance['value']['component_id']['value'] = $translated_component_id;
+                    $element->set_settings('component_instance', $component_instance);
+                }
+            }
+            return;
+        }
     }
 
     /**
