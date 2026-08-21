@@ -168,10 +168,8 @@ class Linguator_Admin_Notices {
 		if ( isset( $_GET['lmat-hide-notice'], $_GET['_lmat_notice_nonce'] ) ) {
 			$notice = sanitize_key( wp_unslash( $_GET['lmat-hide-notice'] ) );
 			check_admin_referer( $notice, '_lmat_notice_nonce' );
-			// Handle all review related notices
-			if (in_array($notice, array('already-rated', 'not-interested'))) {
-				self::dismiss('review'); 
-			} elseif ( 'wizard' === $notice ) {
+			// Handle setup wizard notices
+			if ( 'wizard' === $notice ) {
 				update_option( 'lmat_setup_complete', true );
 				self::dismiss( $notice );
 
@@ -205,13 +203,6 @@ class Linguator_Admin_Notices {
 		// Check if we're on the specific ?page=lmat page and should suppress notices
 		if ( current_user_can( 'manage_options' ) ) {
 			
-			if ( $this->can_display_notice( 'review' ) ) {
-				if(class_exists(Linguator_Translation_Dashboard::class)){
-					$review_url = 'https://wordpress.org/support/plugin/translate-words/reviews/#new-post';
-					Linguator_Translation_Dashboard::review_notice('lmat', 'Linguator', esc_url($review_url));
-				}
-			}
-
 			// Custom notices
 			foreach ( static::linguator_get_notices() as $notice => $html ) {
 				if ( $this->can_display_notice( $notice ) && ! static::linguator_is_dismissed( $notice ) ) {

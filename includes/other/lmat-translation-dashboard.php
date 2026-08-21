@@ -101,9 +101,7 @@ if(!class_exists('Linguator_Translation_Dashboard')){
             return self::$init;
         }
 
-        public function __construct(){
-            add_action('wp_ajax_lmat_hide_review_notice', array($this, 'linguator_hide_review_notice'));
-        }
+        public function __construct(){}
 
         /**
          * Store options
@@ -209,96 +207,6 @@ if(!class_exists('Linguator_Translation_Dashboard')){
             }
 
             return $data;
-        }
-
-        public static function ctp_enqueue_assets(){
-            if(function_exists('wp_style_is') && !wp_style_is('lmat-review-style', 'enqueued')){
-                wp_enqueue_style('lmat-review-style', plugins_url('admin/assets/css/cpt-dashboard.css', LINGUATOR_ROOT_FILE), array(), LINGUATOR_VERSION, 'all');
-                wp_enqueue_script('lmat-review-script', plugins_url('admin/assets/js/cpt-dashboard.js', LINGUATOR_ROOT_FILE), array('jquery'), LINGUATOR_VERSION, true);
-            }
-        }
-
-        public static function format_number_count($number){
-            if ($number >= 1000000) {
-                return round($number / 1000000, 1) . 'M';
-            } elseif ($number >= 1000) {
-                return round($number / 1000, 1) . 'K';
-            }
-            return $number;
-        }
-
-        public static function review_notice($prefix, $plugin_name, $url){
-            if(self::linguator_hide_review_notice_status($prefix)){
-                return;
-            }
-            
-            $translation_data = self::get_translation_data($prefix);
-            
-            $total_character_count = is_array($translation_data) && isset($translation_data['total_character_count']) ? $translation_data['total_character_count'] : 0;
-            
-            if($total_character_count < 50000){ 
-                return;
-            }
-            
-            $total_character_count = self::format_number_count($total_character_count);
-            
-            self::ctp_enqueue_assets();
-
-            $message = sprintf(
-                // translators: %s: plugin name
-                '%s! %s <strong>%s</strong> %s <br>%s %s <a href="https://coolplugins.net/?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=author_page&utm_content=review_notice" target="_blank"><strong>Cool Plugins</strong></a>!<br/>',
-                __('Thanks for using', 'translate-words') . ' <b>' . $plugin_name . '</b>',
-                __('You\'ve translated', 'translate-words'),
-                esc_html($total_character_count) . ' ' . __('characters', 'translate-words'),
-                __('so far using our plugin!', 'translate-words'),
-                __('If our plugin saves your time and effort, Please give us a quick rating,', 'translate-words'),
-                __('it works as a boost for us to keep working on more', 'translate-words')
-            );
-
-            $prefix = sanitize_key($prefix);
-            $message = wp_kses_post($message);
-            $url = esc_url($url);
-            $plugin_name = sanitize_text_field($plugin_name);
-
-            $allowed = [
-                'div' => [ 'class' => true, 'data-prefix' => true, 'data-nonce' => true ],
-                'p' => [],
-                'a' => [ 'href' => true, 'target' => true, 'class' => true ],
-                'button' => [ 'class' => true ],
-            ];
-
-            $html = '<div class="notice notice-info is-dismissible cpt-review-notice">';
-            $html .= '<div class="cpt-review-notice-content"><p>'.$message.'</p><div class="lmat-review-notice-dismiss" data-prefix="'.$prefix.'" data-nonce="'.wp_create_nonce('lmat_hide_review_notice').'"><a href="'. $url .'" target="_blank" class="button button-primary">Rate Now! ★★★★★</a><button class="button cpt-already-reviewed">'.__('Already Reviewed', 'translate-words').'</button><button class="button cpt-not-interested">'.__('Not Interested', 'translate-words').'</button></div></div></div>';
-                
-            echo wp_kses($html, $allowed);
-        }
-
-        public static function linguator_hide_review_notice_status($prefix){
-            $review_notice_dismissed = get_option('cpt_review_notice_dismissed', array());
-            return isset($review_notice_dismissed[$prefix]) ? $review_notice_dismissed[$prefix] : false;
-        }
-
-        public function linguator_hide_review_notice(){
-            if(!current_user_can('manage_options')){
-                wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
-                wp_die( '0', 403 );
-            }
-
-            if ( ! check_ajax_referer( 'lmat_hide_review_notice', 'nonce', false ) ) {
-                wp_send_json_error( __( 'Invalid nonce', 'translate-words' ), 400 );
-                wp_die( '0', 400 );
-            }
-
-            if ( ! isset( $_POST['prefix'] ) ) {
-                wp_send_json_error( __( 'Missing prefix', 'translate-words' ), 400 );
-                wp_die( '0', 400 );
-            }
-
-            $prefix = sanitize_key( wp_unslash( $_POST['prefix'] ) );
-            $review_notice_dismissed = get_option('cpt_review_notice_dismissed', array());
-            $review_notice_dismissed[$prefix] = true;
-            update_option('cpt_review_notice_dismissed', $review_notice_dismissed);
-            wp_send_json_success();
         }
     }
 }
