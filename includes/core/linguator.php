@@ -466,7 +466,7 @@ class Linguator {
 					),
 					'trigger'     => array(
 						'type'  => 'install_age',
-						'hours' => 0,
+						'hours' => 24,
 					),
 					'notice'      => array(
 						'enabled'        => true,

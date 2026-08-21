@@ -893,9 +893,10 @@ class Settings extends Abstract_Controller {
 	private function handle_cron_scheduling() {
 		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
 		$lmat_feedback_data = (bool) $this->options->get( 'lmat_feedback_data' );
+		$is_setup_complete  = get_option( 'lmat_setup_complete' );
 		
 		// Determine if cron should be scheduled based on the conditions
-		$should_schedule_cron = ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data );
+		$should_schedule_cron = ( $is_setup_complete && ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data ) );
 		
 		// Schedule or remove the cron job
 		if ( $should_schedule_cron ) {
