@@ -174,6 +174,18 @@ class Linguator_Admin_Notices {
 			} elseif ( 'wizard' === $notice ) {
 				update_option( 'lmat_setup_complete', true );
 				self::dismiss( $notice );
+
+				$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
+				$options = get_option( 'linguator' );
+				$lmat_feedback_data = is_array( $options ) && isset( $options['lmat_feedback_data'] ) ? (bool) $options['lmat_feedback_data'] : true;
+				if ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data ) {
+					if ( class_exists( '\\CPFM_Usage_Cron' ) ) {
+						\CPFM_Usage_Cron::cpfm_schedule_event( 'lmat_extra_data_update' );
+						if ( 'no' !== $cpfm_opt_in_choice ) {
+							do_action( 'lmat_extra_data_update' );
+						}
+					}
+				}
 			} else {
 				self::dismiss( $notice );
 			}

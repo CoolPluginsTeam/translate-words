@@ -391,12 +391,16 @@ class Settings extends Abstract_Controller {
 		
 		$stored_bool = $this->sanitize_boolean_param( $stored_value );
 		if ( $result !== false || $stored_bool === $complete ) {
-                if ( $complete && 'yes' === linguator_get_cpfm_opt_in_choice() ) {
-                	if ( class_exists( '\\CPFM_Usage_Cron' ) ) {
-                		\CPFM_Usage_Cron::cpfm_schedule_event( 'lmat_extra_data_update' );
-                		do_action( 'lmat_extra_data_update' );
-                	}
-			}
+				$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
+				$lmat_feedback_data = (bool) $this->options->get( 'lmat_feedback_data' );
+				if ( $complete && ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data ) ) {
+					if ( class_exists( '\\CPFM_Usage_Cron' ) ) {
+						\CPFM_Usage_Cron::cpfm_schedule_event( 'lmat_extra_data_update' );
+						if ( 'no' !== $cpfm_opt_in_choice ) {
+							do_action( 'lmat_extra_data_update' );
+						}
+					}
+				}
 			return rest_ensure_response( array(
 				'success' => true,
 				'lmat_setup_complete' => $complete,
