@@ -391,6 +391,16 @@ class Settings extends Abstract_Controller {
 		
 		$stored_bool = $this->sanitize_boolean_param( $stored_value );
 		if ( $result !== false || $stored_bool === $complete ) {
+				$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
+				$lmat_feedback_data = (bool) $this->options->get( 'lmat_feedback_data' );
+				if ( $complete && ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data ) ) {
+					if ( class_exists( '\\CPFM_Usage_Cron' ) ) {
+						\CPFM_Usage_Cron::cpfm_schedule_event( 'lmat_extra_data_update' );
+						if ( 'no' !== $cpfm_opt_in_choice ) {
+							do_action( 'lmat_extra_data_update' );
+						}
+					}
+				}
 			return rest_ensure_response( array(
 				'success' => true,
 				'lmat_setup_complete' => $complete,
@@ -492,14 +502,16 @@ class Settings extends Abstract_Controller {
 		$response['lmat_video_status'] = get_option('lmat_video_status');
 		$response['lmat_migration_completed'] = get_option('lmat_migration_completed', false);
 		$response['lmat_setup_complete'] = $this->sanitize_boolean_param( get_option( 'lmat_setup_complete', false ) );
-		// Check if CPFM opt-in choice exists (shared cool_translations category with LocoAI / AutoPoly).
-		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
-		
-		if ( $cpfm_opt_in_choice === false ) {
-			// Remove the Usage Data Sharing setting if CPFM opt-in choice doesn't exist
-			unset( $response['lmat_feedback_data'] );
+		// Check CPFM opt-in choice and feedback data option (default to true if not explicitly set)
+		$raw_options = get_option( 'linguator' );
+		$is_setup_complete = get_option( 'lmat_setup_complete' );
+		if ( is_array( $raw_options ) && array_key_exists( 'lmat_feedback_data', $raw_options ) ) {
+			$response['lmat_feedback_data'] = (bool) $raw_options['lmat_feedback_data'];
+		} elseif ( ! $is_setup_complete ) {
+			$response['lmat_feedback_data'] = true;
 		} else {
-			$response['lmat_feedback_data'] = $this->options->get( 'lmat_feedback_data' );
+			$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
+			$response['lmat_feedback_data'] = ( 'no' !== $cpfm_opt_in_choice );
 		}
 
 		// Never return raw API keys over REST; return masked values so the UI can show "configured".
@@ -846,6 +858,17 @@ class Settings extends Abstract_Controller {
 				case 'media_support':
 					$this->trigger_mass_language_assignment( $option_name, $previous_value, $new_value );
 					break;
+
+				case 'lmat_feedback_data':
+					$opt_in = (bool) $new_value;
+					update_option( 'cpfm_opt_in_choice_cool_translations', $opt_in ? 'yes' : 'no' );
+					if ( $opt_in ) {
+						if ( class_exists( '\\CPFM_Usage_Cron' ) ) {
+							\CPFM_Usage_Cron::cpfm_schedule_event( 'lmat_extra_data_update' );
+							do_action( 'lmat_extra_data_update' );
+						}
+					}
+					break;
 			}
 		}
 		
@@ -873,24 +896,11 @@ class Settings extends Abstract_Controller {
 	 */
 	private function handle_cron_scheduling() {
 		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
-		$lmat_feedback_data = $this->options->get( 'lmat_feedback_data' );
+		$lmat_feedback_data = (bool) $this->options->get( 'lmat_feedback_data' );
+		$is_setup_complete  = get_option( 'lmat_setup_complete' );
 		
 		// Determine if cron should be scheduled based on the conditions
-		$should_schedule_cron = false;
-		
-		if ( $cpfm_opt_in_choice === 'no' && $lmat_feedback_data === true ) {
-			// Case 1: CPFM is 'no' but data usage sharing is 'yes' -> schedule cron
-			$should_schedule_cron = true;
-		} elseif ( $cpfm_opt_in_choice === 'yes' && $lmat_feedback_data === false ) {
-			// Case 2: CPFM is 'yes' but data usage sharing is 'no' -> remove cron
-			$should_schedule_cron = false;
-		} elseif ( $cpfm_opt_in_choice === 'yes' && $lmat_feedback_data === true ) {
-			// Case 3: Both are 'yes' -> schedule cron
-			$should_schedule_cron = true;
-		} else {
-			// All other cases -> remove cron
-			$should_schedule_cron = false;
-		}
+		$should_schedule_cron = ( $is_setup_complete && ( 'yes' === $cpfm_opt_in_choice || $lmat_feedback_data ) );
 		
 		// Schedule or remove the cron job
 		if ( $should_schedule_cron ) {
@@ -1095,14 +1105,6 @@ class Settings extends Abstract_Controller {
 			if ( rest_is_field_included( $option, $fields ) ) {
 				$response[ $option ] = $value;
 			}
-		}
-		
-		// Apply CPFM opt-in choice logic for lmat_feedback_data
-		$cpfm_opt_in_choice = linguator_get_cpfm_opt_in_choice();
-		
-		if ( $cpfm_opt_in_choice === false ) {
-			// Remove the Usage Data Sharing setting if CPFM opt-in choice doesn't exist
-			unset( $response['lmat_feedback_data'] );
 		}
 		
 		/** @var WP_REST_Response */

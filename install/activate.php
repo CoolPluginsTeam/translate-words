@@ -113,7 +113,8 @@ class Linguator_Activate extends Linguator_Abstract_Activate {
 		flush_rewrite_rules();
 		$options = get_option( 'linguator' );
 		$lmat_feedback_data = $options['lmat_feedback_data'];
-		if ( $lmat_feedback_data === true && ! wp_next_scheduled( 'lmat_extra_data_update' ) ) {
+		$is_setup_complete = get_option( 'lmat_setup_complete' );
+		if ( $is_setup_complete && $lmat_feedback_data === true && ! wp_next_scheduled( 'lmat_extra_data_update' ) ) {
 			wp_schedule_event( time(), 'every_30_days', 'lmat_extra_data_update' );
 		}
 	}

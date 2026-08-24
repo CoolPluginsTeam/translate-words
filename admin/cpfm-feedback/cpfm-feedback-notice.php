@@ -1,58 +1,92 @@
 <?php
-namespace Linguator\Admin\cpfm_feedback;
-
 if ( ! defined( 'ABSPATH' )) exit;
 
+if ( ! class_exists( 'CPFM_Feedback_Notice' ) ) :
+
 class CPFM_Feedback_Notice {
-    
+
     private static $registered_notices = [];
-    
+
+    /**
+     * Panel-wide chrome text (header, consent copy, buttons) - NOT per
+     * category, since one panel renders every registered notice. First
+     * registrant's i18n array wins and is never overwritten, matching how
+     * title/message already work per-category. Left empty, cpfm_text()
+     * falls back to developer English rather than calling __() in here:
+     * a shared module that translates on its own behalf binds every host's
+     * copy to whichever domain THIS FILE happens to declare, which is wrong
+     * for every host except one - see the sibling CPFM_* classes' own
+     * "the host passes translated strings" contract.
+     *
+     * @var array<string, string>
+     */
+    private static $panel_i18n = [];
+
     public function __construct() {
-        
+        $this->register_hooks();
+    }
+
+    /**
+     * Wire the instance hooks. Split out of the constructor to match the
+     * boot/init pattern the sibling CPFM classes use.
+     *
+     * @return void
+     */
+    private function register_hooks() {
         add_action('admin_init', [ $this, 'cpfm_listen_for_external_notice_registration' ]);
         add_action('admin_enqueue_scripts', [ $this, 'cpfm_enqueue_assets' ]);
         add_action('wp_ajax_cpfm_handle_opt_in', [ $this, 'cpfm_handle_opt_in_choice' ]);
+
         add_action('admin_footer', [ $this, 'cpfm_render_notice_panel' ]);
-        
     }
     
     public static function cpfm_register_notice($key, $args) {
-        $key = sanitize_key((string) $key);
+        
+        if (!current_user_can('manage_options')) {
 
-        if ('' === $key || !current_user_can('manage_options')) {
             return;
         }
 
-        $args = is_array($args) ? $args : array();
-        $args = wp_parse_args($args, [
-            'title'          => '',
-            'message'        => '',
-            'pages'          => [],
-            'always_show_on' => [],
-            'plugin_name'    => '',
-        ]);
-
-        $args['title']          = sanitize_text_field($args['title']);
-        $args['message']        = wp_kses_post($args['message']);
-        $args['pages']          = array_values(array_filter(array_map('sanitize_key', (array) $args['pages'])));
-        $args['always_show_on'] = array_values(array_filter(array_map('sanitize_key', (array) $args['always_show_on'])));
-        $args['plugin_name']    = sanitize_key($args['plugin_name']);
-        
-        // First registrant owns title/pages for this shared category (same as LocoAI / AutoPoly).
-        // Later plugins only append to `plugins` so opt-in still fans out via cpfm_after_opt_in_{plugin}.
-        if (!isset(self::$registered_notices[$key])) {
-            self::$registered_notices[$key] = [
-                'title'          => $args['title'],
-                'message'        => $args['message'],
-                'pages'          => $args['pages'],
-                'always_show_on' => $args['always_show_on'],
-            ];
+        if (empty(self::$panel_i18n) && isset($args['i18n']) && is_array($args['i18n'])) {
+            self::$panel_i18n = $args['i18n'];
         }
 
+        if (!isset(self::$registered_notices[$key])) {
+            self::$registered_notices[$key] = wp_parse_args($args, [
+                'title'   => '',
+                'message' => '',
+                'pages'   => [],
+                'always_show_on' => [],
+            ]);
+        } else {
+            /*
+             * MERGE the page lists instead of keeping only the first registrant's.
+             *
+             * A consent category is shared by every addon in the family, but the
+             * screens it must appear on are not: each plugin owns its own
+             * settings page. Freezing the category config on first registration
+             * meant whichever plugin happened to load first decided the page
+             * list for everyone, and every sibling's settings screen silently
+             * lost the opt-in popup - it registered its pages and they were
+             * thrown away.
+             *
+             * Title and message still come from the first registrant: the panel
+             * shows one heading for the whole category, so last-writer-wins there
+             * would just make the copy depend on plugin load order.
+             */
+            foreach (['pages', 'always_show_on'] as $cpfm_list) {
+                $cpfm_existing = isset(self::$registered_notices[$key][$cpfm_list]) ? (array) self::$registered_notices[$key][$cpfm_list] : [];
+                $cpfm_incoming = isset($args[$cpfm_list]) ? (array) $args[$cpfm_list] : [];
+
+                self::$registered_notices[$key][$cpfm_list] = array_values(
+                    array_unique(array_merge($cpfm_existing, $cpfm_incoming))
+                );
+            }
+        }
         if(!isset(self::$registered_notices[$key]['plugins'])){
             self::$registered_notices[$key]['plugins'] = array();
         }
-        
+
         self::$registered_notices[$key]['plugins'][] = $args;
     }
     
@@ -67,14 +101,15 @@ class CPFM_Feedback_Notice {
         /**
          * Allow other plugins to register notices dynamically.
          * Example usage in other plugins:
-         * do_action('cpf_cpfm_register_notice', 'crypto', [
-         *     'title' => 'Crypto Plugin Notice',
-         *     'message' => 'This is a crypto dashboard setup notice.',
-         *     'pages' => ['dashboard', 'cpfm_'],
-         * ]);
+         * add_action('cpfm_register_notice', function() {
+         *     CPFM_Feedback_Notice::cpfm_register_notice('translations', [
+         *         'title'   => 'Linguator Plugin Notice',
+         *         'message' => 'This is a translations dashboard setup notice.',
+         *         'pages'   => ['dashboard'],
+         *     ]);
+         * });
          */
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
-        do_action('cpfm_register_notice');
+        do_action('cpfm_register_notice');//phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
     }
 
     public function cpfm_enqueue_assets() {
@@ -84,42 +119,37 @@ class CPFM_Feedback_Notice {
             return;
 
         }
+       
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not required here
-        $current_page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-    
-        // Gather all unique pages from registered notices
-        $allowed_pages = [];
-        
-        foreach (self::$registered_notices as $notice) {
-            if (!empty($notice['pages']) && is_array($notice['pages'])) {
-                $allowed_pages = array_merge($allowed_pages, $notice['pages']);
-            }
-        }
-    
-        // Early return if not needed
-        if (!in_array($current_page, array_unique($allowed_pages))) {
+       $current_page   = isset($_GET['page'])? sanitize_key(wp_unslash($_GET['page'])):''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen check, no state change.
+
+        // Early return if not needed. Mirrors cpfm_render_notice_panel()'s own
+        // "anything actually unread" check exactly - checking only page
+        // membership (the old $allowed_pages list) let this load the panel's
+        // CSS/JS on every visit to an eligible page even after the admin had
+        // already answered every registered notice there, since that coarser
+        // check never looked at the per-notice cpfm_opt_in_choice_* option.
+        if (!self::cpfm_has_unread($current_page)) {
             return;
         }
         wp_enqueue_style(
             'cpfm-common-review-style',
-            LINGUATOR_URL . 'admin/cpfm-feedback/css/cpfm-admin-feedback.css',
+            self::cpfm_url( 'css/cpfm-admin-feedback.css' ),
             [],
-            LINGUATOR_VERSION
+            self::cpfm_version( 'css/cpfm-admin-feedback.css' )
         );
-        
+
         wp_enqueue_script(
-            'cpfm-common-review-script', 
-            LINGUATOR_URL . 'admin/cpfm-feedback/js/cpfm-admin-feedback.js', 
-            ['jquery'], 
-            LINGUATOR_VERSION, 
+            'cpfm-common-review-script',
+            self::cpfm_url( 'js/cpfm-admin-feedback.js' ),
+            ['jquery'],
+            self::cpfm_version( 'js/cpfm-admin-feedback.js' ),
             true
 
         );
-        // Use shared `adminNotice` object so LocoAI / AutoPoly JS stays compatible when we host CPFM.
-        wp_localize_script('cpfm-common-review-script', 'adminNotice', [
+        wp_localize_script('cpfm-common-review-script', 'cpfmAdminNotice', [
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('dismiss_admin_notice'),
+            'nonce'   => wp_create_nonce('cpfm_dismiss_admin_notice'),
             'autoShowPages' => array_unique(
                 array_merge(
                     [],
@@ -131,53 +161,140 @@ class CPFM_Feedback_Notice {
                     ),
         ]);
     }
-  
+
+    /**
+     * URL to a file under this module's own folder (CPFM_URL from the loader).
+     *
+     * @param string $relative Path relative to admin/cpfm-feedback/.
+     * @return string
+     */
+    private static function cpfm_url( $relative ) {
+        return CPFM_URL . ltrim( $relative, '/' );
+    }
+
+    /**
+     * Cache-busting version: the asset's own mtime, so a vendored copy
+     * always advertises its own freshness with no version constant needed.
+     *
+     * @param string $relative Path relative to admin/cpfm-feedback/.
+     * @return string
+     */
+    private static function cpfm_version( $relative ) {
+        $path  = CPFM_DIR . ltrim( $relative, '/' );
+        $mtime = file_exists( $path ) ? filemtime( $path ) : false;
+        return $mtime ? (string) $mtime : '1.0.0';
+    }
+
+    /**
+     * Panel chrome text: the first registrant's i18n value, or a
+     * developer-English fallback (a visible prompt that a host forgot to
+     * supply it, never a silent binding to some other plugin's domain).
+     *
+     * @param string $text_key Copy key.
+     * @param string $default  Fallback.
+     * @return string
+     */
+    private static function cpfm_text($text_key, $default) {
+        if (isset(self::$panel_i18n[$text_key]) && is_string(self::$panel_i18n[$text_key]) && '' !== self::$panel_i18n[$text_key]) {
+            return self::$panel_i18n[$text_key];
+        }
+        return $default;
+    }
+
+    /**
+     * Does this one registered notice have no recorded opt-in choice yet AND
+     * match $current_page?
+     *
+     * Shared by cpfm_has_unread() (the early enqueue check) and
+     * cpfm_render_notice_panel() (the actual per-notice render), so the
+     * "unread" rule can never drift between the two.
+     *
+     * @param string               $key          Notice category key.
+     * @param array<string, mixed> $notice       Notice config.
+     * @param string               $current_page Sanitized $_GET['page'].
+     * @return bool
+     */
+    private static function cpfm_notice_is_unread($key, $notice, $current_page) {
+        
+        if (get_option("cpfm_opt_in_choice_{$key}") !== false) {
+            return false;
+        }
+        foreach ((array) $notice['pages'] as $match) {
+            if ($current_page === $match || strpos($current_page, $match) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True when at least one registered notice is currently unread on
+     * $current_page.
+     *
+     * Shared by cpfm_enqueue_assets() (decides whether to load the panel's
+     * CSS/JS at all) and cpfm_render_notice_panel() (decides what to actually
+     * put in it), so the two can never disagree about whether there is
+     * anything to show.
+     *
+     * @param string $current_page Sanitized $_GET['page'].
+     * @return bool
+     */
+    private static function cpfm_has_unread($current_page) {
+
+        foreach (self::$registered_notices as $key => $notice) {
+            if (self::cpfm_notice_is_unread($key, $notice, $current_page)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function cpfm_handle_opt_in_choice() {
 
         if (!current_user_can('manage_options')) {
+
             wp_send_json_error('Unauthorized access.');
-            return;
         }
 
-        check_ajax_referer('dismiss_admin_notice', 'nonce');
+        check_ajax_referer('cpfm_dismiss_admin_notice', 'nonce');
 
-        $category           = isset($_POST['category']) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ): '';
-        $opt_in_raw         = isset($_POST['opt_in']) ? sanitize_text_field( wp_unslash( $_POST['opt_in'] ) ) : '';
-        $opt_in             = ($opt_in_raw === 'yes') ? 'yes' : 'no';
+        $category   = isset($_POST['category']) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ): '';
+        $opt_in_raw = isset($_POST['opt_in']) ? sanitize_text_field( wp_unslash( $_POST['opt_in'] ) ) : '';
+        $opt_in = ($opt_in_raw === 'yes') ? 'yes' : 'no';
 
-        // Another Cool Plugins CPFM instance may own this category (separate static registry).
-        // Bail quietly so that plugin's handler can process the request.
-        if ( ! $category || ! isset( self::$registered_notices[ $category ] ) ) {
-            return;
+        if (!$category || !isset(self::$registered_notices[$category])) {
+            wp_send_json_error('Invalid notice category.');
         }
 
-        if ( ! isset( self::$registered_notices[ $category ]['plugins'] ) ) {
-            wp_send_json_error( 'Invalid notice category plugins.' );
-            return;
+        if(!isset(self::$registered_notices[$category]['plugins'])){
+            wp_send_json_error('Invalid notice category plugins.');
         }
 
         update_option("cpfm_opt_in_choice_{$category}", $opt_in);
 
         $review_option = get_option("cpfm_opt_in_choice_{$category}");
 
-        if ($review_option === 'yes') {
-            
-            foreach (self::$registered_notices[$category]['plugins'] as $notice) {
+        foreach (self::$registered_notices[$category]['plugins'] as $notice) {
 
-                $plugin_name = isset($notice['plugin_name'])?sanitize_key($notice['plugin_name']):'';
+            $plugin_name = isset($notice['plugin_name']) ? sanitize_key($notice['plugin_name']) : '';
 
-                if($plugin_name){
-
-                    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- cpfm is our unique prefix.
-                    do_action('cpfm_after_opt_in_' . $plugin_name, $category);
-                }
-              
+            if (!$plugin_name) {
+                continue;
             }
-          
+
+            if ($review_option === 'yes') {
+                do_action('cpfm_after_opt_in_' . $plugin_name, $category);//phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            } else {
+                // Fire an opt-OUT action too, so every registered addon can stop
+                // its cron / clear its mirror the moment consent is withdrawn
+                // (previously only opt-in was signalled).
+                do_action('cpfm_after_opt_out_' . $plugin_name, $category);//phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            }
         }
 
         wp_send_json_success();
     }
+
 
     public function cpfm_render_notice_panel() {
         
@@ -185,9 +302,10 @@ class CPFM_Feedback_Notice {
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not required here
-        $current_page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        $screen         = get_current_screen();
+        $current_page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen check, no state change.
 
+       
         $unread_count   = 0;
         $auto_show      = false;
     
@@ -200,47 +318,37 @@ class CPFM_Feedback_Notice {
         }
     
         $output = '';
-        $output .= '<div id="cpfNoticePanel" class="notice-panel"' . ($auto_show ? ' data-auto-show="true"' : '') . '>';
-        $output .= '<div class="notice-panel-header">' . esc_html__('Help Improve Plugins', 'translate-words') . ' <span class="dashicons dashicons-no" id="cpfm_remove_notice"></span></div>';
+        $output .= '<div id="cpfNoticePanel" class="notice-panel lmat-required-plugin-notice"' . ($auto_show ? ' data-auto-show="true"' : '') . '>';
+        $output .= '<div class="notice-panel-header">' . esc_html(self::cpfm_text('panel_title', 'Help Improve Plugins')) . ' <span class="dashicons dashicons-no" id="cpfm_remove_notice"></span></div>';
         $output .= '<div class="notice-panel-content">';
-
+    
         foreach (self::$registered_notices as $key => $notice) {
-            $choice = get_option("cpfm_opt_in_choice_{$key}");
 
-            if ($choice !== false) continue;
-    
-            $should_show = false;
-            foreach ($notice['pages'] as $match) {
-                
-                if ($current_page === $match || strpos($current_page, $match) === 0) {
-                
-                    $should_show = true;
-                    break;
-                }
+            if (!self::cpfm_notice_is_unread($key, $notice, $current_page)) {
+                continue;
             }
-    
-            if (!$should_show) continue;
             $unread_count++;
     
             $output .= '<div class="notice-item unread" data-notice-id="' . esc_attr($key) . '">';
             $output .= '<strong>' . esc_html($notice['title']) . '</strong>';
             
             $output .= '<div class="notice-message-with-toggle">';
-            $output .= '<p>' . esc_html($notice['message']) . '<a href="#" class="cpf-toggle-extra">' . esc_html__(' More info', 'translate-words') . '</a></p>';
+            $output .= '<p>' . esc_html($notice['message']) . '<a href="#" class="cpf-toggle-extra">' . esc_html(self::cpfm_text('more_info', 'More info')) . '</a></p>';
             $output .= '</div>';
-            
+
             $output .= '<div class="cpf-extra-info">';
-            $output .= '<p>' . esc_html__('Opt in to receive email updates about security improvements, new features, helpful tutorials, and occasional special offers. We\'ll collect:', 'translate-words') . '</p>';
+            $output .= '<p>' . esc_html(self::cpfm_text('consent_intro', 'Opt in to receive email updates about security improvements, new features, helpful tutorials, and occasional special offers. We\'ll collect:')) . '</p>';
             $output .= '<ul>';
-            $output .= '<li>' . esc_html__('Your website home URL and WordPress admin email.', 'translate-words') . '</li>';
-            $output .= '<li>' . esc_html__('To check plugin compatibility, we will collect the following: list of active plugins and themes, server type, MySQL version, WordPress version, memory limit, site language and database prefix.', 'translate-words') . '<a href="' . esc_url('https://my.coolplugins.net/terms/usage-tracking/') . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Click Here', 'translate-words') . '</a></li>';
+            $output .= '<li>' . esc_html(self::cpfm_text('consent_item_site', 'Your website home URL and WordPress admin email.')) . '</li>';
+            $output .= '<li>' . esc_html(self::cpfm_text('consent_item_compat', 'To check plugin compatibility, we will collect the following: list of active plugins and themes, PHP, MySQL and WordPress versions, memory limit, whether the site is multisite, and the site language. '));
+            $output .= '<a href="https://my.coolplugins.net/terms/usage-tracking/" target="_blank">' . esc_html(self::cpfm_text('consent_link', 'Click here')) . '</a></li>';
             $output .= '</ul>';
-            
+
             $output .= '</div>';
-            
+
             $output .= '<div class="notice-actions">';
-            $output .= '<button class="button button-primary opt-in-yes" data-category="' . esc_attr($key) . '" id="yes-share-data" value="yes">' . esc_html__("Yes, I Agree", 'translate-words') . '</button>';
-            $output .= '<button class="button opt-in-no" data-category="' . esc_attr($key) . '" id="no-share-data" value="no">' . esc_html__('No, Thanks', 'translate-words') . '</button>';
+            $output .= '<button class="button button-primary opt-in-yes" data-category="' . esc_attr($key) . '" id="yes-share-data" value="yes">' . esc_html(self::cpfm_text('yes_label', "Yes, it's OK")) . '</button>';
+            $output .= '<button class="button opt-in-no" data-category="' . esc_attr($key) . '" id="no-share-data" value="no">' . esc_html(self::cpfm_text('no_label', 'No, Thanks')) . '</button>';
             $output .= '</div>';
             
             $output .= '</div>';
@@ -250,17 +358,10 @@ class CPFM_Feedback_Notice {
         $output .= '</div>'; 
      
         if ($unread_count > 0) {
-            $allowed = array(
-                'div' => array('id' => array(), 'class' => array(), 'data-auto-show' => array(), 'data-notice-id' => array()),
-                'span' => array('id' => array(), 'class' => array()),
-                'strong' => array(),
-                'p' => array(),
-                'a' => array('href' => array(), 'class' => array(), 'target' => array(), 'rel' => array()),
-                'button' => array('class' => array(), 'data-category' => array(), 'id' => array(), 'value' => array()),
-                'ul' => array(),
-                'li' => array(), 'br' => array()
-            );
-            echo wp_kses($output, $allowed);
+            echo wp_kses_post($output);
         }
     }
 }
+new CPFM_Feedback_Notice();
+
+endif;

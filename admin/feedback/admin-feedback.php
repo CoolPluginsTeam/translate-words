@@ -41,10 +41,6 @@ class Linguator_Admin_Feedback {
 		$this->options   = ( $linguator && isset( $linguator->options ) )
 			? $linguator->options
 			: get_option( 'linguator' );
-
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_feedback_scripts' ) );
-		add_action( 'admin_head', array( $this, 'show_deactivate_feedback_popup' ) );
-		add_action( 'wp_ajax_' . $this->plugin_slug . '_submit_deactivation_response', array( $this, 'submit_deactivation_response' ) );
 	}
 
     /*
@@ -196,13 +192,165 @@ class Linguator_Admin_Feedback {
 			];
 		}
 	
+		$plugin_options = $this->get_all_plugin_options();
+
 		return [
 			'server_info'   => $server_info,
 			'extra_details' => [
 				'wp_theme'       => $theme_data,
 				'active_plugins' => $plugin_data,
+				'plugin_options' => $plugin_options,
 			],
 		];
+	}
+
+	/**
+	 * Get all saved plugin options and configurations for telemetry.
+	 *
+	 * @return array
+	 */
+	public function get_all_plugin_options() {
+		// Resolve Linguator context with model
+		$linguator_context = null;
+		if ( isset( $this->linguator->model ) ) {
+			$linguator_context = $this->linguator;
+		} elseif ( function_exists( 'LMAT' ) && LMAT() && isset( LMAT()->model ) ) {
+			$linguator_context = LMAT();
+		} elseif ( isset( $GLOBALS['linguator'] ) && isset( $GLOBALS['linguator']->model ) ) {
+			$linguator_context = $GLOBALS['linguator'];
+		}
+
+		// Extract configured languages
+		$languages = array();
+		if ( $linguator_context && method_exists( $linguator_context->model, 'get_languages_list' ) ) {
+			$lang_objects = $linguator_context->model->get_languages_list();
+			if ( is_array( $lang_objects ) ) {
+				foreach ( $lang_objects as $lang ) {
+					if ( is_object( $lang ) ) {
+						$languages[] = array(
+							'slug' => isset( $lang->slug ) ? sanitize_key( $lang->slug ) : '',
+							'name' => isset( $lang->name ) ? sanitize_text_field( $lang->name ) : '',
+						);
+					}
+				}
+			}
+		}
+
+		// Fallback: If model is not booted in this request, query lmat_language taxonomy
+		if ( empty( $languages ) && taxonomy_exists( 'lmat_language' ) ) {
+			$terms = get_terms( array(
+				'taxonomy'   => 'lmat_language',
+				'hide_empty' => false,
+			) );
+			if ( ! is_wp_error( $terms ) && is_array( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$languages[] = array(
+						'slug' => sanitize_key( $term->slug ),
+						'name' => sanitize_text_field( $term->name ),
+					);
+				}
+			}
+		}
+
+		// AI translation full configuration (excluding raw API keys)
+		$ai_config = isset( $options['ai_translation_configuration'] ) && is_array( $options['ai_translation_configuration'] )
+			? $options['ai_translation_configuration']
+			: array();
+
+		// Check if API key is added without saving or transmitting any secret key strings
+		$is_api_key_added = '' !== trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+
+		$safe_ai_config = array(
+			'provider'                  => isset( $ai_config['provider'] ) && is_array( $ai_config['provider'] ) ? array_keys( array_filter( $ai_config['provider'] ) ) : array(),
+			'all_providers_status'      => isset( $ai_config['provider'] ) && is_array( $ai_config['provider'] ) ? $ai_config['provider'] : array(),
+			'auto_translate'            => ! empty( $ai_config['auto_translate'] ),
+			'auto_translate_on_publish' => ! empty( $ai_config['auto_translate_on_publish'] ),
+			'content_types'             => isset( $ai_config['content_types'] ) && is_array( $ai_config['content_types'] ) ? array_keys( array_filter( $ai_config['content_types'] ) ) : array(),
+			'translate_taxonomy'        => ! empty( $ai_config['translate_taxonomy'] ),
+			'batch_size'                => isset( $ai_config['batch_size'] ) ? (int) $ai_config['batch_size'] : (int) get_option( 'lmat_ai_request_batch_size', 5 ),
+			'models'                    => isset( $options['api_keys'] ) && is_array( $options['api_keys'] ) ? $options['api_keys'] : array(),
+			'is_api_key_added'          => (bool) $is_api_key_added,
+		);
+
+		// Language switcher options
+		$switcher_options = isset( $options['lmat_language_switcher_options'] ) && is_array( $options['lmat_language_switcher_options'] )
+			? array_values( array_map( 'sanitize_text_field', $options['lmat_language_switcher_options'] ) )
+			: (array) get_option( 'lmat_language_switcher_options', array( 'default' ) );
+
+		// Custom post types and taxonomies
+		$post_types = isset( $options['post_types'] ) && is_array( $options['post_types'] )
+			? array_values( array_map( 'sanitize_key', $options['post_types'] ) )
+			: array();
+
+		$taxonomies = isset( $options['taxonomies'] ) && is_array( $options['taxonomies'] )
+			? array_values( array_map( 'sanitize_key', $options['taxonomies'] ) )
+			: array();
+
+		// Synchronization options
+		$sync_options = isset( $options['sync'] ) && is_array( $options['sync'] )
+			? $options['sync']
+			: array();
+
+		// Domain mappings if configured
+		$domains = isset( $options['domains'] ) && is_array( $options['domains'] )
+			? $options['domains']
+			: array();
+
+		// Nav menus configuration
+		$nav_menus = isset( $options['nav_menus'] ) && is_array( $options['nav_menus'] )
+			? $options['nav_menus']
+			: array();
+
+		return array(
+			// Language settings
+			'default_lang'               => isset( $options['default_lang'] ) ? sanitize_text_field( $options['default_lang'] ) : '',
+			'total_languages'            => count( $languages ),
+			'languages'                  => $languages,
+
+			// URL & Domain modifications
+			'force_lang'                 => isset( $options['force_lang'] ) ? (int) $options['force_lang'] : 0,
+			'hide_default'               => ! empty( $options['hide_default'] ),
+			'rewrite'                    => ! empty( $options['rewrite'] ),
+			'redirect_lang'              => ! empty( $options['redirect_lang'] ),
+			'browser_detection'          => ! empty( $options['browser'] ),
+			'domains'                    => $domains,
+
+			// Media translation
+			'media_support'              => ! empty( $options['media_support'] ),
+
+			// Content translation settings
+			'post_types'                 => $post_types,
+			'taxonomies'                 => $taxonomies,
+
+			// Synchronization
+			'sync'                       => $sync_options,
+			'menu_sync_visibility'       => ! empty( $options['menu_sync_visibility'] ),
+			'nav_menus'                  => $nav_menus,
+
+			// Language switchers
+			'language_switcher_options'  => $switcher_options,
+
+			// AI translation & providers
+			'ai_translation_config'      => $safe_ai_config,
+
+			// Status & Lifecycle
+			'setup_complete'             => (bool) get_option( 'lmat_setup_complete', false ),
+			'video_status'               => (bool) get_option( 'lmat_video_status', false ),
+			'migration_completed'        => (bool) get_option( 'lmat_migration_completed', false ),
+			'first_activation'           => isset( $options['first_activation'] ) ? $options['first_activation'] : '',
+			'version'                    => defined( 'LINGUATOR_VERSION' ) ? LINGUATOR_VERSION : '',
+			'initial_version'            => sanitize_text_field( (string) get_option( 'lmat_initial_version', '' ) ),
+			'feedback_data_enabled'      => (bool) get_option( 'cpfm_opt_in_choice_cool_translations' ) === 'yes' || ( isset( $options['lmat_feedback_data'] ) && true === $options['lmat_feedback_data'] ),
+		);
+	}
+
+	/**
+	 * Backward compatibility wrapper for wizard configuration.
+	 *
+	 * @return array
+	 */
+	public function get_setup_wizard_configuration() {
+		return $this->get_all_plugin_options();
 	}
 
     function submit_deactivation_response() {

@@ -237,11 +237,14 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         const currentKey = ids[ids.length - 1];
         // Keys that are always translatable for atomic widgets even if they don't
         // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
-        const validAtomicKeys = ['placeholder', 'paragraph'];
+        const validAtomicKeys = ['placeholder', 'paragraph', 'override_value'];
 
         if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
             return;
         }
+
+        const settingsIndex = ids.indexOf('settings');
+        const pathKey = ids.slice(settingsIndex + 1).join('_lmat_page_translation_');
 
         if(element?.$$type === 'html-v3'){
             if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
@@ -249,7 +252,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                 const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value.content.value, uniqueKey, service);
                 translations.push({
                     ID: widgetId,
-                    key: `${currentKey}_lmat_page_translation_value_lmat_page_translation_content_lmat_page_translation_value`,
+                    key: `${pathKey}_lmat_page_translation_value_lmat_page_translation_content_lmat_page_translation_value`,
                     translatedContent: translatedData,
                     isAtomic: true
                 });
@@ -260,9 +263,24 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                 const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
                 translations.push({
                     ID: widgetId,
-                    key: `${currentKey}_lmat_page_translation_value`,
+                    key: `${pathKey}_lmat_page_translation_value`,
                     translatedContent: translatedData,
                     isAtomic: true
+                });
+            }
+        }
+    }
+
+    const storeComponentInstanceOverrides = (element, ids=[], widgetId=null) => {
+        if (element?.$$type === 'component-instance' && element.value && element.value.overrides) {
+            const overrides = element.value.overrides;
+            if (overrides.$$type === 'overrides' && Array.isArray(overrides.value)) {
+                overrides.value.forEach((override, overrideIndex) => {
+                    if (override.$$type === 'override' && override.value && override.value.override_value) {
+                        const overrideValue = override.value.override_value;
+                        const baseIds = [...ids, 'value', 'overrides', 'value', overrideIndex, 'value', 'override_value'];
+                        storeAtomicWidgetStrings(overrideValue, baseIds, widgetId);
+                    }
                 });
             }
         }
@@ -283,8 +301,9 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                     return; // Skip this property and continue to the next one
                 }
 
-                // Check if the key includes any of the specified substrings — plain string (classic widget).
-                if (subStringsToCheck(key) &&
+                if (key === 'component_instance') {
+                    storeComponentInstanceOverrides(settings[key], [...ids, 'settings', key], widgetId);
+                } else if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
                     const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_settings_lmat_page_translation_' + key;
 
@@ -334,7 +353,8 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         }
 
         // If there are nested elements, process them recursively
-        if (element.elements && Array.isArray(element.elements)) {
+        const isComponentDoc = window.lmatPageTranslationGlobal?.post_type === 'elementor_component';
+        if ((isComponentDoc || element.widgetType !== 'e-component') && element.elements && Array.isArray(element.elements)) {
             element.elements.forEach((nestedElement,index) => {
                 storeSourceStrings(nestedElement,index, [...ids, 'elements']);
             });

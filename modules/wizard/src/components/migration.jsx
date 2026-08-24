@@ -198,23 +198,6 @@ const Migration = ({ onComplete, onSkip }) => {
     } catch (error) {
       console.error('Failed to save migration status:', error)
     }
-
-    // If user skips migration, consider wizard finished as well.
-    try {
-      await apiFetch({
-        path: 'lmat/v1/settings/setup-complete',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': getNonce()
-        },
-        body: JSON.stringify({
-          complete: true
-        })
-      })
-    } catch (error) {
-      console.error('Failed to mark setup as complete:', error)
-    }
     
     if (onSkip) {
       onSkip()
@@ -291,6 +274,14 @@ const Migration = ({ onComplete, onSkip }) => {
               icon={isDetecting && selectedPlugin === 'wpml' ? <LoaderPinwheel className="animate-spin" /> : null}
             >
               {isDetecting && selectedPlugin === 'wpml' ? __('Detecting...', 'translate-words') : __('Detect WPML', 'translate-words')}
+            </Button>
+            <Button
+              onClick={handleSkip}
+              disabled={isDetecting || isMigrating}
+              variant="outline"
+              size="md"
+            >
+              {__('Skip Migration', 'translate-words')}
             </Button>
           </div>
         </div>

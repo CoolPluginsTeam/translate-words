@@ -283,7 +283,7 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 		// Optional hardening: enforce valid JSON if not using Elementor Document API
 		if ( isset( $_POST['elementor_data'] ) && is_string( $_POST['elementor_data'] ) ) {
-			$decoded = json_decode( sanitize_textarea_field( wp_unslash( $_POST['elementor_data'] ) ), true );
+			$decoded = json_decode( wp_unslash( $_POST['elementor_data'] ), true );
 				if ( json_last_error() !== JSON_ERROR_NONE ) {
 					wp_send_json_error( __( 'Invalid data.', 'translate-words' ), 400 );
 					wp_die( '0', 400 );
@@ -300,7 +300,7 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
 
-			$elementor_data = ! empty( $_POST['elementor_data'] ) ? sanitize_textarea_field( wp_unslash( $_POST['elementor_data'] ) ) : '';
+			$elementor_data = ! empty( $_POST['elementor_data'] ) ? wp_unslash( $_POST['elementor_data'] ) : '';
 
 			if ( '' === $current_slug ) {
 			if ( ! empty( $_POST['post_name'] ) && '' !== $_POST['post_name'] && $slug_translation_option === 'slug_translate' ) {
@@ -316,7 +316,7 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 					$plugin   = \Elementor\Plugin::$instance;
 					$document = $plugin->documents->get( $post_id );
 
-					$elementor_data = json_decode( sanitize_textarea_field( wp_unslash( $_POST['elementor_data'] ) ), true );
+					$elementor_data = json_decode( wp_unslash( $_POST['elementor_data'] ), true );
 
 					if ( json_last_error() !== JSON_ERROR_NONE ) {
 						wp_send_json_error( __( 'Invalid Elementor data.', 'translate-words' ), 400 );

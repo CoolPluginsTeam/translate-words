@@ -3,9 +3,9 @@
 Contributors: narinder-singh,satindersingh,coolplugins
 Tags: automatic translation, google translate,elementor translation, multilingual, ai translator
 Requires at least: 6.8
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.2
-Stable tag: 2.1.10
+Stable tag: 2.2.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -197,6 +197,12 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 **Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
 == Changelog ==
+
+= Version 2.2.0 | 24 August 2026 =
+* Added: Elementor V4 Component Translation support.
+* Improved: Deactivation feedback form.
+* Improved: User opt-in option in plugin.
+* Tested up to: WordPress 7.1
 
 = Version 2.1.10 | 03 August 2026 =
 * Added: New Translation Provider - Edge AI for Edge Browser

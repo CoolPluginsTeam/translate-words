@@ -75,7 +75,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
         const currentKey = ids[ids.length - 1];
         // Keys that are always translatable for atomic widgets even if they don't
         // match the generic subStringsToCheck patterns (e.g. 'placeholder', 'paragraph').
-        const validAtomicKeys = ['placeholder', 'paragraph'];
+        const validAtomicKeys = ['placeholder', 'paragraph', 'override_value'];
 
         if(!subStringsToCheck(currentKey) && !validAtomicKeys.includes(currentKey)){
             return;
@@ -92,6 +92,22 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
         }
     }
 
+    const storeComponentInstanceOverrides = async (element, ids=[]) => {
+        if (element?.$$type === 'component-instance' && element.value && element.value.overrides) {
+            const overrides = element.value.overrides;
+            if (overrides.$$type === 'overrides' && Array.isArray(overrides.value)) {
+                for (let overrideIndex = 0; overrideIndex < overrides.value.length; overrideIndex++) {
+                    const override = overrides.value[overrideIndex];
+                    if (override.$$type === 'override' && override.value && override.value.override_value) {
+                        const overrideValue = override.value.override_value;
+                        const baseIds = [...ids, 'value', 'overrides', 'value', overrideIndex, 'value', 'override_value'];
+                        await storeAtomicWidgetStrings(overrideValue, baseIds);
+                    }
+                }
+            }
+        }
+    }
+
     const storeWidgetStrings = async(element, index, ids=[]) => {
         const settings = element.settings;
         ids.push(index);
@@ -104,7 +120,9 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                     return; // Skip this property and continue to the next one
                 }
 
-                if (subStringsToCheck(key) &&
+                if (key === 'component_instance') {
+                    await storeComponentInstanceOverrides(settings[key], [...ids, 'settings', key]);
+                } else if (subStringsToCheck(key) &&
                     typeof settings[key] === 'string' && settings[key].trim() !== '') {
                     // Plain string setting — classic Elementor widget field.
                     await translateContent([...ids, 'settings', key],settings[key]);
