@@ -31,6 +31,18 @@ export function logAiTranslationError(message, { emptyResponse } = {}) {
  * @returns {Promise<Record<string,string>>}
  */
 export async function requestAiBatch({ provider, postId, objectType = 'post', sourceLang, targetLang, strings, model = '', restUrl, nonce, signal }) {
+    const cancellationError = () => {
+        const error = new Error('Translation cancelled');
+        error.name = 'AbortError';
+        return error;
+    };
+
+    // Chromium may throw a TypeError instead of AbortError when fetch receives
+    // a signal that was already aborted. Normalize it before starting fetch.
+    if (signal?.aborted) {
+        throw cancellationError();
+    }
+
     let res;
     try {
         res = await fetch(restUrl, {
@@ -52,6 +64,15 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
             }),
         });
     } catch (error) {
+        // Preserve intentional cancellation so callers can stop quietly and
+        // release their loading state instead of treating it as a failed request.
+        if (
+            signal?.aborted ||
+            error?.name === 'AbortError' ||
+            /signal is aborted|aborted without reason/i.test(error?.message || '')
+        ) {
+            throw cancellationError();
+        }
         const networkMessage = error?.message || 'Network request failed';
         throw createTranslationError(`Translation request failed: ${networkMessage}`);
     }
@@ -82,7 +103,8 @@ function resolveErrorMessage(data, status, statusText) {
         data?.message,
         data?.data,
         data?.data?.message,
-        data?.data?.error
+        data?.data?.error,
+        data?.data?.provider_message
     );
 
     if (isQuotaExceededResponse(data, status)) {
@@ -147,6 +169,7 @@ function isQuotaExceededResponse(data, status) {
         data?.data,
         data?.data?.message,
         data?.data?.error,
+        data?.data?.provider_message,
     ]
         .filter((value) => typeof value === 'string')
         .join(' ')
@@ -162,25 +185,31 @@ function isQuotaExceededResponse(data, status) {
 
 /**
  * @param {Record<string,string>} map
- * @param {{maxTokens?:number,maxChars?:number,maxKeys?:number}} [opts]
+ * @param {{maxTokens?:number,maxChars?:number,maxKeys?:number,reservedTokens?:number,keyTokenCopies?:number}} [opts]
  * @returns {Array<Record<string,string>>}
  */
 export function chunkStringMap(map, opts = {}) {
     const maxTokens = Number.isFinite(opts.maxTokens) ? Number(opts.maxTokens) : 500;
     const maxChars = Number.isFinite(opts.maxChars) ? Number(opts.maxChars) : Infinity;
     const maxKeys = Number.isFinite(opts.maxKeys) ? Number(opts.maxKeys) : 0; // 0 => unlimited
+    const reservedTokens = Number.isFinite(opts.reservedTokens) ? Math.max(0, Number(opts.reservedTokens)) : 0;
+    const keyTokenCopies = Number.isFinite(opts.keyTokenCopies) ? Math.max(0, Number(opts.keyTokenCopies)) : 0;
 
     const chunks = [];
     let current = {};
     let charBudget = 0;
-    let tokenBudget = 0;
+    let tokenBudget = reservedTokens;
     const keys = Object.keys(map);
 
     for (const k of keys) {
         const v = map[k] ?? '';
         const value = String(v);
         const entryChars = k.length + value.length;
-        const entryTokens = Math.ceil(value.length / 4);
+        const valueTokens = Math.ceil(value.length / 4);
+        const keyAndSchemaTokens = keyTokenCopies > 0
+            ? Math.ceil(((k.length * keyTokenCopies) + 16) / 4)
+            : 0;
+        const entryTokens = valueTokens + keyAndSchemaTokens;
         const wouldExceedKeys = maxKeys > 0 && Object.keys(current).length >= maxKeys;
         const wouldExceedChars = Number.isFinite(maxChars) && (charBudget + entryChars > maxChars) && Object.keys(current).length > 0;
         const wouldExceedTokens = (tokenBudget + entryTokens > maxTokens) && Object.keys(current).length > 0;
@@ -189,7 +218,7 @@ export function chunkStringMap(map, opts = {}) {
             chunks.push(current);
             current = {};
             charBudget = 0;
-            tokenBudget = 0;
+            tokenBudget = reservedTokens;
         }
         current[k] = value;
         charBudget += entryChars;
@@ -199,4 +228,26 @@ export function chunkStringMap(map, opts = {}) {
         chunks.push(current);
     }
     return chunks.length ? chunks : [{}];
+}
+
+/**
+ * Conservative Ollama-only batching. The payload repeats keys in the JSON
+ * input and response schema, and the static prompt also consumes context.
+ * Gemini retains the existing value-only batching behavior.
+ *
+ * @param {number} maxTokens Configured input-token budget.
+ * @returns {{maxTokens:number,maxKeys:number,reservedTokens:number,keyTokenCopies:number}}
+ */
+export function getOllamaChunkOptions(maxTokens) {
+    const normalizedMaxTokens = Number.isFinite(maxTokens) && maxTokens > 0 ? Number(maxTokens) : 500;
+    const reservedTokens = Math.min(220, Math.floor(normalizedMaxTokens * 0.4));
+
+    return {
+        // Preserve the configured allowance for source text. Prompt, key, and
+        // response-schema overhead is accounted for in addition to that value.
+        maxTokens: normalizedMaxTokens + reservedTokens,
+        maxKeys: 8,
+        reservedTokens,
+        keyTokenCopies: 3,
+    };
 }

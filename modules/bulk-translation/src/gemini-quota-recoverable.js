@@ -1,5 +1,5 @@
 /**
- * Shared quota-exceeded row + modal content for Gemini bulk translation.
+ * Shared quota-exceeded row and modal content for AI-provider bulk translation.
  */
 import { store } from "./redux-store/store.js";
 import { selectTargetContent } from "./redux-store/features/selectors.js";
@@ -74,6 +74,7 @@ export function buildQuotaRecoverableTranslateInfo({
     totalKeys,
     nonce,
     totalPosts,
+    serviceProvider,
 }) {
     return {
         ...existingInfo,
@@ -85,6 +86,7 @@ export function buildQuotaRecoverableTranslateInfo({
         errorHtml: buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys),
         errorAllowHtml: false,
         aiError: true,
+        serviceProvider,
         quotaRecoverable: true,
         nonce,
         completedStrings: mergedDone,

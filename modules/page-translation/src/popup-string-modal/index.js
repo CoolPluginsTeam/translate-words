@@ -26,6 +26,7 @@ const popStringModal = (props) => {
 
     const runModalCleanup = useCallback(() => {
         sessionAbortRef.current?.abort();
+        sessionAbortRef.current = null;
         destroyHandlersRef.current.forEach((callback) => {
             if (typeof callback === 'function') {
                 try {
@@ -35,6 +36,7 @@ const popStringModal = (props) => {
                 }
             }
         });
+        destroyHandlersRef.current = [];
     }, []);
 
     const updateDestroyHandler = useCallback((callback) => {
@@ -141,6 +143,12 @@ const popStringModal = (props) => {
      */
     const setPopupVisibilityHandler = () => {
         runModalCleanup();
+
+        // Closing is immediate from the user's perspective. Do not leave the
+        // parent editor or this modal in a translating/loading state while an
+        // already-started server request finishes shutting down.
+        props.pageTranslate(false);
+        setTranslateButtonStatus(false);
 
         if(props.service === 'google'){
             const iframe = document.querySelector('.skiptranslate iframe[id=":1.container"]');

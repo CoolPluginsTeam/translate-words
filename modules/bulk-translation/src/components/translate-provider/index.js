@@ -7,6 +7,7 @@ import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
 import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
 import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
 import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
+import { Bot } from "lucide-react";
 
 /**
  * Provides translation services using Yandex Translate.
@@ -72,6 +73,21 @@ export default (props) => {
             ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />,
             filterHtmlContent: true
+        },
+        ollama: {
+            Provider: AiLlmBulkTranslator,
+            title: "Ollama Cloud",
+            SettingBtnText: window.lmatBulkTranslationGlobal.api_keys_status?.ollama ? "Translate" : "Add API Key",
+            serviceLabel: "Ollama",
+            heading: __("Translate Using Ollama", "translate-words"),
+            Docs: "https://docs.ollama.com/cloud",
+            BetaEnabled: false,
+            ButtonDisabled: !window.lmatBulkTranslationGlobal.api_keys_status?.ollama,
+            ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.ollama ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" rel="noopener noreferrer" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
+            Logo: <Bot className="icon-size" />,
+            // Keep Ollama source strings verbatim. Rendering them through React before
+            // the REST request HTML-encodes markup and can corrupt structured JSON.
+            filterHtmlContent: false
         }
     };
 

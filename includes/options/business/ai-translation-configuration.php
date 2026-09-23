@@ -45,6 +45,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                 'edge_local_ai' => false,
                 'google' => true,
                 'gemini' => false,
+                'ollama' => false,
             ),
             'bulk_translation_post_status' => 'draft',
             'slug_translation_option' => 'title_translate',
@@ -71,6 +72,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                         'edge_local_ai' => array('type' => 'boolean'),
                         'google' => array('type' => 'boolean'),
                         'gemini' => array('type' => 'boolean'),
+                        'ollama' => array('type' => 'boolean'),
                     )
                 ),
                 'bulk_translation_post_status' => array('type' => 'string', 'enum' => array('draft', 'publish')),

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { Button, Container, Input, Label } from '@bsf/force-ui'
 import apiFetch from "@wordpress/api-fetch"
 import { toast } from 'sonner'
@@ -7,10 +7,12 @@ import { getNonce } from '../utils'
 
 const providerKeyLinks = {
   gemini: 'https://aistudio.google.com/app/api-keys',
+  ollama: 'https://ollama.com/settings/keys',
 }
 
 const providerKeyLabels = {
   gemini: 'Gemini',
+  ollama: 'Ollama',
 }
 
 const providerMeta = [
@@ -21,30 +23,47 @@ const providerMeta = [
     modelHeading: __('Select Gemini Model', 'translate-words'),
     placeholder: __('Enter your API key', 'translate-words'),
   },
+  {
+    key: 'ollama',
+    modelKey: 'ollama_model',
+    heading: __('Add Ollama API key', 'translate-words'),
+    modelHeading: __('Select Ollama Model', 'translate-words'),
+    placeholder: __('Enter your API key', 'translate-words'),
+  },
 ]
 
-const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onPendingChange }, ref) {
+const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onPendingChange, providerKeys }, ref) {
   const normalizeApiKey = useCallback((v) => (v || '').toString().replace(/\s+/g, '').trim(), [])
+  const providerFilter = Array.isArray(providerKeys) ? providerKeys.join('|') : ''
+  const activeProviderMeta = useMemo(
+    () => Array.isArray(providerKeys)
+      ? providerMeta.filter(({ key }) => providerKeys.includes(key))
+      : providerMeta,
+    [providerFilter]
+  )
   const [loading, setLoading] = useState(true)
-  const [masked, setMasked] = useState({ gemini: '' })
-  const [configured, setConfigured] = useState({ gemini: false })
-  const [keyDrafts, setKeyDrafts] = useState({ gemini: '' })
-  const [availableModels, setAvailableModels] = useState({ gemini: [] })
+  const [masked, setMasked] = useState({ gemini: '', ollama: '' })
+  const [configured, setConfigured] = useState({ gemini: false, ollama: false })
+  const [keyDrafts, setKeyDrafts] = useState({ gemini: '', ollama: '' })
+  const [availableModels, setAvailableModels] = useState({ gemini: [], ollama: [] })
   const [models, setModels] = useState({
     gemini_model: 'gemini-2.5-flash',
+    ollama_model: 'gemma4:31b',
   })
   const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
   const initialModelsRef = useRef({
     gemini_model: 'gemini-2.5-flash',
+    ollama_model: 'gemma4:31b',
   })
 
   const computeHasPendingSave = useCallback(() => {
-    const hasKeyChanges = Object.values(keyDrafts).some((v) => (v || '').trim() !== '')
+    const hasKeyChanges = activeProviderMeta.some(({ key }) => (keyDrafts[key] || '').trim() !== '')
     const initial = initialModelsRef.current || {}
-    const hasModelChanges =
-      (models.gemini_model || '') !== (initial.gemini_model || '')
+    const hasModelChanges = activeProviderMeta.some(({ modelKey }) =>
+      (models[modelKey] || '') !== (initial[modelKey] || '')
+    )
     return hasKeyChanges || hasModelChanges
-  }, [keyDrafts, models])
+  }, [keyDrafts, models, activeProviderMeta])
 
   useEffect(() => {
     const config = data?.api_keys_configuration
@@ -56,14 +75,17 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
     const nextMasked = {
       gemini: keys?.gemini || '',
+      ollama: keys?.ollama || '',
     }
 
     setMasked(nextMasked)
     setConfigured({
       gemini: Boolean(nextMasked.gemini),
+      ollama: Boolean(nextMasked.ollama),
     })
     const nextModels = {
       gemini_model: m?.gemini_model || 'gemini-2.5-flash',
+      ollama_model: m?.ollama_model || 'gemma4:31b',
     }
     setModels(nextModels)
     initialModelsRef.current = nextModels
@@ -71,6 +93,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       gemini:
         Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
           ? discovered.gemini
+          : [],
+      ollama:
+        Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
+          ? discovered.ollama
           : [],
     })
     setLoading(false)
@@ -100,14 +126,17 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
         const nextMasked = {
           gemini: keys?.gemini || '',
+          ollama: keys?.ollama || '',
         }
 
         setMasked(nextMasked)
         setConfigured({
           gemini: Boolean(nextMasked.gemini),
+          ollama: Boolean(nextMasked.ollama),
         })
         const nextModels = {
           gemini_model: m?.gemini_model || 'gemini-2.5-flash',
+          ollama_model: m?.ollama_model || 'gemma4:31b',
         }
         setModels(nextModels)
         initialModelsRef.current = nextModels
@@ -115,6 +144,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
           gemini:
             Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
               ? discovered.gemini
+              : [],
+          ollama:
+            Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
+              ? discovered.ollama
               : [],
         })
       } finally {
@@ -129,13 +162,14 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
   }, [])
 
   useEffect(() => {
-    const hasKeyChanges = Object.values(keyDrafts).some((v) => (v || '').trim() !== '')
+    const hasKeyChanges = activeProviderMeta.some(({ key }) => (keyDrafts[key] || '').trim() !== '')
     const initial = initialModelsRef.current || {}
-    const hasModelChanges =
-      (models.gemini_model || '') !== (initial.gemini_model || '')
+    const hasModelChanges = activeProviderMeta.some(({ modelKey }) =>
+      (models[modelKey] || '') !== (initial[modelKey] || '')
+    )
 
     setHandleButtonDisabled(!(hasKeyChanges || hasModelChanges))
-  }, [keyDrafts, models, configured.gemini])
+  }, [keyDrafts, models, configured])
 
   useEffect(() => {
     if (!embedded || !onPendingChange) return
@@ -144,11 +178,9 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
   const persistApiKeys = useCallback(async ({ resetProvider } = {}) => {
     const keys = {}
-    const modelsBody = {
-      gemini_model: models.gemini_model,
-    }
+    const modelsBody = {}
 
-    for (const { key } of providerMeta) {
+    for (const { key, modelKey } of activeProviderMeta) {
       const draft = normalizeApiKey(keyDrafts[key])
 
       if (resetProvider === key) {
@@ -158,6 +190,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
       if (draft !== '') {
         keys[key] = draft
+      }
+
+      if (resetProvider !== key && (configured[key] || draft !== '')) {
+        modelsBody[modelKey] = models[modelKey]
       }
     }
 
@@ -178,38 +214,39 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       setData((prev) => ({ ...(prev || {}), ...(resp || {}) }))
     }
 
-    const nextModels = {
-      gemini_model: modelsBody.gemini_model,
-    }
+    const nextModels = { ...models, ...modelsBody }
     setModels(nextModels)
     initialModelsRef.current = nextModels
 
+    const responseConfig = resp?.api_keys_configuration || {}
+    const responseKeys = responseConfig?.keys || {}
     const nextConfigured = { ...configured }
     const nextMasked = { ...masked }
-    const draft = normalizeApiKey(keyDrafts.gemini)
-    if (resetProvider === 'gemini') {
-      nextConfigured.gemini = false
-      nextMasked.gemini = ''
-    } else if (draft !== '') {
-      nextConfigured.gemini = true
-      nextMasked.gemini = `••••••••${draft.slice(-4)}`
+    for (const { key } of activeProviderMeta) {
+      if (!Object.prototype.hasOwnProperty.call(responseKeys, key)) continue
+      const responseMask = typeof responseKeys[key] === 'string' ? responseKeys[key] : ''
+      nextConfigured[key] = responseMask !== ''
+      nextMasked[key] = responseMask
     }
     setConfigured(nextConfigured)
     setMasked(nextMasked)
 
-    setKeyDrafts({ gemini: '' })
+    setKeyDrafts({ gemini: '', ollama: '' })
     setHandleButtonDisabled(true)
 
     // Update models directly from the save response
-    const config = resp?.api_keys_configuration || {}
-    const discovered = config?.available_models || {}
+    const discovered = responseConfig?.available_models || {}
     setAvailableModels({
       gemini:
         Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
           ? discovered.gemini
           : [],
+      ollama:
+        Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
+          ? discovered.ollama
+          : [],
     })
-  }, [keyDrafts, models])
+  }, [keyDrafts, models, configured, activeProviderMeta])
 
   useImperativeHandle(ref, () => ({
     hasConfiguredKey: (provider) => {
@@ -220,20 +257,27 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       return m !== ''
     },
     getPendingPayload: () => {
-      const hasKeyChanges = Object.values(keyDrafts).some((v) => (v || '').trim() !== '')
+      const hasKeyChanges = activeProviderMeta.some(({ key }) => (keyDrafts[key] || '').trim() !== '')
       const initial = initialModelsRef.current || {}
-      const hasModelChanges = (models.gemini_model || '') !== (initial.gemini_model || '')
+      const hasModelChanges = activeProviderMeta.some(({ modelKey }) =>
+        (models[modelKey] || '') !== (initial[modelKey] || '')
+      )
       if (!hasKeyChanges && !hasModelChanges) return null
 
       const keys = {}
-      const geminiDraft = normalizeApiKey(keyDrafts.gemini)
-      if (geminiDraft !== '') {
-        keys.gemini = geminiDraft
+      for (const { key } of activeProviderMeta) {
+        const draft = normalizeApiKey(keyDrafts[key])
+        if (draft !== '') keys[key] = draft
       }
 
       const payload = {}
       if (Object.keys(keys).length) payload.keys = keys
-      if (hasModelChanges) payload.models = { gemini_model: models.gemini_model }
+      if (hasModelChanges) {
+        payload.models = activeProviderMeta.reduce((result, { modelKey }) => ({
+          ...result,
+          [modelKey]: models[modelKey],
+        }), {})
+      }
       return payload
     },
     syncAfterParentSave: (payload, settingsResponse) => {
@@ -242,42 +286,48 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       if (payload.models && typeof payload.models === 'object') {
         const nextModels = {
           gemini_model: payload.models.gemini_model ?? models.gemini_model,
+          ollama_model: payload.models.ollama_model ?? models.ollama_model,
         }
         setModels(nextModels)
         initialModelsRef.current = nextModels
       }
 
-      if (payload.keys && Object.prototype.hasOwnProperty.call(payload.keys, 'gemini')) {
-        const v = typeof payload.keys.gemini === 'string' ? normalizeApiKey(payload.keys.gemini) : ''
-        const nextConfigured = { ...configured }
-        const nextMasked = { ...masked }
-        if (v === '') {
-          nextConfigured.gemini = false
-          nextMasked.gemini = ''
-        } else {
-          nextConfigured.gemini = true
-          nextMasked.gemini = `••••••••${v.slice(-4)}`
-        }
+      const config = settingsResponse?.api_keys_configuration || {}
+      const responseKeys = config?.keys || {}
+      const nextConfigured = { ...configured }
+      const nextMasked = { ...masked }
+      let hasKeyState = false
+      for (const { key } of activeProviderMeta) {
+        if (!Object.prototype.hasOwnProperty.call(responseKeys, key)) continue
+        const responseMask = typeof responseKeys[key] === 'string' ? responseKeys[key] : ''
+        nextConfigured[key] = responseMask !== ''
+        nextMasked[key] = responseMask
+        hasKeyState = true
+      }
+      if (hasKeyState) {
         setConfigured(nextConfigured)
         setMasked(nextMasked)
       }
 
-      setKeyDrafts({ gemini: '' })
+      setKeyDrafts({ gemini: '', ollama: '' })
       setHandleButtonDisabled(true)
 
       // If parent save returned models, apply them (no extra GET).
-      const config = settingsResponse?.api_keys_configuration || {}
       const discovered = config?.available_models || {}
-      if (discovered?.gemini) {
+      if (discovered && typeof discovered === 'object') {
         setAvailableModels({
           gemini:
             Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
               ? discovered.gemini
               : [],
+          ollama:
+            Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
+              ? discovered.ollama
+              : [],
         })
       }
     },
-  }), [keyDrafts, models, configured, masked, normalizeApiKey])
+  }), [keyDrafts, models, configured, masked, normalizeApiKey, activeProviderMeta])
 
   async function SaveSettings({ resetProvider } = {}) {
     try {
@@ -311,9 +361,9 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
   const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available || window?.lmat_setup?.wp_ai_client_available)
   const providerConfig = data?.ai_translation_configuration?.provider
   const visibleProviders = providerMeta.filter((p) => {
-    if (!wpAiClientAvailable) return false
-    // Embedded under AI Translation: parent shows this only when Gemini is toggled on;
-    // saved `data` may still have gemini off until "Save Settings", so always show fields.
+    if (Array.isArray(providerKeys) && !providerKeys.includes(p.key)) return false
+    if (p.key === 'gemini' && !wpAiClientAvailable) return false
+    // Embedded fields are controlled by the parent provider toggle.
     if (embedded) return true
     // If provider settings aren't present yet, default to showing the inputs.
     if (!providerConfig) return true
@@ -346,11 +396,20 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
             ...listFromApi,
             ...(selectedModel && !listFromApi.includes(selectedModel) ? [selectedModel] : []),
           ]
+          const normalizeModelLabel = (metadata, fallback) => {
+            if (typeof metadata === 'string') return metadata
+            if (!metadata || typeof metadata !== 'object' || typeof metadata.label !== 'string') return fallback
+
+            const qualifiers = []
+            if (metadata.fast) qualifiers.push(__('Fast', 'translate-words'))
+
+            return qualifiers.length ? `${metadata.label} (${qualifiers.join(', ')})` : metadata.label
+          }
           const getModelLabel = (id) => {
-            if (labelsMap?.[id]) return labelsMap[id]
+            if (labelsMap?.[id]) return normalizeModelLabel(labelsMap[id], id)
             // Some providers return version-suffixed ids (e.g. -001). Try a base-id lookup.
             const base = typeof id === 'string' ? id.replace(/-\\d+$/, '') : ''
-            if (base && labelsMap?.[base]) return labelsMap[base]
+            if (base && labelsMap?.[base]) return normalizeModelLabel(labelsMap[base], id)
             return id
           }
 

@@ -6,7 +6,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import ErrorModalBox from '../components/error-modal-box/index.js';
 import { store } from '../redux-store/store.js';
 import DOMPurify from 'dompurify';
-import { geminiTranslateAgain, geminiTranslateComplete } from '../gemini-bulk-recovery.js';
+import { retryAiTranslation, continueAiTranslation } from '../gemini-bulk-recovery.js';
 import { installLanguagePackFromStatus } from '../components/translate-provider/local-ai/index.js';
 
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
@@ -46,6 +46,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     const runTranslationCleanup = useCallback(() => {
         abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
         destroyHandlersRef.current.forEach((callback) => {
             if (typeof callback === 'function') {
                 try {
@@ -55,6 +56,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 }
             }
         });
+        destroyHandlersRef.current = [];
     }, []);
 
     const updateDestoryHandler = useCallback((callback) => {
@@ -138,11 +140,12 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             closeErrorModal,
             completedStrings: d.completedStrings,
             totalPosts: d.totalPosts,
+            serviceProvider: d.serviceProvider || serviceProvider,
         };
         if (btnType === 'translateAgain') {
-            geminiTranslateAgain(payload);
+            retryAiTranslation(payload);
         } else if (btnType === 'continue') {
-            geminiTranslateComplete(payload);
+            continueAiTranslation(payload);
         }
     };
 
@@ -278,6 +281,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Edge AI Translator';
             case 'gemini':
                 return 'Google Gemini';
+            case 'ollama':
+                return 'Ollama Cloud';
             default:
                 return 'Google Translate';
         }
@@ -303,7 +308,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     return (
         errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
-            {errorModalData.aiError && serviceProvider === 'gemini' && (
+            {errorModalData.aiError && ['gemini', 'ollama'].includes(errorModalData.serviceProvider || serviceProvider) && (
                 <div className={`${prefix}-ai-error-buttons`}>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="continue" onClick={AIErrorBtnHandler}>{__('Continue', 'translate-words')}</button>

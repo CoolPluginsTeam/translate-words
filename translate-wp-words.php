@@ -70,6 +70,10 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
+// Expose the independent Ollama integration in WordPress's shared Connectors UI.
+// This does not register Ollama with, or route requests through, the WP AI Client.
+require_once __DIR__ . '/includes/ai-connectors/ollama/class-ollama-connector-registration.php';
+
 // Register Gemini (Google AI) provider only when Gemini is in the allowed list
 // (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).
 add_action(

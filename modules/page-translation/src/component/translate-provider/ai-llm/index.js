@@ -1,13 +1,13 @@
 import { select, dispatch } from "@wordpress/data";
 import SaveTranslation from "../../store-translated-string/index.js";
 import StoreTimeTaken from "../../store-time-taken/index.js";
-import { requestAiBatch, chunkStringMap, logAiTranslationError } from "../../../../../bulk-translation/src/components/translate-provider/ai-llm/api-client.js";
+import { requestAiBatch, chunkStringMap, getOllamaChunkOptions, logAiTranslationError } from "../../../../../bulk-translation/src/components/translate-provider/ai-llm/api-client.js";
 import { __, sprintf } from "@wordpress/i18n";
 import AddProgressBar from "../../progress-bar/index.js";
 import ShowStringCount from "../../progress-bar/show-string-count.js";
 
 /**
- * @param {string} providerId gemini
+ * @param {string} providerId LLM provider identifier.
  * @returns {(props: Object) => Promise<void>}
  */
 export default function createAiLlmPageTranslator(providerId) {
@@ -52,6 +52,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            ollama: __("Translate with Ollama", "translate-words"),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -197,14 +198,17 @@ export default function createAiLlmPageTranslator(providerId) {
                 clearErrorNotice();
                 btn.setAttribute("aria-busy", "true");
                 const { maxTokens } = getBatchConfig();
-                const chunks = chunkStringMap(strings, { maxTokens });
+                const chunkOptions = providerId === "ollama"
+                    ? getOllamaChunkOptions(maxTokens)
+                    : { maxTokens };
+                const chunks = chunkStringMap(strings, chunkOptions);
                 const totalKeys = Math.max(1, Object.keys(strings).length);
                 let chunkIndex = 0;
                 let doneKeys = 0;
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = "gemini_model";
+                const modelKey = providerId === "ollama" ? "ollama_model" : "gemini_model";
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])

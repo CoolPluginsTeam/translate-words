@@ -14,6 +14,10 @@ use Translation_Entry;
 use Translations;
 use WP_Error;
 use WP_REST_Request;
+use Linguator\Includes\Services\Translation\Providers\Ollama_Translation_Provider;
+use Linguator\Includes\Options\Business\Api_Keys as Api_Keys_Option;
+
+require_once dirname( __DIR__, 3 ) . '/includes/services/translation/providers/class-ollama-translation-provider.php';
 
 if ( ! class_exists( 'Bulk_Translation' ) ) :
 	/**
@@ -273,20 +277,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Batch-translate string map via configured LLM (Gemini).
+		 * Batch-translate a string map through the configured server-side LLM.
 		 *
 		 * @param \WP_REST_Request $request Request.
 		 * @return \WP_REST_Response|\WP_Error
 		 */
 		public function ai_translate_batch( $request ) {
-			if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-				return new WP_Error(
-					'lmat_ai_unavailable',
-					__( 'WordPress AI Client is not available. Install or enable the AI Client and provider packages.', 'translate-words' ),
-					array( 'status' => 501 )
-				);
-			}
-
 			$params = $request->get_json_params();
 			if ( ! is_array( $params ) ) {
 				$params = array();
@@ -300,8 +296,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
 			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
-			if ( 'gemini' !== $provider ) {
+			if ( ! in_array( $provider, array( 'gemini', 'ollama' ), true ) ) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
+			}
+
+			if ( 'gemini' === $provider && ! function_exists( 'wp_ai_client_prompt' ) ) {
+				return new WP_Error(
+					'lmat_ai_unavailable',
+					__( 'WordPress AI Client is not available. Install or enable the AI Client and provider packages.', 'translate-words' ),
+					array( 'status' => 501 )
+				);
 			}
 
 			if ( $post_id <= 0 || '' === $source_lang || '' === $target_lang || empty( $strings ) ) {
@@ -323,7 +327,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_google_api_key';
+			$key_option = 'ollama' === $provider ? 'connectors_ai_ollama_api_key' : 'connectors_ai_google_api_key';
 			$api_key    = (string) get_option( $key_option, '' );
 			if ( '' === trim( $api_key ) ) {
 				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
@@ -396,30 +400,93 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string               $provider    gemini.
-		 * @param string               $source_lang Slug
-		 * @param string               $target_lang Slug
-		 * @param array<string,string> $strings     Key => source text.
+		 * Translate a string map through the selected server-side LLM.
+		 *
+		 * @param string               $provider                Provider slug.
+		 * @param string               $source_lang             Source language slug.
+		 * @param string               $target_lang             Target language slug.
+		 * @param array<string,string> $strings                 Key => source text.
+		 * @param string               $api_key                 Provider API key.
+		 * @param string               $model_override          Optional model override.
+		 * @param int                  $split_depth             Current retry depth.
+		 * @param bool                 $allow_long_string_split Whether Ollama may segment long values.
+		 * @param bool                 $allow_validation_retry  Whether Ollama validation failures may schedule retries.
 		 * @return array<string,string>|\WP_Error
 		 */
-		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
-			$model_id = $this->ai_translate_resolve_llm_model_id( $model_override );
+		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0, bool $allow_long_string_split = true, bool $allow_validation_retry = true ) {
+			$model_id = $this->ai_translate_resolve_llm_model_id( $provider, $model_override );
 
-			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
-			if ( is_wp_error( $provider_setup ) ) {
-				return $provider_setup;
+			if ( 'ollama' === $provider ) {
+				$stored_models    = Api_Keys_Option::get_stored_provider_models();
+				$available_ollama = isset( $stored_models['ollama'] ) && is_array( $stored_models['ollama'] )
+					? $stored_models['ollama']
+					: array();
+
+				if ( ! array_key_exists( $model_id, $available_ollama ) ) {
+					return new WP_Error(
+						'lmat_ollama_model_unavailable',
+						__( 'The selected Ollama model is not available to this account.', 'translate-words' ),
+						array( 'status' => 400 )
+					);
+				}
+
+				if ( $allow_long_string_split ) {
+					$long_string_result = $this->ai_translate_ollama_long_strings(
+						$source_lang,
+						$target_lang,
+						$strings,
+						$api_key,
+						$model_override,
+						$split_depth
+					);
+					if ( null !== $long_string_result ) {
+						return $long_string_result;
+					}
+				}
 			}
 
-			$registry    = $provider_setup['registry'];
-			$provider_id = $provider_setup['provider_id'];
+			$provider_strings = $strings;
+			$html_tag_maps    = array();
+			if ( 'ollama' === $provider ) {
+				$protected       = $this->ai_protect_ollama_html_tags( $strings );
+				$provider_strings = $protected['strings'];
+				$html_tag_maps    = $protected['maps'];
+			}
 
-			$instruction = $this->ai_translate_build_llm_prompt( $source_lang, $target_lang, $strings );
+			$instruction = $this->ai_translate_build_llm_prompt( $source_lang, $target_lang, $provider_strings, $strings, $provider );
 			if ( is_wp_error( $instruction ) ) {
 				return $instruction;
 			}
 
-			$text = $this->ai_translate_call_llm_provider( $registry, $provider_id, $model_id, $instruction );
+			if ( 'ollama' === $provider ) {
+				$ollama = new Ollama_Translation_Provider( $api_key, $model_id );
+				$text   = $ollama->translate_instruction( $instruction, array_keys( $provider_strings ) );
+			} else {
+				$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
+				if ( is_wp_error( $provider_setup ) ) {
+					return $provider_setup;
+				}
+
+				$text = $this->ai_translate_call_llm_provider(
+					$provider_setup['registry'],
+					$provider_setup['provider_id'],
+					$model_id,
+					$instruction
+				);
+			}
 			if ( is_wp_error( $text ) ) {
+				if ( 'ollama' === $provider && $allow_validation_retry && 'lmat_ollama_output_truncated' === $text->get_error_code() ) {
+					return $this->ai_translate_retry_ollama_smaller_batches(
+						$text,
+						$source_lang,
+						$target_lang,
+						$strings,
+						$api_key,
+						$model_override,
+						$split_depth
+					);
+				}
+
 				return $this->ai_translate_handle_llm_call_error(
 					$text,
 					$provider,
@@ -432,16 +499,287 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				);
 			}
 
-			return $this->ai_translate_parse_llm_response( (string) $text, $strings );
+			$result = $this->ai_translate_parse_llm_response( (string) $text, $strings, $provider, $html_tag_maps );
+			if ( 'ollama' === $provider && $allow_validation_retry && is_wp_error( $result ) ) {
+				$retryable_codes = array(
+					'lmat_ai_bad_response',
+					'lmat_ollama_incomplete_response',
+					'lmat_ollama_html_changed',
+				);
+				if ( in_array( $result->get_error_code(), $retryable_codes, true ) ) {
+					return $this->ai_translate_retry_ollama_smaller_batches(
+						$result,
+						$source_lang,
+						$target_lang,
+						$strings,
+						$api_key,
+						$model_override,
+						$split_depth
+					);
+				}
+			}
+
+			return $result;
 		}
 
 		/**
-		 * Resolve Gemini model id from override, options, or default.
+		 * Retry an invalid Ollama response using smaller sequential batches.
 		 *
+		 * @param WP_Error            $error          Original validation error.
+		 * @param string              $source_lang    Source language slug.
+		 * @param string              $target_lang    Target language slug.
+		 * @param array<string,string> $strings       Source strings.
+		 * @param string              $api_key        Ollama API key.
+		 * @param string              $model_override Selected model.
+		 * @param int                 $split_depth    Current split depth.
+		 * @return array<string,string>|WP_Error
+		 */
+		private function ai_translate_retry_ollama_smaller_batches( WP_Error $error, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override, int $split_depth ) {
+			if ( count( $strings ) <= 1 ) {
+				// A single string cannot be split further. Give the model two fresh,
+				// sequential generations without recursively scheduling more retries.
+				$last_error = $error;
+				for ( $attempt = 0; $attempt < 2; ++$attempt ) {
+					$result = $this->ai_translate_strings_with_llm(
+						'ollama',
+						$source_lang,
+						$target_lang,
+						$strings,
+						$api_key,
+						$model_override,
+						$split_depth,
+						true,
+						false
+					);
+					if ( ! is_wp_error( $result ) ) {
+						return $result;
+					}
+					$last_error = $result;
+				}
+
+				return $last_error;
+			}
+
+			if ( $split_depth >= 4 ) {
+				return $error;
+			}
+
+			$chunks = $this->ai_translate_split_string_map( $strings );
+			if ( 2 !== count( $chunks ) ) {
+				return $error;
+			}
+
+			$translated = array();
+			foreach ( $chunks as $chunk ) {
+				$result = $this->ai_translate_strings_with_llm(
+					'ollama',
+					$source_lang,
+					$target_lang,
+					$chunk,
+					$api_key,
+					$model_override,
+					$split_depth + 1
+				);
+				if ( is_wp_error( $result ) ) {
+					return $result;
+				}
+				$translated += $result;
+			}
+
+			return $translated;
+		}
+
+		/**
+		 * Translate oversized Ollama values as sequential, safely bounded segments.
+		 *
+		 * Gemini intentionally keeps its existing batching behavior. Returning null
+		 * means no value needed segmentation and the normal request can continue.
+		 *
+		 * @param string               $source_lang    Source language slug.
+		 * @param string               $target_lang    Target language slug.
+		 * @param array<string,string> $strings        Source strings.
+		 * @param string               $api_key        Ollama API key.
+		 * @param string               $model_override Selected model.
+		 * @param int                  $split_depth    Current retry depth.
+		 * @return array<string,string>|WP_Error|null
+		 */
+		private function ai_translate_ollama_long_strings( string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override, int $split_depth ) {
+			$max_chars       = $this->ai_translate_ollama_segment_char_limit();
+			$translated      = array();
+			$regular_strings = array();
+			$did_split       = false;
+
+			foreach ( $strings as $key => $value ) {
+				$value    = (string) $value;
+				$segments = strlen( $value ) > $max_chars
+					? $this->ai_translate_split_ollama_string( $value, $max_chars )
+					: array( $value );
+
+				if ( count( $segments ) < 2 ) {
+					$regular_strings[ $key ] = $value;
+					continue;
+				}
+
+				$did_split = true;
+				$joined    = '';
+				foreach ( $segments as $segment ) {
+					$result = $this->ai_translate_strings_with_llm(
+						'ollama',
+						$source_lang,
+						$target_lang,
+						array( $key => $segment ),
+						$api_key,
+						$model_override,
+						$split_depth,
+						false
+					);
+					if ( is_wp_error( $result ) ) {
+						return $result;
+					}
+					if ( ! array_key_exists( $key, $result ) ) {
+						return new WP_Error(
+							'lmat_ollama_incomplete_response',
+							__( 'Ollama returned an incomplete translation response. Please retry this batch.', 'translate-words' ),
+							array( 'status' => 502 )
+						);
+					}
+					$joined .= (string) $result[ $key ];
+				}
+				$translated[ $key ] = $joined;
+			}
+
+			if ( ! $did_split ) {
+				return null;
+			}
+
+			if ( ! empty( $regular_strings ) ) {
+				$regular_result = $this->ai_translate_strings_with_llm(
+					'ollama',
+					$source_lang,
+					$target_lang,
+					$regular_strings,
+					$api_key,
+					$model_override,
+					$split_depth,
+					false
+				);
+				if ( is_wp_error( $regular_result ) ) {
+					return $regular_result;
+				}
+				$translated += $regular_result;
+			}
+
+			$ordered = array();
+			foreach ( array_keys( $strings ) as $key ) {
+				if ( array_key_exists( $key, $translated ) ) {
+					$ordered[ $key ] = $translated[ $key ];
+				}
+			}
+
+			return $ordered;
+		}
+
+		/**
+		 * Calculate an Ollama segment size after reserving prompt/schema context.
+		 *
+		 * @return int Maximum source bytes per segment.
+		 */
+		private function ai_translate_ollama_segment_char_limit(): int {
+			$max_tokens = absint( get_option( 'lmat_ai_request_token_per_request', 500 ) );
+			if ( $max_tokens < 1 ) {
+				$max_tokens = 500;
+			}
+
+			return max( 256, $max_tokens * 4 );
+		}
+
+		/**
+		 * Split a long value only at safe whitespace outside markup/placeholders.
+		 *
+		 * The returned segments concatenate to the exact original source. If no safe
+		 * boundary exists, the original value is returned unsplit.
+		 *
+		 * @param string $value     Source value.
+		 * @param int    $max_chars Maximum bytes per segment.
+		 * @return string[]
+		 */
+		private function ai_translate_split_ollama_string( string $value, int $max_chars ): array {
+			$length = strlen( $value );
+			if ( $length <= $max_chars ) {
+				return array( $value );
+			}
+
+			$segments = array();
+			$offset   = 0;
+			while ( $length - $offset > $max_chars ) {
+				$boundary = $this->ai_translate_find_ollama_split_boundary( $value, $offset, $max_chars );
+				if ( $boundary <= $offset ) {
+					return array( $value );
+				}
+				$segments[] = substr( $value, $offset, $boundary - $offset );
+				$offset     = $boundary;
+			}
+
+			$segments[] = substr( $value, $offset );
+
+			return implode( '', $segments ) === $value ? $segments : array( $value );
+		}
+
+		/**
+		 * Find a safe byte boundary outside tags, shortcodes, and placeholders.
+		 *
+		 * @param string $value     Source value.
+		 * @param int    $offset    Segment start offset.
+		 * @param int    $max_chars Maximum segment bytes.
+		 * @return int Boundary offset, or the original offset when none is safe.
+		 */
+		private function ai_translate_find_ollama_split_boundary( string $value, int $offset, int $max_chars ): int {
+			$end              = min( strlen( $value ), $offset + $max_chars );
+			$minimum_boundary = $offset + (int) floor( $max_chars * 0.5 );
+			$in_angle         = false;
+			$square_depth     = 0;
+			$brace_depth      = 0;
+			$fallback         = $offset;
+			$preferred        = $offset;
+
+			for ( $i = $offset; $i < $end; $i++ ) {
+				$char = $value[ $i ];
+				if ( '<' === $char && 0 === $square_depth && 0 === $brace_depth ) {
+					$in_angle = true;
+				} elseif ( '>' === $char && $in_angle ) {
+					$in_angle = false;
+				} elseif ( ! $in_angle && '[' === $char ) {
+					++$square_depth;
+				} elseif ( ! $in_angle && ']' === $char && $square_depth > 0 ) {
+					--$square_depth;
+				} elseif ( ! $in_angle && 0 === $square_depth && '{' === $char ) {
+					++$brace_depth;
+				} elseif ( ! $in_angle && 0 === $square_depth && '}' === $char && $brace_depth > 0 ) {
+					--$brace_depth;
+				}
+
+				if ( $i + 1 < $minimum_boundary || $in_angle || $square_depth > 0 || $brace_depth > 0 || ! ctype_space( $char ) ) {
+					continue;
+				}
+
+				$fallback = $i + 1;
+				$previous = $i > $offset ? $value[ $i - 1 ] : '';
+				if ( "\n" === $char || "\r" === $char || in_array( $previous, array( '.', '!', '?', ';', ':' ), true ) ) {
+					$preferred = $i + 1;
+				}
+			}
+
+			return $preferred > $offset ? $preferred : $fallback;
+		}
+
+		/**
+		 * Resolve a provider model id from override, options, or default.
+		 *
+		 * @param string $provider       Provider slug.
 		 * @param string $model_override Optional model override.
 		 * @return string
 		 */
-		private function ai_translate_resolve_llm_model_id( string $model_override = '' ): string {
+		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ): string {
 			$models = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
 				$m = LMAT()->model->options->get( 'api_keys' );
@@ -450,9 +788,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$model_key      = 'gemini_model';
+			$model_key      = 'ollama' === $provider ? 'ollama_model' : 'gemini_model';
 			$model_defaults = array(
 				'gemini_model' => 'gemini-2.5-flash',
+				'ollama_model' => 'gemma4:31b',
 			);
 			$model_id = trim( $model_override );
 			if ( '' === $model_id ) {
@@ -515,15 +854,39 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @param string               $source_lang Source language slug.
 		 * @param string               $target_lang Target language slug.
 		 * @param array<string,string> $strings     Key => source text.
+		 * @param array<string,string> $glossary_strings Unprotected strings used for glossary matching.
+		 * @param string               $provider Provider slug.
 		 * @return string|\WP_Error
 		 */
-		private function ai_translate_build_llm_prompt( string $source_lang, string $target_lang, array $strings ) {
+		private function ai_translate_build_llm_prompt( string $source_lang, string $target_lang, array $strings, array $glossary_strings = array(), string $provider = '' ) {
 			$payload = wp_json_encode( $strings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			if ( false === $payload ) {
 				return new WP_Error( 'lmat_ai_encode_error', __( 'Could not prepare translation payload.', 'translate-words' ), array( 'status' => 500 ) );
 			}
 
-			$glossary_instructions = $this->ai_translate_build_glossary_instructions( $source_lang, $target_lang, $strings );
+			$glossary_instructions = $this->ai_translate_build_glossary_instructions(
+				$source_lang,
+				$target_lang,
+				empty( $glossary_strings ) ? $strings : $glossary_strings
+			);
+			$html_instruction = 'ollama' === $provider
+				? 'Preserve all HTML tags, attributes, and tokens such as [[LMAT_HTML_TAG_0000]] exactly. Never translate, remove, duplicate, reorder, or add spaces inside these tokens.'
+				: 'Preserve all HTML tags and their attributes such as class, id, data-*, etc. Do not alter any part of the HTML structure.';
+			$json_instruction = 'ollama' === $provider
+				? 'Escape double quotes only where JSON syntax requires it. Do not double-encode the JSON or add unnecessary slashes.'
+				: 'Do not escape double quotes with backslashes. Output must be valid JSON without extra slashes.';
+			$entity_instruction = 'ollama' === $provider
+				? 'Preserve HTML entities exactly as supplied. Do not encode or decode them; genuine HTML tags are represented by immutable tokens.'
+				: 'Decode any &lt; and &gt; HTML entities back to < and > symbols in the output and preserve and maintain whitespace.';
+			$payload_instruction = 'ollama' === $provider
+				? 'Translate the provided JSON object from %s into %s language, regardless of whether values repeat. Return the same complete object with every key present.'
+				: 'Translate the provided JSON array from %s into %s language, regardless of whether the values are the same, and ensure the JSON is well-formed and complete.';
+			$key_instruction = 'ollama' === $provider
+				? 'Return a JSON object containing every supplied key exactly as written. Keys may be numeric or non-numeric. Never rename, shorten, translate, or omit a key.'
+				: 'Return the translation in the format of a JSON object with the keys being numeric values (matching the source keys), and the values being the translated strings.';
+			$format_example = 'ollama' === $provider
+				? '{"exact supplied key": "translation in %s language"}'
+				: '{"key(numeric value)": "(translations of the strings in %s language)"}';
 
 			$instruction = sprintf(
 				'You are a professional translator.
@@ -531,23 +894,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				Target Language: %s
 				Instruction 1: Translate visible text content semantically from %s into %s language. Provide a proper meaning-based translation.
 				Instruction 2: Do not translate or modify any content inside square brackets [] and Do not translate any URL. These are shortcodes or dynamic placeholders and must remain exactly as they are.
-				Instruction 3: Preserve all HTML tags and their attributes such as class, id, data-*, etc. Do not alter any part of the HTML structure.
-				Instruction 4: Return the translation in the format of a JSON object with the keys being numeric values (matching the source keys), and the values being the translated strings.
-				Instruction 5: Do not escape double quotes with backslashes. Output must be valid JSON without extra slashes.
-				Instruction 6: Translate the provided JSON array from %s into %s language, regardless of whether the values are the same, and ensure the JSON is well-formed and complete.
-				Instruction 7: Decode any &lt; and &gt; HTML entities back to < and > symbols in the output and preserve and maintain whitespace.
+				Instruction 3: %s
+				Instruction 4: %s
+				Instruction 5: %s
+				Instruction 6: %s
+				Instruction 7: %s
 				Instruction 8: Return the output as a valid JSON object. Do not wrap the output in a string or markdown code block. Ensure the JSON is clean, parseable, and properly formatted.
 
-				Please ensure that the output follows the format: {"key(numeric value)": "(translations of the strings in %s language)"}
+				Please ensure that the output follows the format: %s
 
 				Strings are :- %s',
 				sanitize_text_field( $source_lang ),
 				sanitize_text_field( $target_lang ),
 				sanitize_text_field( $source_lang ),
 				sanitize_text_field( $target_lang ),
-				sanitize_text_field( $source_lang ),
-				sanitize_text_field( $target_lang ),
-				sanitize_text_field( $target_lang ),
+				$html_instruction,
+				$key_instruction,
+				$json_instruction,
+				sprintf( $payload_instruction, sanitize_text_field( $source_lang ), sanitize_text_field( $target_lang ) ),
+				$entity_instruction,
+				sprintf( $format_example, sanitize_text_field( $target_lang ) ),
 				$payload
 			);
 
@@ -812,10 +1178,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * Parse LLM text response into a key => translated string map.
 		 *
 		 * @param string               $text    Raw provider response text.
-		 * @param array<string,string> $strings Original key => source text map.
+		 * @param array<string,string> $strings  Original key => source text map.
+		 * @param string               $provider Provider slug.
+		 * @param array<string,array<string,string>> $html_tag_maps Protected Ollama HTML tags by string key.
 		 * @return array<string,string>|\WP_Error
 		 */
-		private function ai_translate_parse_llm_response( string $text, array $strings ) {
+		private function ai_translate_parse_llm_response( string $text, array $strings, string $provider = '', array $html_tag_maps = array() ) {
 			$clean_text = preg_replace( '/(^```json\n|```$)/', '', $text );
 			$final_text = preg_replace( '/\\\\{2,}([\'"n])/', '\\\$1', (string) $clean_text );
 
@@ -833,11 +1201,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			if ( is_string( $final_text ) && ( str_starts_with( $final_text, '"' ) || str_ends_with( $final_text, '"' ) ) ) {
+			if ( is_string( $final_text ) && ( 0 === strpos( $final_text, '"' ) || '"' === substr( $final_text, -1 ) ) ) {
 				$final_text = trim( $final_text, '"' );
 			}
 
-			$decoded = $this->ai_translate_parse_json_object( (string) $final_text );
+			$decoded = $this->ai_translate_parse_json_object( (string) $final_text, 'ollama' !== $provider );
 			if ( is_wp_error( $decoded ) ) {
 				return $decoded;
 			}
@@ -845,13 +1213,130 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$out = array();
 			foreach ( array_keys( $strings ) as $key ) {
 				if ( isset( $decoded[ $key ] ) && is_scalar( $decoded[ $key ] ) ) {
-					$out[ $key ] = $this->ai_normalize_translation_string( (string) $decoded[ $key ] );
+					$translated = $this->ai_normalize_translation_string( (string) $decoded[ $key ] );
+					if ( 'ollama' === $provider ) {
+						$restored = $this->ai_restore_ollama_html_tags(
+							$translated,
+							isset( $html_tag_maps[ $key ] ) ? $html_tag_maps[ $key ] : array()
+						);
+						if ( is_wp_error( $restored ) ) {
+							return $restored;
+						}
+						$translated = $restored;
+						$translated = $this->ai_normalize_ollama_html_translation( $translated, (string) $strings[ $key ] );
+					}
+					$out[ $key ] = $translated;
 				} else {
+					if ( 'ollama' === $provider ) {
+						return new WP_Error(
+							'lmat_ollama_incomplete_response',
+							__( 'Ollama returned an incomplete translation response. Please retry this batch.', 'translate-words' ),
+							array( 'status' => 502 )
+						);
+					}
 					$out[ $key ] = $strings[ $key ];
 				}
 			}
 
 			return $out;
+		}
+
+		/**
+		 * Replace genuine HTML tags with immutable tokens before sending text to Ollama.
+		 * Backslash-escaped wrapper tags are intentionally left for the existing wrapper cleanup.
+		 *
+		 * @param array<string,string> $strings Original strings.
+		 * @return array{strings:array<string,string>,maps:array<string,array<string,string>>}
+		 */
+		private function ai_protect_ollama_html_tags( array $strings ): array {
+			$protected = array();
+			$maps      = array();
+
+			foreach ( $strings as $key => $string ) {
+				$tag_index = 0;
+				$tag_map   = array();
+				$value     = preg_replace_callback(
+					'/(?<!\\\\)(?:<!--[\s\S]*?-->|<\/?[A-Za-z][^>]*>)/',
+					static function ( array $match ) use ( &$tag_index, &$tag_map ): string {
+						$token             = sprintf( '[[LMAT_HTML_TAG_%04d]]', $tag_index );
+						$tag_map[ $token ] = $match[0];
+						++$tag_index;
+						return $token;
+					},
+					(string) $string
+				);
+
+				$protected[ $key ] = is_string( $value ) ? $value : (string) $string;
+				$maps[ $key ]      = $tag_map;
+			}
+
+			return array( 'strings' => $protected, 'maps' => $maps );
+		}
+
+		/**
+		 * Validate and restore original HTML tags after Ollama translation.
+		 *
+		 * @param string               $translation Translation containing protected tokens.
+		 * @param array<string,string> $tag_map     Token => original tag map.
+		 * @return string|\WP_Error
+		 */
+		private function ai_restore_ollama_html_tags( string $translation, array $tag_map ) {
+			if ( empty( $tag_map ) ) {
+				return $translation;
+			}
+
+			$positions = array();
+			foreach ( $tag_map as $token => $tag ) {
+				if ( 1 !== substr_count( $translation, $token ) ) {
+					return new WP_Error(
+						'lmat_ollama_html_changed',
+						__( 'Ollama changed protected page markup. The translation was not applied; please retry.', 'translate-words' ),
+						array( 'status' => 502 )
+					);
+				}
+				$positions[] = strpos( $translation, $token );
+			}
+
+			$sorted_positions = $positions;
+			sort( $sorted_positions, SORT_NUMERIC );
+			if ( $positions !== $sorted_positions || preg_match( '/\[\[LMAT_HTML_TAG_\d+\]\]/', str_replace( array_keys( $tag_map ), '', $translation ) ) ) {
+				return new WP_Error(
+					'lmat_ollama_html_changed',
+					__( 'Ollama changed protected page markup. The translation was not applied; please retry.', 'translate-words' ),
+					array( 'status' => 502 )
+				);
+			}
+
+			$without_tokens = str_replace( array_keys( $tag_map ), '', $translation );
+			if ( preg_match( '/<!--[\s\S]*?-->|<\/?[A-Za-z][^>]*>/', $without_tokens ) ) {
+				return new WP_Error(
+					'lmat_ollama_html_changed',
+					__( 'Ollama added unexpected page markup. The translation was not applied; please retry.', 'translate-words' ),
+					array( 'status' => 502 )
+				);
+			}
+
+			return strtr( $translation, $tag_map );
+		}
+
+		/**
+		 * Removes transport-only escaped HTML wrappers from Ollama translations.
+		 *
+		 * Backslash-escaped source tags are extraction artifacts rather than page markup,
+		 * so only their visible translated text is returned. Genuine HTML is preserved.
+		 *
+		 * @param string $translation Translated value.
+		 * @param string $source      Original source value.
+		 * @return string
+		 */
+		private function ai_normalize_ollama_html_translation( string $translation, string $source ): string {
+			if ( ! preg_match( '/\\\\<\/?[A-Za-z][^>]*>/', $source ) ) {
+				return $translation;
+			}
+
+			$translation = (string) preg_replace( '/\\\\(?=<\/?[A-Za-z][^>]*>)/', '', $translation );
+
+			return trim( wp_strip_all_tags( $translation ) );
 		}
 
 		/**
@@ -904,12 +1389,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string $text Raw model output.
+		 * @param string $text                 Raw model output.
+		 * @param bool   $decode_html_entities Whether to decode entities before JSON parsing.
 		 * @return array<string,mixed>|\WP_Error
 		 */
-		private function ai_translate_parse_json_object( string $text ) {
+		private function ai_translate_parse_json_object( string $text, bool $decode_html_entities = true ) {
 			$text = trim( $text );
-			$text = html_entity_decode( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+			if ( $decode_html_entities ) {
+				$text = html_entity_decode( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+			}
 			if ( preg_match( '/```(?:json)?\s*(\{.*\})\s*```/s', $text, $m ) ) {
 				$text = $m[1];
 			} elseif ( preg_match( '/\{[\s\S]*\}/', $text, $m ) ) {

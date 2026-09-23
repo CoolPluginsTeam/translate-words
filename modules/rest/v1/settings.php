@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once dirname( __DIR__, 3 ) . '/includes/services/translation/providers/class-ollama-translation-provider.php';
+
 
 use Linguator\Includes\Other\Linguator_Model;
 use WP_Error;
@@ -18,6 +20,8 @@ use WP_REST_Server;
 use Linguator\Includes\Models\Languages;
 use Linguator\Includes\Options\Options;
 use Linguator\Includes\Options\Business\Api_Keys as Api_Keys_Option;
+use Linguator\Includes\Services\Translation\Providers\Ollama_Translation_Models;
+use Linguator\Includes\Services\Translation\Providers\Ollama_Translation_Provider;
 use Linguator\Modules\REST\Abstract_Controller;
 use Linguator\Includes\Migration\Polylang_Migration;
 use Linguator\Includes\Migration\WPML_Migration;
@@ -515,12 +519,19 @@ class Settings extends Abstract_Controller {
 		}
 
 		// Never return raw API keys over REST; return masked values so the UI can show "configured".
-		// Keys live in dedicated WP options `connectors_ai_google_api_key`.
-		$gemini_raw = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		// Keys live in dedicated provider options and are never returned in full.
+		$gemini_raw   = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		$ollama_raw   = trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
 		$gemini_masked = '';
+		$ollama_masked = '';
 		if ( '' !== $gemini_raw ) {
 			$tail          = substr( $gemini_raw, -4 );
 			$gemini_masked = '••••••••' . $tail;
+		}
+
+		if ( '' !== $ollama_raw ) {
+			$tail          = substr( $ollama_raw, -4 );
+			$ollama_masked = '••••••••' . $tail;
 		}
 
 		$models = $this->options->get( 'api_keys' );
@@ -532,10 +543,17 @@ class Settings extends Abstract_Controller {
 		$gemini_on  = ! empty( $providers['gemini'] );
 		$has_key    = ( '' !== $gemini_raw );
 		$available_models = array(
-			'gemini' => array()
+			'gemini' => array(),
+			'ollama' => array(),
 		);
-		if ( $has_key ) {
+		if ( $has_key || '' !== $ollama_raw ) {
 			$available_models = Api_Keys_Option::get_stored_provider_models();
+		}
+		if ( $has_key && empty( $available_models['gemini'] ) ) {
+			$discovered_models = Api_Keys_Option::discover_provider_models();
+			$available_models['gemini'] = isset( $discovered_models['gemini'] ) && is_array( $discovered_models['gemini'] )
+				? $discovered_models['gemini']
+				: array();
 		}
 
 		$this->ai_gemini_model_refresh_needed = false;
@@ -543,6 +561,7 @@ class Settings extends Abstract_Controller {
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
 				'gemini' => $gemini_masked,
+				'ollama' => $ollama_masked,
 			),
 			'models'           => $models,
 			'available_models' => $available_models,
@@ -739,6 +758,44 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
+	 * Validates an Ollama API key and returns approved available models.
+	 *
+	 * @param string $api_key Raw Ollama API key.
+	 * @return array<string,array<string,mixed>>|WP_Error Available approved models or an error.
+	 */
+	private function validate_ollama_api_key( string $api_key ) {
+		$key = (string) preg_replace( '/\s+/', '', $api_key );
+		if ( '' === $key ) {
+			return array();
+		}
+
+		if ( strlen( $key ) > 512 || preg_match( '/[\x00-\x1F\x7F<>"\']/', $key ) ) {
+			return new WP_Error(
+				'lmat_ollama_invalid_api_key',
+				__( 'Invalid Ollama API key format. Please check your credentials.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$provider = new Ollama_Translation_Provider( $key, Ollama_Translation_Models::get_default() );
+		$models   = $provider->get_available_models();
+
+		if ( is_wp_error( $models ) ) {
+			return $models;
+		}
+
+		if ( empty( $models ) ) {
+			return new WP_Error(
+				'lmat_ollama_no_supported_models',
+				__( 'This Ollama account does not currently provide any model supported by Linguator.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return $models;
+	}
+
+	/**
 	 * Updates option(s).
 	 * This allows to update one or several options.
 	 *
@@ -764,33 +821,82 @@ class Settings extends Abstract_Controller {
 		$incoming_keys   = isset( $params['keys'] ) && is_array( $params['keys'] ) ? $params['keys'] : array();
 		$incoming_models = isset( $params['models'] ) && is_array( $params['models'] ) ? $params['models'] : array();
 
-		// Handle Gemini key save/reset.
-		if ( array_key_exists( 'gemini', $incoming_keys ) ) {
-			$v = $incoming_keys['gemini'];
-			$v = is_string( $v ) ? preg_replace( '/\s+/', '', $v ) : '';
-
-			$current_raw  = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
-			$is_unchanged = ( '' !== $v && '' !== $current_raw && $current_raw === $v );
+		// Validate the Gemini key now, but defer persistence until the complete request succeeds.
+		$has_gemini_key_change = array_key_exists( 'gemini', $incoming_keys );
+		$gemini_value          = null;
+		$current_gemini        = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		$gemini_is_unchanged   = false;
+		if ( $has_gemini_key_change ) {
+			$gemini_value        = is_string( $incoming_keys['gemini'] ) ? preg_replace( '/\s+/', '', $incoming_keys['gemini'] ) : '';
+			$gemini_is_unchanged = ( '' !== $gemini_value && '' !== $current_gemini && $current_gemini === $gemini_value );
 
 			// Validate only when setting a non-empty key AND it differs from the stored one.
 			// Empty string is allowed for reset.
-			if ( '' !== $v && ! $is_unchanged ) {
-				$validation = $this->validate_gemini_api_key( $v );
+			if ( '' !== $gemini_value && ! $gemini_is_unchanged ) {
+				$validation = $this->validate_gemini_api_key( $gemini_value );
 				if ( is_wp_error( $validation ) ) {
 					return $validation;
 				}
 			}
+		}
 
-			if ( '' === $v && '' !== $current_raw ) {
-				$this->clear_gemini_api_key_validation_locks( $current_raw );
+		// Validate the complete Ollama key/model change before persisting either value.
+		$ollama_value          = null;
+		$ollama_models         = null;
+		$current_ollama        = trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
+		$ollama_model          = isset( $incoming_models['ollama_model'] )
+			? sanitize_text_field( (string) $incoming_models['ollama_model'] )
+			: '';
+		$available_ollama      = array();
+		$has_ollama_key_change = array_key_exists( 'ollama', $incoming_keys );
+
+		if ( array_key_exists( 'ollama', $incoming_keys ) ) {
+			$ollama_value = is_string( $incoming_keys['ollama'] )
+				? (string) preg_replace( '/\s+/', '', $incoming_keys['ollama'] )
+				: '';
+
+			if ( '' !== $ollama_value && $ollama_value !== $current_ollama ) {
+				$ollama_models = $this->validate_ollama_api_key( $ollama_value );
+				if ( is_wp_error( $ollama_models ) ) {
+					return $ollama_models;
+				}
 			}
 
-			update_option( 'connectors_ai_google_api_key', $v );
-			if ( '' === $v && '' !== $current_raw ) {
-				Api_Keys_Option::clear_gemini_models_list();
-			} elseif ( '' !== $v && ! $is_unchanged ) {
-				Api_Keys_Option::discover_provider_models();
-				$this->ai_gemini_model_refresh_needed = false;
+		}
+
+		if ( is_array( $ollama_models ) ) {
+			$available_ollama = $ollama_models;
+		} elseif ( '' !== $current_ollama && ( null === $ollama_value || $ollama_value === $current_ollama ) ) {
+			$stored_models    = Api_Keys_Option::get_stored_provider_models();
+			$available_ollama = isset( $stored_models['ollama'] ) && is_array( $stored_models['ollama'] )
+				? $stored_models['ollama']
+				: array();
+
+			// Recover a missing/stale cache without requiring the administrator to replace the key.
+			if ( empty( $available_ollama ) && '' !== $ollama_model ) {
+				$ollama_models = $this->validate_ollama_api_key( $current_ollama );
+				if ( is_wp_error( $ollama_models ) ) {
+					return $ollama_models;
+				}
+				$available_ollama = $ollama_models;
+			}
+		}
+
+		if ( '' !== $ollama_model ) {
+			if ( ! Ollama_Translation_Models::is_supported( $ollama_model ) ) {
+				return new WP_Error(
+					'lmat_ollama_unsupported_model',
+					__( 'The selected Ollama model is not supported by Linguator.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			if ( ! array_key_exists( $ollama_model, $available_ollama ) ) {
+				return new WP_Error(
+					'lmat_ollama_model_unavailable',
+					__( 'The selected Ollama model is not available to this account.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
 			}
 		}
 
@@ -807,6 +913,12 @@ class Settings extends Abstract_Controller {
 				$options['api_keys'] = array();
 			}
 			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
+		}
+		if ( ! empty( $incoming_models ) && isset( $incoming_models['ollama_model'] ) ) {
+			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
+				$options['api_keys'] = array();
+			}
+			$options['api_keys']['ollama_model'] = $ollama_model;
 		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)
@@ -877,6 +989,31 @@ class Settings extends Abstract_Controller {
 		
 		if ( $errors->has_errors() ) {
 			return $this->add_status_to_error( $errors );
+		}
+
+		// Commit provider credentials only after every validation and option update succeeded.
+		if ( $has_gemini_key_change ) {
+			if ( '' === $gemini_value && '' !== $current_gemini ) {
+				$this->clear_gemini_api_key_validation_locks( $current_gemini );
+			}
+			update_option( 'connectors_ai_google_api_key', $gemini_value );
+			if ( '' === $gemini_value && '' !== $current_gemini ) {
+				Api_Keys_Option::clear_gemini_models_list();
+			} elseif ( '' !== $gemini_value && ! $gemini_is_unchanged ) {
+				Api_Keys_Option::discover_provider_models();
+				$this->ai_gemini_model_refresh_needed = false;
+			}
+		}
+
+		if ( $has_ollama_key_change ) {
+			update_option( 'connectors_ai_ollama_api_key', $ollama_value );
+			if ( '' === $ollama_value ) {
+				Api_Keys_Option::clear_ollama_models_list();
+			} elseif ( is_array( $ollama_models ) ) {
+				Api_Keys_Option::persist_ollama_models_list( $ollama_value, $ollama_models );
+			}
+		} elseif ( is_array( $ollama_models ) && '' !== $current_ollama ) {
+			Api_Keys_Option::persist_ollama_models_list( $current_ollama, $ollama_models );
 		}
 
 		// If this request also carried AI key/model payload, return the full settings response

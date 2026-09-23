@@ -1,5 +1,5 @@
 /**
- * Gemini bulk translation recovery.
+ * AI-provider bulk translation recovery.
  */
 import { store } from "./redux-store/store.js";
 import { selectTargetContent } from "./redux-store/features/selectors.js";
@@ -18,8 +18,9 @@ import { updateContent as updateContentBulkTranslate } from "./bulk-translate.js
  * @param {Function} args.closeErrorModal
  * @param {number} args.completedStrings
  * @param {number} args.totalPosts
+ * @param {string} args.serviceProvider
  */
-export async function geminiTranslateAgain({ postId, targetLang, storeDispatch, prefix, updateDestoryHandler, nonce, closeErrorModal, completedStrings, totalPosts }) {
+export async function retryAiTranslation({ postId, targetLang, storeDispatch, prefix, updateDestoryHandler, nonce, closeErrorModal, completedStrings, totalPosts, serviceProvider }) {
     const postContent = store.getState().parentPostsInfo[postId];
     if (!postContent) {
         return;
@@ -62,6 +63,7 @@ export async function geminiTranslateAgain({ postId, targetLang, storeDispatch, 
         createTranslatePostNonce: nonce,
         updateDestoryHandler,
         previousCompletedStrings: typeof completedStrings === "number" ? completedStrings : 0,
+        serviceProvider,
     });
 
     await translator.initTranslation();
@@ -70,7 +72,7 @@ export async function geminiTranslateAgain({ postId, targetLang, storeDispatch, 
 /**
  * Save partial translations and skip remaining strings.
  */
-export async function geminiTranslateComplete({ postId, targetLang, storeDispatch, nonce, closeErrorModal, completedStrings, totalPosts }) {
+export async function continueAiTranslation({ postId, targetLang, storeDispatch, nonce, closeErrorModal, completedStrings, totalPosts }) {
     const postContent = store.getState().parentPostsInfo[postId];
     if (!postContent) {
         return;
@@ -125,3 +127,7 @@ export async function geminiTranslateComplete({ postId, targetLang, storeDispatc
     await new Promise((resolve) => setTimeout(resolve, 400));
     await updateContent(targetLang);
 }
+
+// Preserve the original public names for existing integrations.
+export const geminiTranslateAgain = retryAiTranslation;
+export const geminiTranslateComplete = continueAiTranslation;

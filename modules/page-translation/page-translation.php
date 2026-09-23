@@ -416,20 +416,21 @@ class Linguator_Page_Translation {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 				$active_providers[] = $provider;
+			} elseif ( 'ollama' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
+				$active_providers[] = $provider;
 			}
 		}
 
 		$api_keys_status = array(
 			'gemini' => false,
+			'ollama' => false,
 		);
 
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
-			foreach ( $api_keys_status as $key => $status ) {
-				$api_key = get_option( 'connectors_ai_google_api_key', '' );
-				if ( ! empty( $api_key ) ) {
-					$api_keys_status[ $key ] = true;
-				}
-			}
+			$api_keys_status['gemini'] = '' !== trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		}
+		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
+			$api_keys_status['ollama'] = '' !== trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
 		}
 
 		$languages = LMAT()->model->get_languages_list();

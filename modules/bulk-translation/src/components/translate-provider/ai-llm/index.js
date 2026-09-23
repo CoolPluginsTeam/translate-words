@@ -3,7 +3,7 @@ import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } fr
 import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
 import { __, sprintf } from "@wordpress/i18n";
-import { requestAiBatch, chunkStringMap, logAiTranslationError } from "./api-client.js";
+import { requestAiBatch, chunkStringMap, getOllamaChunkOptions, logAiTranslationError } from "./api-client.js";
 
 class AiLlmBulkTranslator {
     constructor({
@@ -18,6 +18,7 @@ class AiLlmBulkTranslator {
         createTranslatePostNonce = "",
         previousCompletedStrings = 0,
         abortSignal,
+        serviceProvider = "",
     }) {
         this.textContentObject = selectTargetContent(store.getState(), postId);
         this.totalSourceKeys = Math.max(0, Object.keys(this.textContentObject || {}).length);
@@ -28,7 +29,7 @@ class AiLlmBulkTranslator {
         this.storeDispatch = storeDispatch;
         this.postId = postId;
         this.prefix = prefix;
-        this.serviceProvider = store.getState().serviceProvider;
+        this.serviceProvider = serviceProvider || store.getState().serviceProvider;
         this.stopTranslation = false;
         this.abortSignal = abortSignal;
         this.completedPostStatus = 0;
@@ -128,9 +129,14 @@ class AiLlmBulkTranslator {
     getBatchConfig = () => {
         const maxTokens = Number(lmatBulkTranslationGlobal?.AIRequestMaxTokens);
         const batchSize = Number(lmatBulkTranslationGlobal?.AIRequestBatchSize);
+        const configuredConcurrency = Number.isFinite(batchSize) && batchSize > 0
+            ? Math.min(10, Math.max(1, batchSize))
+            : 5;
         return {
             maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
-            concurrency: Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5,
+            // Ollama requests must run sequentially. Even two simultaneous
+            // structured generations are unreliable for some hosted models.
+            concurrency: this.serviceProvider === "ollama" ? 1 : configuredConcurrency,
         };
     };
 
@@ -214,6 +220,7 @@ class AiLlmBulkTranslator {
                     errorHtml: pendingHtml,
                     errorAllowHtml: false,
                     aiError: true,
+                    serviceProvider: this.serviceProvider,
                     quotaRecoverable: limitExceeded,
                     nonce: this.createTranslatePostNonce,
                     completedStrings: mergedDone,
@@ -224,7 +231,7 @@ class AiLlmBulkTranslator {
     }
 
     /**
-     * Run Gemini chunk requests for one target language.
+     * Run AI-provider chunk requests for one target language.
      * @param {string} targetLang
      * @returns {Promise<boolean>} true if strings translated and post save can run
      */
@@ -276,8 +283,11 @@ class AiLlmBulkTranslator {
 
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
-            const chunks = chunkStringMap(stringsToTranslate, { maxTokens });
-            const modelKey = "gemini_model";
+            const chunkOptions = this.serviceProvider === "ollama"
+                ? getOllamaChunkOptions(maxTokens)
+                : { maxTokens };
+            const chunks = chunkStringMap(stringsToTranslate, chunkOptions);
+            const modelKey = this.serviceProvider === "ollama" ? "ollama_model" : "gemini_model";
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])

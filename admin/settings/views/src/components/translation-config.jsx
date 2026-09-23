@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Button, Checkbox, Container, Input, Label, RadioButton, Switch, Badge } from '@bsf/force-ui'
-import { Languages, Link } from 'lucide-react';
+import { Bot, Languages, Link } from 'lucide-react';
 import { RiDraftLine } from "react-icons/ri";
 import { __, sprintf } from '@wordpress/i18n'
 import apiFetch from "@wordpress/api-fetch"
@@ -43,37 +43,43 @@ const TranslationConfig = ({ data, setData }) => {
         ? window.lmat_settings.allowed_providers
         : ['chrome_local_ai', 'google'];
     const wpAiClientAvailable = allowedProviders.includes('gemini');
+    const ollamaAvailable = allowedProviders.includes('ollama');
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
     const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation })
+    const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable)
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, ollamaTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [apiKeyDirty, setApiKeyDirty] = useState(false)
+    const [apiKeyDirty, setApiKeyDirty] = useState({ gemini: false, ollama: false })
     const geminiApiKeyRef = useRef(null)
+    const ollamaApiKeyRef = useRef(null)
 
     useEffect(() => {
-        if (!geminiTranslation) {
-            setApiKeyDirty(false)
-        }
-    }, [geminiTranslation])
+        setApiKeyDirty(previous => ({
+            gemini: geminiTranslation ? previous.gemini : false,
+            ollama: ollamaTranslation ? previous.ollama : false,
+        }))
+    }, [geminiTranslation, ollamaTranslation])
 
     const hasChanges = () => {
         return googleMachineTranslation !== provider?.google ||
             chromeLocalAITranslation !== provider?.chrome_local_ai ||
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            ollamaTranslation !== (Boolean(provider?.ollama) && ollamaAvailable) ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
     };
 
     useEffect(() => {
-        const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
-        setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+        const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (ollamaAvailable && ollamaTranslation)
+        const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (ollamaTranslation && apiKeyDirty.ollama)
+        setHandleButtonDisabled(!hasChanges() && !(apiSectionOpen && hasPendingApiChange))
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, ollamaAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -82,10 +88,16 @@ const TranslationConfig = ({ data, setData }) => {
             if (isSaving) return
             setIsSaving(true)
             let apiBody;
-            const apiKeyPayload =
-                wpAiClientAvailable && geminiTranslation && geminiApiKeyRef.current?.getPendingPayload
-                    ? geminiApiKeyRef.current.getPendingPayload()
-                    : null;
+            const geminiPayload = wpAiClientAvailable && geminiTranslation && geminiApiKeyRef.current?.getPendingPayload
+                ? geminiApiKeyRef.current.getPendingPayload()
+                : null
+            const ollamaPayload = ollamaAvailable && ollamaTranslation && ollamaApiKeyRef.current?.getPendingPayload
+                ? ollamaApiKeyRef.current.getPendingPayload()
+                : null
+            const apiKeyPayload = (geminiPayload || ollamaPayload) ? {
+                keys: { ...(geminiPayload?.keys || {}), ...(ollamaPayload?.keys || {}) },
+                models: { ...(geminiPayload?.models || {}), ...(ollamaPayload?.models || {}) },
+            } : null
 
             // Require Gemini API key when enabling Gemini.
             if (wpAiClientAvailable && geminiTranslation) {
@@ -93,6 +105,14 @@ const TranslationConfig = ({ data, setData }) => {
                 const hasConfiguredGeminiKey = Boolean(geminiApiKeyRef.current?.hasConfiguredKey?.('gemini'))
                 if (!hasConfiguredGeminiKey && pendingGeminiKey === '') {
                     throw new Error(__('Please add a Gemini API key to continue.', 'translate-words'))
+                }
+            }
+
+            if (ollamaAvailable && ollamaTranslation) {
+                const pendingOllamaKey = (apiKeyPayload?.keys?.ollama || '').toString().trim()
+                const hasConfiguredOllamaKey = Boolean(ollamaApiKeyRef.current?.hasConfiguredKey?.('ollama'))
+                if (!hasConfiguredOllamaKey && pendingOllamaKey === '') {
+                    throw new Error(__('Please add an Ollama API key to continue.', 'translate-words'))
                 }
             }
 
@@ -104,6 +124,9 @@ const TranslationConfig = ({ data, setData }) => {
                         edge_local_ai: edgeLocalAITranslation,
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
+                        } : {}),
+                        ...(ollamaAvailable ? {
+                            ollama: ollamaTranslation,
                         } : {}),
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
@@ -117,12 +140,13 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
                 lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                (ollamaAvailable && lastUpdatedValue.ollamaTranslation !== ollamaTranslation) ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
             )) {
@@ -143,13 +167,13 @@ const TranslationConfig = ({ data, setData }) => {
             })
                 .then((settingsResponse) => {
                     setData(prev => ({ ...prev, ...settingsResponse }))
-                    if (apiKeyPayload && geminiApiKeyRef.current?.syncAfterParentSave) {
-                        geminiApiKeyRef.current.syncAfterParentSave({
-                            keys: apiBody.keys,
-                            models: apiBody.models,
-                        }, settingsResponse)
-                        setApiKeyDirty(false)
+                    if (geminiPayload && geminiApiKeyRef.current?.syncAfterParentSave) {
+                        geminiApiKeyRef.current.syncAfterParentSave(geminiPayload, settingsResponse)
                     }
+                    if (ollamaPayload && ollamaApiKeyRef.current?.syncAfterParentSave) {
+                        ollamaApiKeyRef.current.syncAfterParentSave(ollamaPayload, settingsResponse)
+                    }
+                    setApiKeyDirty({ gemini: false, ollama: false })
                     return settingsResponse
                 })
                 .catch(error => {
@@ -348,15 +372,50 @@ const TranslationConfig = ({ data, setData }) => {
                                 </Container.Item>
                             </div>
                             {geminiTranslation && (
-                                <div
-                                    className="px-6 pb-6 pt-0"
-                                >
+                                <div className="px-6 pb-6 pt-0">
                                     <ApiKey
                                         ref={geminiApiKeyRef}
                                         data={data}
                                         setData={setData}
                                         embedded
-                                        onPendingChange={setApiKeyDirty}
+                                        providerKeys={['gemini']}
+                                        onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, gemini: dirty }))}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {ollamaAvailable && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <Bot className='w-5 h-5' />
+                                        {__('Ollama Cloud AI', 'translate-words')}
+                                    </h3>
+                                    <p className="m-0">
+                                        {__('Ollama Cloud AI translates your content through the hosted Ollama API.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
+                                    <Switch
+                                        aria-label={__('Ollama Cloud AI', 'translate-words')}
+                                        id="ollama-translation"
+                                        onChange={() => setOllamaTranslation(!ollamaTranslation)}
+                                        value={ollamaTranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {ollamaTranslation && (
+                                <div className="px-6 pb-6 pt-0">
+                                    <ApiKey
+                                        ref={ollamaApiKeyRef}
+                                        data={data}
+                                        setData={setData}
+                                        embedded
+                                        providerKeys={['ollama']}
+                                        onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, ollama: dirty }))}
                                     />
                                 </div>
                             )}

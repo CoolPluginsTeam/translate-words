@@ -9,13 +9,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once dirname( __DIR__, 2 ) . '/services/translation/providers/class-ollama-translation-models.php';
+
 use Linguator\Includes\Options\Abstract_Option;
 use Linguator\Includes\Options\Options;
+use Linguator\Includes\Services\Translation\Providers\Ollama_Translation_Models;
 
 /**
  * Stores API keys for supported AI providers.
  */
 class Api_Keys extends Abstract_Option {
+	/** Current schema/version of the cached Gemini allowlist. */
+	private const GEMINI_MODELS_CACHE_VERSION = 2;
+
 	/**
 	 * Filter and label preferred models for a provider.
 	 *
@@ -30,13 +36,20 @@ class Api_Keys extends Abstract_Option {
 		if ( 'google' === $provider_id ) {
 			// Gemini models (labels shown in UI). We only show these if the provider reports them.
 			$preferred = array(
+				'gemini-3.8-flash'              => __( 'gemini-3.8-flash (Recommended)', 'translate-words' ),
+				'gemini-3.7-flash'              => __( 'gemini-3.7-flash (Recommended)', 'translate-words' ),
+				'gemini-3.6-flash'              => __( 'gemini-3.6-flash (Fast & Reliable)', 'translate-words' ),
+				'gemini-3.5-flash'              => __( 'gemini-3.5-flash (High Accuracy)', 'translate-words' ),
+				'gemini-3.5-flash-lite'         => __( 'gemini-3.5-flash-lite (Fast & Cheap)', 'translate-words' ),
 				'gemini-3.1-pro-preview'        => __( 'gemini-3.1-pro-preview (Best Quality)', 'translate-words' ),
 				'gemini-3.1-flash-lite-preview' => __( 'gemini-3.1-flash-lite-preview (Fast & Cheap)', 'translate-words' ),
-				'gemma-3n-e4b-it'               => __( 'gemma-3n-e4b-it (Cheapest)', 'translate-words' ),
+				'gemini-3-flash-preview'        => __( 'gemini-3-flash-preview (Recommended)', 'translate-words' ),
+				'gemini-3-deep-think'           => __( 'gemini-3-deep-think (Advanced Reasoning)', 'translate-words' ),
 				'gemini-2.5-pro'                => __( 'gemini-2.5-pro (Best Overall)', 'translate-words' ),
 				'gemini-2.5-flash'              => __( 'gemini-2.5-flash (Balanced)', 'translate-words' ),
-				'gemini-3-flash-preview'        => __( 'gemini-3-flash-preview (Recommended)', 'translate-words' ),
 				'gemini-2.5-pro-preview-tts'    => __( 'gemini-2.5-pro-preview-tts (High Accuracy)', 'translate-words' ),
+				'gemma-4-26b-a4b-it'            => __( 'gemma-4-26b-a4b-it (Cheapest)', 'translate-words' ),
+				'gemma-3n-e4b-it'               => __( 'gemma-3n-e4b-it (Cheapest)', 'translate-words' ),
 			);
 		}
 
@@ -66,11 +79,12 @@ class Api_Keys extends Abstract_Option {
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
 	 * connectors_ai_google_api_key.
 	 *
-	 * @return array{gemini_model:string}
+	 * @return array{gemini_model:string,ollama_model:string}
 	 */
 	protected function get_default() {
 		return array(
 			'gemini_model' => 'gemini-2.5-flash',
+			'ollama_model' => Ollama_Translation_Models::get_default(),
 		);
 	}
 
@@ -84,8 +98,28 @@ class Api_Keys extends Abstract_Option {
 			'type'       => 'object',
 			'properties' => array(
 				'gemini_model' => array( 'type' => 'string' ),
+				'ollama_model' => array( 'type' => 'string' ),
 			),
 		);
+	}
+
+	/**
+	 * Replaces a removed Ollama model stored by an older plugin version.
+	 *
+	 * @param mixed $value Stored option value.
+	 * @return mixed Prepared option value.
+	 */
+	protected function prepare( $value ) {
+		if ( ! is_array( $value ) || ! array_key_exists( 'ollama_model', $value ) ) {
+			return $value;
+		}
+
+		$model = is_scalar( $value['ollama_model'] ) ? sanitize_text_field( (string) $value['ollama_model'] ) : '';
+		if ( ! Ollama_Translation_Models::is_supported( $model ) ) {
+			$value['ollama_model'] = Ollama_Translation_Models::get_default();
+		}
+
+		return $value;
 	}
 
 	/**
@@ -105,6 +139,9 @@ class Api_Keys extends Abstract_Option {
 		$gemini  = isset( $current['gemini_model'] ) && is_scalar( $current['gemini_model'] )
 			? sanitize_text_field( (string) $current['gemini_model'] )
 			: $default['gemini_model'];
+		$ollama  = isset( $current['ollama_model'] ) && is_scalar( $current['ollama_model'] )
+			? sanitize_text_field( (string) $current['ollama_model'] )
+			: $default['ollama_model'];
 
 		if ( is_array( $value ) && array_key_exists( 'gemini_model', $value ) ) {
 			$v = $value['gemini_model'];
@@ -117,8 +154,16 @@ class Api_Keys extends Abstract_Option {
 			}
 		}
 
+		if ( is_array( $value ) && array_key_exists( 'ollama_model', $value ) ) {
+			$v = is_scalar( $value['ollama_model'] ) ? sanitize_text_field( (string) $value['ollama_model'] ) : '';
+			if ( Ollama_Translation_Models::is_supported( $v ) ) {
+				$ollama = $v;
+			}
+		}
+
 		return array(
 			'gemini_model' => $gemini,
+			'ollama_model' => $ollama,
 		);
 	}
 
@@ -130,7 +175,18 @@ class Api_Keys extends Abstract_Option {
 	}
 
 	/**
-	 * @param string               $api_key Raw Gemini API key.
+	 * Returns the option key used for the cached Ollama model list.
+	 *
+	 * @return string Option key.
+	 */
+	private static function ollama_models_list_option(): string {
+		return 'lmat_ollama_models_list';
+	}
+
+	/**
+	 * Stores the cached Gemini model list.
+	 *
+	 * @param string                  $api_key Raw Gemini API key.
 	 * @param array<string|int,mixed> $gemini Same shape as REST `available_models.gemini`.
 	 */
 	public static function persist_gemini_models_list( string $api_key, array $gemini ): void {
@@ -145,11 +201,17 @@ class Api_Keys extends Abstract_Option {
 		}
 		$linguator[ self::gemini_models_list_option() ] = array(
 			'fingerprint' => md5( $key ),
+			'version'     => self::GEMINI_MODELS_CACHE_VERSION,
 			'gemini'      => $gemini,
 		);
 		update_option( Options::OPTION_NAME, $linguator );
 	}
 
+	/**
+	 * Clears the cached Gemini model list.
+	 *
+	 * @return void
+	 */
 	public static function clear_gemini_models_list(): void {
 		$linguator = get_option( Options::OPTION_NAME, array() );
 		if ( ! is_array( $linguator ) || ! isset( $linguator[ self::gemini_models_list_option() ] ) ) {
@@ -159,29 +221,92 @@ class Api_Keys extends Abstract_Option {
 		update_option( Options::OPTION_NAME, $linguator );
 	}
 
+
+	/**
+	 * Stores approved Ollama models available to the authenticated account.
+	 *
+	 * @param string                            $api_key Raw Ollama API key.
+	 * @param array<string,array<string,mixed>> $models Approved available models.
+	 * @return void
+	 */
+	public static function persist_ollama_models_list( string $api_key, array $models ): void {
+		$key = trim( $api_key );
+		if ( '' === $key ) {
+			self::clear_ollama_models_list();
+			return;
+		}
+
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		if ( ! is_array( $linguator ) ) {
+			$linguator = array();
+		}
+
+		$linguator[ self::ollama_models_list_option() ] = array(
+			'fingerprint' => hash( 'sha256', $key ),
+			'models'      => $models,
+		);
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
+	/**
+	 * Clears the cached Ollama model list.
+	 *
+	 * @return void
+	 */
+	public static function clear_ollama_models_list(): void {
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		$model_key = self::ollama_models_list_option();
+		if ( ! is_array( $linguator ) || ! isset( $linguator[ $model_key ] ) ) {
+			return;
+		}
+
+		unset( $linguator[ $model_key ] );
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
 	/**
 	 * Models for GET /settings — DB only, no HTTP. Populated when a new key triggers discovery.
 	 *
-	 * @return array{gemini:array<int|string,mixed>}
+	 * @return array{gemini:array<int|string,mixed>,ollama:array<int|string,mixed>}
 	 */
 	public static function get_stored_provider_models(): array {
 		$result = array(
 			'gemini' => array(),
+			'ollama' => array(),
 		);
 
 		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
-		if ( '' === $gemini_key ) {
-			return $result;
-		}
+		$ollama_key = trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
+		$linguator  = get_option( Options::OPTION_NAME, array() );
 
 		$fingerprint = md5( $gemini_key );
-		$linguator          = get_option( Options::OPTION_NAME, array() );
-		$model_list         = self::gemini_models_list_option();
-		$list      = ( is_array( $linguator ) && isset( $linguator[ $model_list ] ) && is_array( $linguator[ $model_list ] ) ) ? $linguator[ $model_list ] : null;
+		$model_list  = self::gemini_models_list_option();
+		$list        = ( is_array( $linguator ) && isset( $linguator[ $model_list ] ) && is_array( $linguator[ $model_list ] ) ) ? $linguator[ $model_list ] : null;
 
-		if ( is_array( $list ) && isset( $list['fingerprint'], $list['gemini'] ) && $list['fingerprint'] === $fingerprint ) {
+		if (
+			'' !== $gemini_key
+			&& is_array( $list )
+			&& isset( $list['fingerprint'], $list['version'], $list['gemini'] )
+			&& $list['fingerprint'] === $fingerprint
+			&& self::GEMINI_MODELS_CACHE_VERSION === (int) $list['version']
+		) {
 			$result['gemini'] = is_array( $list['gemini'] ) ? $list['gemini'] : array();
-			return $result;
+		}
+
+		$ollama_list_key = self::ollama_models_list_option();
+		$ollama_list     = ( is_array( $linguator ) && isset( $linguator[ $ollama_list_key ] ) && is_array( $linguator[ $ollama_list_key ] ) ) ? $linguator[ $ollama_list_key ] : null;
+		$ollama_fingerprint_valid = false;
+		if ( '' !== $ollama_key && is_array( $ollama_list ) && isset( $ollama_list['fingerprint'] ) && is_string( $ollama_list['fingerprint'] ) ) {
+			$stored_fingerprint       = $ollama_list['fingerprint'];
+			$sha256_fingerprint       = hash( 'sha256', $ollama_key );
+			$legacy_md5_fingerprint   = md5( $ollama_key );
+			$ollama_fingerprint_valid = hash_equals( $stored_fingerprint, $sha256_fingerprint )
+				|| hash_equals( $stored_fingerprint, $legacy_md5_fingerprint );
+		}
+
+		if ( $ollama_fingerprint_valid && isset( $ollama_list['models'] ) ) {
+			$stored_ollama    = is_array( $ollama_list['models'] ) ? $ollama_list['models'] : array();
+			$result['ollama'] = array_intersect_key( $stored_ollama, Ollama_Translation_Models::all() );
 		}
 
 		return $result;
@@ -241,7 +366,6 @@ class Api_Keys extends Abstract_Option {
 				'image',
 				'code',
 				'whisper',
-				'tts',
 			);
 
 			$load_models = static function ( string $provider_id ) use ( $registry, $requirements, $excluded_patterns ): array {
@@ -308,7 +432,7 @@ class Api_Keys extends Abstract_Option {
 
 			$models           = $load_models( 'google' );
 			$filtered         = self::filtered_specific_models( 'google', $models );
-			$result['gemini'] = ! empty( $filtered ) ? $filtered : $models;
+			$result['gemini'] = $filtered;
 			self::persist_gemini_models_list( $gemini_key, $result['gemini'] );
 		} catch ( \Throwable $e ) {
 			return $result;
@@ -326,4 +450,3 @@ class Api_Keys extends Abstract_Option {
 		return __( 'API keys for AI translation providers.', 'translate-words' );
 	}
 }
-

@@ -55,6 +55,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
                         totalKeys,
                         nonce,
                         totalPosts,
+                        serviceProvider,
                     }),
                 })
             );
