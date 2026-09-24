@@ -198,8 +198,10 @@ export default function createAiLlmPageTranslator(providerId) {
                 clearErrorNotice();
                 btn.setAttribute("aria-busy", "true");
                 const { maxTokens } = getBatchConfig();
+                // Ollama gets a higher token baseline than the shared default so
+                // fewer, larger requests are sent to its slower hosted models.
                 const chunkOptions = providerId === "ollama"
-                    ? getOllamaChunkOptions(maxTokens)
+                    ? getOllamaChunkOptions(Math.max(maxTokens, 1000))
                     : { maxTokens };
                 const chunks = chunkStringMap(strings, chunkOptions);
                 const totalKeys = Math.max(1, Object.keys(strings).length);

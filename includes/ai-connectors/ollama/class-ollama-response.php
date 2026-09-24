@@ -122,20 +122,14 @@ class Ollama_Response {
 	}
 
 	/**
-	 * Gets the total token count.
+	 * Whether the provider reported the response as complete.
 	 *
-	 * @return int Total token count.
-	 */
-	public function get_total_tokens(): int {
-		return $this->prompt_tokens + $this->completion_tokens;
-	}
-
-	/**
-	 * Gets additional provider metadata.
+	 * Ollama Cloud omits the `done` key on some successful responses, so its
+	 * absence is treated as complete.
 	 *
-	 * @return array<string,mixed> Additional provider metadata.
+	 * @return bool Whether the response is complete.
 	 */
-	public function get_metadata(): array {
-		return $this->metadata;
+	public function is_done(): bool {
+		return ! array_key_exists( 'done', $this->metadata ) || true === $this->metadata['done'];
 	}
 }

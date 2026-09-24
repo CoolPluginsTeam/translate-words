@@ -283,8 +283,10 @@ class AiLlmBulkTranslator {
 
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
+            // Ollama gets a higher token baseline than the shared default so
+            // fewer, larger requests are sent to its slower hosted models.
             const chunkOptions = this.serviceProvider === "ollama"
-                ? getOllamaChunkOptions(maxTokens)
+                ? getOllamaChunkOptions(Math.max(maxTokens, 1000))
                 : { maxTokens };
             const chunks = chunkStringMap(stringsToTranslate, chunkOptions);
             const modelKey = this.serviceProvider === "ollama" ? "ollama_model" : "gemini_model";

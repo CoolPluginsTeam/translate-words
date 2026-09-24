@@ -137,8 +137,7 @@ class Ollama_Translation_Provider {
 		}
 
 		$finish_reason = strtolower( trim( $response->get_finish_reason() ) );
-		$metadata      = $response->get_metadata();
-		$is_done       = ! array_key_exists( 'done', $metadata ) || true === $metadata['done'];
+		$is_done       = $response->is_done();
 		$was_truncated = in_array( $finish_reason, array( 'length', 'max_tokens', 'token_limit' ), true );
 
 		if ( ! $is_done || $was_truncated ) {

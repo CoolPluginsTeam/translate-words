@@ -52,15 +52,6 @@ class Ollama_Translation_Models {
 	}
 
 	/**
-	 * Returns all supported model IDs.
-	 *
-	 * @return string[] Supported model IDs.
-	 */
-	public static function ids(): array {
-		return array_keys( self::all() );
-	}
-
-	/**
 	 * Checks whether a model is supported by Linguator.
 	 *
 	 * @param string $model Model identifier.
@@ -77,18 +68,5 @@ class Ollama_Translation_Models {
 	 */
 	public static function get_default(): string {
 		return self::DEFAULT_MODEL;
-	}
-
-	/**
-	 * Returns metadata for one supported model.
-	 *
-	 * @param string $model Model identifier.
-	 * @return array<string,mixed>|null Model metadata, or null when unsupported.
-	 */
-	public static function get( string $model ) {
-		$models = self::all();
-		$model  = trim( $model );
-
-		return isset( $models[ $model ] ) ? $models[ $model ] : null;
 	}
 }
