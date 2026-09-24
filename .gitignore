@@ -16,6 +16,7 @@ vendor/**/LICENSE
 vendor/**/README.md
 vendor/*/installed.php
 node_modules
+tests
 *.js*LICENSE.txt 
 fix-issues-files.txt
 fix-issues.csv
