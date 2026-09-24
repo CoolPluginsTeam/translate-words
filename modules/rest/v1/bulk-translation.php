@@ -447,10 +447,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			$provider_strings = $strings;
 			$html_tag_maps    = array();
+			$short_key_map    = array();
+			$parse_strings    = $strings;
 			if ( 'ollama' === $provider ) {
 				$protected       = $this->ai_protect_ollama_html_tags( $strings );
 				$provider_strings = $protected['strings'];
 				$html_tag_maps    = $protected['maps'];
+
+				// Ollama's smaller models unreliably echo back Linguator's long,
+				// near-duplicate nested-block keys verbatim. Use short placeholder
+				// keys for the Ollama request/response only, then map back to the
+				// real keys once parsed.
+				$index = 0;
+				foreach ( array_keys( $strings ) as $original_key ) {
+					$short_key_map[ $original_key ] = 'k' . $index;
+					++$index;
+				}
+
+				$provider_strings = $this->ai_translate_remap_keys( $provider_strings, $short_key_map );
+				$parse_strings    = $this->ai_translate_remap_keys( $strings, $short_key_map );
+				$html_tag_maps    = $this->ai_translate_remap_keys( $html_tag_maps, $short_key_map );
 			}
 
 			$instruction = $this->ai_translate_build_llm_prompt( $source_lang, $target_lang, $provider_strings, $strings, $provider );
@@ -499,7 +515,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				);
 			}
 
-			$result = $this->ai_translate_parse_llm_response( (string) $text, $strings, $provider, $html_tag_maps );
+			$result = $this->ai_translate_parse_llm_response( (string) $text, $parse_strings, $provider, $html_tag_maps );
 			if ( 'ollama' === $provider && $allow_validation_retry && is_wp_error( $result ) ) {
 				$retryable_codes = array(
 					'lmat_ai_bad_response',
@@ -519,7 +535,31 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
+			if ( 'ollama' === $provider && ! is_wp_error( $result ) && ! empty( $short_key_map ) ) {
+				$result = $this->ai_translate_remap_keys( $result, array_flip( $short_key_map ) );
+			}
+
 			return $result;
+		}
+
+		/**
+		 * Rekeys an associative array using a key => new-key map, preserving values.
+		 *
+		 * Entries without a mapping are dropped, since the destination array must
+		 * only contain keys the caller understands.
+		 *
+		 * @param array<string,mixed> $data    Source data.
+		 * @param array<string,string> $key_map Old key => new key map.
+		 * @return array<string,mixed>
+		 */
+		private function ai_translate_remap_keys( array $data, array $key_map ): array {
+			$remapped = array();
+			foreach ( $data as $key => $value ) {
+				if ( isset( $key_map[ $key ] ) ) {
+					$remapped[ $key_map[ $key ] ] = $value;
+				}
+			}
+			return $remapped;
 		}
 
 		/**
