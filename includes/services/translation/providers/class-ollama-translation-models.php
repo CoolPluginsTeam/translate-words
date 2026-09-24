@@ -39,8 +39,8 @@ class Ollama_Translation_Models {
 			'gpt-oss:120b'        => array(
 				'label' => 'GPT-OSS 120B',
 			),
-			'gpt-oss:20b'         => array(
-				'label' => 'GPT-OSS 20B',
+			'nemotron-3-nano:30b' => array(
+				'label' => 'Nemotron 3 Nano 30B',
 			),
 			'nemotron-3-super'    => array(
 				'label' => 'Nemotron 3 Super',
