@@ -1,6 +1,7 @@
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { Input, Switch } from '@bsf/force-ui';
+import { Bot } from 'lucide-react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -13,15 +14,22 @@ import { EdgeIcon } from '../../../../assets/js/src/icons/edge';
 import { GeminiIcon } from '../../../../assets/js/src/icons/gemini';
 import { GoogleIcon } from '../../../../assets/js/src/icons/google';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
+import ApiKey from '../../../../admin/settings/views/src/components/api-key.jsx';
 
 const AiTranslation = () => {
 	const { setSetupProgress, data, setData } = useContext(setupContext);
 	const aiTranslation = data?.ai_translation_configuration ?? {};
 	const provider = aiTranslation?.provider ?? {};
 
-	const wpAiClientAvailable = Array.isArray(window?.lmat_setup?.allowed_providers)
-		? window.lmat_setup.allowed_providers.includes('gemini')
+	const allowedProviders = Array.isArray(window?.lmat_setup?.allowed_providers)
+		? window.lmat_setup.allowed_providers
+		: [];
+
+	const wpAiClientAvailable = allowedProviders.length
+		? allowedProviders.includes('gemini')
 		: Boolean(window?.lmat_setup?.wp_ai_client_available);
+
+	const ollamaAvailable = allowedProviders.includes('ollama');
 
 	const browserType = (() => {
 		let type = 'Other';
@@ -57,11 +65,15 @@ const AiTranslation = () => {
 		(geminiApiKeyDraft || '') === '' && hasGeminiSavedKey ? geminiMaskedKey : geminiApiKeyDraft;
 	const geminiApiKeyInputDisabled = hasGeminiSavedKey;
 
+	const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable);
+	const ollamaApiKeyRef = useRef(null);
+
 	const lastSavedRef = useRef({
 		chrome_local_ai: Boolean(provider?.chrome_local_ai),
 		edge_local_ai: Boolean(provider?.edge_local_ai),
 		google: Boolean(provider?.google),
 		gemini: Boolean(provider?.gemini),
+		ollama: Boolean(provider?.ollama),
 	});
 
 	useEffect(() => {
@@ -69,12 +81,14 @@ const AiTranslation = () => {
 		setChromeLocalAITranslation(Boolean(provider?.chrome_local_ai));
 		setEdgeLocalAITranslation(Boolean(provider?.edge_local_ai));
 		setGeminiTranslation(Boolean(provider?.gemini));
+		setOllamaTranslation(Boolean(provider?.ollama));
 
 		lastSavedRef.current = {
 			chrome_local_ai: Boolean(provider?.chrome_local_ai),
 			edge_local_ai: Boolean(provider?.edge_local_ai),
 			google: Boolean(provider?.google),
 			gemini: Boolean(provider?.gemini),
+			ollama: Boolean(provider?.ollama),
 		};
 	}, [provider]);
 
@@ -117,6 +131,20 @@ const AiTranslation = () => {
 				setGeminiApiKeyDraft('');
 			}
 
+			// If Ollama is enabled, require a configured (saved or draft) API key before continuing.
+			const ollamaPayload =
+				ollamaAvailable && ollamaTranslation && ollamaApiKeyRef.current?.getPendingPayload
+					? ollamaApiKeyRef.current.getPendingPayload()
+					: null;
+
+			if (ollamaAvailable && ollamaTranslation) {
+				const pendingOllamaKey = (ollamaPayload?.keys?.ollama || '').toString().trim();
+				const hasConfiguredOllamaKey = Boolean(ollamaApiKeyRef.current?.hasConfiguredKey?.('ollama'));
+				if (!hasConfiguredOllamaKey && '' === pendingOllamaKey) {
+					throw new Error(__('Please add an Ollama API key to continue.', 'translate-words'));
+				}
+			}
+
 			const nextProvider = {
 				chrome_local_ai: chromeLocalAITranslation,
 				edge_local_ai: edgeLocalAITranslation,
@@ -126,6 +154,11 @@ const AiTranslation = () => {
 						gemini: geminiTranslation,
 					}
 					: {}),
+				...(ollamaAvailable
+					? {
+						ollama: ollamaTranslation,
+					}
+					: {}),
 			};
 
 			const prevProvider = lastSavedRef.current ?? {};
@@ -133,9 +166,10 @@ const AiTranslation = () => {
 				prevProvider.google !== nextProvider.google ||
 				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
 				prevProvider.edge_local_ai !== nextProvider.edge_local_ai ||
-				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini);
+				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini) ||
+				(ollamaAvailable && prevProvider.ollama !== nextProvider.ollama);
 
-			if (hasChanges) {
+			if (hasChanges || ollamaPayload) {
 				const response = await apiFetch({
 					path: 'lmat/v1/settings',
 					method: 'POST',
@@ -144,6 +178,7 @@ const AiTranslation = () => {
 						'X-WP-Nonce': getNonce(),
 					},
 					body: JSON.stringify({
+						...(ollamaPayload || {}),
 						ai_translation_configuration: {
 							provider: nextProvider,
 						},
@@ -152,6 +187,10 @@ const AiTranslation = () => {
 
 				lastSavedRef.current = { ...nextProvider };
 				setData((prev) => ({ ...(prev || {}), ...(response || {}) }));
+
+				if (ollamaPayload && ollamaApiKeyRef.current?.syncAfterParentSave) {
+					ollamaApiKeyRef.current.syncAfterParentSave(ollamaPayload, response);
+				}
 			}
 
 			setSetupProgress('language_switcher');
@@ -326,6 +365,36 @@ const AiTranslation = () => {
 							)}
 						</div>
 					</>
+				)}
+
+				{ollamaAvailable && (
+					<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+						<div className="flex justify-between items-center">
+							<div className="flex items-center gap-2">
+								<Bot className="w-4 h-4" />
+								<p className="text-sm/6">{__('Ollama Cloud AI', 'translate-words')}</p>
+							</div>
+							<Switch
+								aria-label={__('Ollama Cloud AI', 'translate-words')}
+								id="ollama-translation"
+								onChange={() => setOllamaTranslation((prev) => !prev)}
+								size="sm"
+								value={ollamaTranslation}
+							/>
+						</div>
+
+						{ollamaTranslation && (
+							<div className="mt-4">
+								<ApiKey
+									ref={ollamaApiKeyRef}
+									data={data}
+									setData={setData}
+									embedded
+									providerKeys={['ollama']}
+								/>
+							</div>
+						)}
+					</div>
 				)}
 			</div>
 
