@@ -72,6 +72,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             try {
                 const response = await bulkTranslateEntries({ ids: postIds, langs: selectedLanguages, storeDispatch, signal });
                 if (signal.aborted) {
+                    setIsLoading(false);
                     return;
                 }
                 setIsLoading(false);
@@ -84,6 +85,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler, signal);
             } catch (err) {
                 if (signal.aborted) {
+                    setIsLoading(false);
                     return;
                 }
                 setIsLoading(false);
