@@ -246,7 +246,7 @@ export function getOllamaChunkOptions(maxTokens) {
         // Preserve the configured allowance for source text. Prompt, key, and
         // response-schema overhead is accounted for in addition to that value.
         maxTokens: normalizedMaxTokens + reservedTokens,
-        maxKeys: 8,
+        maxKeys: 200,
         reservedTokens,
         keyTokenCopies: 3,
     };

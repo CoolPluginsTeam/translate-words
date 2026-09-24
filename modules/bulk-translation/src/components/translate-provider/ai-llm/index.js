@@ -283,6 +283,7 @@ class AiLlmBulkTranslator {
 
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
+            console.log(maxTokens)
             // Ollama gets a higher token baseline than the shared default so
             // fewer, larger requests are sent to its slower hosted models.
             const chunkOptions = this.serviceProvider === "ollama"
@@ -295,7 +296,8 @@ class AiLlmBulkTranslator {
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
                     : "";
             let doneThisRun = 0;
-
+              console.log(chunkOptions)
+              console.log(chunks)
             await this.runWithConcurrency(chunks, concurrency, async (chunk) => {
                 if (this.isCancelled() || window.lmatBulkTranslationQuotaExceeded) {
                     return;
