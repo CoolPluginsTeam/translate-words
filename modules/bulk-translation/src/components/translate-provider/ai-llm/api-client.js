@@ -43,9 +43,14 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
         throw cancellationError();
     }
 
-    let res;
-    try {
-        res = await fetch(restUrl, {
+    // WordPress puts the whole site into maintenance mode (503) while its own
+    // background auto-updater runs. A long bulk-translation job issues enough
+    // sequential requests that one of them can land during that window, so
+    // retry a few times with backoff instead of failing the batch outright.
+    const maintenanceRetryDelaysMs = [3000, 6000, 12000];
+
+    const doFetch = () =>
+        fetch(restUrl, {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -63,25 +68,47 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
                 strings,
             }),
         });
-    } catch (error) {
-        // Preserve intentional cancellation so callers can stop quietly and
-        // release their loading state instead of treating it as a failed request.
-        if (
-            signal?.aborted ||
-            error?.name === 'AbortError' ||
-            /signal is aborted|aborted without reason/i.test(error?.message || '')
-        ) {
-            throw cancellationError();
-        }
-        const networkMessage = error?.message || 'Network request failed';
-        throw createTranslationError(`Translation request failed: ${networkMessage}`);
-    }
 
+    const wait = (ms) =>
+        new Promise((resolve, reject) => {
+            const timer = setTimeout(resolve, ms);
+            signal?.addEventListener('abort', () => {
+                clearTimeout(timer);
+                reject(cancellationError());
+            }, { once: true });
+        });
+
+    let res;
     let data = {};
-    try {
-        data = await res.json();
-    } catch {
-        data = {};
+    for (let attempt = 0; ; attempt++) {
+        try {
+            res = await doFetch();
+        } catch (error) {
+            // Preserve intentional cancellation so callers can stop quietly and
+            // release their loading state instead of treating it as a failed request.
+            if (
+                signal?.aborted ||
+                error?.name === 'AbortError' ||
+                /signal is aborted|aborted without reason/i.test(error?.message || '')
+            ) {
+                throw cancellationError();
+            }
+            const networkMessage = error?.message || 'Network request failed';
+            throw createTranslationError(`Translation request failed: ${networkMessage}`);
+        }
+
+        try {
+            data = await res.json();
+        } catch {
+            data = {};
+        }
+
+        if (res.status === 503 && attempt < maintenanceRetryDelaysMs.length) {
+            await wait(maintenanceRetryDelaysMs[attempt]);
+            continue;
+        }
+
+        break;
     }
 
     if (!res.ok) {
