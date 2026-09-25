@@ -501,7 +501,7 @@ class Linguator_Page_Translation {
 				'slug_translation_option'  => $slug_translation_option,
 				'rest_nonce'               => wp_create_nonce( 'wp_rest' ),
 				'ai_batch_translate_url'   => get_rest_url( null, 'lmat/v1/page-translate/ai-translate-batch' ),
-				'AIRequestMaxTokens'       => (int) get_option( 'lmat_ai_request_token_per_request', 500 ),
+				'AIRequestMaxTokens'       => (int) get_option( 'lmat_ai_request_token_per_request', 3000 ),
 				'AIRequestBatchSize'       => (int) get_option( 'lmat_ai_request_batch_size', 5 ),
 			),
 			$extra_data

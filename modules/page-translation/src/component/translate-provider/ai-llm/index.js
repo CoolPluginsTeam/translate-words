@@ -70,7 +70,7 @@ export default function createAiLlmPageTranslator(providerId) {
         const getBatchConfig = () => {
             const maxTokens = Number(lmatPageTranslationGlobal?.AIRequestMaxTokens);
             return {
-                maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
+                maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 3000,
             };
         };
 

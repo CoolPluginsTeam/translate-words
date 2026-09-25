@@ -725,9 +725,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return int Maximum source bytes per segment.
 		 */
 		private function ai_translate_ollama_segment_char_limit(): int {
-			$max_tokens = absint( get_option( 'lmat_ai_request_token_per_request', 5000 ) );
+			$max_tokens = absint( get_option( 'lmat_ai_request_token_per_request', 3000 ) );
 			if ( $max_tokens < 1 ) {
-				$max_tokens = 5000;
+				$max_tokens = 3000;
 			}
 
 			return max( 256, $max_tokens * 4 );

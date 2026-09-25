@@ -133,7 +133,7 @@ class AiLlmBulkTranslator {
             ? Math.min(10, Math.max(1, batchSize))
             : 5;
         return {
-            maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
+            maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 3000,
             // Ollama requests must run sequentially. Even two simultaneous
             // structured generations are unreliable for some hosted models.
             concurrency: this.serviceProvider === "ollama" ? 1 : configuredConcurrency,
@@ -283,7 +283,6 @@ class AiLlmBulkTranslator {
 
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
-            console.log(maxTokens)
             // Ollama gets a higher token baseline than the shared default so
             // fewer, larger requests are sent to its slower hosted models.
             const chunkOptions = this.serviceProvider === "ollama"
@@ -296,8 +295,6 @@ class AiLlmBulkTranslator {
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
                     : "";
             let doneThisRun = 0;
-              console.log(chunkOptions)
-              console.log(chunks)
             await this.runWithConcurrency(chunks, concurrency, async (chunk) => {
                 if (this.isCancelled() || window.lmatBulkTranslationQuotaExceeded) {
                     return;

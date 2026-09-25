@@ -189,7 +189,7 @@ function isQuotaExceededResponse(data, status) {
  * @returns {Array<Record<string,string>>}
  */
 export function chunkStringMap(map, opts = {}) {
-    const maxTokens = Number.isFinite(opts.maxTokens) ? Number(opts.maxTokens) : 500;
+    const maxTokens = Number.isFinite(opts.maxTokens) ? Number(opts.maxTokens) : 3000;
     const maxChars = Number.isFinite(opts.maxChars) ? Number(opts.maxChars) : Infinity;
     const maxKeys = Number.isFinite(opts.maxKeys) ? Number(opts.maxKeys) : 0; // 0 => unlimited
     const reservedTokens = Number.isFinite(opts.reservedTokens) ? Math.max(0, Number(opts.reservedTokens)) : 0;
@@ -239,14 +239,14 @@ export function chunkStringMap(map, opts = {}) {
  * @returns {{maxTokens:number,maxKeys:number,reservedTokens:number,keyTokenCopies:number}}
  */
 export function getOllamaChunkOptions(maxTokens) {
-    const normalizedMaxTokens = Number.isFinite(maxTokens) && maxTokens > 0 ? Number(maxTokens) : 500;
+    const normalizedMaxTokens = Number.isFinite(maxTokens) && maxTokens > 0 ? Number(maxTokens) : 3000;
     const reservedTokens = Math.min(220, Math.floor(normalizedMaxTokens * 0.4));
 
     return {
         // Preserve the configured allowance for source text. Prompt, key, and
         // response-schema overhead is accounted for in addition to that value.
         maxTokens: normalizedMaxTokens + reservedTokens,
-        maxKeys: 200,
+        maxKeys: 300,
         reservedTokens,
         keyTokenCopies: 3,
     };
