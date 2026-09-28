@@ -281,13 +281,13 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				wp_die( '0', 403 );
 			}
 
-		// Optional hardening: enforce valid JSON if not using Elementor Document API
-		if ( isset( $_POST['elementor_data'] ) && is_string( $_POST['elementor_data'] ) ) {
-			$decoded = json_decode( wp_unslash( $_POST['elementor_data'] ), true );
-				if ( json_last_error() !== JSON_ERROR_NONE ) {
-					wp_send_json_error( __( 'Invalid data.', 'translate-words' ), 400 );
-					wp_die( '0', 400 );
-				}
+			$raw_elementor_data = isset( $_POST['elementor_data'] ) && is_string( $_POST['elementor_data'] )
+				? wp_unslash( $_POST['elementor_data'] )
+				: '';
+			$elementor_data = json_decode( $raw_elementor_data, true );
+
+			if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $elementor_data ) ) {
+				wp_send_json_error( __( 'Invalid Elementor data.', 'translate-words' ), 400 );
 			}
 
 			$parent_post_id          = isset( $_POST['parent_post_id'] ) ? intval( sanitize_text_field( wp_unslash( $_POST['parent_post_id'] ) ) ) : 0;
@@ -300,8 +300,6 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
 
-			$elementor_data = ! empty( $_POST['elementor_data'] ) ? wp_unslash( $_POST['elementor_data'] ) : '';
-
 			if ( '' === $current_slug ) {
 			if ( ! empty( $_POST['post_name'] ) && '' !== $_POST['post_name'] && $slug_translation_option === 'slug_translate' ) {
 				$new_post_name = sanitize_title( wp_unslash( $_POST['post_name'] ) );
@@ -310,40 +308,58 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				}
 			}
 
-			// Check if the current post has Elementor data
-			if ( $elementor_data && '' !== $elementor_data ) {
-				if ( class_exists( 'Elementor\Plugin' ) ) {
-					$plugin   = \Elementor\Plugin::$instance;
-					$document = $plugin->documents->get( $post_id );
+			if ( ! class_exists( 'Elementor\Plugin' ) ) {
+				wp_send_json_error( __( 'Elementor is not available.', 'translate-words' ), 500 );
+			}
 
-					$elementor_data = json_decode( wp_unslash( $_POST['elementor_data'] ), true );
+			$plugin   = \Elementor\Plugin::$instance;
+			$document = $plugin->documents->get( $post_id );
 
-					if ( json_last_error() !== JSON_ERROR_NONE ) {
-						wp_send_json_error( __( 'Invalid Elementor data.', 'translate-words' ), 400 );
-						wp_die( '0', 400 );
-					}
+			if ( ! $document || false === $document->save( array( 'elements' => $elementor_data ) ) ) {
+				wp_send_json_error( __( 'Elementor could not save the translated page.', 'translate-words' ), 500 );
+			}
 
-					$document->save(
-						array(
-							'elements' => $elementor_data,
-						)
-					);
-
-					$plugin->files_manager->clear_cache();
-					update_post_meta( $post_id, '_lmat_elementor_translated', 'true' );
+			$post_update = array( 'ID' => $post_id );
+			if ( $new_post_name && '' !== $new_post_name ) {
+				$post_update['post_name'] = $new_post_name;
+			}
+			if ( isset( $_POST['post_title'] ) ) {
+				$post_title = sanitize_text_field( wp_unslash( $_POST['post_title'] ) );
+				if ( '' !== $post_title ) {
+					$post_update['post_title'] = $post_title;
 				}
 			}
 
-			if ( $new_post_name && '' !== $new_post_name ) {
-				wp_update_post(
-					array(
-						'ID'        => $post_id,
-						'post_name' => $new_post_name,
-					)
-				);
+			// Updating the post also advances post_modified, preventing Elementor from
+			// preferring an older source-language autosave over the translated data.
+			if ( count( $post_update ) > 1 ) {
+				$updated_post_id = wp_update_post( wp_slash( $post_update ), true );
+				if ( is_wp_error( $updated_post_id ) ) {
+					wp_send_json_error( array( 'message' => $updated_post_id->get_error_message() ), 500 );
+				}
 			}
 
-			wp_send_json_success( 'Elementor data updated.' );
+			// Keep the current user's Elementor autosave in step with the main draft.
+			// Otherwise Elementor can reload the copied English autosave on the next
+			// editor or preview request even though the main document was translated.
+			$autosave = wp_get_post_autosave( $post_id, get_current_user_id() );
+			if ( $autosave instanceof \WP_Post ) {
+				$saved_elementor_data = get_post_meta( $post_id, '_elementor_data', true );
+				if ( is_string( $saved_elementor_data ) && '' !== $saved_elementor_data ) {
+					update_metadata( 'post', $autosave->ID, '_elementor_data', wp_slash( $saved_elementor_data ) );
+				}
+			}
+
+			update_post_meta( $post_id, '_lmat_elementor_translated', 'true' );
+			$plugin->files_manager->clear_cache();
+			clean_post_cache( $post_id );
+
+			wp_send_json_success(
+				array(
+					'message'     => __( 'Elementor data updated.', 'translate-words' ),
+					'preview_url' => esc_url_raw( (string) get_preview_post_link( $post_id ) ),
+				)
+			);
 			exit;
 		}
 	}

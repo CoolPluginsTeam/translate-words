@@ -60,12 +60,21 @@ class Linguator_Elementor {
 		}
 
 		$post = $document->get_post();
+		$is_elementor_document = $post instanceof \WP_Post && (
+			'builder' === get_post_meta( $post->ID, '_elementor_edit_mode', true ) ||
+			'' !== get_post_meta( $post->ID, '_elementor_data', true )
+		);
+		$is_translation = $post instanceof \WP_Post && (
+			'' !== get_post_meta( $post->ID, '_lmat_parent_post_language_slug', true ) ||
+			'' !== get_post_meta( $post->ID, '_lmat_parent_post_id', true ) ||
+			( isset( LMAT()->model->post ) && count( LMAT()->model->post->get_translations( $post->ID ) ) > 1 )
+		);
+
 		if (
 			! $post instanceof \WP_Post ||
 			! in_array( $post->post_status, array( 'draft', 'pending', 'future' ), true ) ||
-			'builder' !== get_post_meta( $post->ID, '_elementor_edit_mode', true ) ||
-			! isset( LMAT()->model->post ) ||
-			count( LMAT()->model->post->get_translations( $post->ID ) ) < 2
+			! $is_elementor_document ||
+			! $is_translation
 		) {
 			return $url;
 		}

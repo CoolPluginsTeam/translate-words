@@ -42,18 +42,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 */
 		private $rest_base;
 
-		/** @var float Time spent resolving OpenAI model metadata, in milliseconds. */
-		private $openai_model_lookup_ms = 0.0;
-
-		/** @var float Time spent generating OpenAI text, in milliseconds. */
-		private $openai_generation_ms = 0.0;
-
-		/** @var int|null Output tokens reported by OpenAI for this request. */
-		private $openai_output_tokens = null;
-
-		/** @var float|null Server processing time reported by OpenAI, in milliseconds. */
-		private $openai_processing_ms = null;
-
 		/**
 		 * Constructor
 		 *
@@ -295,11 +283,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return \WP_REST_Response|\WP_Error
 		 */
 		public function ai_translate_batch( $request ) {
-			$request_started_at = microtime( true );
-			$this->openai_model_lookup_ms = 0.0;
-			$this->openai_generation_ms = 0.0;
-			$this->openai_output_tokens = null;
-			$this->openai_processing_ms = null;
 			$params = $request->get_json_params();
 			if ( ! is_array( $params ) ) {
 				$params = array();
@@ -384,26 +367,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return $result;
 			}
 
-			$response = rest_ensure_response( array( 'translations' => $result ) );
-			if ( 'openai' === $provider ) {
-				$response->header(
-					'Server-Timing',
-					sprintf(
-						'lmat_model;dur=%.1f, lmat_generate;dur=%.1f, lmat_total;dur=%.1f',
-						$this->openai_model_lookup_ms,
-						$this->openai_generation_ms,
-						( microtime( true ) - $request_started_at ) * 1000
-					)
-				);
-				if ( null !== $this->openai_output_tokens ) {
-					$response->header( 'X-LMAT-OpenAI-Output-Tokens', (string) $this->openai_output_tokens );
-				}
-				if ( null !== $this->openai_processing_ms ) {
-					$response->header( 'X-LMAT-OpenAI-Processing-Ms', (string) $this->openai_processing_ms );
-				}
-			}
-
-			return $response;
+			return rest_ensure_response( array( 'translations' => $result ) );
 		}
 
 		/**
@@ -969,11 +933,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'Target language: ' . sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
 					'Target locale, if provided: ' . sanitize_text_field( $target_locale ),
 					'Approved terminology, if provided: ' . $glossary_terms,
-					'Researched target-language keywords, if provided: ',
 				);
 
 				$instructions[] = 'Translate the human-readable values in the input JSON into natural language for the target audience. Preserve the original meaning, facts, tone, and search intent. Use locally natural wording rather than a literal translation.';
-				$instructions[] = 'Use approved terminology consistently. Include a supplied keyword only when it fits the meaning and reads naturally; never add claims or repeat keywords for SEO. If no keywords are supplied, do not invent an SEO strategy.';
+				$instructions[] = 'Use approved terminology consistently.';
 				$instructions[] = 'Preserve all JSON keys exactly. Preserve URLs and all content inside square brackets [...] exactly. Preserve HTML tags, tag order, and attributes exactly; translate only visible text between tags. Preserve leading and trailing whitespace and line breaks.';
 				$instructions[] = 'Do not translate brand names, product names, code, placeholders, numbers, or identifiers unless the supplied glossary explicitly says to do so. Do not add, remove, or summarize content.';
 				$instructions[] = 'Return one complete, valid JSON object containing every original key and its translated value. Use JSON escaping where required. Output only the JSON object, with no Markdown or explanation.';
@@ -1152,32 +1115,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			};
 			add_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 
-			$capture_openai_usage = function ( $response, $args, $url ) use ( $provider_id ) {
-				if (
-					'openai' !== $provider_id ||
-					'POST' !== strtoupper( (string) ( $args['method'] ?? '' ) ) ||
-					'https://api.openai.com/v1/responses' !== rtrim( $url, '/' ) ||
-					200 !== wp_remote_retrieve_response_code( $response )
-				) {
-					return $response;
-				}
-
-				$processing_ms = wp_remote_retrieve_header( $response, 'openai-processing-ms' );
-				if ( is_numeric( $processing_ms ) ) {
-					$this->openai_processing_ms = (float) $processing_ms;
-				}
-
-				$body = json_decode( wp_remote_retrieve_body( $response ), true );
-				if ( is_array( $body ) && isset( $body['usage']['output_tokens'] ) ) {
-					$this->openai_output_tokens = absint( $body['usage']['output_tokens'] );
-				}
-
-				return $response;
-			};
-			if ( 'openai' === $provider_id ) {
-				add_filter( 'http_response', $capture_openai_usage, 10, 3 );
-			}
-
 			$text = null;
 
 			try {
@@ -1208,13 +1145,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
 						try {
-							$model_started_at = microtime( true );
 							$model = 'openai' === $provider_id
 								? $this->ai_translate_get_cached_openai_model( $provider_class, $model_id )
 								: $provider_class::model( $model_id );
-							if ( 'openai' === $provider_id ) {
-								$this->openai_model_lookup_ms += ( microtime( true ) - $model_started_at ) * 1000;
-							}
 							if ( 'openai' === $provider_id && $this->ai_translate_openai_supports_no_reasoning( $model_id ) ) {
 								$model_config = $model->getConfig();
 								$model_config->setCustomOption( 'reasoning', array( 'effort' => 'none' ) );
@@ -1230,7 +1163,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						}
 					}
 
-					$generation_started_at = microtime( true );
 					try {
 						$text = $builder
 							->using_provider( $provider_id )
@@ -1238,10 +1170,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							->generate_text();
 					} catch ( \Throwable $e ) {
 						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
-					} finally {
-						if ( 'openai' === $provider_id ) {
-							$this->openai_generation_ms += ( microtime( true ) - $generation_started_at ) * 1000;
-						}
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
@@ -1268,22 +1196,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						$builder = $builder->using_model_config( $model_config );
 					}
 
-					$generation_started_at = microtime( true );
 					try {
 						$text = $builder->generate_text();
 					} catch ( \Throwable $e ) {
 						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
-					} finally {
-						if ( 'openai' === $provider_id ) {
-							$this->openai_generation_ms += ( microtime( true ) - $generation_started_at ) * 1000;
-						}
 					}
 				}
 			} finally {
 				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
-				if ( 'openai' === $provider_id ) {
-					remove_filter( 'http_response', $capture_openai_usage, 10 );
-				}
 			}
 
 			return $text;

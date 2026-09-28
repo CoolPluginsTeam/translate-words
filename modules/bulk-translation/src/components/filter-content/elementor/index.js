@@ -65,8 +65,8 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
      * property instead of plain strings. This function detects the two common
      * atomic value shapes and dispatches them to `translateContent`:
      *
-     *  - `$$type === 'string'`   → plain text stored in `.value`
-     *  - `$$type === 'html-v3'`  → rich text stored in `.value.content.value`
+     *  - scalar typed values such as `string` or `escaped-html` → text in `.value`
+     *  - `$$type === 'html-v3'`                                  → rich text in `.value.content.value`
      *
      * @param {Object} element - The atomic widget value object (has `$$type`).
      * @param {Array}  ids     - The current ID path used to build the unique key.
@@ -85,10 +85,8 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
             if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
                 await translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
             }
-        } else if(element?.$$type === 'string'){
-            if(element.value && '' !== element.value){
-                await translateContent([...ids, 'value'], element.value);
-            }
+        } else if(typeof element?.value === 'string' && '' !== element.value.trim()){
+            await translateContent([...ids, 'value'], element.value);
         }
     }
 

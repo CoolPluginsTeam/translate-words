@@ -227,7 +227,15 @@ class Languages {
 
 		$id = (int) $r['term_id'];
 
-		if ( is_wp_error( $r ) ) {
+		$order_update = wp_update_term(
+			$id,
+			'lmat_language',
+			array(
+				'term_group' => (int) $args['term_group'],
+			)
+		);
+
+		if ( is_wp_error( $order_update ) ) {
 			return new WP_Error( 'lmat_add_language', __( 'Could not set the language order.', 'translate-words' ) );
 		}
 

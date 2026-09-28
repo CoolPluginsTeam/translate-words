@@ -215,7 +215,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
 
     const subStringsToCheck=(strings)=>{
         const dynamicSubStrings=['title', 'description', 'editor', 'text', 'content', 'label'];
-        const staticSubStrings=['caption','heading','sub_heading', 'testimonial_content', 'testimonial_job', 'testimonial_name', 'name'];
+        const staticSubStrings=['caption','heading','sub_heading', 'testimonial_content', 'testimonial_job', 'testimonial_name', 'name', 'html', 'paragraph', 'placeholder'];
 
         return dynamicSubStrings.some(substring => strings.toLowerCase().includes(substring)) || staticSubStrings.some(substring => strings === substring);
     }
@@ -224,7 +224,9 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
      * Handles Elementor Atomic Widget typed values within storeSourceStrings.
      *
      * Atomic widgets store translatable fields as objects with a `$$type` property
-     * (e.g. `{ $$type: 'string', value: 'Hello' }` or `{ $$type: 'html-v3', ... }`).
+     * (e.g. `{ $$type: 'string', value: 'Hello' }`,
+     * `{ $$type: 'escaped-html', value: '<p>Hello</p>' }`, or
+     * `{ $$type: 'html-v3', ... }`).
      * This helper extracts the inner string, looks up its translation, and pushes a
      * translation entry marked with `isAtomic: true` so the apply phase knows to
      * traverse the nested attribute path.
@@ -257,17 +259,15 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                     isAtomic: true
                 });
             }
-        } else if(element?.$$type === 'string'){
-            if(element.value && '' !== element.value){
-                const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
-                const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
-                translations.push({
-                    ID: widgetId,
-                    key: `${pathKey}_lmat_page_translation_value`,
-                    translatedContent: translatedData,
-                    isAtomic: true
-                });
-            }
+        } else if(typeof element?.value === 'string' && '' !== element.value.trim()){
+            const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
+            const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
+            translations.push({
+                ID: widgetId,
+                key: `${pathKey}_lmat_page_translation_value`,
+                translatedContent: translatedData,
+                isAtomic: true
+            });
         }
     }
 
@@ -378,7 +378,9 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
     lmatUpdateTitle(postContent.title, service);
 
     const replaceSourceString=()=>{
-        const elementorData = lmatPageTranslationGlobal.elementorData;
+        // Work on a copy so the localized source snapshot cannot be mutated and
+        // subsequently reused by Elementor as stale source-language editor data.
+        const elementorData = JSON.parse(JSON.stringify(lmatPageTranslationGlobal.elementorData || []));
         const translateStrings=wp.data.select('block-lmatPageTranslation/translate').getTranslationEntries();
 
         translateStrings.forEach(translation => {
@@ -394,6 +396,9 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
             const keyArray = ids.split('_lmat_page_translation_');
             
             const translateValue = translatedContent[service];
+            if(typeof translateValue !== 'string'){
+                return;
+            }
             let parentElement = null;
             let parentKey = null;
 
@@ -405,7 +410,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                 currentElement = currentElement ? currentElement[key] : null;
             });
 
-            if(parentElement && parentKey && parentElement[parentKey] && parentElement[parentKey] === sourceString){
+            if(parentElement && parentKey !== null && parentElement[parentKey] === sourceString){
                 parentElement[parentKey] = translateValue;
             }
         });
@@ -422,6 +427,14 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         elementor_data: JSON.stringify(elementorData),
         lmat_page_translation_nonce: lmatPageTranslationGlobal.ajax_nonce,
         parent_post_id: lmatPageTranslationGlobal.parent_post_id
+    }
+
+    if(postContent.title && '' !== postContent.title){
+        const translatedTitle = select('block-lmatPageTranslation/translate').getTranslatedString('title', postContent.title, null, service);
+
+        if(translatedTitle && '' !== translatedTitle){
+            requestBody.post_title = translatedTitle;
+        }
     }
 
     if(postContent.slug_name && '' !== postContent.slug_name && lmatPageTranslationGlobal.slug_translation_option === 'slug_translate'){
@@ -443,13 +456,14 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
     })
         .then(response => response.json())
         .then(async (data) => {
-            if (data.success) {
-                const translateButton = document.querySelector('.lmat-page-translation-button[name="lmat_page_translation_meta_box_translate"]');
-                if(translateButton){
-                    translateButton.setAttribute('title', 'Translation process completed successfully.');
-                }
-            } else {
-                console.error('Failed to update Elementor data:', data.data);
+            if (!data.success) {
+                const message = typeof data.data === 'string' ? data.data : data.data?.message;
+                throw new Error(message || 'Failed to update Elementor data.');
+            }
+
+            const translateButton = document.querySelector('.lmat-page-translation-button[name="lmat_page_translation_meta_box_translate"]');
+            if(translateButton){
+                translateButton.setAttribute('title', 'Translation process completed successfully.');
             }
 
             if (lmatPageTranslationGlobal.postMetaSync === 'false') {
@@ -460,6 +474,10 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
         })
         .catch(error => {
             modalClose();
+            document.dispatchEvent(new CustomEvent('lmat-page-translation:translation-error', {
+                bubbles: true,
+                detail: { message: error.message || 'Failed to update Elementor data.' }
+            }));
             console.error('Error updating Elementor data:', error);
         });
 }
