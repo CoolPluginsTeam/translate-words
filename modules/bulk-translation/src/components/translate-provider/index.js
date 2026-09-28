@@ -86,7 +86,9 @@ export default (props) => {
             ButtonDisabled: !window.lmatBulkTranslationGlobal.api_keys_status?.openai,
             ErrorMessage: !window.lmatBulkTranslationGlobal.api_keys_status?.openai ? <a href={`${window.lmatBulkTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" rel="noopener noreferrer" className={`${prefix}-provider-error button button-primary`}>{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <OpenAIIcon className="icon-size" />,
-            filterHtmlContent: true
+            // Send Elementor widget values unchanged. Rendering them through
+            // React first HTML-encodes markup before OpenAI receives it.
+            filterHtmlContent: false
         },
         ollama: {
             Provider: AiLlmBulkTranslator,

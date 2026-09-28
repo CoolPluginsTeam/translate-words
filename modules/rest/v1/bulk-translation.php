@@ -957,6 +957,32 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$target_lang,
 				empty( $glossary_strings ) ? $strings : $glossary_strings
 			);
+			if ( 'openai' === $provider ) {
+				$source_language = LMAT()->model->get_language( $source_lang );
+				$target_language = LMAT()->model->get_language( $target_lang );
+				$target_locale   = $target_language ? $target_language->get_locale() : '';
+				$glossary_terms  = str_replace( "Please use the following glossary terms in your translation:\n", '', $glossary_instructions );
+				$glossary_terms  = str_replace( "\n", '; ', trim( $glossary_terms ) );
+				$instructions    = array(
+					'You are a professional website translator and SEO localization editor.',
+					'Source language: ' . sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
+					'Target language: ' . sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
+					'Target locale, if provided: ' . sanitize_text_field( $target_locale ),
+					'Approved terminology, if provided: ' . $glossary_terms,
+					'Researched target-language keywords, if provided: ',
+				);
+
+				$instructions[] = 'Translate the human-readable values in the input JSON into natural language for the target audience. Preserve the original meaning, facts, tone, and search intent. Use locally natural wording rather than a literal translation.';
+				$instructions[] = 'Use approved terminology consistently. Include a supplied keyword only when it fits the meaning and reads naturally; never add claims or repeat keywords for SEO. If no keywords are supplied, do not invent an SEO strategy.';
+				$instructions[] = 'Preserve all JSON keys exactly. Preserve URLs and all content inside square brackets [...] exactly. Preserve HTML tags, tag order, and attributes exactly; translate only visible text between tags. Preserve leading and trailing whitespace and line breaks.';
+				$instructions[] = 'Do not translate brand names, product names, code, placeholders, numbers, or identifiers unless the supplied glossary explicitly says to do so. Do not add, remove, or summarize content.';
+				$instructions[] = 'Return one complete, valid JSON object containing every original key and its translated value. Use JSON escaping where required. Output only the JSON object, with no Markdown or explanation.';
+				$instructions[] = 'Input JSON:';
+				$instructions[] = $payload;
+
+				return implode( "\n", $instructions );
+			}
+
 			$html_instruction = 'ollama' === $provider
 				? 'Preserve all HTML tags, attributes, and tokens such as [[LMAT_HTML_TAG_0000]] exactly. Never translate, remove, duplicate, reorder, or add spaces inside these tokens.'
 				: 'Preserve all HTML tags and their attributes such as class, id, data-*, etc. Do not alter any part of the HTML structure.';
@@ -1219,7 +1245,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
-					if ( method_exists( $builder, 'using_system_instruction' ) ) {
+					if ( 'openai' !== $provider_id && method_exists( $builder, 'using_system_instruction' ) ) {
 						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
 					}
 					if ( method_exists( $builder, 'with_text' ) ) {
@@ -1456,6 +1482,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					}
 					$out[ $key ] = $translated;
 				} else {
+					if ( 'openai' === $provider ) {
+						return new WP_Error(
+							'lmat_openai_incomplete_response',
+							__( 'OpenAI returned an incomplete translation response. Please retry this batch.', 'translate-words' ),
+							array( 'status' => 502 )
+						);
+					}
 					if ( 'ollama' === $provider ) {
 						return new WP_Error(
 							'lmat_ollama_incomplete_response',
@@ -2269,13 +2302,20 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 					if ( $elementor_data && '' !== $elementor_data ) {
 						$posts_translate[ $postId ]['editor_type'] = 'elementor';
-						$elementor_data                            = array();
+						$decoded_elementor_data                    = json_decode( $elementor_data, true );
+						$elementor_elements                        = is_array( $decoded_elementor_data ) ? $decoded_elementor_data : array();
 
 						if ( class_exists( '\Elementor\Plugin' ) && property_exists( '\Elementor\Plugin', 'instance' ) ) {
-							$elementor_data = \Elementor\Plugin::$instance->documents->get( $postId )->get_elements_data();
+							$document = \Elementor\Plugin::$instance->documents->get( $postId );
+							if ( $document ) {
+								$document_elements = $document->get_elements_data();
+								if ( is_array( $document_elements ) && ! empty( $document_elements ) ) {
+									$elementor_elements = $document_elements;
+								}
+							}
 						}
 
-						$posts_translate[ $postId ]['content'] = $elementor_data;
+						$posts_translate[ $postId ]['content'] = $elementor_elements;
 						unset( $posts_translate[ $postId ]['metaFields']['_elementor_data'] );
 					}
 				}

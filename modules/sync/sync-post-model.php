@@ -360,34 +360,30 @@ class Linguator_Sync_Post_Model {
 	 * @return void
 	 */
 	private function update_elementor_data($tr_id, $post_data, $parent_post_id = 0){
-		$current_post_elementor_data = get_post_meta($tr_id, '_elementor_data', true);
-
 		if(!isset($post_data['meta_fields']['_elementor_data'])){
 			return;
 		}
 
 		$elementor_data=$post_data['meta_fields']['_elementor_data'];
+		$elements = json_decode( $elementor_data, true );
+		if ( ! is_array( $elements ) || empty( $elements ) ) {
+			return;
+		}
 
-		// Check if the current post has Elementor data
-		if('' !== $current_post_elementor_data && $elementor_data && '' !== $elementor_data){
-			if(class_exists('Elementor\Plugin')){
-				$plugin=\Elementor\Plugin::$instance;
-				$document=$plugin->documents->get($tr_id);
-	
-				$document->save( [
-					'elements' => json_decode($elementor_data, true),
-				] );
-
-				$plugin->files_manager->clear_cache();
-			}else{
-
-				if($parent_post_id > 0){
-					$elementor_data=\Elementor\Plugin::$instance->documents->get($parent_post_id)->get_elements_data();
-					$elementor_data=wp_json_encode($elementor_data);
-					$elementor_data=preg_replace('#(?<!\\\\)/#', '\\/', $elementor_data);
-					update_post_meta($tr_id, '_elementor_data', $elementor_data);
-				}
+		if ( class_exists( 'Elementor\Plugin' ) ) {
+			$plugin   = \Elementor\Plugin::$instance;
+			$document = $plugin->documents->get( $tr_id );
+			if ( $document ) {
+				$document->save( array( 'elements' => $elements ) );
 			}
+		}
+
+		// The copied post initially contains the source language's Elementor meta.
+		// Persist the translated data even if Elementor's document save is a no-op.
+		update_post_meta( $tr_id, '_elementor_data', wp_slash( $elementor_data ) );
+
+		if ( isset( $plugin->files_manager ) ) {
+			$plugin->files_manager->clear_cache();
 		}
 	}
 

@@ -41,6 +41,46 @@ class Linguator_Elementor {
 	private static function linguator_elementor_compatibility() {
 		// Copy elementor data while linguator creates a translation copy.
 		add_filter( 'lmat_copy_post_metas', [ __CLASS__, 'linguator_save_elementor_meta' ], 10, 4 );
+		add_filter( 'elementor/document/urls/preview', array( __CLASS__, 'linguator_translated_draft_preview_url' ), 20, 2 );
+	}
+
+	/**
+	 * Use the translated draft's preview URL for Elementor's editor iframe.
+	 *
+	 * Elementor builds its iframe URL from the public permalink. For an unpublished
+	 * translation, that permalink may resolve to another language or return 404.
+	 *
+	 * @param string $url      Elementor preview URL.
+	 * @param object $document Elementor document.
+	 * @return string
+	 */
+	public static function linguator_translated_draft_preview_url( $url, $document ) {
+		if ( ! is_object( $document ) || ! method_exists( $document, 'get_post' ) ) {
+			return $url;
+		}
+
+		$post = $document->get_post();
+		if (
+			! $post instanceof \WP_Post ||
+			! in_array( $post->post_status, array( 'draft', 'pending', 'future' ), true ) ||
+			'builder' !== get_post_meta( $post->ID, '_elementor_edit_mode', true ) ||
+			! isset( LMAT()->model->post ) ||
+			count( LMAT()->model->post->get_translations( $post->ID ) ) < 2
+		) {
+			return $url;
+		}
+
+		$preview_url = get_preview_post_link( $post );
+		if ( ! $preview_url ) {
+			return $url;
+		}
+
+		$query_args = array();
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query_args );
+		$elementor_args = array_intersect_key( $query_args, array_flip( array( 'elementor-preview', 'ver' ) ) );
+		$elementor_args['elementor-preview'] = $post->ID;
+
+		return add_query_arg( $elementor_args, $preview_url );
 	}
 
 	/**
