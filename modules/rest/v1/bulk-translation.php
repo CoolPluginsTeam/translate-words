@@ -42,6 +42,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 */
 		private $rest_base;
 
+		/** @var float Time spent resolving OpenAI model metadata, in milliseconds. */
+		private $openai_model_lookup_ms = 0.0;
+
+		/** @var float Time spent generating OpenAI text, in milliseconds. */
+		private $openai_generation_ms = 0.0;
+
+		/** @var int|null Output tokens reported by OpenAI for this request. */
+		private $openai_output_tokens = null;
+
+		/** @var float|null Server processing time reported by OpenAI, in milliseconds. */
+		private $openai_processing_ms = null;
+
 		/**
 		 * Constructor
 		 *
@@ -283,6 +295,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return \WP_REST_Response|\WP_Error
 		 */
 		public function ai_translate_batch( $request ) {
+			$request_started_at = microtime( true );
+			$this->openai_model_lookup_ms = 0.0;
+			$this->openai_generation_ms = 0.0;
+			$this->openai_output_tokens = null;
+			$this->openai_processing_ms = null;
 			$params = $request->get_json_params();
 			if ( ! is_array( $params ) ) {
 				$params = array();
@@ -367,7 +384,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return $result;
 			}
 
-			return rest_ensure_response( array( 'translations' => $result ) );
+			$response = rest_ensure_response( array( 'translations' => $result ) );
+			if ( 'openai' === $provider ) {
+				$response->header(
+					'Server-Timing',
+					sprintf(
+						'lmat_model;dur=%.1f, lmat_generate;dur=%.1f, lmat_total;dur=%.1f',
+						$this->openai_model_lookup_ms,
+						$this->openai_generation_ms,
+						( microtime( true ) - $request_started_at ) * 1000
+					)
+				);
+				if ( null !== $this->openai_output_tokens ) {
+					$response->header( 'X-LMAT-OpenAI-Output-Tokens', (string) $this->openai_output_tokens );
+				}
+				if ( null !== $this->openai_processing_ms ) {
+					$response->header( 'X-LMAT-OpenAI-Processing-Ms', (string) $this->openai_processing_ms );
+				}
+			}
+
+			return $response;
 		}
 
 		/**
@@ -455,14 +491,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$short_key_map    = array();
 			$parse_strings    = $strings;
 			if ( 'ollama' === $provider ) {
-				$protected       = $this->ai_protect_ollama_html_tags( $strings );
+				$protected        = $this->ai_protect_ollama_html_tags( $strings );
 				$provider_strings = $protected['strings'];
 				$html_tag_maps    = $protected['maps'];
+			}
 
-				// Ollama's smaller models unreliably echo back Linguator's long,
-				// near-duplicate nested-block keys verbatim. Use short placeholder
-				// keys for the Ollama request/response only, then map back to the
-				// real keys once parsed.
+			if ( in_array( $provider, array( 'ollama', 'openai' ), true ) ) {
+				// Short keys make Ollama's response more reliable and reduce the
+				// output tokens OpenAI spends repeating long internal block keys.
+				// Restore the original keys before returning any translations.
 				$index = 0;
 				foreach ( array_keys( $strings ) as $original_key ) {
 					$short_key_map[ $original_key ] = 'k' . $index;
@@ -540,7 +577,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			if ( 'ollama' === $provider && ! is_wp_error( $result ) && ! empty( $short_key_map ) ) {
+			if ( ! is_wp_error( $result ) && ! empty( $short_key_map ) ) {
 				$result = $this->ai_translate_remap_keys( $result, array_flip( $short_key_map ) );
 			}
 
@@ -1089,6 +1126,32 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			};
 			add_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
 
+			$capture_openai_usage = function ( $response, $args, $url ) use ( $provider_id ) {
+				if (
+					'openai' !== $provider_id ||
+					'POST' !== strtoupper( (string) ( $args['method'] ?? '' ) ) ||
+					'https://api.openai.com/v1/responses' !== rtrim( $url, '/' ) ||
+					200 !== wp_remote_retrieve_response_code( $response )
+				) {
+					return $response;
+				}
+
+				$processing_ms = wp_remote_retrieve_header( $response, 'openai-processing-ms' );
+				if ( is_numeric( $processing_ms ) ) {
+					$this->openai_processing_ms = (float) $processing_ms;
+				}
+
+				$body = json_decode( wp_remote_retrieve_body( $response ), true );
+				if ( is_array( $body ) && isset( $body['usage']['output_tokens'] ) ) {
+					$this->openai_output_tokens = absint( $body['usage']['output_tokens'] );
+				}
+
+				return $response;
+			};
+			if ( 'openai' === $provider_id ) {
+				add_filter( 'http_response', $capture_openai_usage, 10, 3 );
+			}
+
 			$text = null;
 
 			try {
@@ -1119,7 +1182,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
 						try {
-							$model   = $provider_class::model( $model_id );
+							$model_started_at = microtime( true );
+							$model = 'openai' === $provider_id
+								? $this->ai_translate_get_cached_openai_model( $provider_class, $model_id )
+								: $provider_class::model( $model_id );
+							if ( 'openai' === $provider_id ) {
+								$this->openai_model_lookup_ms += ( microtime( true ) - $model_started_at ) * 1000;
+							}
+							if ( 'openai' === $provider_id && $this->ai_translate_openai_supports_no_reasoning( $model_id ) ) {
+								$model_config = $model->getConfig();
+								$model_config->setCustomOption( 'reasoning', array( 'effort' => 'none' ) );
+								$model->setConfig( $model_config );
+							}
 							$builder = $builder->using_model( $model );
 						} catch ( \Throwable $e ) {
 							return new WP_Error(
@@ -1130,6 +1204,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						}
 					}
 
+					$generation_started_at = microtime( true );
 					try {
 						$text = $builder
 							->using_provider( $provider_id )
@@ -1137,6 +1212,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							->generate_text();
 					} catch ( \Throwable $e ) {
 						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
+					} finally {
+						if ( 'openai' === $provider_id ) {
+							$this->openai_generation_ms += ( microtime( true ) - $generation_started_at ) * 1000;
+						}
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
@@ -1152,18 +1231,117 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
 						$builder = $builder->using_model_preference( $model_id );
 					}
+					if (
+						'openai' === $provider_id &&
+						$this->ai_translate_openai_supports_no_reasoning( $model_id ) &&
+						method_exists( $builder, 'using_model_config' ) &&
+						class_exists( '\\WordPress\\AiClient\\Providers\\Models\\DTO\\ModelConfig' )
+					) {
+						$model_config = new \WordPress\AiClient\Providers\Models\DTO\ModelConfig();
+						$model_config->setCustomOption( 'reasoning', array( 'effort' => 'none' ) );
+						$builder = $builder->using_model_config( $model_config );
+					}
 
+					$generation_started_at = microtime( true );
 					try {
 						$text = $builder->generate_text();
 					} catch ( \Throwable $e ) {
 						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
+					} finally {
+						if ( 'openai' === $provider_id ) {
+							$this->openai_generation_ms += ( microtime( true ) - $generation_started_at ) * 1000;
+						}
 					}
 				}
 			} finally {
 				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
+				if ( 'openai' === $provider_id ) {
+					remove_filter( 'http_response', $capture_openai_usage, 10 );
+				}
 			}
 
 			return $text;
+		}
+
+		/**
+		 * Cache OpenAI's model list across translation requests without changing other providers.
+		 *
+		 * The WP AI Client uses the object cache, which is request-local when no
+		 * persistent object cache is installed. A transient avoids a model-list
+		 * HTTP request for every translated chunk.
+		 *
+		 * @param string $provider_class OpenAI provider class.
+		 * @param string $model_id       Selected model ID.
+		 * @return object OpenAI model instance.
+		 */
+		private function ai_translate_get_cached_openai_model( string $provider_class, string $model_id ) {
+			$api_key   = (string) get_option( 'connectors_ai_openai_api_key', '' );
+			$cache_key = 'lmat_openai_models_' . substr( hash_hmac( 'sha256', trim( $api_key ), wp_salt( 'auth' ) ), 0, 32 );
+			$endpoint  = 'https://api.openai.com/v1/models';
+
+			$is_models_request = static function ( $args, $url ) use ( $endpoint ): bool {
+				return 'GET' === strtoupper( (string) ( $args['method'] ?? '' ) )
+					&& $endpoint === rtrim( $url, '/' );
+			};
+
+			$use_cached_response = static function ( $preempt, $args, $url ) use ( $cache_key, $is_models_request ) {
+				if ( false !== $preempt || ! $is_models_request( $args, $url ) ) {
+					return $preempt;
+				}
+
+				$body = get_transient( $cache_key );
+				if ( ! is_string( $body ) || '' === $body ) {
+					return false;
+				}
+
+				return array(
+					'headers'  => array(),
+					'body'     => $body,
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+					'cookies'  => array(),
+					'filename' => null,
+				);
+			};
+
+			$cache_response = static function ( $response, $args, $url ) use ( $cache_key, $is_models_request ) {
+				if ( $is_models_request( $args, $url ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
+					$body = wp_remote_retrieve_body( $response );
+					$data = json_decode( $body, true );
+					if ( is_array( $data ) && isset( $data['data'] ) && is_array( $data['data'] ) ) {
+						set_transient( $cache_key, $body, HOUR_IN_SECONDS );
+					}
+				}
+
+				return $response;
+			};
+
+			add_filter( 'pre_http_request', $use_cached_response, 10, 3 );
+			add_filter( 'http_response', $cache_response, 10, 3 );
+			try {
+				return $provider_class::model( $model_id );
+			} finally {
+				remove_filter( 'pre_http_request', $use_cached_response, 10 );
+				remove_filter( 'http_response', $cache_response, 10 );
+			}
+		}
+
+		/**
+		 * Check whether an OpenAI model accepts reasoning effort "none".
+		 *
+		 * Keep this conservative: sending "none" to older reasoning or Pro models
+		 * returns an API error. Non-reasoning models need no reasoning parameter.
+		 *
+		 * @param string $model_id OpenAI model ID.
+		 * @return bool
+		 */
+		private function ai_translate_openai_supports_no_reasoning( string $model_id ): bool {
+			return (bool) preg_match(
+				'/^(?:gpt-5\.(?:1|2|5)|gpt-5\.4(?:-(?:mini|nano))?|gpt-5\.6(?:-(?:sol|terra|luna))?|gpt-6-(?:sol|luna))(?:-\d{4}-\d{2}-\d{2})?$/',
+				$model_id
+			);
 		}
 
 		/**

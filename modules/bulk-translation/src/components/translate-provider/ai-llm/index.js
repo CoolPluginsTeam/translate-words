@@ -287,7 +287,7 @@ class AiLlmBulkTranslator {
             // fewer, larger requests are sent to its slower hosted models.
             const chunkOptions = this.serviceProvider === "ollama"
                 ? getOllamaChunkOptions(Math.max(maxTokens, 1000))
-                : { maxTokens };
+                : { maxTokens: this.serviceProvider === "openai" ? Math.min(maxTokens, 500) : maxTokens };
             const chunks = chunkStringMap(stringsToTranslate, chunkOptions);
             const modelKeys = {
                 gemini: "gemini_model",

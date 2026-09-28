@@ -203,7 +203,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 // fewer, larger requests are sent to its slower hosted models.
                 const chunkOptions = providerId === "ollama"
                     ? getOllamaChunkOptions(Math.max(maxTokens, 1000))
-                    : { maxTokens };
+                    : { maxTokens: providerId === "openai" ? Math.min(maxTokens, 500) : maxTokens };
                 const chunks = chunkStringMap(strings, chunkOptions);
                 const totalKeys = Math.max(1, Object.keys(strings).length);
                 let chunkIndex = 0;
