@@ -296,11 +296,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
 			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
-			if ( ! in_array( $provider, array( 'gemini', 'ollama' ), true ) ) {
+			if ( ! in_array( $provider, array( 'gemini', 'openai', 'ollama' ), true ) ) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			if ( 'gemini' === $provider && ! function_exists( 'wp_ai_client_prompt' ) ) {
+			if ( in_array( $provider, array( 'gemini', 'openai' ), true ) && ! function_exists( 'wp_ai_client_prompt' ) ) {
 				return new WP_Error(
 					'lmat_ai_unavailable',
 					__( 'WordPress AI Client is not available. Install or enable the AI Client and provider packages.', 'translate-words' ),
@@ -327,7 +327,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'ollama' === $provider ? 'connectors_ai_ollama_api_key' : 'connectors_ai_google_api_key';
+			$key_options = array(
+				'gemini' => 'connectors_ai_google_api_key',
+				'openai' => 'connectors_ai_openai_api_key',
+				'ollama' => 'connectors_ai_ollama_api_key',
+			);
+			$key_option = $key_options[ $provider ];
 			$api_key    = (string) get_option( $key_option, '' );
 			if ( '' === trim( $api_key ) ) {
 				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
@@ -828,9 +833,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$model_key      = 'ollama' === $provider ? 'ollama_model' : 'gemini_model';
+			$model_keys = array(
+				'gemini' => 'gemini_model',
+				'openai' => 'openai_model',
+				'ollama' => 'ollama_model',
+			);
+			$model_key      = isset( $model_keys[ $provider ] ) ? $model_keys[ $provider ] : '';
 			$model_defaults = array(
 				'gemini_model' => 'gemini-2.5-flash',
+				'openai_model' => 'gpt-5.4-mini',
 				'ollama_model' => 'gemma4:31b',
 			);
 			$model_id = trim( $model_override );
@@ -1125,7 +1136,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							->with_text( $instruction )
 							->generate_text();
 					} catch ( \Throwable $e ) {
-						return $this->ai_translate_map_generate_text_exception( $e );
+						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
@@ -1145,7 +1156,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					try {
 						$text = $builder->generate_text();
 					} catch ( \Throwable $e ) {
-						return $this->ai_translate_map_generate_text_exception( $e );
+						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
 					}
 				}
 			} finally {
@@ -1459,10 +1470,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		/**
 		 * Map generate_text() failures to WP_Error
 		 *
-		 * @param \Throwable $e Thrown error.
+		 * @param \Throwable $e           Thrown error.
+		 * @param string     $provider_id Provider id in the registry.
 		 * @return \WP_Error
 		 */
-		private function ai_translate_map_generate_text_exception( \Throwable $e ): WP_Error {
+		private function ai_translate_map_generate_text_exception( \Throwable $e, string $provider_id ): WP_Error {
 			$msg = (string) $e->getMessage();
 			if ( false !== stripos( $msg, 'No models found' ) ) {
 				return new WP_Error(
@@ -1477,9 +1489,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				false !== stripos( $msg, 'rate limit' ) ||
 				false !== stripos( $msg, 'too many requests' )
 			) {
+				$provider_name = 'openai' === $provider_id ? 'OpenAI' : 'Gemini';
 				return new WP_Error(
 					'lmat_ai_rate_limited',
-					__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+					sprintf(
+						/* translators: %s: AI provider name. */
+						__( '%s API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+						$provider_name
+					),
 					array( 'status' => 429 )
 				);
 			}

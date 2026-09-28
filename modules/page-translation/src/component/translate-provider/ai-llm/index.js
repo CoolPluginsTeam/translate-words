@@ -52,6 +52,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            openai: __("Translate with OpenAI", "translate-words"),
             ollama: __("Translate with Ollama", "translate-words"),
         };
 
@@ -210,7 +211,12 @@ export default function createAiLlmPageTranslator(providerId) {
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = providerId === "ollama" ? "ollama_model" : "gemini_model";
+                const modelKeys = {
+                    gemini: "gemini_model",
+                    openai: "openai_model",
+                    ollama: "ollama_model",
+                };
+                const modelKey = modelKeys[providerId] || "";
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])
@@ -267,7 +273,7 @@ export default function createAiLlmPageTranslator(providerId) {
                     updateProgressUi();
                 };
 
-                const showGeminiRecoverableError = (limitExceeded) => {
+                const showAiRecoverableError = (limitExceeded) => {
                     showErrorNotice({
                         recoverable: true,
                         messagePlain: limitExceeded
@@ -384,15 +390,15 @@ export default function createAiLlmPageTranslator(providerId) {
                                 lower.includes("resource has been exhausted");
 
                             const totalStringKeys = Object.keys(strings).length;
-                            const canOfferGeminiRecovery =
-                                providerId === "gemini" &&
+                            const canOfferAiRecovery =
+                                ["gemini", "openai"].includes(providerId) &&
                                 totalStringKeys > 0 &&
                                 chunks.length > 0 &&
                                 (isQuota || chunkIndex < chunks.length);
 
-                            if (canOfferGeminiRecovery) {
+                            if (canOfferAiRecovery) {
                                 logAiTranslationError(errorMessage);
-                                showGeminiRecoverableError(isQuota);
+                                showAiRecoverableError(isQuota);
                                 return "recoverable";
                             }
 
@@ -446,8 +452,8 @@ export default function createAiLlmPageTranslator(providerId) {
                 const totalStringKeys = Object.keys(strings).length;
 
                 logAiTranslationError(errorMessage);
-                if (providerId === "gemini" && isQuota && totalStringKeys > 0) {
-                    showGeminiRecoverableError(true);
+                if (["gemini", "openai"].includes(providerId) && isQuota && totalStringKeys > 0) {
+                    showAiRecoverableError(true);
                 } else {
                     showErrorNotice(errorMessage);
                     releaseRecoverableUpdateBlock();

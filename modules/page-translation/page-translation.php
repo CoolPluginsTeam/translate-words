@@ -407,7 +407,7 @@ class Linguator_Page_Translation {
 			if ( ! $value ) {
 				continue;
 			}
-			// Page translation UI only implements Google Translate and Chrome built-in AI (not LLM API keys).
+			// Map configured providers to their page translation service identifiers.
 			if ( 'chrome_local_ai' === $provider ) {
 				$active_providers[] = 'localAiTranslator';
 			} elseif ( 'edge_local_ai' === $provider ) {
@@ -416,6 +416,8 @@ class Linguator_Page_Translation {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 				$active_providers[] = $provider;
+			} elseif ( 'openai' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'openai' ) ) {
+				$active_providers[] = $provider;
 			} elseif ( 'ollama' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
 				$active_providers[] = $provider;
 			}
@@ -423,11 +425,15 @@ class Linguator_Page_Translation {
 
 		$api_keys_status = array(
 			'gemini' => false,
+			'openai' => false,
 			'ollama' => false,
 		);
 
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 			$api_keys_status['gemini'] = '' !== trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		}
+		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'openai' ) ) {
+			$api_keys_status['openai'] = '' !== trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
 		}
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
 			$api_keys_status['ollama'] = '' !== trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );

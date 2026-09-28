@@ -6,6 +6,7 @@ import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
 import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
 import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
 import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
+import { OpenAIIcon } from "../../../../../assets/js/src/icons/openai.js";
 import { Bot } from "lucide-react";
 
 /**
@@ -66,6 +67,18 @@ export default (props) => {
             ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.gemini,
             ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />
+        },
+        openai: {
+            Provider: createAiLlmPageTranslator("openai"),
+            title: "OpenAI",
+            SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.openai ? "Translate" : "Add API Key",
+            serviceLabel: "OpenAI",
+            heading: __("Translate Using OpenAI", "translate-words"),
+            Docs: "https://platform.openai.com/docs/overview",
+            BetaEnabled: false,
+            ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.openai,
+            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.openai ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" rel="noopener noreferrer" className="lmat-page-translation-provider-error button button-primary">{__('Add API Key', 'translate-words')}</a> : <></>,
+            Logo: <OpenAIIcon className="icon-size" />
         },
         ollama: {
             Provider: createAiLlmPageTranslator("ollama"),
