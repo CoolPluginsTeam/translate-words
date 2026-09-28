@@ -19,6 +19,11 @@ use Linguator\Includes\Options\Options;
  */
 class Ai_Translation_Configuration extends Abstract_Option {
 	/**
+	 * Maximum length of the custom OpenAI prompt.
+	 */
+	private const OPENAI_CUSTOM_PROMPT_MAX_LENGTH = 4000;
+
+	/**
 	 * Returns option key.
 	 *
 	 *  
@@ -50,6 +55,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
             ),
             'bulk_translation_post_status' => 'draft',
             'slug_translation_option' => 'title_translate',
+			'openai_custom_prompt' => '',
         );
 
         return $data;
@@ -79,6 +85,10 @@ class Ai_Translation_Configuration extends Abstract_Option {
                 ),
                 'bulk_translation_post_status' => array('type' => 'string', 'enum' => array('draft', 'publish')),
                 'slug_translation_option' => array('type' => 'string', 'enum' => array('title_translate', 'slug_translate', 'slug_keep')),
+				'openai_custom_prompt' => array(
+					'type'      => 'string',
+					'maxLength' => self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH,
+				),
             ),
         );
     }
@@ -123,6 +133,13 @@ class Ai_Translation_Configuration extends Abstract_Option {
         if(isset($value['slug_translation_option']) && in_array($value['slug_translation_option'], array('title_translate', 'slug_translate', 'slug_keep'))){
             $filtered_value['slug_translation_option'] = sanitize_text_field($value['slug_translation_option']);
         }
+
+		if ( isset( $value['openai_custom_prompt'] ) ) {
+			$custom_prompt = sanitize_textarea_field( (string) $value['openai_custom_prompt'] );
+			$filtered_value['openai_custom_prompt'] = function_exists( 'mb_substr' )
+				? mb_substr( $custom_prompt, 0, self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH )
+				: substr( $custom_prompt, 0, self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH );
+		}
 
         return $filtered_value;
     }

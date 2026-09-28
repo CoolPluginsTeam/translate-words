@@ -927,6 +927,25 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$target_locale   = $target_language ? $target_language->get_locale() : '';
 				$glossary_terms  = str_replace( "Please use the following glossary terms in your translation:\n", '', $glossary_instructions );
 				$glossary_terms  = str_replace( "\n", '; ', trim( $glossary_terms ) );
+				$custom_prompt   = '';
+
+				if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['openai_custom_prompt'] ) ) {
+					$custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['openai_custom_prompt'] );
+				}
+
+				if ( '' !== $custom_prompt ) {
+					return strtr(
+						$custom_prompt,
+						array(
+							'{source_language}' => sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
+							'{target_language}' => sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
+							'{target_locale}'   => sanitize_text_field( $target_locale ),
+							'{glossary}'        => $glossary_terms,
+							'{input_json}'      => $payload,
+						)
+					);
+				}
+
 				$instructions    = array(
 					'You are a professional website translator and SEO localization editor.',
 					'Source language: ' . sanitize_text_field( $source_language ? $source_language->name : $source_lang ),

@@ -52,7 +52,7 @@ const TranslationConfig = ({ data, setData }) => {
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
     const [openaiTranslation, setOpenaiTranslation] = useState(Boolean(provider?.openai) && openaiAvailable)
     const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, openaiTranslation, ollamaTranslation })
+    const [openaiCustomPrompt, setOpenaiCustomPrompt] = useState(aiTranslation?.openai_custom_prompt || '')
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -77,6 +77,7 @@ const TranslationConfig = ({ data, setData }) => {
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
             openaiTranslation !== (Boolean(provider?.openai) && openaiAvailable) ||
             ollamaTranslation !== (Boolean(provider?.ollama) && ollamaAvailable) ||
+            openaiCustomPrompt !== (aiTranslation?.openai_custom_prompt || '') ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
     };
@@ -85,7 +86,7 @@ const TranslationConfig = ({ data, setData }) => {
         const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (openaiAvailable && openaiTranslation) || (ollamaAvailable && ollamaTranslation)
         const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (openaiTranslation && apiKeyDirty.openai) || (ollamaTranslation && apiKeyDirty.ollama)
         setHandleButtonDisabled(!hasChanges() && !(apiSectionOpen && hasPendingApiChange))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, openaiCustomPrompt, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -150,7 +151,8 @@ const TranslationConfig = ({ data, setData }) => {
                         } : {}),
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
-                    slug_translation_option: slugTranslationOption
+                    slug_translation_option: slugTranslationOption,
+                    openai_custom_prompt: openaiCustomPrompt
                 }
             }
             if (apiKeyPayload?.keys) {
@@ -160,22 +162,6 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, openaiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption })
-            if (aiTranslation && (
-                lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
-                lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
-                lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
-                (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
-                (openaiAvailable && lastUpdatedValue.openaiTranslation !== openaiTranslation) ||
-                (ollamaAvailable && lastUpdatedValue.ollamaTranslation !== ollamaTranslation) ||
-                lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
-                lastUpdatedValue.slugTranslationOption !== slugTranslationOption
-            )) {
-                setData(prev => ({
-                    ...prev,
-                    ...apiBody
-                }))
-            }
             //API Call (single settings request includes Gemini keys/models when present)
             const response = apiFetch({
                 path: 'lmat/v1/settings',
@@ -441,6 +427,23 @@ const TranslationConfig = ({ data, setData }) => {
                                         providerKeys={['openai']}
                                         onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, openai: dirty }))}
                                     />
+                                    <div className="mt-5">
+                                        <label className="block mb-2 font-medium" htmlFor="openai-custom-prompt">
+                                            {__('Custom prompt override (optional)', 'translate-words')}
+                                        </label>
+                                        <textarea
+                                            id="openai-custom-prompt"
+                                            className="box-border w-full p-3 border border-solid border-border-subtle rounded-md bg-white text-sm leading-6"
+                                            maxLength={4000}
+                                            onChange={(event) => setOpenaiCustomPrompt(event.target.value)}
+                                            placeholder={__('Leave empty to use the built-in OpenAI translation prompt.', 'translate-words')}
+                                            rows={6}
+                                            value={openaiCustomPrompt}
+                                        />
+                                        <p className="mt-2 mb-0 text-sm text-text-secondary">
+                                            {__('When provided, this completely replaces the built-in prompt. Available placeholders: {source_language}, {target_language}, {target_locale}, {glossary}, and {input_json}.', 'translate-words')}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>

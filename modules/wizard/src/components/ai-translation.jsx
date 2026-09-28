@@ -212,6 +212,9 @@ const AiTranslation = () => {
 						...(apiKeyPayload || {}),
 						ai_translation_configuration: {
 							provider: nextProvider,
+							bulk_translation_post_status: aiTranslation?.bulk_translation_post_status || 'draft',
+							slug_translation_option: aiTranslation?.slug_translation_option || 'title_translate',
+							openai_custom_prompt: aiTranslation?.openai_custom_prompt || '',
 						},
 					}),
 				});
