@@ -21,7 +21,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
 	/**
 	 * Maximum length of the custom OpenAI prompt.
 	 */
-	private const OPENAI_CUSTOM_PROMPT_MAX_LENGTH = 4000;
+	private const OPENAI_CUSTOM_PROMPT_MAX_LENGTH = 10000;
 
 	/**
 	 * Returns option key.

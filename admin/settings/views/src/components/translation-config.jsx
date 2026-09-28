@@ -434,7 +434,7 @@ const TranslationConfig = ({ data, setData }) => {
                                         <textarea
                                             id="openai-custom-prompt"
                                             className="box-border w-full p-3 border border-solid border-border-subtle rounded-md bg-white text-sm leading-6"
-                                            maxLength={4000}
+                                            maxLength={10000}
                                             onChange={(event) => setOpenaiCustomPrompt(event.target.value)}
                                             placeholder={__('Leave empty to use the built-in OpenAI translation prompt.', 'translate-words')}
                                             rows={6}
