@@ -9,11 +9,16 @@ class ComposerStaticInit0c15de89bbcbdc743d04b692dfb5f11a
     public static $prefixLengthsPsr4 = array (
         'W' => 
         array (
+			'WordPress\\OpenAiAiProvider\\' => 27,
             'WordPress\\GoogleAiProvider\\' => 27,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
+		'WordPress\\OpenAiAiProvider\\' =>
+		array (
+			0 => __DIR__ . '/..' . '/wordpress/ai-provider-for-openai/src',
+		),
         'WordPress\\GoogleAiProvider\\' => 
         array (
             0 => __DIR__ . '/..' . '/wordpress/ai-provider-for-google/src',

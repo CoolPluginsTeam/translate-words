@@ -79,7 +79,12 @@ require_once __DIR__ . '/includes/ai-connectors/ollama/class-ollama-connector-re
 add_action(
 	'plugins_loaded',
 	static function () {
-		if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+		if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) ) {
+			return;
+		}
+
+		$has_supported_provider = linguator_is_ai_provider_allowed( 'gemini' ) || linguator_is_ai_provider_allowed( 'openai' );
+		if ( ! $has_supported_provider ) {
 			return;
 		}
 
@@ -88,7 +93,7 @@ add_action(
 		add_action(
 			'init',
 			static function () {
-				if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) || ! linguator_is_ai_provider_allowed( 'gemini' ) ) {
+				if ( ! function_exists( 'linguator_is_ai_provider_allowed' ) ) {
 					return;
 				}
 
@@ -102,15 +107,26 @@ add_action(
 				}
 
 				$providers = array(
-					'google' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
+					'gemini' => array(
+						'id'    => 'google',
+						'class' => '\WordPress\GoogleAiProvider\Provider\GoogleProvider',
+					),
+					'openai' => array(
+						'id'    => 'openai',
+						'class' => '\WordPress\OpenAiAiProvider\Provider\OpenAiProvider',
+					),
 				);
 
-				foreach ( $providers as $provider_id => $provider_class ) {
-					if ( $registry->hasProvider( $provider_id ) ) {
+				foreach ( $providers as $provider_key => $provider ) {
+					if ( ! linguator_is_ai_provider_allowed( $provider_key ) ) {
 						continue;
 					}
-					if ( class_exists( $provider_class ) ) {
-						$registry->registerProvider( $provider_class );
+
+					if ( $registry->hasProvider( $provider['id'] ) ) {
+						continue;
+					}
+					if ( class_exists( $provider['class'] ) ) {
+						$registry->registerProvider( $provider['class'] );
 					}
 				}
 			},

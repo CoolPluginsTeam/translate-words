@@ -60,7 +60,57 @@
                 "issues": "https://github.com/WordPress/ai-provider-for-google/issues",
                 "source": "https://github.com/WordPress/ai-provider-for-google"
             },
-            "install-path": "../wordpress/ai-provider-for-google"
+			"install-path": "../wordpress/ai-provider-for-google"
+		},
+		{
+			"name": "wordpress/ai-provider-for-openai",
+			"version": "1.2.0",
+			"version_normalized": "1.2.0.0",
+			"source": {
+				"type": "git",
+				"url": "https://github.com/WordPress/ai-provider-for-openai",
+				"reference": "f99dea7fd510d6b781a21a881c01f137c921de8b"
+			},
+			"dist": {
+				"type": "zip",
+				"url": "https://api.github.com/repos/WordPress/ai-provider-for-openai/zipball/f99dea7fd510d6b781a21a881c01f137c921de8b",
+				"reference": "f99dea7fd510d6b781a21a881c01f137c921de8b",
+				"shasum": ""
+			},
+			"require": {
+				"php": ">=7.4"
+			},
+			"type": "library",
+			"installation-source": "dist",
+			"autoload": {
+				"psr-4": {
+					"WordPress\\OpenAiAiProvider\\": "src/"
+				}
+			},
+			"notification-url": "https://packagist.org/downloads/",
+			"license": [
+				"GPL-2.0-or-later"
+			],
+			"authors": [
+				{
+					"name": "WordPress AI Team",
+					"homepage": "https://make.wordpress.org/ai/"
+				}
+			],
+			"description": "AI Provider for OpenAI for the PHP AI Client SDK. Works as both a Composer package and WordPress plugin.",
+			"homepage": "https://github.com/WordPress/ai-provider-for-openai",
+			"keywords": [
+				"ai",
+				"gpt",
+				"llm",
+				"openai",
+				"wordpress"
+			],
+			"support": {
+				"issues": "https://github.com/WordPress/ai-provider-for-openai/issues",
+				"source": "https://github.com/WordPress/ai-provider-for-openai"
+			},
+			"install-path": "../wordpress/ai-provider-for-openai"
         }
     ],
     "dev": true,

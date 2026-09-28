@@ -343,7 +343,7 @@ function linguator_content_path_to_url( $file ) {
  * Translation providers allowed in Linguator settings / workflows.
  *
  * WP &lt; 7.0: Google + Chrome only.
- * WP 7.0+: Google + Chrome + Gemini.
+ * WP 7.0+: Google + Chrome + Gemini + OpenAI.
  *
  * @return string[]
  */
@@ -353,6 +353,10 @@ function linguator_get_allowed_ai_providers() {
 	global $wp_version;
 	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {
 		$allowed[] = 'gemini';
+
+		if ( version_compare( PHP_VERSION, '7.4', '>=' ) ) {
+			$allowed[] = 'openai';
+		}
 	}
 
 	/**
@@ -366,7 +370,7 @@ function linguator_get_allowed_ai_providers() {
 /**
  * Whether a given AI translation provider is currently allowed.
  *
- * @param string $provider Provider key (google|chrome_local_ai|gemini).
+ * @param string $provider Provider key.
  * @return bool
  */
 function linguator_is_ai_provider_allowed( $provider ) {

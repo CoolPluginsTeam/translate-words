@@ -28,5 +28,14 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+		'wordpress/ai-provider-for-openai' => array(
+			'pretty_version' => '1.2.0',
+			'version' => '1.2.0.0',
+			'reference' => 'f99dea7fd510d6b781a21a881c01f137c921de8b',
+			'type' => 'library',
+			'install_path' => __DIR__ . '/../wordpress/ai-provider-for-openai',
+			'aliases' => array(),
+			'dev_requirement' => false,
+		),
     ),
 );
