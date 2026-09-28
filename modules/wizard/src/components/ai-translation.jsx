@@ -13,6 +13,7 @@ import { ChromeIcon } from '../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../assets/js/src/icons/edge';
 import { GeminiIcon } from '../../../../assets/js/src/icons/gemini';
 import { GoogleIcon } from '../../../../assets/js/src/icons/google';
+import { OpenAIIcon } from '../../../../assets/js/src/icons/openai';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
 import ApiKey from '../../../../admin/settings/views/src/components/api-key.jsx';
 
@@ -30,6 +31,7 @@ const AiTranslation = () => {
 		: Boolean(window?.lmat_setup?.wp_ai_client_available);
 
 	const ollamaAvailable = allowedProviders.includes('ollama');
+	const openaiAvailable = allowedProviders.includes('openai');
 
 	const browserType = (() => {
 		let type = 'Other';
@@ -65,6 +67,8 @@ const AiTranslation = () => {
 		(geminiApiKeyDraft || '') === '' && hasGeminiSavedKey ? geminiMaskedKey : geminiApiKeyDraft;
 	const geminiApiKeyInputDisabled = hasGeminiSavedKey;
 
+	const [openaiTranslation, setOpenaiTranslation] = useState(Boolean(provider?.openai) && openaiAvailable);
+	const openaiApiKeyRef = useRef(null);
 	const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable);
 	const ollamaApiKeyRef = useRef(null);
 
@@ -73,6 +77,7 @@ const AiTranslation = () => {
 		edge_local_ai: Boolean(provider?.edge_local_ai),
 		google: Boolean(provider?.google),
 		gemini: Boolean(provider?.gemini),
+		openai: Boolean(provider?.openai),
 		ollama: Boolean(provider?.ollama),
 	});
 
@@ -81,6 +86,7 @@ const AiTranslation = () => {
 		setChromeLocalAITranslation(Boolean(provider?.chrome_local_ai));
 		setEdgeLocalAITranslation(Boolean(provider?.edge_local_ai));
 		setGeminiTranslation(Boolean(provider?.gemini));
+		setOpenaiTranslation(Boolean(provider?.openai));
 		setOllamaTranslation(Boolean(provider?.ollama));
 
 		lastSavedRef.current = {
@@ -88,6 +94,7 @@ const AiTranslation = () => {
 			edge_local_ai: Boolean(provider?.edge_local_ai),
 			google: Boolean(provider?.google),
 			gemini: Boolean(provider?.gemini),
+			openai: Boolean(provider?.openai),
 			ollama: Boolean(provider?.ollama),
 		};
 	}, [provider]);
@@ -131,11 +138,22 @@ const AiTranslation = () => {
 				setGeminiApiKeyDraft('');
 			}
 
-			// If Ollama is enabled, require a configured (saved or draft) API key before continuing.
+			const openaiPayload =
+				openaiAvailable && openaiTranslation && openaiApiKeyRef.current?.getPendingPayload
+					? openaiApiKeyRef.current.getPendingPayload()
+					: null;
 			const ollamaPayload =
 				ollamaAvailable && ollamaTranslation && ollamaApiKeyRef.current?.getPendingPayload
 					? ollamaApiKeyRef.current.getPendingPayload()
 					: null;
+
+			if (openaiAvailable && openaiTranslation) {
+				const pendingOpenaiKey = (openaiPayload?.keys?.openai || '').toString().trim();
+				const hasConfiguredOpenaiKey = Boolean(openaiApiKeyRef.current?.hasConfiguredKey?.('openai'));
+				if (!hasConfiguredOpenaiKey && '' === pendingOpenaiKey) {
+					throw new Error(__('Please add an OpenAI API key to continue.', 'translate-words'));
+				}
+			}
 
 			if (ollamaAvailable && ollamaTranslation) {
 				const pendingOllamaKey = (ollamaPayload?.keys?.ollama || '').toString().trim();
@@ -154,6 +172,11 @@ const AiTranslation = () => {
 						gemini: geminiTranslation,
 					}
 					: {}),
+				...(openaiAvailable
+					? {
+						openai: openaiTranslation,
+					}
+					: {}),
 				...(ollamaAvailable
 					? {
 						ollama: ollamaTranslation,
@@ -167,9 +190,17 @@ const AiTranslation = () => {
 				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
 				prevProvider.edge_local_ai !== nextProvider.edge_local_ai ||
 				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini) ||
+				(openaiAvailable && prevProvider.openai !== nextProvider.openai) ||
 				(ollamaAvailable && prevProvider.ollama !== nextProvider.ollama);
 
-			if (hasChanges || ollamaPayload) {
+			const apiKeyPayload = openaiPayload || ollamaPayload
+				? {
+					keys: { ...(openaiPayload?.keys || {}), ...(ollamaPayload?.keys || {}) },
+					models: { ...(openaiPayload?.models || {}), ...(ollamaPayload?.models || {}) },
+				}
+				: null;
+
+			if (hasChanges || apiKeyPayload) {
 				const response = await apiFetch({
 					path: 'lmat/v1/settings',
 					method: 'POST',
@@ -178,7 +209,7 @@ const AiTranslation = () => {
 						'X-WP-Nonce': getNonce(),
 					},
 					body: JSON.stringify({
-						...(ollamaPayload || {}),
+						...(apiKeyPayload || {}),
 						ai_translation_configuration: {
 							provider: nextProvider,
 						},
@@ -188,6 +219,9 @@ const AiTranslation = () => {
 				lastSavedRef.current = { ...nextProvider };
 				setData((prev) => ({ ...(prev || {}), ...(response || {}) }));
 
+				if (openaiPayload && openaiApiKeyRef.current?.syncAfterParentSave) {
+					openaiApiKeyRef.current.syncAfterParentSave(openaiPayload, response);
+				}
 				if (ollamaPayload && ollamaApiKeyRef.current?.syncAfterParentSave) {
 					ollamaApiKeyRef.current.syncAfterParentSave(ollamaPayload, response);
 				}
@@ -365,6 +399,36 @@ const AiTranslation = () => {
 							)}
 						</div>
 					</>
+				)}
+
+				{openaiAvailable && (
+					<div className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+						<div className="flex justify-between items-center">
+							<div className="flex items-center gap-2">
+								<OpenAIIcon className="w-4 h-4" />
+								<p className="text-sm/6">{__('OpenAI', 'translate-words')}</p>
+							</div>
+							<Switch
+								aria-label={__('OpenAI', 'translate-words')}
+								id="openai-translation"
+								onChange={() => setOpenaiTranslation((prev) => !prev)}
+								size="sm"
+								value={openaiTranslation}
+							/>
+						</div>
+
+						{openaiTranslation && (
+							<div className="mt-4">
+								<ApiKey
+									ref={openaiApiKeyRef}
+									data={data}
+									setData={setData}
+									embedded
+									providerKeys={['openai']}
+								/>
+							</div>
+						)}
+					</div>
 				)}
 
 				{ollamaAvailable && (
