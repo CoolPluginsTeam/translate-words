@@ -521,8 +521,10 @@ class Settings extends Abstract_Controller {
 		// Never return raw API keys over REST; return masked values so the UI can show "configured".
 		// Keys live in dedicated provider options and are never returned in full.
 		$gemini_raw   = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		$openai_raw   = trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
 		$ollama_raw   = trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
 		$gemini_masked = '';
+		$openai_masked = '';
 		$ollama_masked = '';
 		if ( '' !== $gemini_raw ) {
 			$tail          = substr( $gemini_raw, -4 );
@@ -532,6 +534,11 @@ class Settings extends Abstract_Controller {
 		if ( '' !== $ollama_raw ) {
 			$tail          = substr( $ollama_raw, -4 );
 			$ollama_masked = '••••••••' . $tail;
+		}
+
+		if ( '' !== $openai_raw ) {
+			$tail          = substr( $openai_raw, -4 );
+			$openai_masked = '••••••••' . $tail;
 		}
 
 		$models = $this->options->get( 'api_keys' );
@@ -544,15 +551,19 @@ class Settings extends Abstract_Controller {
 		$has_key    = ( '' !== $gemini_raw );
 		$available_models = array(
 			'gemini' => array(),
+			'openai' => array(),
 			'ollama' => array(),
 		);
-		if ( $has_key || '' !== $ollama_raw ) {
+		if ( $has_key || '' !== $openai_raw || '' !== $ollama_raw ) {
 			$available_models = Api_Keys_Option::get_stored_provider_models();
 		}
-		if ( $has_key && empty( $available_models['gemini'] ) ) {
+		if ( ( $has_key && empty( $available_models['gemini'] ) ) || ( '' !== $openai_raw && empty( $available_models['openai'] ) ) ) {
 			$discovered_models = Api_Keys_Option::discover_provider_models();
 			$available_models['gemini'] = isset( $discovered_models['gemini'] ) && is_array( $discovered_models['gemini'] )
 				? $discovered_models['gemini']
+				: array();
+			$available_models['openai'] = isset( $discovered_models['openai'] ) && is_array( $discovered_models['openai'] )
+				? $discovered_models['openai']
 				: array();
 		}
 
@@ -561,6 +572,7 @@ class Settings extends Abstract_Controller {
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
 				'gemini' => $gemini_masked,
+				'openai' => $openai_masked,
 				'ollama' => $ollama_masked,
 			),
 			'models'           => $models,
@@ -597,12 +609,14 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
-	 * Validate Gemini API key via WP AI Client before saving.
+	 * Validate a cloud provider API key via WP AI Client before saving.
 	 *
-	 * @param string $api_key Raw API key.
+	 * @param string $api_key     Raw API key.
+	 * @param string $provider_id WP AI Client provider id.
+	 * @param string $provider    Provider name for user-facing errors.
 	 * @return true|WP_Error
 	 */
-	private function validate_gemini_api_key( string $api_key ) {
+	private function validate_cloud_api_key( string $api_key, string $provider_id, string $provider ) {
 		// Normalize pasted keys: strip accidental whitespace/newlines only.
 		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
 		if ( '' === $key_trimmed ) {
@@ -637,7 +651,7 @@ class Settings extends Abstract_Controller {
 		}
 
 		$registry = \WordPress\AiClient\AiClient::defaultRegistry();
-		if ( ! $registry || ! method_exists( $registry, 'hasProvider' ) || ! $registry->hasProvider( 'google' ) ) {
+		if ( ! $registry || ! method_exists( $registry, 'hasProvider' ) || ! $registry->hasProvider( $provider_id ) ) {
 			return new WP_Error(
 				'lmat_ai_provider_invalid',
 				__( 'Invalid AI provider.', 'translate-words' ),
@@ -645,14 +659,16 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		$debounce_key     = 'lmat_ai_test_lock_google_' . md5( $key_trimmed );
-		$rate_limit_key   = 'lmat_ai_rate_limit_google_' . md5( $key_trimmed );
+		$provider_hash    = sanitize_key( $provider_id );
+		$debounce_key     = 'lmat_ai_test_lock_' . $provider_hash . '_' . md5( $key_trimmed );
+		$rate_limit_key   = 'lmat_ai_rate_limit_' . $provider_hash . '_' . md5( $key_trimmed );
 		$debounce_seconds = 30;
 
 		if ( get_transient( $rate_limit_key ) ) {
 			return new WP_Error(
 				'lmat_ai_provider_rate_limited',
-				__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
+				/* translators: %s: AI provider name. */
+				sprintf( __( '%s API rate limit exceeded. Please wait and try again.', 'translate-words' ), $provider ),
 				array( 'status' => 429 )
 			);
 		}
@@ -678,11 +694,11 @@ class Settings extends Abstract_Controller {
 		}
 
 		if ( method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-			$registry->setProviderRequestAuthentication( 'google', new $auth_class( $key_trimmed ) );
+			$registry->setProviderRequestAuthentication( $provider_id, new $auth_class( $key_trimmed ) );
 		}
 
 		try {
-			$provider_classname = $registry->getProviderClassName( 'google' );
+			$provider_classname = $registry->getProviderClassName( $provider_id );
 			if ( ! $provider_classname || ! class_exists( $provider_classname ) ) {
 				delete_transient( $debounce_key );
 				return new WP_Error(
@@ -710,7 +726,7 @@ class Settings extends Abstract_Controller {
 					$model_metadata_directory->listModelMetadata(); // throws on invalid key.
 				}
 			}
-		} catch ( \Exception $e ) {
+		} catch ( \Throwable $e ) {
 			$msg = strtolower( (string) $e->getMessage() );
 			$is_rate_limited =
 				( false !== strpos( $msg, '429' ) ) ||
@@ -723,7 +739,8 @@ class Settings extends Abstract_Controller {
 				set_transient( $rate_limit_key, 1, 60 );
 				return new WP_Error(
 					'lmat_ai_provider_rate_limited',
-					__( 'Gemini free tier rate limit exceeded. Please wait and try again.', 'translate-words' ),
+					/* translators: %s: AI provider name. */
+					sprintf( __( '%s API rate limit exceeded. Please wait and try again.', 'translate-words' ), $provider ),
 					array( 'status' => 429 )
 				);
 			}
@@ -743,18 +760,20 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
-	 * Clear Gemini API key validation locks (debounce / rate-limit) for a stored key value.
+	 * Clear API key validation locks for a stored provider key.
 	 *
-	 * @param string $api_key Raw or normalized API key.
+	 * @param string $api_key     Raw or normalized API key.
+	 * @param string $provider_id WP AI Client provider id.
 	 */
-	private function clear_gemini_api_key_validation_locks( string $api_key ) {
+	private function clear_cloud_api_key_validation_locks( string $api_key, string $provider_id ) {
 		$key_trimmed = preg_replace( '/\s+/', '', (string) $api_key );
 		if ( '' === $key_trimmed ) {
 			return;
 		}
-		$hash = md5( $key_trimmed );
-		delete_transient( 'lmat_ai_test_lock_google_' . $hash );
-		delete_transient( 'lmat_ai_rate_limit_google_' . $hash );
+		$hash          = md5( $key_trimmed );
+		$provider_hash = sanitize_key( $provider_id );
+		delete_transient( 'lmat_ai_test_lock_' . $provider_hash . '_' . $hash );
+		delete_transient( 'lmat_ai_rate_limit_' . $provider_hash . '_' . $hash );
 	}
 
 	/**
@@ -833,7 +852,24 @@ class Settings extends Abstract_Controller {
 			// Validate only when setting a non-empty key AND it differs from the stored one.
 			// Empty string is allowed for reset.
 			if ( '' !== $gemini_value && ! $gemini_is_unchanged ) {
-				$validation = $this->validate_gemini_api_key( $gemini_value );
+				$validation = $this->validate_cloud_api_key( $gemini_value, 'google', 'Gemini' );
+				if ( is_wp_error( $validation ) ) {
+					return $validation;
+				}
+			}
+		}
+
+		// Validate the OpenAI key now, but defer persistence until every setting succeeds.
+		$has_openai_key_change = array_key_exists( 'openai', $incoming_keys );
+		$openai_value          = null;
+		$current_openai        = trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
+		$openai_is_unchanged   = false;
+		if ( $has_openai_key_change ) {
+			$openai_value        = is_string( $incoming_keys['openai'] ) ? preg_replace( '/\s+/', '', $incoming_keys['openai'] ) : '';
+			$openai_is_unchanged = ( '' !== $openai_value && '' !== $current_openai && $current_openai === $openai_value );
+
+			if ( '' !== $openai_value && ! $openai_is_unchanged ) {
+				$validation = $this->validate_cloud_api_key( $openai_value, 'openai', 'OpenAI' );
 				if ( is_wp_error( $validation ) ) {
 					return $validation;
 				}
@@ -913,6 +949,12 @@ class Settings extends Abstract_Controller {
 				$options['api_keys'] = array();
 			}
 			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
+		}
+		if ( ! empty( $incoming_models ) && isset( $incoming_models['openai_model'] ) ) {
+			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
+				$options['api_keys'] = array();
+			}
+			$options['api_keys']['openai_model'] = sanitize_text_field( (string) $incoming_models['openai_model'] );
 		}
 		if ( ! empty( $incoming_models ) && isset( $incoming_models['ollama_model'] ) ) {
 			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
@@ -994,14 +1036,26 @@ class Settings extends Abstract_Controller {
 		// Commit provider credentials only after every validation and option update succeeded.
 		if ( $has_gemini_key_change ) {
 			if ( '' === $gemini_value && '' !== $current_gemini ) {
-				$this->clear_gemini_api_key_validation_locks( $current_gemini );
+				$this->clear_cloud_api_key_validation_locks( $current_gemini, 'google' );
 			}
 			update_option( 'connectors_ai_google_api_key', $gemini_value );
 			if ( '' === $gemini_value && '' !== $current_gemini ) {
 				Api_Keys_Option::clear_gemini_models_list();
 			} elseif ( '' !== $gemini_value && ! $gemini_is_unchanged ) {
-				Api_Keys_Option::discover_provider_models();
+				Api_Keys_Option::discover_provider_models( 'gemini' );
 				$this->ai_gemini_model_refresh_needed = false;
+			}
+		}
+
+		if ( $has_openai_key_change ) {
+			if ( '' === $openai_value && '' !== $current_openai ) {
+				$this->clear_cloud_api_key_validation_locks( $current_openai, 'openai' );
+			}
+			update_option( 'connectors_ai_openai_api_key', $openai_value );
+			if ( '' === $openai_value && '' !== $current_openai ) {
+				Api_Keys_Option::clear_openai_models_list();
+			} elseif ( '' !== $openai_value && ! $openai_is_unchanged ) {
+				Api_Keys_Option::discover_provider_models( 'openai' );
 			}
 		}
 

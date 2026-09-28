@@ -77,13 +77,14 @@ class Api_Keys extends Abstract_Option {
 
 	/**
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
-	 * connectors_ai_google_api_key.
+	 * connectors_ai_google_api_key, connectors_ai_openai_api_key, and connectors_ai_ollama_api_key.
 	 *
-	 * @return array{gemini_model:string,ollama_model:string}
+	 * @return array{gemini_model:string,openai_model:string,ollama_model:string}
 	 */
 	protected function get_default() {
 		return array(
 			'gemini_model' => 'gemini-2.5-flash',
+			'openai_model' => 'gpt-5.4-mini',
 			'ollama_model' => Ollama_Translation_Models::get_default(),
 		);
 	}
@@ -98,6 +99,7 @@ class Api_Keys extends Abstract_Option {
 			'type'       => 'object',
 			'properties' => array(
 				'gemini_model' => array( 'type' => 'string' ),
+				'openai_model' => array( 'type' => 'string' ),
 				'ollama_model' => array( 'type' => 'string' ),
 			),
 		);
@@ -139,6 +141,9 @@ class Api_Keys extends Abstract_Option {
 		$gemini  = isset( $current['gemini_model'] ) && is_scalar( $current['gemini_model'] )
 			? sanitize_text_field( (string) $current['gemini_model'] )
 			: $default['gemini_model'];
+		$openai  = isset( $current['openai_model'] ) && is_scalar( $current['openai_model'] )
+			? sanitize_text_field( (string) $current['openai_model'] )
+			: $default['openai_model'];
 		$ollama  = isset( $current['ollama_model'] ) && is_scalar( $current['ollama_model'] )
 			? sanitize_text_field( (string) $current['ollama_model'] )
 			: $default['ollama_model'];
@@ -161,8 +166,20 @@ class Api_Keys extends Abstract_Option {
 			}
 		}
 
+		if ( is_array( $value ) && array_key_exists( 'openai_model', $value ) ) {
+			$v = $value['openai_model'];
+			if ( null === $v ) {
+				$openai = '';
+			} elseif ( is_scalar( $v ) ) {
+				$openai = sanitize_text_field( (string) $v );
+			} else {
+				$openai = '';
+			}
+		}
+
 		return array(
 			'gemini_model' => $gemini,
+			'openai_model' => $openai,
 			'ollama_model' => $ollama,
 		);
 	}
@@ -172,6 +189,15 @@ class Api_Keys extends Abstract_Option {
 	 */
 	private static function gemini_models_list_option(): string {
 		return 'lmat_gemini_models_list';
+	}
+
+	/**
+	 * Returns the option key used for the cached OpenAI model list.
+	 *
+	 * @return string Option key.
+	 */
+	private static function openai_models_list_option(): string {
+		return 'lmat_openai_models_list';
 	}
 
 	/**
@@ -221,6 +247,48 @@ class Api_Keys extends Abstract_Option {
 		update_option( Options::OPTION_NAME, $linguator );
 	}
 
+	/**
+	 * Stores the cached OpenAI text-generation model list.
+	 *
+	 * @param string                  $api_key Raw OpenAI API key.
+	 * @param array<string|int,mixed> $models  Available model ids.
+	 * @return void
+	 */
+	public static function persist_openai_models_list( string $api_key, array $models ): void {
+		$key = trim( $api_key );
+		if ( '' === $key ) {
+			self::clear_openai_models_list();
+			return;
+		}
+
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		if ( ! is_array( $linguator ) ) {
+			$linguator = array();
+		}
+
+		$linguator[ self::openai_models_list_option() ] = array(
+			'fingerprint' => hash( 'sha256', $key ),
+			'models'      => $models,
+		);
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
+	/**
+	 * Clears the cached OpenAI model list.
+	 *
+	 * @return void
+	 */
+	public static function clear_openai_models_list(): void {
+		$linguator = get_option( Options::OPTION_NAME, array() );
+		$model_key = self::openai_models_list_option();
+		if ( ! is_array( $linguator ) || ! isset( $linguator[ $model_key ] ) ) {
+			return;
+		}
+
+		unset( $linguator[ $model_key ] );
+		update_option( Options::OPTION_NAME, $linguator );
+	}
+
 
 	/**
 	 * Stores approved Ollama models available to the authenticated account.
@@ -267,15 +335,17 @@ class Api_Keys extends Abstract_Option {
 	/**
 	 * Models for GET /settings — DB only, no HTTP. Populated when a new key triggers discovery.
 	 *
-	 * @return array{gemini:array<int|string,mixed>,ollama:array<int|string,mixed>}
+	 * @return array{gemini:array<int|string,mixed>,openai:array<int|string,mixed>,ollama:array<int|string,mixed>}
 	 */
 	public static function get_stored_provider_models(): array {
 		$result = array(
 			'gemini' => array(),
+			'openai' => array(),
 			'ollama' => array(),
 		);
 
 		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		$openai_key = trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
 		$ollama_key = trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
 		$linguator  = get_option( Options::OPTION_NAME, array() );
 
@@ -291,6 +361,17 @@ class Api_Keys extends Abstract_Option {
 			&& self::GEMINI_MODELS_CACHE_VERSION === (int) $list['version']
 		) {
 			$result['gemini'] = is_array( $list['gemini'] ) ? $list['gemini'] : array();
+		}
+
+		$openai_list_key = self::openai_models_list_option();
+		$openai_list     = ( is_array( $linguator ) && isset( $linguator[ $openai_list_key ] ) && is_array( $linguator[ $openai_list_key ] ) ) ? $linguator[ $openai_list_key ] : null;
+		if (
+			'' !== $openai_key
+			&& is_array( $openai_list )
+			&& isset( $openai_list['fingerprint'], $openai_list['models'] )
+			&& hash_equals( (string) $openai_list['fingerprint'], hash( 'sha256', $openai_key ) )
+		) {
+			$result['openai'] = is_array( $openai_list['models'] ) ? $openai_list['models'] : array();
 		}
 
 		$ollama_list_key = self::ollama_models_list_option();
@@ -320,11 +401,13 @@ class Api_Keys extends Abstract_Option {
 	 * - Provider API keys are stored in WP options (connectors_ai_google_api_key). When WP AI
 	 *   Client is available, it typically reads those connector settings to configure providers.
 	 *
-	 * @return array{gemini:array<int|string,mixed>} List of model ids, or id => label when {@see filtered_specific_models} matches.
+	 * @param string $provider Optional Linguator provider key to limit discovery.
+	 * @return array{gemini:array<int|string,mixed>,openai:array<int|string,mixed>} Provider model lists.
 	 */
-	public static function discover_provider_models(): array {
+	public static function discover_provider_models( string $provider = '' ): array {
 		$result = array(
 			'gemini' => array(),
+			'openai' => array(),
 		);
 
 		// Only attempt discovery when WP AI Client is present.
@@ -337,7 +420,14 @@ class Api_Keys extends Abstract_Option {
 		}
 
 		$gemini_key = trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
-		if ( '' === $gemini_key ) {
+		$openai_key = trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
+		if ( '' !== $provider && 'gemini' !== $provider ) {
+			$gemini_key = '';
+		}
+		if ( '' !== $provider && 'openai' !== $provider ) {
+			$openai_key = '';
+		}
+		if ( '' === $gemini_key && '' === $openai_key ) {
 			return $result;
 		}
 
@@ -349,7 +439,12 @@ class Api_Keys extends Abstract_Option {
 			$auth_class = '\WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication';
 
 			if ( class_exists( $auth_class ) && method_exists( $registry, 'setProviderRequestAuthentication' ) ) {
-				$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
+				if ( '' !== $gemini_key ) {
+					$registry->setProviderRequestAuthentication( 'google', new $auth_class( $gemini_key ) );
+				}
+				if ( '' !== $openai_key ) {
+					$registry->setProviderRequestAuthentication( 'openai', new $auth_class( $openai_key ) );
+				}
 			}
 
 			$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
@@ -374,9 +469,10 @@ class Api_Keys extends Abstract_Option {
 					 * Cap timeout only for Generative Language API requests (model discovery),
 					 * not for every outbound HTTP request while discovery runs.
 					 */
-					$timeout_filter = static function ( array $args, $url = '' ): array {
+					$timeout_filter = static function ( array $args, $url = '' ) use ( $provider_id ): array {
 						$url = is_string( $url ) ? $url : '';
-						if ( '' === $url || false === stripos( $url, 'generativelanguage.googleapis.com' ) ) {
+						$provider_host = 'openai' === $provider_id ? 'api.openai.com' : 'generativelanguage.googleapis.com';
+						if ( '' === $url || false === stripos( $url, $provider_host ) ) {
 							return $args;
 						}
 						$args['timeout'] = isset( $args['timeout'] )
@@ -430,10 +526,17 @@ class Api_Keys extends Abstract_Option {
 				}
 			};
 
-			$models           = $load_models( 'google' );
-			$filtered         = self::filtered_specific_models( 'google', $models );
-			$result['gemini'] = $filtered;
-			self::persist_gemini_models_list( $gemini_key, $result['gemini'] );
+			if ( '' !== $gemini_key ) {
+				$models           = $load_models( 'google' );
+				$filtered         = self::filtered_specific_models( 'google', $models );
+				$result['gemini'] = $filtered;
+				self::persist_gemini_models_list( $gemini_key, $result['gemini'] );
+			}
+
+			if ( '' !== $openai_key ) {
+				$result['openai'] = $load_models( 'openai' );
+				self::persist_openai_models_list( $openai_key, $result['openai'] );
+			}
 		} catch ( \Throwable $e ) {
 			return $result;
 		}

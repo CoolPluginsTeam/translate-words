@@ -7,11 +7,13 @@ import { getNonce } from '../utils'
 
 const providerKeyLinks = {
   gemini: 'https://aistudio.google.com/app/api-keys',
+  openai: 'https://platform.openai.com/api-keys',
   ollama: 'https://ollama.com/settings/keys',
 }
 
 const providerKeyLabels = {
   gemini: 'Gemini',
+  openai: 'OpenAI',
   ollama: 'Ollama',
 }
 
@@ -21,6 +23,13 @@ const providerMeta = [
     modelKey: 'gemini_model',
     heading: __('Add Gemini API key', 'translate-words'),
     modelHeading: __('Select Gemini Model', 'translate-words'),
+    placeholder: __('Enter your API key', 'translate-words'),
+  },
+  {
+    key: 'openai',
+    modelKey: 'openai_model',
+    heading: __('Add OpenAI API key', 'translate-words'),
+    modelHeading: __('Select OpenAI Model', 'translate-words'),
     placeholder: __('Enter your API key', 'translate-words'),
   },
   {
@@ -42,17 +51,19 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
     [providerFilter]
   )
   const [loading, setLoading] = useState(true)
-  const [masked, setMasked] = useState({ gemini: '', ollama: '' })
-  const [configured, setConfigured] = useState({ gemini: false, ollama: false })
-  const [keyDrafts, setKeyDrafts] = useState({ gemini: '', ollama: '' })
-  const [availableModels, setAvailableModels] = useState({ gemini: [], ollama: [] })
+  const [masked, setMasked] = useState({ gemini: '', openai: '', ollama: '' })
+  const [configured, setConfigured] = useState({ gemini: false, openai: false, ollama: false })
+  const [keyDrafts, setKeyDrafts] = useState({ gemini: '', openai: '', ollama: '' })
+  const [availableModels, setAvailableModels] = useState({ gemini: [], openai: [], ollama: [] })
   const [models, setModels] = useState({
     gemini_model: 'gemini-2.5-flash',
+    openai_model: 'gpt-5.4-mini',
     ollama_model: 'gemma4:31b',
   })
   const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
   const initialModelsRef = useRef({
     gemini_model: 'gemini-2.5-flash',
+    openai_model: 'gpt-5.4-mini',
     ollama_model: 'gemma4:31b',
   })
 
@@ -75,16 +86,19 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
     const nextMasked = {
       gemini: keys?.gemini || '',
+      openai: keys?.openai || '',
       ollama: keys?.ollama || '',
     }
 
     setMasked(nextMasked)
     setConfigured({
       gemini: Boolean(nextMasked.gemini),
+      openai: Boolean(nextMasked.openai),
       ollama: Boolean(nextMasked.ollama),
     })
     const nextModels = {
       gemini_model: m?.gemini_model || 'gemini-2.5-flash',
+      openai_model: m?.openai_model || 'gpt-5.4-mini',
       ollama_model: m?.ollama_model || 'gemma4:31b',
     }
     setModels(nextModels)
@@ -93,6 +107,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       gemini:
         Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
           ? discovered.gemini
+          : [],
+      openai:
+        Array.isArray(discovered?.openai) || (discovered?.openai && typeof discovered.openai === 'object')
+          ? discovered.openai
           : [],
       ollama:
         Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
@@ -126,16 +144,19 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
         const nextMasked = {
           gemini: keys?.gemini || '',
+          openai: keys?.openai || '',
           ollama: keys?.ollama || '',
         }
 
         setMasked(nextMasked)
         setConfigured({
           gemini: Boolean(nextMasked.gemini),
+          openai: Boolean(nextMasked.openai),
           ollama: Boolean(nextMasked.ollama),
         })
         const nextModels = {
           gemini_model: m?.gemini_model || 'gemini-2.5-flash',
+          openai_model: m?.openai_model || 'gpt-5.4-mini',
           ollama_model: m?.ollama_model || 'gemma4:31b',
         }
         setModels(nextModels)
@@ -144,6 +165,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
           gemini:
             Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
               ? discovered.gemini
+              : [],
+          openai:
+            Array.isArray(discovered?.openai) || (discovered?.openai && typeof discovered.openai === 'object')
+              ? discovered.openai
               : [],
           ollama:
             Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
@@ -231,7 +256,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
     setConfigured(nextConfigured)
     setMasked(nextMasked)
 
-    setKeyDrafts({ gemini: '', ollama: '' })
+    setKeyDrafts({ gemini: '', openai: '', ollama: '' })
     setHandleButtonDisabled(true)
 
     // Update models directly from the save response
@@ -240,6 +265,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       gemini:
         Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
           ? discovered.gemini
+          : [],
+      openai:
+        Array.isArray(discovered?.openai) || (discovered?.openai && typeof discovered.openai === 'object')
+          ? discovered.openai
           : [],
       ollama:
         Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
@@ -286,6 +315,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
       if (payload.models && typeof payload.models === 'object') {
         const nextModels = {
           gemini_model: payload.models.gemini_model ?? models.gemini_model,
+          openai_model: payload.models.openai_model ?? models.openai_model,
           ollama_model: payload.models.ollama_model ?? models.ollama_model,
         }
         setModels(nextModels)
@@ -309,7 +339,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
         setMasked(nextMasked)
       }
 
-      setKeyDrafts({ gemini: '', ollama: '' })
+      setKeyDrafts({ gemini: '', openai: '', ollama: '' })
       setHandleButtonDisabled(true)
 
       // If parent save returned models, apply them (no extra GET).
@@ -319,6 +349,10 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
           gemini:
             Array.isArray(discovered?.gemini) || (discovered?.gemini && typeof discovered.gemini === 'object')
               ? discovered.gemini
+              : [],
+          openai:
+            Array.isArray(discovered?.openai) || (discovered?.openai && typeof discovered.openai === 'object')
+              ? discovered.openai
               : [],
           ollama:
             Array.isArray(discovered?.ollama) || (discovered?.ollama && typeof discovered.ollama === 'object')
@@ -358,11 +392,11 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
   }
 
   // Keep provider visibility in sync with Translation Config + Wizard toggles (both persist to ai_translation_configuration.provider)
-  const wpAiClientAvailable = Boolean(window?.lmat_settings?.wp_ai_client_available || window?.lmat_setup?.wp_ai_client_available)
+  const allowedProviders = window?.lmat_settings?.allowed_providers || window?.lmat_setup?.allowed_providers || []
   const providerConfig = data?.ai_translation_configuration?.provider
   const visibleProviders = providerMeta.filter((p) => {
     if (Array.isArray(providerKeys) && !providerKeys.includes(p.key)) return false
-    if (p.key === 'gemini' && !wpAiClientAvailable) return false
+    if ((p.key === 'gemini' || p.key === 'openai') && !allowedProviders.includes(p.key)) return false
     // Embedded fields are controlled by the parent provider toggle.
     if (embedded) return true
     // If provider settings aren't present yet, default to showing the inputs.

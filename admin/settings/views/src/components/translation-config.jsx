@@ -10,6 +10,7 @@ import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
+import { OpenAIIcon } from '../../../../../assets/js/src/icons/openai';
 import ApiKey from './api-key';
 import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 
@@ -43,43 +44,48 @@ const TranslationConfig = ({ data, setData }) => {
         ? window.lmat_settings.allowed_providers
         : ['chrome_local_ai', 'google'];
     const wpAiClientAvailable = allowedProviders.includes('gemini');
+    const openaiAvailable = allowedProviders.includes('openai');
     const ollamaAvailable = allowedProviders.includes('ollama');
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
     const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
+    const [openaiTranslation, setOpenaiTranslation] = useState(Boolean(provider?.openai) && openaiAvailable)
     const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, ollamaTranslation })
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, openaiTranslation, ollamaTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [apiKeyDirty, setApiKeyDirty] = useState({ gemini: false, ollama: false })
+    const [apiKeyDirty, setApiKeyDirty] = useState({ gemini: false, openai: false, ollama: false })
     const geminiApiKeyRef = useRef(null)
+    const openaiApiKeyRef = useRef(null)
     const ollamaApiKeyRef = useRef(null)
 
     useEffect(() => {
         setApiKeyDirty(previous => ({
             gemini: geminiTranslation ? previous.gemini : false,
+            openai: openaiTranslation ? previous.openai : false,
             ollama: ollamaTranslation ? previous.ollama : false,
         }))
-    }, [geminiTranslation, ollamaTranslation])
+    }, [geminiTranslation, openaiTranslation, ollamaTranslation])
 
     const hasChanges = () => {
         return googleMachineTranslation !== provider?.google ||
             chromeLocalAITranslation !== provider?.chrome_local_ai ||
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            openaiTranslation !== (Boolean(provider?.openai) && openaiAvailable) ||
             ollamaTranslation !== (Boolean(provider?.ollama) && ollamaAvailable) ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
     };
 
     useEffect(() => {
-        const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (ollamaAvailable && ollamaTranslation)
-        const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (ollamaTranslation && apiKeyDirty.ollama)
+        const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (openaiAvailable && openaiTranslation) || (ollamaAvailable && ollamaTranslation)
+        const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (openaiTranslation && apiKeyDirty.openai) || (ollamaTranslation && apiKeyDirty.ollama)
         setHandleButtonDisabled(!hasChanges() && !(apiSectionOpen && hasPendingApiChange))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, ollamaAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -91,12 +97,15 @@ const TranslationConfig = ({ data, setData }) => {
             const geminiPayload = wpAiClientAvailable && geminiTranslation && geminiApiKeyRef.current?.getPendingPayload
                 ? geminiApiKeyRef.current.getPendingPayload()
                 : null
+            const openaiPayload = openaiAvailable && openaiTranslation && openaiApiKeyRef.current?.getPendingPayload
+                ? openaiApiKeyRef.current.getPendingPayload()
+                : null
             const ollamaPayload = ollamaAvailable && ollamaTranslation && ollamaApiKeyRef.current?.getPendingPayload
                 ? ollamaApiKeyRef.current.getPendingPayload()
                 : null
-            const apiKeyPayload = (geminiPayload || ollamaPayload) ? {
-                keys: { ...(geminiPayload?.keys || {}), ...(ollamaPayload?.keys || {}) },
-                models: { ...(geminiPayload?.models || {}), ...(ollamaPayload?.models || {}) },
+            const apiKeyPayload = (geminiPayload || openaiPayload || ollamaPayload) ? {
+                keys: { ...(geminiPayload?.keys || {}), ...(openaiPayload?.keys || {}), ...(ollamaPayload?.keys || {}) },
+                models: { ...(geminiPayload?.models || {}), ...(openaiPayload?.models || {}), ...(ollamaPayload?.models || {}) },
             } : null
 
             // Require Gemini API key when enabling Gemini.
@@ -105,6 +114,14 @@ const TranslationConfig = ({ data, setData }) => {
                 const hasConfiguredGeminiKey = Boolean(geminiApiKeyRef.current?.hasConfiguredKey?.('gemini'))
                 if (!hasConfiguredGeminiKey && pendingGeminiKey === '') {
                     throw new Error(__('Please add a Gemini API key to continue.', 'translate-words'))
+                }
+            }
+
+            if (openaiAvailable && openaiTranslation) {
+                const pendingOpenaiKey = (apiKeyPayload?.keys?.openai || '').toString().trim()
+                const hasConfiguredOpenaiKey = Boolean(openaiApiKeyRef.current?.hasConfiguredKey?.('openai'))
+                if (!hasConfiguredOpenaiKey && pendingOpenaiKey === '') {
+                    throw new Error(__('Please add an OpenAI API key to continue.', 'translate-words'))
                 }
             }
 
@@ -125,6 +142,9 @@ const TranslationConfig = ({ data, setData }) => {
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
                         } : {}),
+                        ...(openaiAvailable ? {
+                            openai: openaiTranslation,
+                        } : {}),
                         ...(ollamaAvailable ? {
                             ollama: ollamaTranslation,
                         } : {}),
@@ -140,12 +160,13 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, openaiTranslation, ollamaTranslation, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
                 lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                (openaiAvailable && lastUpdatedValue.openaiTranslation !== openaiTranslation) ||
                 (ollamaAvailable && lastUpdatedValue.ollamaTranslation !== ollamaTranslation) ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
@@ -170,10 +191,13 @@ const TranslationConfig = ({ data, setData }) => {
                     if (geminiPayload && geminiApiKeyRef.current?.syncAfterParentSave) {
                         geminiApiKeyRef.current.syncAfterParentSave(geminiPayload, settingsResponse)
                     }
+                    if (openaiPayload && openaiApiKeyRef.current?.syncAfterParentSave) {
+                        openaiApiKeyRef.current.syncAfterParentSave(openaiPayload, settingsResponse)
+                    }
                     if (ollamaPayload && ollamaApiKeyRef.current?.syncAfterParentSave) {
                         ollamaApiKeyRef.current.syncAfterParentSave(ollamaPayload, settingsResponse)
                     }
-                    setApiKeyDirty({ gemini: false, ollama: false })
+                    setApiKeyDirty({ gemini: false, openai: false, ollama: false })
                     return settingsResponse
                 })
                 .catch(error => {
@@ -380,6 +404,42 @@ const TranslationConfig = ({ data, setData }) => {
                                         embedded
                                         providerKeys={['gemini']}
                                         onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, gemini: dirty }))}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {openaiAvailable && (
+                        <div style={{ backgroundColor: "#fbfbfb" }}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <OpenAIIcon className='w-5 h-5' />
+                                        {__('OpenAI', 'translate-words')}
+                                    </h3>
+                                    <p className="m-0">
+                                        {__('OpenAI uses GPT models to translate your content.', 'translate-words')}
+                                    </p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
+                                    <Switch
+                                        aria-label={__('OpenAI', 'translate-words')}
+                                        id="openai-translation"
+                                        onChange={() => setOpenaiTranslation(!openaiTranslation)}
+                                        value={openaiTranslation}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {openaiTranslation && (
+                                <div className="px-6 pb-6 pt-0">
+                                    <ApiKey
+                                        ref={openaiApiKeyRef}
+                                        data={data}
+                                        setData={setData}
+                                        embedded
+                                        providerKeys={['openai']}
+                                        onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, openai: dirty }))}
                                     />
                                 </div>
                             )}
