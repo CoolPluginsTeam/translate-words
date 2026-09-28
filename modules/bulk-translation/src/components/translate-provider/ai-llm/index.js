@@ -60,7 +60,7 @@ class AiLlmBulkTranslator {
     };
 
     /**
-     * Keys still missing a Gemini translation for this target language.
+     * Keys still missing an AI translation for this target language.
      * @param {string} targetLang
      * @returns {Record<string,string>}
      */
@@ -289,7 +289,12 @@ class AiLlmBulkTranslator {
                 ? getOllamaChunkOptions(Math.max(maxTokens, 1000))
                 : { maxTokens };
             const chunks = chunkStringMap(stringsToTranslate, chunkOptions);
-            const modelKey = this.serviceProvider === "ollama" ? "ollama_model" : "gemini_model";
+            const modelKeys = {
+                gemini: "gemini_model",
+                openai: "openai_model",
+                ollama: "ollama_model",
+            };
+            const modelKey = modelKeys[this.serviceProvider] || "";
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
@@ -346,10 +351,10 @@ class AiLlmBulkTranslator {
             }
             const msg = err && err.message ? err.message : __("Translation failed.", "translate-words");
             const isQuotaError = err?.code === "LLM_QUOTA_EXCEEDED";
-            const isGeminiQuotaByMessage =
-                this.serviceProvider === "gemini" &&
+            const isAiQuotaByMessage =
+                ["gemini", "openai"].includes(this.serviceProvider) &&
                 /429|quota exceeded|rate limit|resource has been exhausted|too many requests/i.test(String(msg));
-            const haltForQuota = isQuotaError || isGeminiQuotaByMessage;
+            const haltForQuota = isQuotaError || isAiQuotaByMessage;
 
             const mergedFromStore = Object.keys(this.textContentObject).filter((k) => {
                 const tr = store.getState().translatedContent[this.postId]?.[k]?.translation?.[this.serviceProvider]?.[targetLang];

@@ -259,6 +259,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 				$active_providers[] = $provider;
+			} elseif ( 'openai' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'openai' ) ) {
+				$active_providers[] = $provider;
 			} elseif ( 'ollama' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
 				$active_providers[] = $provider;
 			}
@@ -266,11 +268,15 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 
 		$api_keys_status = array(
 			'gemini' => false,
+			'openai' => false,
 			'ollama' => false,
 		);
 
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 			$api_keys_status['gemini'] = '' !== trim( (string) get_option( 'connectors_ai_google_api_key', '' ) );
+		}
+		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'openai' ) ) {
+			$api_keys_status['openai'] = '' !== trim( (string) get_option( 'connectors_ai_openai_api_key', '' ) );
 		}
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'ollama' ) ) {
 			$api_keys_status['ollama'] = '' !== trim( (string) get_option( 'connectors_ai_ollama_api_key', '' ) );
