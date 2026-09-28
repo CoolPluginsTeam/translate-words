@@ -2311,7 +2311,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				);
 			}
 
-			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
+			// Unpublished translations need a preview URL; their public permalink returns 404.
+			$new_post_status = get_post_status( $new_post_id );
+			$post_link       = in_array( $new_post_status, array( 'draft', 'pending', 'future' ), true )
+				? get_preview_post_link( $new_post_id )
+				: get_the_permalink( $new_post_id );
+			if ( ! $post_link ) {
+				$post_link = get_edit_post_link( $new_post_id, 'raw' );
+			}
+			$post_link      = html_entity_decode( (string) $post_link );
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
 			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
 

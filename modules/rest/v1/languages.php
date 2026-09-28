@@ -319,10 +319,12 @@ class Languages extends Abstract_Controller {
 			return rest_ensure_response( $response );
 		}
 
-		// Build query args - optimized to filter by language at database level
+		// Build query args - optimized to filter by language at database level.
+		// Draft translations are intentionally created by this plugin and must be
+		// discoverable in the editor sidebar for linking/searching.
 		$query_args = array(
 			'post_type'        => 'page',
-			'post_status'      => array( 'publish' ),
+			'post_status'      => array( 'publish', 'draft', 'pending', 'private', 'future' ),
 			'posts_per_page'   => -1,
 			'suppress_filters' => false,
 		);
@@ -380,6 +382,10 @@ class Languages extends Abstract_Controller {
 
 		// Now build response using pre-fetched data
 		foreach ( $posts as $post ) {
+			if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+				continue;
+			}
+
 			// Get language from bulk-fetched data
 			$language = false;
 			if ( isset( $language_terms[ $post->ID ] ) && ! empty( $language_terms[ $post->ID ] ) ) {
@@ -402,6 +408,7 @@ class Languages extends Abstract_Controller {
 				'ID'        => absint( $post->ID ),
 				'title'     => sanitize_text_field( (string) $post->post_title ),
 				'slug'      => sanitize_title( (string) $post->post_name ),
+				'status'    => sanitize_key( (string) $post->post_status ),
 				'is_linked' => ! empty( $linked_ids ),
 			);
 		}

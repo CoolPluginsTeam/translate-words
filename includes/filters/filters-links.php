@@ -73,9 +73,10 @@ class Linguator_Filters_Links {
 			add_filter( 'attachment_link', array( $this, 'attachment_link' ), 20, 2 );
 		}
 
-		// Keeps the preview post link on default domain when using multiple domains and SSO is not available.
-		if ( 3 === $this->options['force_lang'] && ! class_exists( 'Linguator_Xdata_Domain' ) ) {
-			add_filter( 'preview_post_link', array( $this, 'linguator_preview_post_link' ), 20 );
+		// Draft previews use the post ID, so their links must not include a language path.
+		// Keep previews on the default domain when multiple domains do not share a login.
+		if ( 3 !== $this->options['force_lang'] || ! class_exists( 'Linguator_Xdata_Domain' ) ) {
+			add_filter( 'preview_post_link', array( $this, 'linguator_preview_post_link' ), 20, 2 );
 		}
 
 		// Rewrites post types archives links to filter them by language.
@@ -178,14 +179,28 @@ class Linguator_Filters_Links {
 	}
 
 	/**
-	 * Keeps the preview post link on default domain when using multiple domains.
+	 * Removes the language from unpublished preview links, which identify posts by ID.
+	 * Keeps previews on the default domain when using multiple domains.
 	 *
 	 *  
 	 *
-	 * @param string $url URL used for the post preview.
+	 * @param string  $url  URL used for the post preview.
+	 * @param WP_Post $post Post being previewed.
 	 * @return string The modified url.
 	 */
-	public function linguator_preview_post_link( $url ) {
+	public function linguator_preview_post_link( $url, $post ) {
+		if ( 3 !== $this->options['force_lang'] ) {
+			if ( ! in_array( $post->post_status, array( 'draft', 'pending', 'future' ), true ) ) {
+				return $url;
+			}
+
+			$query_args = array();
+			wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query_args );
+			if ( empty( $query_args['p'] ) && empty( $query_args['page_id'] ) ) {
+				return $url;
+			}
+		}
+
 		return $this->links_model->remove_language_from_link( $url );
 	}
 

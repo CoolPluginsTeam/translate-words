@@ -42,6 +42,9 @@ class Linguator_Page_Translation {
 	 * Constructor for Linguator_Page_Translation.
 	 */
 	public function __construct( $linguator ) {
+		add_filter( 'rest_prepare_page', array( $this, 'linguator_draft_translation_save_link' ), 10, 3 );
+		add_filter( 'rest_prepare_post', array( $this, 'linguator_draft_translation_save_link' ), 10, 3 );
+
 		if ( $linguator instanceof Linguator_Admin ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_gutenberg_translate_assets' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'linguator_enqueue_classic_translate_assets' ) );
@@ -60,6 +63,44 @@ class Linguator_Page_Translation {
 			add_action( 'wp_ajax_lmat_update_post_meta_fields', array( $this, 'update_post_meta_fields' ) );
 			add_action( 'wp_ajax_lmat_update_classic_translate_status', array( $this, 'update_classic_translate_status' ) );
 		}
+	}
+
+	/**
+	 * Give the block editor's save notice a working link for translated drafts.
+	 *
+	 * WordPress labels the notice action "View Preview" but uses the saved post's
+	 * REST `link` field, which normally contains an unpublished permalink.
+	 *
+	 * @param \WP_REST_Response $response Prepared post response.
+	 * @param \WP_Post          $post     Saved post.
+	 * @param \WP_REST_Request  $request  REST request.
+	 * @return \WP_REST_Response
+	 */
+	public function linguator_draft_translation_save_link( $response, $post, $request ) {
+		if (
+			! $response instanceof \WP_REST_Response ||
+			! $post instanceof \WP_Post ||
+			! $request instanceof \WP_REST_Request ||
+			'draft' !== $post->post_status ||
+			! in_array( $request->get_method(), array( 'POST', 'PUT', 'PATCH' ), true ) ||
+			! current_user_can( 'edit_post', $post->ID ) ||
+			count( LMAT()->model->post->get_translations( $post->ID ) ) < 2
+		) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+		if ( ! isset( $data['link'] ) ) {
+			return $response;
+		}
+
+		$preview_link = get_preview_post_link( $post );
+		if ( $preview_link ) {
+			$data['link'] = esc_url_raw( $preview_link );
+			$response->set_data( $data );
+		}
+
+		return $response;
 	}
 
 	/**
