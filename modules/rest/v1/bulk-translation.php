@@ -463,9 +463,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( in_array( $provider, array( 'ollama', 'openai' ), true ) ) {
 				// Short keys make Ollama's response more reliable and reduce the
 				// output tokens OpenAI spends repeating long internal block keys.
-				// Restore the original keys before returning any translations.
+				// Keep semantic slug keys intact so a custom OpenAI prompt can apply
+				// provider-specific SEO slug instructions to those values.
+				// Restore all shortened keys before returning any translations.
 				$index = 0;
 				foreach ( array_keys( $strings ) as $original_key ) {
+					if ( in_array( $original_key, array( 'post_name', 'slug' ), true ) ) {
+						$short_key_map[ $original_key ] = $original_key;
+						continue;
+					}
 					$short_key_map[ $original_key ] = 'k' . $index;
 					++$index;
 				}
@@ -945,24 +951,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						)
 					);
 				}
-
-				$instructions    = array(
-					'You are a professional website translator and SEO localization editor.',
-					'Source language: ' . sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
-					'Target language: ' . sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
-					'Target locale, if provided: ' . sanitize_text_field( $target_locale ),
-					'Approved terminology, if provided: ' . $glossary_terms,
-				);
-
-				$instructions[] = 'Translate the human-readable values in the input JSON into natural language for the target audience. Preserve the original meaning, facts, tone, and search intent. Use locally natural wording rather than a literal translation.';
-				$instructions[] = 'Use approved terminology consistently.';
-				$instructions[] = 'Preserve all JSON keys exactly. Preserve URLs and all content inside square brackets [...] exactly. Preserve HTML tags, tag order, and attributes exactly; translate only visible text between tags. Preserve leading and trailing whitespace and line breaks.';
-				$instructions[] = 'Do not translate brand names, product names, code, placeholders, numbers, or identifiers unless the supplied glossary explicitly says to do so. Do not add, remove, or summarize content.';
-				$instructions[] = 'Return one complete, valid JSON object containing every original key and its translated value. Use JSON escaping where required. Output only the JSON object, with no Markdown or explanation.';
-				$instructions[] = 'Input JSON:';
-				$instructions[] = $payload;
-
-				return implode( "\n", $instructions );
 			}
 
 			$html_instruction = 'ollama' === $provider
