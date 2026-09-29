@@ -778,6 +778,73 @@ class Languages {
 	}
 
 	/**
+	 * Backfills display orders for languages created before order persistence was fixed.
+	 *
+	 * Existing nonzero orders are preserved. Legacy zero-order languages receive the
+	 * first available positive positions in their current term ID order.
+	 *
+	 * @return void
+	 */
+	public function maybe_backfill_language_orders(): void {
+		if ( 1 === (int) get_option( 'lmat_language_order_backfill_version', 0 ) ) {
+			return;
+		}
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'lmat_language',
+				'hide_empty' => false,
+				'orderby'    => 'term_id',
+				'order'      => 'ASC',
+			)
+		);
+
+		if ( is_wp_error( $terms ) ) {
+			return;
+		}
+
+		$used_orders = array();
+		foreach ( $terms as $term ) {
+			$order = (int) $term->term_group;
+			if ( $order > 0 ) {
+				$used_orders[ $order ] = true;
+			}
+		}
+
+		$next_order = 1;
+		$did_update = false;
+		foreach ( $terms as $term ) {
+			if ( (int) $term->term_group > 0 ) {
+				continue;
+			}
+
+			while ( isset( $used_orders[ $next_order ] ) ) {
+				++$next_order;
+			}
+
+			$result = wp_update_term(
+				(int) $term->term_id,
+				'lmat_language',
+				array( 'term_group' => $next_order )
+			);
+
+			if ( is_wp_error( $result ) ) {
+				return;
+			}
+
+			$used_orders[ $next_order ] = true;
+			$did_update                 = true;
+			++$next_order;
+		}
+
+		if ( $did_update ) {
+			$this->clean_cache();
+		}
+
+		update_option( 'lmat_language_order_backfill_version', 1, false );
+	}
+
+	/**
 	 * Applies arguments that change the type of the elements of the given list of languages.
 	 *
 	 * @since 0.0.8

@@ -294,6 +294,9 @@ class Linguator {
 		/** @var Linguator_Model $model */
 		$model = new $class( $options );
 
+		// Repair legacy languages whose display order was not persisted when created.
+		$model->languages->maybe_backfill_language_orders();
+
 		if ( ! $model->has_languages() ) {
 			/**
 			 * Fires when no language has been defined yet
