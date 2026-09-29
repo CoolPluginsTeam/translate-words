@@ -59,7 +59,71 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 		public function __construct() {
 			if ( is_admin() ) {
 				add_action( 'wp_ajax_lmat_update_translate_data', array( $this, 'linguator_update_translate_data' ) );
+				add_action( 'wp_ajax_lmat_update_translated_slug', array( $this, 'update_translated_slug' ) );
 			}
+		}
+
+		/**
+		 * Persist the translated original slug directly on the translated post.
+		 *
+		 * Editor state changes alone are not visible to Quick Edit until the post
+		 * is saved. This endpoint writes only post_name and avoids triggering the
+		 * multilingual reverse-sync hooks used by a full wp_update_post() call.
+		 *
+		 * @return void
+		 */
+		public function update_translated_slug(): void {
+			if ( ! check_ajax_referer( 'lmat_page_translation_admin', 'lmat_page_translation_nonce', false ) ) {
+				wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ), 403 );
+			}
+
+			$post_id         = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
+			$translated_slug = isset( $_POST['post_name'] ) ? sanitize_title( wp_unslash( $_POST['post_name'] ) ) : '';
+
+			if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+				wp_send_json_error( __( 'You are not authorized to edit this post.', 'translate-words' ), 403 );
+			}
+
+			$slug_translation_option = 'title_translate';
+			if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['slug_translation_option'] ) ) {
+				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
+			}
+			if ( 'slug_translate' !== $slug_translation_option ) {
+				wp_send_json_error( __( 'Original slug translation is not enabled.', 'translate-words' ), 400 );
+			}
+			if ( '' === $translated_slug ) {
+				wp_send_json_error( __( 'The translated slug is missing.', 'translate-words' ), 422 );
+			}
+
+			$post = get_post( $post_id );
+			if ( ! $post instanceof \WP_Post ) {
+				wp_send_json_error( __( 'The translated post could not be found.', 'translate-words' ), 404 );
+			}
+
+			$translated_slug = wp_unique_post_slug(
+				$translated_slug,
+				$post_id,
+				$post->post_status,
+				$post->post_type,
+				$post->post_parent
+			);
+
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$updated = $wpdb->update(
+				$wpdb->posts,
+				array( 'post_name' => $translated_slug ),
+				array( 'ID' => $post_id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+
+			if ( false === $updated ) {
+				wp_send_json_error( __( 'The translated slug could not be saved.', 'translate-words' ), 500 );
+			}
+
+			clean_post_cache( $post_id );
+			wp_send_json_success( array( 'post_name' => get_post_field( 'post_name', $post_id ) ) );
 		}
 
 		/**
@@ -294,18 +358,21 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			$current_slug            = get_post_field( 'post_name', $post_id );
 			$new_post_name           = false;
+			$translated_slug         = isset( $_POST['post_name'] ) ? sanitize_text_field( wp_unslash( $_POST['post_name'] ) ) : '';
 			
 			$slug_translation_option = 'title_translate';
 			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
 
-			if ( '' === $current_slug ) {
-			if ( ! empty( $_POST['post_name'] ) && '' !== $_POST['post_name'] && $slug_translation_option === 'slug_translate' ) {
-				$new_post_name = sanitize_title( wp_unslash( $_POST['post_name'] ) );
-				} elseif ( $slug_translation_option === 'slug_keep' ) {
-					$new_post_name = sanitize_text_field( get_post_field( 'post_name', $parent_post_id ) );
-				}
+			if ( 'slug_translate' === $slug_translation_option && '' === $translated_slug ) {
+				wp_send_json_error( __( 'The translated slug is missing.', 'translate-words' ), 422 );
+			}
+
+			if ( 'slug_translate' === $slug_translation_option ) {
+				$new_post_name = sanitize_title( $translated_slug );
+			} elseif ( '' === $current_slug && 'slug_keep' === $slug_translation_option ) {
+				$new_post_name = sanitize_text_field( get_post_field( 'post_name', $parent_post_id ) );
 			}
 
 			if ( ! class_exists( 'Elementor\Plugin' ) ) {

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "@wordpress/element";
 import { updateTranslateData } from "../helper/index.js";
 import { select } from "@wordpress/data";
+import { __ } from "@wordpress/i18n";
 import StringPopUpHeader from "./header.js";
 import StringPopUpBody from "./body.js";
 import StringPopUpFooter from "./footer.js";
@@ -174,7 +175,42 @@ const popStringModal = (props) => {
         setTranslatePending(status);
     }
 
-    const updatePostDataHandler = () => {
+    const persistTranslatedSlug = async (service) => {
+        if (lmatPageTranslationGlobal.slug_translation_option !== 'slug_translate') {
+            return;
+        }
+
+        const slugEntry = select('block-lmatPageTranslation/translate').getTranslationEntry({ type: 'slug' });
+        const translatedSlug = slugEntry?.translatedData?.[service];
+
+        if (typeof translatedSlug !== 'string' || translatedSlug.trim() === '') {
+            throw new Error(__("The translated slug is missing.", "translate-words"));
+        }
+
+        const response = await fetch(lmatPageTranslationGlobal.ajax_url, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': 'application/json',
+            },
+            body: new URLSearchParams({
+                action: lmatPageTranslationGlobal.update_translated_slug,
+                post_id: lmatPageTranslationGlobal.current_post_id,
+                post_name: translatedSlug,
+                lmat_page_translation_nonce: lmatPageTranslationGlobal.ajax_nonce,
+            }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result?.success) {
+            const message = typeof result?.data === 'string'
+                ? result.data
+                : __("The translated slug could not be saved.", "translate-words");
+            throw new Error(message);
+        }
+    };
+
+    const updatePostDataHandler = async () => {
 
         if(translateButtonStatus){
             return;
@@ -191,9 +227,21 @@ const popStringModal = (props) => {
         setHasTranslateError(false);
         setRecoverableAiErrorBlocksUpdate(false);
 
-        props.translatePost({ postContent: postContent, modalClose: modalClose, service: service });
-        props.pageTranslate(true);
-        updateTranslateData({ provider: service, sourceLang: props.sourceLang, targetLang: props.targetLang, postId: props.currentPostId });
+        try {
+            await persistTranslatedSlug(service);
+            props.translatePost({ postContent: postContent, modalClose: modalClose, service: service });
+            props.pageTranslate(true);
+            updateTranslateData({ provider: service, sourceLang: props.sourceLang, targetLang: props.targetLang, postId: props.currentPostId });
+        } catch (error) {
+            const message = error?.message || __("The translated slug could not be saved.", "translate-words");
+            setTranslateButtonStatus(false);
+            setTranslatePending(false);
+            setHasTranslateError(true);
+            document.dispatchEvent(new CustomEvent('lmat-page-translation:translation-error', {
+                bubbles: true,
+                detail: { message },
+            }));
+        }
     }
 
     useEffect(() => {

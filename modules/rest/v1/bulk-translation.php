@@ -459,16 +459,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$provider_strings = $protected['strings'];
 				$html_tag_maps    = $protected['maps'];
 			}
+			$provider_strings = $this->ai_translate_prepare_slug_values( $provider_strings );
 
 			if ( in_array( $provider, array( 'ollama', 'openai' ), true ) ) {
 				// Short keys make Ollama's response more reliable and reduce the
 				// output tokens OpenAI spends repeating long internal block keys.
-				// Keep semantic slug keys intact so a custom OpenAI prompt can apply
-				// provider-specific SEO slug instructions to those values.
+				// Keep semantic slug keys intact so the provider always recognizes
+				// the normalized slug words as slug content rather than an opaque key.
 				// Restore all shortened keys before returning any translations.
 				$index = 0;
 				foreach ( array_keys( $strings ) as $original_key ) {
-					if ( in_array( $original_key, array( 'post_name', 'slug' ), true ) ) {
+					if ( $this->ai_translate_is_slug_key( $original_key ) ) {
 						$short_key_map[ $original_key ] = $original_key;
 						continue;
 					}
@@ -577,6 +578,94 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 			return $remapped;
+		}
+
+		/**
+		 * Convert URL-shaped slug values into ordinary words for the translator.
+		 *
+		 * The translated value is sanitized back into a slug when the post or term
+		 * is saved. Sending words instead of a URL-shaped token prevents providers
+		 * from copying the source unchanged as though it were an immutable URL.
+		 *
+		 * @param array<string,string> $strings Source strings.
+		 * @return array<string,string>
+		 */
+		private function ai_translate_prepare_slug_values( array $strings ): array {
+			foreach ( $strings as $key => $value ) {
+				if ( ! $this->ai_translate_is_slug_key( $key ) ) {
+					continue;
+				}
+
+				$slug_words = rawurldecode( (string) $value );
+				$slug_words = preg_replace( '/[-_]+/u', ' ', $slug_words );
+				$slug_words = preg_replace( '/\s+/u', ' ', (string) $slug_words );
+				if ( '' !== trim( (string) $slug_words ) ) {
+					$strings[ $key ] = trim( (string) $slug_words );
+				}
+			}
+
+			return $strings;
+		}
+
+		/**
+		 * Determine whether an internal translation key represents a URL slug.
+		 *
+		 * @param string $key Translation key.
+		 * @return bool
+		 */
+		private function ai_translate_is_slug_key( string $key ): bool {
+			return in_array( $key, array( 'post_name', 'slug', 'slug_name', 'taxonomy_slug' ), true );
+		}
+
+		/**
+		 * Persist a translated slug and return the value stored by WordPress.
+		 *
+		 * The post cloning layer can regenerate post_name while copying content.
+		 * Reapplying the translated value after cloning guarantees that list-table
+		 * Quick Edit and permalinks read the translated original slug.
+		 *
+		 * @param int    $post_id         Translated post ID.
+		 * @param string $translated_slug Translated slug text.
+		 * @return string|WP_Error
+		 */
+		private function ai_translate_persist_post_slug( int $post_id, string $translated_slug ) {
+			$post            = get_post( $post_id );
+			$translated_slug = sanitize_title( $translated_slug );
+			if ( ! $post instanceof \WP_Post || '' === $translated_slug ) {
+				return new WP_Error(
+					'lmat_missing_translated_slug',
+					__( 'The translated slug could not be saved.', 'translate-words' ),
+					array( 'status' => 422 )
+				);
+			}
+
+			$translated_slug = wp_unique_post_slug(
+				$translated_slug,
+				$post_id,
+				$post->post_status,
+				$post->post_type,
+				$post->post_parent
+			);
+
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$updated = $wpdb->update(
+				$wpdb->posts,
+				array( 'post_name' => $translated_slug ),
+				array( 'ID' => $post_id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+			if ( false === $updated ) {
+				return new WP_Error(
+					'lmat_translated_slug_save_failed',
+					__( 'The translated slug could not be saved.', 'translate-words' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			clean_post_cache( $post_id );
+			return (string) get_post_field( 'post_name', $post_id );
 		}
 
 		/**
@@ -2416,6 +2505,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['slug_translation_option'] ) ) {
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
+			if ( 'slug_translate' === $slug_translation_option && ! $slug ) {
+				return new WP_Error(
+					'lmat_missing_translated_slug',
+					__( 'The translated slug is missing. The post was not created.', 'translate-words' ),
+					array( 'status' => 422 )
+				);
+			}
 
 			$meta_fields = isset( $params['post_meta_fields'] ) ? $params['post_meta_fields'] : '';
 
@@ -2442,9 +2538,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					: $decoded_meta_fields;
 			}
 
-			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
+			if ( 'slug_translate' === $slug_translation_option ) {
 				$post_data['post_name'] = sanitize_title( $slug );
-			} elseif ( $slug_translation_option === 'slug_keep' ) {
+			} elseif ( 'slug_keep' === $slug_translation_option ) {
 				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
 			} else {
 				$post_data['post_name'] = sanitize_title( $title );
@@ -2530,6 +2626,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				);
 			}
 
+			$saved_post_name = (string) get_post_field( 'post_name', $new_post_id );
+			if ( 'slug_translate' === $slug_translation_option ) {
+				$saved_post_name = $this->ai_translate_persist_post_slug( $new_post_id, (string) $slug );
+				if ( is_wp_error( $saved_post_name ) ) {
+					return $saved_post_name;
+				}
+			}
+
 			// Unpublished translations need a preview URL; their public permalink returns 404.
 			$new_post_status = get_post_status( $new_post_id );
 			$post_link       = in_array( $new_post_status, array( 'draft', 'pending', 'future' ), true )
@@ -2557,6 +2661,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			return rest_ensure_response(
 				array(
 					'post_id'                     => $new_post_id,
+					'post_name'                   => $saved_post_name,
 					'target_language'             => $target_language,
 					'post_link'                   => $post_link,
 					'post_title'                  => $post_title_out,
@@ -2706,6 +2811,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
 				$slug_translation_option = LMAT()->options['ai_translation_configuration']['slug_translation_option'];
 			}
+			if ( 'slug_translate' === $slug_translation_option && '' === $taxonomy_slug ) {
+				wp_send_json_error( __( 'The translated slug is missing. The term was not created.', 'translate-words' ), 422 );
+			}
 			if ( ! $target_language ) {
 				wp_send_json_error( 'Invalid target language' );
 			}
@@ -2727,9 +2835,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$translations->add_entry( $entry );
 			}
 
-			if ( $slug_translation_option === 'slug_translate' && $taxonomy_slug && ! empty( $taxonomy_slug ) ) {
+			if ( 'slug_translate' === $slug_translation_option ) {
 				$taxonomy_slug = sanitize_title( $taxonomy_slug );
-			} elseif ( $slug_translation_option === 'slug_keep' ) {
+			} elseif ( 'slug_keep' === $slug_translation_option ) {
 				$taxonomy_slug = sanitize_text_field( $get_term->slug );
 			} else {
 				$taxonomy_slug = sanitize_title( $taxonomy_name );

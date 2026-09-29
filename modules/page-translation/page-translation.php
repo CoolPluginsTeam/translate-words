@@ -534,6 +534,7 @@ class Linguator_Page_Translation {
 				'lmat_url'                 => esc_url( plugins_url( '', LINGUATOR_ROOT_FILE ) ) . '/',
 				'admin_url'                => admin_url(),
 				'update_translate_data'    => 'lmat_update_translate_data',
+				'update_translated_slug'   => 'lmat_update_translated_slug',
 				'source_lang'              => $source_lang,
 				'target_lang'              => $target_lang,
 				'languageObject'           => $lang_object,
