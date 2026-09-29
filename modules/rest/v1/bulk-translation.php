@@ -415,7 +415,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @param string               $model_override          Optional model override.
 		 * @param int                  $split_depth             Current retry depth.
 		 * @param bool                 $allow_long_string_split Whether Ollama may segment long values.
-		 * @param bool                 $allow_validation_retry  Whether Ollama validation failures may schedule retries.
+		 * @param bool                 $allow_validation_retry  Whether validation failures may schedule retries.
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0, bool $allow_long_string_split = true, bool $allow_validation_retry = true ) {
@@ -499,13 +499,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					$provider_setup['registry'],
 					$provider_setup['provider_id'],
 					$model_id,
-					$instruction
+					$instruction,
+					array_keys( $provider_strings )
 				);
 			}
 			if ( is_wp_error( $text ) ) {
 				if ( 'ollama' === $provider && $allow_validation_retry && 'lmat_ollama_output_truncated' === $text->get_error_code() ) {
-					return $this->ai_translate_retry_ollama_smaller_batches(
+					return $this->ai_translate_retry_smaller_batches(
 						$text,
+						$provider,
 						$source_lang,
 						$target_lang,
 						$strings,
@@ -528,15 +530,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$result = $this->ai_translate_parse_llm_response( (string) $text, $parse_strings, $provider, $html_tag_maps );
-			if ( 'ollama' === $provider && $allow_validation_retry && is_wp_error( $result ) ) {
+			if ( $allow_validation_retry && is_wp_error( $result ) ) {
 				$retryable_codes = array(
 					'lmat_ai_bad_response',
+					'lmat_ai_incomplete_response',
+					'lmat_openai_incomplete_response',
 					'lmat_ollama_incomplete_response',
 					'lmat_ollama_html_changed',
 				);
 				if ( in_array( $result->get_error_code(), $retryable_codes, true ) ) {
-					return $this->ai_translate_retry_ollama_smaller_batches(
+					return $this->ai_translate_retry_smaller_batches(
 						$result,
+						$provider,
 						$source_lang,
 						$target_lang,
 						$strings,
@@ -575,25 +580,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Retry an invalid Ollama response using smaller sequential batches.
+		 * Retry an invalid provider response using smaller sequential batches.
 		 *
 		 * @param WP_Error            $error          Original validation error.
+		 * @param string              $provider       Provider slug.
 		 * @param string              $source_lang    Source language slug.
 		 * @param string              $target_lang    Target language slug.
 		 * @param array<string,string> $strings       Source strings.
-		 * @param string              $api_key        Ollama API key.
+		 * @param string              $api_key        Provider API key.
 		 * @param string              $model_override Selected model.
 		 * @param int                 $split_depth    Current split depth.
 		 * @return array<string,string>|WP_Error
 		 */
-		private function ai_translate_retry_ollama_smaller_batches( WP_Error $error, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override, int $split_depth ) {
+		private function ai_translate_retry_smaller_batches( WP_Error $error, string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override, int $split_depth ) {
 			if ( count( $strings ) <= 1 ) {
 				// A single string cannot be split further. Give the model two fresh,
 				// sequential generations without recursively scheduling more retries.
 				$last_error = $error;
 				for ( $attempt = 0; $attempt < 2; ++$attempt ) {
 					$result = $this->ai_translate_strings_with_llm(
-						'ollama',
+						$provider,
 						$source_lang,
 						$target_lang,
 						$strings,
@@ -624,7 +630,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$translated = array();
 			foreach ( $chunks as $chunk ) {
 				$result = $this->ai_translate_strings_with_llm(
-					'ollama',
+					$provider,
 					$source_lang,
 					$target_lang,
 					$chunk,
@@ -940,7 +946,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 
 				if ( '' !== $custom_prompt ) {
-					return strtr(
+					$custom_prompt = strtr(
 						$custom_prompt,
 						array(
 							'{source_language}' => sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
@@ -950,34 +956,28 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'{input_json}'      => $payload,
 						)
 					);
+
+					return $custom_prompt . "\n\n" . 'Mandatory response contract: Return only one valid JSON object containing every key from the input JSON exactly as written. Never rename, translate, shorten, or omit a key. Values whose key is post_name or slug are URL-slug text: translate their words semantically, use lowercase, and separate words with hyphens. Do not wrap the JSON in quotes or a markdown code block.';
 				}
 			}
 
 			$html_instruction = 'ollama' === $provider
 				? 'Preserve all HTML tags, attributes, and tokens such as [[LMAT_HTML_TAG_0000]] exactly. Never translate, remove, duplicate, reorder, or add spaces inside these tokens.'
 				: 'Preserve all HTML tags and their attributes such as class, id, data-*, etc. Do not alter any part of the HTML structure.';
-			$json_instruction = 'ollama' === $provider
-				? 'Escape double quotes only where JSON syntax requires it. Do not double-encode the JSON or add unnecessary slashes.'
-				: 'Do not escape double quotes with backslashes. Output must be valid JSON without extra slashes.';
+			$json_instruction = 'Escape double quotes, backslashes, and control characters only where JSON syntax requires it. Do not double-encode the JSON or add unnecessary slashes.';
 			$entity_instruction = 'ollama' === $provider
 				? 'Preserve HTML entities exactly as supplied. Do not encode or decode them; genuine HTML tags are represented by immutable tokens.'
 				: 'Decode any &lt; and &gt; HTML entities back to < and > symbols in the output and preserve and maintain whitespace.';
-			$payload_instruction = 'ollama' === $provider
-				? 'Translate the provided JSON object from %s into %s language, regardless of whether values repeat. Return the same complete object with every key present.'
-				: 'Translate the provided JSON array from %s into %s language, regardless of whether the values are the same, and ensure the JSON is well-formed and complete.';
-			$key_instruction = 'ollama' === $provider
-				? 'Return a JSON object containing every supplied key exactly as written. Keys may be numeric or non-numeric. Never rename, shorten, translate, or omit a key.'
-				: 'Return the translation in the format of a JSON object with the keys being numeric values (matching the source keys), and the values being the translated strings.';
-			$format_example = 'ollama' === $provider
-				? '{"exact supplied key": "translation in %s language"}'
-				: '{"key(numeric value)": "(translations of the strings in %s language)"}';
+			$payload_instruction = 'Translate the provided JSON object from %s into %s language, regardless of whether values repeat. Return the same complete object with every key present.';
+			$key_instruction     = 'Return a JSON object containing every supplied key exactly as written. Keys may be numeric or non-numeric. Never rename, shorten, translate, or omit a key.';
+			$format_example      = '{"exact supplied key": "translation in %s language"}';
 
 			$instruction = sprintf(
 				'You are a professional translator.
 				Source Language: %s
 				Target Language: %s
 				Instruction 1: Translate visible text content semantically from %s into %s language. Provide a proper meaning-based translation.
-				Instruction 2: Do not translate or modify any content inside square brackets [] and Do not translate any URL. These are shortcodes or dynamic placeholders and must remain exactly as they are.
+				Instruction 2: Do not translate or modify any content inside square brackets []. Do not translate complete URLs beginning with a protocol such as http:// or https://. Values whose key is post_name or slug are URL-slug text, not complete URLs: translate their words semantically, use lowercase, and separate words with hyphens.
 				Instruction 3: %s
 				Instruction 4: %s
 				Instruction 5: %s
@@ -1109,9 +1109,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @param string $provider_id Provider id in the registry.
 		 * @param string $model_id    Optional model id.
 		 * @param string $instruction Prompt text.
+		 * @param array<string> $response_keys Keys required in the JSON response.
 		 * @return string|\WP_Error
 		 */
-		private function ai_translate_call_llm_provider( $registry, string $provider_id, string $model_id, string $instruction ) {
+		private function ai_translate_call_llm_provider( $registry, string $provider_id, string $model_id, string $instruction, array $response_keys ) {
 			$ai_request_timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
 			if ( $ai_request_timeout < 1 ) {
 				$ai_request_timeout = 120;
@@ -1144,10 +1145,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 				$builder = wp_ai_client_prompt();
 
-				$canUseProviderChain = method_exists( $builder, 'using_provider' )
-					&& method_exists( $builder, 'with_text' )
-					&& method_exists( $builder, 'generate_text' )
-					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
+				$canUseProviderChain = is_callable( array( $builder, 'using_provider' ) )
+					&& is_callable( array( $builder, 'with_text' ) )
+					&& is_callable( array( $builder, 'generate_text' ) )
+					&& ( '' === $model_id || is_callable( array( $builder, 'using_model' ) ) );
 
 				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
@@ -1170,6 +1171,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						}
 					}
 
+					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys );
+
 					try {
 						$text = $builder
 							->using_provider( $provider_id )
@@ -1180,22 +1183,23 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
-					if ( 'openai' !== $provider_id && method_exists( $builder, 'using_system_instruction' ) ) {
+					if ( 'openai' !== $provider_id && is_callable( array( $builder, 'using_system_instruction' ) ) ) {
 						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
 					}
-					if ( method_exists( $builder, 'with_text' ) ) {
+					if ( is_callable( array( $builder, 'with_text' ) ) ) {
 						$builder = $builder->with_text( $instruction );
 					} else {
 						$builder = wp_ai_client_prompt( $instruction );
 					}
 
-					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
+					if ( '' !== $model_id && is_callable( array( $builder, 'using_model_preference' ) ) ) {
 						$builder = $builder->using_model_preference( $model_id );
 					}
+					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys );
 					if (
 						'openai' === $provider_id &&
 						$this->ai_translate_openai_supports_no_reasoning( $model_id ) &&
-						method_exists( $builder, 'using_model_config' ) &&
+						is_callable( array( $builder, 'using_model_config' ) ) &&
 						class_exists( '\\WordPress\\AiClient\\Providers\\Models\\DTO\\ModelConfig' )
 					) {
 						$model_config = new \WordPress\AiClient\Providers\Models\DTO\ModelConfig();
@@ -1214,6 +1218,41 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return $text;
+		}
+
+		/**
+		 * Require a JSON object containing every translation key.
+		 *
+		 * @param object        $builder       WP AI Client prompt builder.
+		 * @param array<string> $response_keys Required response keys.
+		 * @return object
+		 */
+		private function ai_translate_configure_json_response( $builder, array $response_keys ) {
+			$properties = array();
+			$required   = array();
+			foreach ( $response_keys as $key ) {
+				$key                = (string) $key;
+				$properties[ $key ] = array( 'type' => 'string' );
+				$required[]         = $key;
+			}
+
+			$schema = array(
+				'type'                 => 'object',
+				'properties'           => $properties,
+				'required'             => $required,
+				'additionalProperties' => false,
+			);
+
+			if ( is_callable( array( $builder, 'as_json_response' ) ) ) {
+				return $builder->as_json_response( $schema );
+			}
+			if ( is_callable( array( $builder, 'as_output_mime_type' ) ) && is_callable( array( $builder, 'as_output_schema' ) ) ) {
+				return $builder
+					->as_output_mime_type( 'application/json' )
+					->as_output_schema( $schema );
+			}
+
+			return $builder;
 		}
 
 		/**
@@ -1366,28 +1405,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_parse_llm_response( string $text, array $strings, string $provider = '', array $html_tag_maps = array() ) {
-			$clean_text = preg_replace( '/(^```json\n|```$)/', '', $text );
-			$final_text = preg_replace( '/\\\\{2,}([\'"n])/', '\\\$1', (string) $clean_text );
-
-			if ( is_string( $final_text ) ) {
-				$maybe_decoded = json_decode( $final_text, true );
-				if ( is_array( $maybe_decoded ) && 1 === count( $maybe_decoded ) ) {
-					$key = array_keys( $maybe_decoded )[0];
-					if ( isset( $maybe_decoded[ $key ] ) && is_string( $maybe_decoded[ $key ] ) ) {
-						$inner = json_decode( $maybe_decoded[ $key ], true );
-						if ( is_array( $inner ) && isset( $inner[ $key ] ) && ! is_array( $inner[ $key ] ) ) {
-							$maybe_decoded[ $key ] = (string) $inner[ $key ];
-							$final_text            = wp_json_encode( $maybe_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
-						}
-					}
-				}
-			}
-
-			if ( is_string( $final_text ) && ( 0 === strpos( $final_text, '"' ) || '"' === substr( $final_text, -1 ) ) ) {
-				$final_text = trim( $final_text, '"' );
-			}
-
-			$decoded = $this->ai_translate_parse_json_object( (string) $final_text, 'ollama' !== $provider );
+			$decoded = $this->ai_translate_parse_json_object( $text, $provider );
 			if ( is_wp_error( $decoded ) ) {
 				return $decoded;
 			}
@@ -1396,6 +1414,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			foreach ( array_keys( $strings ) as $key ) {
 				if ( isset( $decoded[ $key ] ) && is_scalar( $decoded[ $key ] ) ) {
 					$translated = $this->ai_normalize_translation_string( (string) $decoded[ $key ] );
+					if ( 'ollama' !== $provider ) {
+						$translated = html_entity_decode( $translated, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+					}
 					if ( 'ollama' === $provider ) {
 						$restored = $this->ai_restore_ollama_html_tags(
 							$translated,
@@ -1423,7 +1444,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							array( 'status' => 502 )
 						);
 					}
-					$out[ $key ] = $strings[ $key ];
+					return new WP_Error(
+						'lmat_ai_incomplete_response',
+						__( 'The AI returned an incomplete translation response. Please retry this batch.', 'translate-words' ),
+						array( 'status' => 502 )
+					);
 				}
 			}
 
@@ -1578,31 +1603,80 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string $text                 Raw model output.
-		 * @param bool   $decode_html_entities Whether to decode entities before JSON parsing.
+		 * @param string $text     Raw model output.
+		 * @param string $provider Provider slug.
 		 * @return array<string,mixed>|\WP_Error
 		 */
-		private function ai_translate_parse_json_object( string $text, bool $decode_html_entities = true ) {
-			$text = trim( $text );
-			if ( $decode_html_entities ) {
-				$text = html_entity_decode( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
-			}
-			if ( preg_match( '/```(?:json)?\s*(\{.*\})\s*```/s', $text, $m ) ) {
-				$text = $m[1];
-			} elseif ( preg_match( '/\{[\s\S]*\}/', $text, $m ) ) {
-				$text = $m[0];
+		private function ai_translate_parse_json_object( string $text, string $provider = '' ) {
+			$raw        = trim( $text );
+			$candidates = array( $raw );
+
+			if ( preg_match( '/\A```(?:json)?\s*([\s\S]*?)\s*```\z/i', $raw, $match ) ) {
+				$candidates[] = trim( $match[1] );
 			}
 
-			$decoded = json_decode( $text, true );
-			if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
-				return new WP_Error(
-					'lmat_ai_bad_response',
-					__( 'The AI returned an invalid translation response. Please try again.', 'translate-words' ),
-					array( 'status' => 502 )
-				);
+			$object_start = strpos( $raw, '{' );
+			$object_end   = strrpos( $raw, '}' );
+			if ( false !== $object_start && false !== $object_end && $object_end > $object_start ) {
+				$candidates[] = substr( $raw, $object_start, $object_end - $object_start + 1 );
 			}
 
-			return $decoded;
+			$json_error = JSON_ERROR_NONE;
+			foreach ( array_unique( $candidates ) as $candidate ) {
+				$decoded    = json_decode( $candidate, true );
+				$json_error = json_last_error();
+				if ( JSON_ERROR_NONE !== $json_error ) {
+					continue;
+				}
+
+				// Some models double-encode the complete object as a JSON string.
+				if ( is_string( $decoded ) ) {
+					$decoded    = json_decode( $decoded, true );
+					$json_error = json_last_error();
+				}
+
+				if ( JSON_ERROR_NONE === $json_error && is_array( $decoded ) ) {
+					return $decoded;
+				}
+			}
+
+			$this->ai_translate_log_invalid_json( $raw, $json_error, $provider );
+
+			return new WP_Error(
+				'lmat_ai_bad_response',
+				__( 'The AI returned an invalid translation response. Please try again.', 'translate-words' ),
+				array( 'status' => 502 )
+			);
+		}
+
+		/**
+		 * Log bounded diagnostics for malformed provider output in debug mode.
+		 *
+		 * @param string $text       Raw provider output.
+		 * @param int    $json_error Last JSON parser error code.
+		 * @param string $provider   Provider slug.
+		 * @return void
+		 */
+		private function ai_translate_log_invalid_json( string $text, int $json_error, string $provider ): void {
+			if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+				return;
+			}
+
+			$excerpt = function_exists( 'mb_substr' ) ? mb_substr( $text, 0, 500 ) : substr( $text, 0, 500 );
+			$excerpt = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', (string) $excerpt );
+			$error   = JSON_ERROR_NONE === $json_error
+				? 'Top-level response is not a JSON object'
+				: ( function_exists( 'json_last_error_msg' ) ? json_last_error_msg() : (string) $json_error );
+			$message = sprintf(
+				'[Linguator AI] Invalid translation JSON (provider=%s; %s; %d bytes; sha256=%s). Excerpt: %s',
+				'' !== $provider ? $provider : 'unknown',
+				$error,
+				strlen( $text ),
+				hash( 'sha256', $text ),
+				(string) wp_json_encode( $excerpt, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES )
+			);
+
+			error_log( $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 
 		/**
