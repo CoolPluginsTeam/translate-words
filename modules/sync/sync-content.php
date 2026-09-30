@@ -360,7 +360,11 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translate images and caption in inner html
+	 * Translate images and caption in inner html.
+	 *
+	 * Remaps attachment IDs, classes and URLs in img tags.
+	 * Does NOT overwrite translated inline alt text or figcaption content;
+	 * those are handled separately by Media_Translation_Service.
 	 *
 	 * Since 2.5
 	 *
@@ -373,34 +377,14 @@ class Linguator_Sync_Post {
 
 			$img_ids = array();
 			foreach ( $textarr as $i => $text ) {
-				// Translate img class and alternative text
+				// Remap img class, data-id and data-link attachment IDs.
 				if ( 0 === strpos( $text, '<img' ) ) {
 					$img_ids[] = $this->translate_img( $textarr[ $i ] );
 				}
 			}
 
-			if ( empty( $img_ids ) ) {
-				return $content;
-			}
-
-			$new_content = implode( $textarr );
-			$key = 0;
-			$new_content = preg_replace_callback(
-				'@(?<before><figcaption.*?>)(.+?)(?<after></figcaption>)@',
-				function ( $matches ) use ( $img_ids, &$key ) {
-					$tr_post = get_post( $img_ids[ $key ] );
-					$key++;
-					if ( ! empty( $tr_post->post_excerpt ) ) {
-						return $matches['before'] . $tr_post->post_excerpt . $matches['after'];
-					} else {
-						return $matches[0];
-					}
-				},
-				$new_content
-			);
-
-			if ( is_string( $new_content ) ) {
-				return $new_content;
+			if ( ! empty( $img_ids ) ) {
+				return implode( $textarr );
 			}
 		}
 
@@ -408,7 +392,11 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translates <img> 'class' and 'alt' attributes.
+	 * Translates <img> 'class', 'data-id', and 'data-link' attributes.
+	 *
+	 * Remaps attachment IDs so wp-image-NNN, data-id, and attachment_id
+	 * point to the translated attachment. Does NOT overwrite the alt
+	 * attribute; that text is handled by Media_Translation_Service.
 	 *
 	 *  
 	 *   The html is passed by reference and the return value is the image ID.
@@ -423,12 +411,11 @@ class Linguator_Sync_Post {
 			return null;
 		}
 
-		// Replace class
+		// Remap attachment IDs in class, data-id, and data-link attributes.
 		foreach ( $attributes as $k => $attr ) {
 			if ( 0 === strpos( $attr, 'class' ) && preg_match( '#wp\-image\-([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'wp-image-' . $matches[1], 'wp-image-' . $tr_id, $attr );
-
 			}
 
 			if ( preg_match( '#^data\-id="([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
@@ -439,18 +426,6 @@ class Linguator_Sync_Post {
 			if ( 0 === strpos( $attr, 'data-link' ) && preg_match( '#attachment_id=([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'attachment_id=' . $matches[1], 'attachment_id=' . $tr_id, $attr );
-			}
-		}
-
-		if ( ! empty( $tr_id ) ) {
-			// Got a tr_id, attempt to replace the alt text
-			$alt = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
-			if ( is_string( $alt ) && ! empty( $alt ) ) {
-				foreach ( $attributes as $k => $attr ) {
-					if ( 0 === strpos( $attr, 'alt' ) ) {
-						$attributes[ $k ] = 'alt="' . esc_attr( $alt ) . '" ';
-					}
-				}
 			}
 		}
 
