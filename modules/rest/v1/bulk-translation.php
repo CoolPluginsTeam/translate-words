@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Services\Translation\Translation_Term_Model;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
 use Translation_Entry;
@@ -1597,6 +1598,29 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
 			}
 
+			// Append media strings per post when media translation is enabled.
+			if ( function_exists( 'LMAT' ) ) {
+				$media_service = new Media_Translation_Service( LMAT() );
+				if ( $media_service->is_enabled() ) {
+					foreach ( array_keys( $posts_translate ) as $pid ) {
+						$pid = absint( $pid );
+						if ( 0 === $pid ) {
+							continue;
+						}
+
+						$featured = $media_service->get_featured_image_strings( $pid );
+						if ( ! empty( $featured ) ) {
+							$data['posts'][ $pid ]['featured_image'] = $featured;
+						}
+
+						$content_media = $media_service->get_content_media_strings( $pid );
+						if ( ! empty( $content_media ) ) {
+							$data['posts'][ $pid ]['content_media'] = $content_media;
+						}
+					}
+				}
+			}
+
 			if ( $gutenberg_block ) {
 				$block_parse_rules       = Supported_Blocks::get_instance()->block_parsing_rules();
 				$data['blockParseRules'] = json_encode( $block_parse_rules );
@@ -1764,6 +1788,30 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					),
 					array( 'status' => 500 )
 				);
+			}
+
+			// Apply translated media metadata after the post is created and synced.
+			if ( function_exists( 'LMAT' ) ) {
+				$media_service = new Media_Translation_Service( LMAT() );
+				if ( $media_service->is_enabled() ) {
+					// Featured image.
+					$featured_raw = isset( $params['featured_image'] ) ? $params['featured_image'] : null;
+					if ( is_string( $featured_raw ) && '' !== $featured_raw ) {
+						$featured_raw = json_decode( $featured_raw, true );
+					}
+					if ( is_array( $featured_raw ) && ! empty( $featured_raw ) ) {
+						$media_service->apply_featured_image_translations( $source_post_id, $new_post_id, $featured_raw );
+					}
+
+					// Content media.
+					$content_media_raw = isset( $params['content_media'] ) ? $params['content_media'] : null;
+					if ( is_string( $content_media_raw ) && '' !== $content_media_raw ) {
+						$content_media_raw = json_decode( $content_media_raw, true );
+					}
+					if ( is_array( $content_media_raw ) && ! empty( $content_media_raw ) ) {
+						$media_service->apply_content_media_translations( $new_post_id, $content_media_raw );
+					}
+				}
 			}
 
 			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
