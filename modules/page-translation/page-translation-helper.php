@@ -415,6 +415,14 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 						wp_die( '0', 400 );
 					}
 
+					// Remap attachment IDs and URLs when media translation is enabled.
+					if ( function_exists( 'LMAT' ) ) {
+						$media_service = new Media_Translation_Service( LMAT() );
+						if ( $media_service->is_enabled() ) {
+							$elementor_data = $media_service->remap_elementor_media( $post_id, $elementor_data );
+						}
+					}
+
 					$document->save(
 						array(
 							'elements' => $elementor_data,
