@@ -3,6 +3,7 @@ import YoastSeoFields from '../../component/translate-seo-fields/yoast-seo-field
 import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import SeoPressFields from '../../component/translate-seo-fields/seo-press.js';
 import translatedMetaFields from '../meta-fields/index.js';
+import saveMediaTranslations from '../../helper/save-media-translations.js';
 
 /**
  * Updates WPBakery Page Builder content with translations.
@@ -435,6 +436,9 @@ const updateWPBakeryPage = ({ postContent, modalClose, service }) => {
             // Then update translation status
             await saveTranslationStatus();
             
+            // Save translated attachment metadata.
+            saveMediaTranslations( service, postContent );
+
             // Close modal
             modalClose();
         }, 500);
