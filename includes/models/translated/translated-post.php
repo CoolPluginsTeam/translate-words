@@ -360,8 +360,17 @@ class Linguator_Translated_Post extends Linguator_Translated_Object implements L
 		// Loads the strings translations with the attachment's target language.
 		LMAT()->load_strings_translations( $lang->slug );
 
-		$tr_id = wp_insert_attachment( wp_slash( $post ) );
+		$tr_id = wp_insert_attachment( wp_slash( $post ), false, 0, true );
 		remove_filter( 'lmat_enable_duplicate_media', '__return_false', 99 ); // Restore automatic duplicate at upload.
+
+		if ( is_wp_error( $tr_id ) || ! $tr_id ) {
+			// Restore strings for the current language before returning from a failed insertion.
+			if ( LMAT()->curlang instanceof Linguator_Language ) {
+				LMAT()->load_strings_translations( LMAT()->curlang->slug );
+			}
+
+			return 0;
+		}
 
 		// Copy metadata.
 		$data = wp_get_attachment_metadata( $post_id, true ); // Unfiltered.
