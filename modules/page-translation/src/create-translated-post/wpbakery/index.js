@@ -437,7 +437,7 @@ const updateWPBakeryPage = ({ postContent, modalClose, service }) => {
             await saveTranslationStatus();
             
             // Save translated attachment metadata.
-            saveMediaTranslations( service, postContent );
+            await saveMediaTranslations( service, postContent );
 
             // Close modal
             modalClose();

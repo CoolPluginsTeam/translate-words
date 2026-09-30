@@ -11,7 +11,7 @@ import saveMediaTranslations from '../../helper/save-media-translations.js';
  * 
  * @param {Object} props - The properties containing post content, translation function, and block rules.
  */
-const translatePost = (props) => {
+const translatePost = async (props) => {
     const { editPost } = dispatch('core/editor');
     const { modalClose, postContent, service } = props;
 
@@ -192,7 +192,7 @@ const translatePost = (props) => {
     }
 
     // Save translated attachment metadata.
-    saveMediaTranslations( service, postContent );
+    await saveMediaTranslations( service, postContent );
 
     // Close string modal box
     modalClose();

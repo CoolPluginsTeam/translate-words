@@ -10,7 +10,7 @@ import saveMediaTranslations from '../../helper/save-media-translations.js';
  * 
  * @param {Object} props - The properties containing post content, translation function, and block rules.
  */
-const UpdateClassicPage = (props) => {
+const UpdateClassicPage = async (props) => {
     const { modalClose, postContent, service } = props;
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
 
@@ -357,21 +357,19 @@ const UpdateClassicPage = (props) => {
     // Update post content
     postContentUpdate();
 
-    // Close string modal box
-    setTimeout(() => {
-        modalClose();
-    }, 500);
-
     // Update all translation supported post meta fields using ajax request
     if(lmatPageTranslationGlobal.postMetaSync === 'false'){
         updatePostMetaFields();
     }
 
     // Save translated attachment metadata.
-    saveMediaTranslations( service, postContent );
+    await saveMediaTranslations( service, postContent );
 
     // Update translate status
     updateTranslateStatus();
+
+    // Close string modal box
+    modalClose();
 }
 
 export default UpdateClassicPage;

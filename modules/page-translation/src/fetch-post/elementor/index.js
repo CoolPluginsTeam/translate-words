@@ -7,6 +7,14 @@ const fetchPostContent = async (props) => {
         widgetsContent:elementorPostData,
     }
 
+	if ( lmatPageTranslationGlobal.featured_image ) {
+		content.featured_image = lmatPageTranslationGlobal.featured_image;
+	}
+
+	if ( Array.isArray( lmatPageTranslationGlobal.elementor_media ) ) {
+		content.elementor_media = lmatPageTranslationGlobal.elementor_media;
+	}
+
     if(lmatPageTranslationGlobal.slug_translation_option === 'slug_translate'){
         content.slug_name=lmatPageTranslationGlobal.slug_name;
     }

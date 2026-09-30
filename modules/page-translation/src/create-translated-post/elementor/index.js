@@ -458,7 +458,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
             }
 
             // Save translated attachment metadata.
-            saveMediaTranslations( service, postContent );
+            await saveMediaTranslations( service, postContent );
 
             modalClose();
         })

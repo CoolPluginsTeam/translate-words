@@ -185,8 +185,8 @@ const ElementorSaveSource = (content) => {
     }
 
     // Register content-attachment strings into the translation queue.
-    if ( lmatPageTranslationGlobal.mediaSupport && Array.isArray( content.content_media ) ) {
-        content.content_media.forEach( ( attachment ) => {
+    if ( lmatPageTranslationGlobal.mediaSupport && Array.isArray( content.elementor_media ) ) {
+        content.elementor_media.forEach( ( attachment ) => {
             const attachId = attachment.id;
             [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
                 if ( attachment[field] && attachment[field].trim() !== '' ) {

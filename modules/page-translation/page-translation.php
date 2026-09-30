@@ -2,6 +2,7 @@
 namespace Linguator\Modules\Page_Translation;
 
 use Linguator\Admin\Controllers\Linguator_Admin;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
 
@@ -377,6 +378,19 @@ class Linguator_Page_Translation {
 			'parent_post_id'        => $parent_post_id,
 			'parent_post_title'     => get_the_title( $parent_post_id ),
 		);
+
+		$media_service = new Media_Translation_Service( LMAT() );
+		if ( $media_service->is_enabled() ) {
+			$featured_image = $media_service->get_featured_image_strings( $parent_post_id );
+			if ( ! empty( $featured_image ) ) {
+				$data['featured_image'] = $featured_image;
+			}
+
+			$elementor_media = $media_service->get_elementor_media_strings( $parent_post_id );
+			if ( ! empty( $elementor_media ) ) {
+				$data['elementor_media'] = $elementor_media;
+			}
+		}
 
 		wp_enqueue_style( 'lmat-elementor-translate', plugins_url( 'admin/assets/css/lmat-elementor-translate.min.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
 		$this->linguator_enqueue_automatic_translate_assets( $parent_post_language_slug, $post_language_slug, 'elementor', $data );

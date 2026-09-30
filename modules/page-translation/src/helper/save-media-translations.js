@@ -1,4 +1,4 @@
-﻿import { select } from '@wordpress/data';
+import { select } from '@wordpress/data';
 
 /**
  * Media string key prefix used when saving media strings into the translation store.
@@ -14,10 +14,11 @@ const MEDIA_KEY_PREFIX = 'lmat_media_';
  * expected by save_media_translations(), and POSTs them.
  *
  * @param {string} service     The active AI provider key (e.g. 'gemini', 'openai').
- * @param {Object} postContent The original post_data returned by fetch_post_content.
+ * @param {Object} postContent The original post data returned by the server.
+ * @return {Promise<boolean>} Whether media metadata was saved.
  */
-const saveMediaTranslations = ( service, postContent ) => {
-    if ( ! lmatPageTranslationGlobal.mediaSupport ) return;
+const saveMediaTranslations = async ( service, postContent ) => {
+    if ( ! lmatPageTranslationGlobal.mediaSupport ) return false;
 
     const ajaxUrl  = lmatPageTranslationGlobal.ajax_url;
     const nonce    = lmatPageTranslationGlobal.save_media_nonce;
@@ -25,62 +26,86 @@ const saveMediaTranslations = ( service, postContent ) => {
     const postId   = lmatPageTranslationGlobal.current_post_id;
     const parentId = lmatPageTranslationGlobal.parent_post_id;
 
-    if ( ! ajaxUrl || ! nonce || ! action || ! postId ) return;
+    if ( ! ajaxUrl || ! nonce || ! action || ! postId || ! parentId ) return false;
 
     const allEntries = select( 'block-lmatPageTranslation/translate' ).getTranslationEntries();
     const mediaEntries = allEntries.filter(
-        ( e ) => e.type === 'content' && e.id.startsWith( MEDIA_KEY_PREFIX )
+        ( e ) => e.type === 'content' && typeof e.id === 'string' && e.id.startsWith( MEDIA_KEY_PREFIX )
     );
 
-    if ( mediaEntries.length === 0 ) return;
+    if ( mediaEntries.length === 0 ) return false;
 
-    const getTranslated = ( storeKey, fallback ) => {
+    const getTranslated = ( storeKey ) => {
         const entry = mediaEntries.find( ( e ) => e.id === storeKey );
-        if ( entry ) {
-            return ( entry.translatedData && entry.translatedData[ service ] ) || fallback || '';
+        if ( entry && entry.translatedData && typeof entry.translatedData[ service ] === 'string' ) {
+            return entry.translatedData[ service ].trim();
         }
-        return fallback || '';
+        return '';
+    };
+
+    const buildTranslatedFields = ( attachment, keyPrefix ) => {
+        const translated = {};
+        [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+            if ( ! attachment[ field ] ) return;
+            const value = getTranslated( `${ keyPrefix }${ field }` );
+            if ( value ) translated[ field ] = value;
+        } );
+        return translated;
     };
 
     // Featured image.
     let featuredImage = null;
     if ( postContent && postContent.featured_image ) {
         const fi = postContent.featured_image;
-        const rebuilt = { id: fi.id };
-        [ 'title', 'alt', 'caption', 'description' ].forEach( ( f ) => {
-            rebuilt[ f ] = getTranslated( `${ MEDIA_KEY_PREFIX }featured_${ f }`, fi[ f ] );
-        } );
-        featuredImage = rebuilt;
+        const translated = buildTranslatedFields( fi, `${ MEDIA_KEY_PREFIX }featured_` );
+        if ( Object.keys( translated ).length > 0 ) featuredImage = translated;
     }
 
-    // Content media.
-    let contentMedia = null;
-    if ( postContent && Array.isArray( postContent.content_media ) ) {
-        contentMedia = postContent.content_media.map( ( a ) => {
-            const r = { id: a.id };
-            [ 'title', 'alt', 'caption', 'description' ].forEach( ( f ) => {
-                r[ f ] = getTranslated( `${ MEDIA_KEY_PREFIX }${ a.id }_${ f }`, a[ f ] );
-            } );
-            return r;
-        } );
-    }
+    // Content and Elementor media use the same attachment-key format.
+    const sourceMedia = [
+        ...( Array.isArray( postContent?.content_media ) ? postContent.content_media : [] ),
+        ...( Array.isArray( postContent?.elementor_media ) ? postContent.elementor_media : [] ),
+    ];
+    const mediaById = new Map();
+    sourceMedia.forEach( ( attachment ) => {
+        if ( attachment?.id ) mediaById.set( Number( attachment.id ), attachment );
+    } );
 
-    if ( ! featuredImage && ! contentMedia ) return;
+    const contentMedia = [];
+    mediaById.forEach( ( attachment, attachmentId ) => {
+        const translated = buildTranslatedFields( attachment, `${ MEDIA_KEY_PREFIX }${ attachmentId }_` );
+        if ( Object.keys( translated ).length > 0 ) {
+            contentMedia.push( { id: attachmentId, ...translated } );
+        }
+    } );
+
+    if ( ! featuredImage && contentMedia.length === 0 ) return false;
 
     const requestBody = {
         action:           action,
         post_id:          postId,
-        source_post_id:   parentId || postId,
+        source_post_id:   parentId,
         lmat_media_nonce: nonce,
     };
     if ( featuredImage ) requestBody.featured_image = JSON.stringify( featuredImage );
-    if ( contentMedia )  requestBody.content_media  = JSON.stringify( contentMedia );
+    if ( contentMedia.length > 0 ) requestBody.content_media = JSON.stringify( contentMedia );
 
-    fetch( ajaxUrl, {
+    try {
+        const response = await fetch( ajaxUrl, {
         method:  'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', Accept: 'application/json' },
         body:    new URLSearchParams( requestBody ),
-    } ).catch( ( err ) => console.error( 'lmat: saveMediaTranslations error', err ) );
+        } );
+        const result = await response.json();
+        if ( ! response.ok || ! result.success ) {
+            console.error( 'lmat: media translations were not saved', result.data || result );
+            return false;
+        }
+        return true;
+    } catch ( error ) {
+        console.error( 'lmat: saveMediaTranslations error', error );
+        return false;
+    }
 };
 
 export default saveMediaTranslations;

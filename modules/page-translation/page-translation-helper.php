@@ -305,7 +305,10 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
-				wp_die( '0', 403 );
+			}
+
+			if ( ! $source_post_id || ! current_user_can( 'edit_post', $source_post_id ) ) {
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
 			}
 
 			if ( ! function_exists( 'LMAT' ) ) {
@@ -317,16 +320,27 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			if ( ! $media_service->is_enabled() ) {
 				wp_send_json_success( array( 'message' => __( 'Media translation is disabled.', 'translate-words' ) ) );
-				wp_die();
+			}
+
+			$target_language = LMAT()->model->post->get_language( $post_id );
+			$linked_post_id  = $target_language
+				? (int) LMAT()->model->post->get_translation( $source_post_id, $target_language )
+				: 0;
+
+			if ( $linked_post_id !== $post_id ) {
+				wp_send_json_error( __( 'The source and target posts are not linked translations.', 'translate-words' ), 400 );
 			}
 
 			$updated = false;
 
 			// Featured image translations.
 			if ( ! empty( $_POST['featured_image'] ) ) {
-				$raw = wp_unslash( $_POST['featured_image'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized inside write_attachment_translations.
+				$raw = wp_unslash( $_POST['featured_image'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
 				if ( is_string( $raw ) ) {
 					$raw = json_decode( $raw, true );
+					if ( JSON_ERROR_NONE !== json_last_error() ) {
+						wp_send_json_error( __( 'Invalid featured-image translation data.', 'translate-words' ), 400 );
+					}
 				}
 				if ( is_array( $raw ) && 0 < $source_post_id ) {
 					if ( $media_service->apply_featured_image_translations( $source_post_id, $post_id, $raw ) ) {
@@ -337,9 +351,12 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			// Content attachment translations.
 			if ( ! empty( $_POST['content_media'] ) ) {
-				$raw = wp_unslash( $_POST['content_media'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized inside write_attachment_translations.
+				$raw = wp_unslash( $_POST['content_media'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
 				if ( is_string( $raw ) ) {
 					$raw = json_decode( $raw, true );
+					if ( JSON_ERROR_NONE !== json_last_error() ) {
+						wp_send_json_error( __( 'Invalid content-media translation data.', 'translate-words' ), 400 );
+					}
 				}
 				if ( is_array( $raw ) ) {
 					if ( $media_service->apply_content_media_translations( $post_id, $raw ) ) {
@@ -356,7 +373,6 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 						: __( 'No media translations to save.', 'translate-words' ),
 				)
 			);
-			wp_die();
 		}
 
 		/**
@@ -419,7 +435,10 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 					if ( function_exists( 'LMAT' ) ) {
 						$media_service = new Media_Translation_Service( LMAT() );
 						if ( $media_service->is_enabled() ) {
-							$elementor_data = $media_service->remap_elementor_media( $post_id, $elementor_data );
+							$target_language = LMAT()->model->post->get_language( $post_id );
+							if ( $target_language ) {
+								$elementor_data = $media_service->remap_elementor_media( $elementor_data, $target_language );
+							}
 						}
 					}
 
