@@ -392,11 +392,10 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translates <img> 'class', 'data-id', and 'data-link' attributes.
+	 * Translates image attachment references while preserving inline text.
 	 *
-	 * Remaps attachment IDs so wp-image-NNN, data-id, and attachment_id
-	 * point to the translated attachment. Does NOT overwrite the alt
-	 * attribute; that text is handled by Media_Translation_Service.
+	 * Remaps attachment IDs and the src URL. It does not overwrite the alt
+	 * attribute because the translated post content already owns that value.
 	 *
 	 *  
 	 *   The html is passed by reference and the return value is the image ID.
@@ -426,6 +425,17 @@ class Linguator_Sync_Post {
 			if ( 0 === strpos( $attr, 'data-link' ) && preg_match( '#attachment_id=([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'attachment_id=' . $matches[1], 'attachment_id=' . $tr_id, $attr );
+			}
+		}
+
+		if ( ! empty( $tr_id ) ) {
+			$translated_url = wp_get_attachment_url( (int) $tr_id );
+			if ( is_string( $translated_url ) && '' !== $translated_url ) {
+				foreach ( $attributes as $key => $attribute ) {
+					if ( 0 === strpos( $attribute, 'src=' ) && preg_match( '#src=(["\'])([^"\']*)\1#', $attribute, $matches ) ) {
+						$attributes[ $key ] = str_replace( $matches[2], esc_url( $translated_url ), $attribute );
+					}
+				}
 			}
 		}
 
@@ -531,21 +541,29 @@ class Linguator_Sync_Post {
 			case 'core/audio':
 			case 'core/video':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'src' );
 				}
 				break;
 			case 'core/cover':
 			case 'core/image':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'url' );
 				}
 				$block = $this->translate_block_content( $block );
 				break;
 
 			case 'core/file':
+				if ( empty( $block['attrs']['id'] ) ) {
+					break;
+				}
 				$source_id = $block['attrs']['id'];
-				$tr_id = $this->translate_media( $source_id );
+				$tr_id     = $this->translate_media( $source_id );
 				$block['attrs']['id'] = $tr_id;
+				$block = $this->replace_block_media_url( $block, $tr_id, 'href' );
 				$textarr = wp_html_split( $block['innerHTML'] );
 				$source_post = get_post( $source_id );
 				if ( ! $source_post instanceof WP_Post ) {
@@ -573,7 +591,12 @@ class Linguator_Sync_Post {
 				break;
 
 			case 'core/media-text':
-				$block['attrs']['mediaId'] = $this->translate_media( $block['attrs']['mediaId'] );
+				if ( empty( $block['attrs']['mediaId'] ) ) {
+					break;
+				}
+				$translated_id                 = $this->translate_media( $block['attrs']['mediaId'] );
+				$block['attrs']['mediaId']     = $translated_id;
+				$block                         = $this->replace_block_media_url( $block, $translated_id, 'mediaUrl' );
 				$block['innerContent'][0] = $this->translate_html( $block['innerContent'][0] );
 				break;
 
@@ -587,6 +610,24 @@ class Linguator_Sync_Post {
 					$block = $this->translate_block_content( $block );
 				}
 				break;
+		}
+
+		return $block;
+	}
+
+	/**
+	 * Replaces a block media URL attribute with the translated attachment URL.
+	 *
+	 * @param array  $block         Parsed block.
+	 * @param int    $attachment_id Translated attachment ID.
+	 * @param string $attribute     Block URL attribute name.
+	 * @return array Updated block.
+	 */
+	private function replace_block_media_url( $block, $attachment_id, $attribute ) {
+		$url = wp_get_attachment_url( (int) $attachment_id );
+
+		if ( is_string( $url ) && '' !== $url && isset( $block['attrs'][ $attribute ] ) ) {
+			$block['attrs'][ $attribute ] = $url;
 		}
 
 		return $block;
