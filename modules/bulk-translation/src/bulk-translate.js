@@ -77,7 +77,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
         const postContent=store.getState().parentPostsInfo[postId];
      
         if(postContent){
-            const {originalContent: {title, content, post_name, excerpt, metaFields}, languages, editorType, sourceLanguage} = postContent;
+            const {originalContent, languages, editorType, sourceLanguage} = postContent;
             
             if(!languages || languages.length === 0){
                 console.log(`All target languages for post ${postId} already exist. Skipping translation.`);
@@ -93,7 +93,9 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
             }
 
             // Deep clone the content object to avoid mutating the original reference
-            const source = { title: title, content: JSON.parse(JSON.stringify(content)), post_name: post_name, excerpt: excerpt, metaFields: metaFields && Object.keys(metaFields).length > 0 ? JSON.parse(JSON.stringify(metaFields)) : {} };
+            const source = JSON.parse( JSON.stringify( originalContent ) );
+            source.content = source.content || {};
+            source.metaFields = source.metaFields || {};
 
              await translateContent({sourceLang: sourceLanguage, targetLangs: languages, totalPosts: pendingPosts.length,storeDispatch,prefix, postId, source, editorType, createTranslatePostNonce: nonce, updateDestoryHandler, signal});
         }
