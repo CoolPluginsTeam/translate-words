@@ -92,21 +92,21 @@ class Linguator_Model {
 	/**
 	 * Model for the languages.
 	 *
-	 * @var Languages
+	 * @var \Linguator\Includes\Models\Languages
 	 */
 	public $languages;
 
 	/**
 	 * Model for taxonomies translated by Linguator.
 	 *
-	 * @var Post_Types
+	 * @var \Linguator\Includes\Models\Post_Types
 	 */
 	public $post_types;
 
 	/**
 	 * Model for taxonomies filtered/translated by Linguator.
 	 *
-	 * @var Taxonomies
+	 * @var \Linguator\Includes\Models\Taxonomies
 	 */
 	public $taxonomies;
 
