@@ -166,7 +166,7 @@ class Linguator_Translated_Term extends Linguator_Translated_Object implements L
 		// Always keep a group for terms to allow relationships remap when importing from a WXR file.
 		$group        = uniqid( 'lmat_' );
 		$translations = array( $slug => $id );
-		wp_insert_term( $group, $this->tax_translations, array( 'description' => maybe_serialize( $translations ) ) );
+		wp_insert_term( $group, $this->tax_translations, array( 'description' => (string) maybe_serialize( $translations ) ) );
 		wp_set_object_terms( $id, $group, $this->tax_translations );
 	}
 
