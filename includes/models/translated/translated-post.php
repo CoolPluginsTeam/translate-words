@@ -315,8 +315,7 @@ class Linguator_Translated_Post extends Linguator_Translated_Object implements L
 			);
 
 			if ( in_array( $post->post_status, $states ) ) {
-				$user = wp_get_current_user();
-				return is_user_logged_in() && ( current_user_can( 'edit_posts' ) || (int) $user->ID === (int) $post->post_author );
+				return current_user_can( 'read_post', $post->ID );
 			}
 		}
 
