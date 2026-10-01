@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
 use Linguator\Custom_Fields\Custom_Fields;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 
 /**
  * Handle LMAT Page Translation ajax requests
@@ -228,6 +229,22 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 					$data['slug_name'] = urldecode( get_post_field( 'post_name', $post_id ) );
 				}
 
+				// Append media strings when media translation is enabled.
+				if ( function_exists( 'LMAT' ) ) {
+					$media_service = new Media_Translation_Service( LMAT() );
+					if ( $media_service->is_enabled() ) {
+						$featured = $media_service->get_featured_image_strings( $post_id );
+						if ( ! empty( $featured ) ) {
+							$data['featured_image'] = $featured;
+						}
+
+						$content_media = $media_service->get_content_media_strings( $post_id );
+						if ( ! empty( $content_media ) ) {
+							$data['content_media'] = $content_media;
+						}
+					}
+				}
+
 				return wp_send_json_success( $data );
 			} else {
 				wp_send_json_error( __( 'Invalid Post ID.', 'translate-words' ) );
@@ -332,6 +349,108 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 		}
 
 		/**
+		 * Saves translated attachment metadata submitted by the page-translation UI.
+		 *
+		 * Expects POST fields:
+		 *   lmat_media_nonce     – nonce verified against 'lmat_save_media_translations'.
+		 *   post_id              – ID of the translated (target) post.
+		 *   featured_image       – JSON-encoded translated strings for the featured image.
+		 *   content_media        – JSON-encoded translated strings for content attachments.
+		 *   source_post_id       – ID of the original (source) post.
+		 */
+		public function save_media_translations() {
+			if ( ! check_ajax_referer( 'lmat_save_media_translations', 'lmat_media_nonce', false ) ) {
+				wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ), 403 );
+				wp_die( '0', 403 );
+			}
+
+			$post_id        = isset( $_POST['post_id'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['post_id'] ) ) ) : 0;
+			$source_post_id = isset( $_POST['source_post_id'] ) ? absint( sanitize_text_field( wp_unslash( $_POST['source_post_id'] ) ) ) : 0;
+
+			if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
+			}
+
+			if ( ! $source_post_id || ! current_user_can( 'edit_post', $source_post_id ) ) {
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
+			}
+
+			if ( ! function_exists( 'LMAT' ) ) {
+				wp_send_json_error( __( 'Linguator not available.', 'translate-words' ), 500 );
+				wp_die( '0', 500 );
+			}
+
+			$media_service = new Media_Translation_Service( LMAT() );
+
+			if ( ! $media_service->is_enabled() ) {
+				wp_send_json_success( array( 'message' => __( 'Media translation is disabled.', 'translate-words' ) ) );
+			}
+
+			$target_language = LMAT()->model->post->get_language( $post_id );
+			$linked_post_id  = $target_language
+				? (int) LMAT()->model->post->get_translation( $source_post_id, $target_language )
+				: 0;
+
+			// Single-page translation applies content before the editor's first
+			// real save creates the translation link. The CRUD layer stores the
+			// nonce-verified source and language intent on that auto-draft.
+			$target_post = get_post( $post_id );
+			$pending_translation = $target_language
+				&& $target_post instanceof \WP_Post
+				&& 'auto-draft' === $target_post->post_status
+				&& $source_post_id === absint( get_post_meta( $post_id, '_lmat_from_post', true ) )
+				&& $target_language->slug === get_post_meta( $post_id, '_lmat_new_lang', true )
+				&& 0 === $linked_post_id;
+
+			if ( $linked_post_id !== $post_id && ! $pending_translation ) {
+				wp_send_json_error( __( 'The source and target posts are not linked translations.', 'translate-words' ), 400 );
+			}
+
+			$updated = false;
+
+			// Featured image translations.
+			if ( ! empty( $_POST['featured_image'] ) ) {
+				$raw = wp_unslash( $_POST['featured_image'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
+				if ( is_string( $raw ) ) {
+					$raw = json_decode( $raw, true );
+					if ( JSON_ERROR_NONE !== json_last_error() ) {
+						wp_send_json_error( __( 'Invalid featured-image translation data.', 'translate-words' ), 400 );
+					}
+				}
+				if ( is_array( $raw ) && 0 < $source_post_id ) {
+					if ( $media_service->apply_featured_image_translations( $source_post_id, $post_id, $raw ) ) {
+						$updated = true;
+					}
+				}
+			}
+
+			// Content attachment translations.
+			if ( ! empty( $_POST['content_media'] ) ) {
+				$raw = wp_unslash( $_POST['content_media'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
+				if ( is_string( $raw ) ) {
+					$raw = json_decode( $raw, true );
+					if ( JSON_ERROR_NONE !== json_last_error() ) {
+						wp_send_json_error( __( 'Invalid content-media translation data.', 'translate-words' ), 400 );
+					}
+				}
+				if ( is_array( $raw ) ) {
+					if ( $media_service->apply_content_media_translations( $post_id, $raw ) ) {
+						$updated = true;
+					}
+				}
+			}
+
+			wp_send_json_success(
+				array(
+					'updated' => $updated,
+					'message' => $updated
+						? __( 'Media translations saved.', 'translate-words' )
+						: __( 'No media translations to save.', 'translate-words' ),
+				)
+			);
+		}
+
+		/**
 		 * Handle AJAX request to update Elementor data.
 		 */
 		public function update_elementor_data() {
@@ -381,6 +500,15 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			$plugin   = \Elementor\Plugin::$instance;
 			$document = $plugin->documents->get( $post_id );
+
+			// Remap media before the validated document save.
+			$media_service = new Media_Translation_Service( LMAT() );
+			if ( $media_service->is_enabled() ) {
+				$target_language = LMAT()->model->post->get_language( $post_id );
+				if ( $target_language ) {
+					$elementor_data = $media_service->remap_elementor_media( $elementor_data, $target_language );
+				}
+			}
 
 			if ( ! $document || false === $document->save( array( 'elements' => $elementor_data ) ) ) {
 				wp_send_json_error( __( 'Elementor could not save the translated page.', 'translate-words' ), 500 );

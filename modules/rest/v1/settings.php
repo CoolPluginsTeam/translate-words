@@ -1329,15 +1329,11 @@ class Settings extends Abstract_Controller {
 	 *  
 	 *
 	 * @param string $type           The type of option being updated (post_types, taxonomies, media_support).
-	 * @param array $previous_value Previous array.
-	 * @param array $new_value      New array.
+	 * @param mixed $previous_value Previous option value.
+	 * @param mixed $new_value      New option value.
 	 * @return void
 	 */
 	private function trigger_mass_language_assignment( $type, $previous_value, $new_value ) {
-		// Ensure both are arrays where applicable
-		$previous_value = is_array( $previous_value ) ? $previous_value : array();
-		$new_value = is_array( $new_value ) ? $new_value : array();
-	
 		// Get the default language
 		$default_lang = $this->languages->get_default();
 		if ( ! $default_lang ) {
@@ -1346,6 +1342,8 @@ class Settings extends Abstract_Controller {
 	
 		switch ( $type ) {
 			case 'post_types':
+				$previous_value = is_array( $previous_value ) ? $previous_value : array();
+				$new_value      = is_array( $new_value ) ? $new_value : array();
 				$newly_added = array_diff( $new_value, $previous_value );
 				if ( ! empty( $newly_added ) ) {
 					// Only assign language to posts that don't already have one
@@ -1359,6 +1357,8 @@ class Settings extends Abstract_Controller {
 				break;
 
 			case 'taxonomies':
+				$previous_value = is_array( $previous_value ) ? $previous_value : array();
+				$new_value      = is_array( $new_value ) ? $new_value : array();
 				$newly_added = array_diff( $new_value, $previous_value );
 				if ( ! empty( $newly_added ) ) {
 					$terms_without_lang = $this->model->get_terms_with_no_lang( $newly_added, 1000 );
@@ -1371,7 +1371,7 @@ class Settings extends Abstract_Controller {
 				break;
 
 			case 'media_support':
-				if ( ! $previous_value && $new_value ) {
+				if ( ! (bool) $previous_value && (bool) $new_value ) {
 					// Only assign language to media that don't already have one
 					$media_without_lang = $this->model->get_posts_with_no_lang( array( 'attachment' ), 1000 );
 					if ( ! empty( $media_without_lang ) ) {

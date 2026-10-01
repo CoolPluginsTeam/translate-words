@@ -3,13 +3,14 @@ import YoastSeoFields from '../../component/translate-seo-fields/yoast-seo-field
 import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import SeoPressFields from '../../component/translate-seo-fields/seo-press.js'
 import translatedMetaFields from '../meta-fields/index.js';
+import saveMediaTranslations from '../../helper/save-media-translations.js';
 
 /**
  * Translates the post content and updates the post title, excerpt, and content.
  * 
  * @param {Object} props - The properties containing post content, translation function, and block rules.
  */
-const UpdateClassicPage = (props) => {
+const UpdateClassicPage = async (props) => {
     const { modalClose, postContent, service } = props;
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
 
@@ -356,18 +357,19 @@ const UpdateClassicPage = (props) => {
     // Update post content
     postContentUpdate();
 
-    // Close string modal box
-    setTimeout(() => {
-        modalClose();
-    }, 500);
-
     // Update all translation supported post meta fields using ajax request
     if(lmatPageTranslationGlobal.postMetaSync === 'false'){
         updatePostMetaFields();
     }
 
+    // Save translated attachment metadata.
+    await saveMediaTranslations( service, postContent );
+
     // Update translate status
     updateTranslateStatus();
+
+    // Close string modal box
+    modalClose();
 }
 
 export default UpdateClassicPage;

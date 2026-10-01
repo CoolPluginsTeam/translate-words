@@ -120,6 +120,17 @@ class Linguator_Admin_Filters_Media extends Linguator_Admin_Filters_Post_Base {
 		}
 
 		$tr_id = $this->model->post->create_media_translation( $post_id, $data['new_lang'] );
+		if ( ! $tr_id ) {
+			wp_die(
+				esc_html__( 'The media translation could not be created. Please try again.', 'translate-words' ),
+				esc_html__( 'Media translation failed', 'translate-words' ),
+				array(
+					'response'  => 500,
+					'back_link' => true,
+				)
+			);
+		}
+
 		wp_safe_redirect( admin_url( sprintf( 'post.php?post=%d&action=edit', $tr_id ) ) ); // WP 3.5+.
 		exit;
 	}

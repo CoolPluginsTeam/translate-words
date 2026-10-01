@@ -169,6 +169,32 @@ const ElementorSaveSource = (content) => {
     if(lmatPageTranslationGlobal.slug_translation_option === 'slug_translate'){
         dispatch('block-lmatPageTranslation/translate').slugSaveSource(content.slug_name);
     }
+
+    // Register featured-image strings into the translation queue.
+    if ( lmatPageTranslationGlobal.mediaSupport && content.featured_image ) {
+        const fi = content.featured_image;
+        [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+            if ( fi[field] && fi[field].trim() !== '' ) {
+                dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                    `lmat_media_featured_${ field }`, fi[field]
+                );
+            }
+        } );
+    }
+
+    // Register content-attachment strings into the translation queue.
+    if ( lmatPageTranslationGlobal.mediaSupport && Array.isArray( content.elementor_media ) ) {
+        content.elementor_media.forEach( ( attachment ) => {
+            const attachId = attachment.id;
+            [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                if ( attachment[field] && attachment[field].trim() !== '' ) {
+                    dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                        `lmat_media_${ attachId }_${ field }`, attachment[field]
+                    );
+                }
+            } );
+        } );
+    }
 }
 
 export default ElementorSaveSource;

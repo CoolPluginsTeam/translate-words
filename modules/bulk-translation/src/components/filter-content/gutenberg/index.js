@@ -5,6 +5,7 @@ import saveSourceString from '../../store-source-string/index.js';
 import updateGlossaryString from '../update-glossary-string/index.js';
 import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
 import {store} from '../../../redux-store/store.js';
+import { extractImageAlt } from './image-alt.js';
 
 /**
  * @param {Object} content The content to filter
@@ -57,6 +58,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
      * @param {Object} blockContent
      */
     const filterBlockContent=async (keys, blockContent)=>{
+        extractImageAlt( blockContent );
         let innerContentTransalted=false;
 
         let transltedStrings=[];

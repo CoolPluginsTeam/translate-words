@@ -360,7 +360,11 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translate images and caption in inner html
+	 * Translate images and caption in inner html.
+	 *
+	 * Remaps attachment IDs, classes and URLs in img tags.
+	 * Does NOT overwrite translated inline alt text or figcaption content;
+	 * those are handled separately by Media_Translation_Service.
 	 *
 	 * Since 2.5
 	 *
@@ -373,34 +377,14 @@ class Linguator_Sync_Post {
 
 			$img_ids = array();
 			foreach ( $textarr as $i => $text ) {
-				// Translate img class and alternative text
+				// Remap img class, data-id and data-link attachment IDs.
 				if ( 0 === strpos( $text, '<img' ) ) {
 					$img_ids[] = $this->translate_img( $textarr[ $i ] );
 				}
 			}
 
-			if ( empty( $img_ids ) ) {
-				return $content;
-			}
-
-			$new_content = implode( $textarr );
-			$key = 0;
-			$new_content = preg_replace_callback(
-				'@(?<before><figcaption.*?>)(.+?)(?<after></figcaption>)@',
-				function ( $matches ) use ( $img_ids, &$key ) {
-					$tr_post = get_post( $img_ids[ $key ] );
-					$key++;
-					if ( ! empty( $tr_post->post_excerpt ) ) {
-						return $matches['before'] . $tr_post->post_excerpt . $matches['after'];
-					} else {
-						return $matches[0];
-					}
-				},
-				$new_content
-			);
-
-			if ( is_string( $new_content ) ) {
-				return $new_content;
+			if ( ! empty( $img_ids ) ) {
+				return implode( $textarr );
 			}
 		}
 
@@ -408,7 +392,10 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translates <img> 'class' and 'alt' attributes.
+	 * Translates image attachment references while preserving inline text.
+	 *
+	 * Remaps attachment IDs and the src URL. It does not overwrite the alt
+	 * attribute because the translated post content already owns that value.
 	 *
 	 *  
 	 *   The html is passed by reference and the return value is the image ID.
@@ -423,12 +410,11 @@ class Linguator_Sync_Post {
 			return null;
 		}
 
-		// Replace class
+		// Remap attachment IDs in class, data-id, and data-link attributes.
 		foreach ( $attributes as $k => $attr ) {
 			if ( 0 === strpos( $attr, 'class' ) && preg_match( '#wp\-image\-([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'wp-image-' . $matches[1], 'wp-image-' . $tr_id, $attr );
-
 			}
 
 			if ( preg_match( '#^data\-id="([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
@@ -443,12 +429,11 @@ class Linguator_Sync_Post {
 		}
 
 		if ( ! empty( $tr_id ) ) {
-			// Got a tr_id, attempt to replace the alt text
-			$alt = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
-			if ( is_string( $alt ) && ! empty( $alt ) ) {
-				foreach ( $attributes as $k => $attr ) {
-					if ( 0 === strpos( $attr, 'alt' ) ) {
-						$attributes[ $k ] = 'alt="' . esc_attr( $alt ) . '" ';
+			$translated_url = wp_get_attachment_url( (int) $tr_id );
+			if ( is_string( $translated_url ) && '' !== $translated_url ) {
+				foreach ( $attributes as $key => $attribute ) {
+					if ( 0 === strpos( $attribute, 'src=' ) && preg_match( '#src=(["\'])([^"\']*)\1#', $attribute, $matches ) ) {
+						$attributes[ $key ] = str_replace( $matches[2], esc_url( $translated_url ), $attribute );
 					}
 				}
 			}
@@ -556,21 +541,29 @@ class Linguator_Sync_Post {
 			case 'core/audio':
 			case 'core/video':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'src' );
 				}
 				break;
 			case 'core/cover':
 			case 'core/image':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'url' );
 				}
 				$block = $this->translate_block_content( $block );
 				break;
 
 			case 'core/file':
+				if ( empty( $block['attrs']['id'] ) ) {
+					break;
+				}
 				$source_id = $block['attrs']['id'];
-				$tr_id = $this->translate_media( $source_id );
+				$tr_id     = $this->translate_media( $source_id );
 				$block['attrs']['id'] = $tr_id;
+				$block = $this->replace_block_media_url( $block, $tr_id, 'href' );
 				$textarr = wp_html_split( $block['innerHTML'] );
 				$source_post = get_post( $source_id );
 				if ( ! $source_post instanceof WP_Post ) {
@@ -598,7 +591,12 @@ class Linguator_Sync_Post {
 				break;
 
 			case 'core/media-text':
-				$block['attrs']['mediaId'] = $this->translate_media( $block['attrs']['mediaId'] );
+				if ( empty( $block['attrs']['mediaId'] ) ) {
+					break;
+				}
+				$translated_id                 = $this->translate_media( $block['attrs']['mediaId'] );
+				$block['attrs']['mediaId']     = $translated_id;
+				$block                         = $this->replace_block_media_url( $block, $translated_id, 'mediaUrl' );
 				$block['innerContent'][0] = $this->translate_html( $block['innerContent'][0] );
 				break;
 
@@ -612,6 +610,24 @@ class Linguator_Sync_Post {
 					$block = $this->translate_block_content( $block );
 				}
 				break;
+		}
+
+		return $block;
+	}
+
+	/**
+	 * Replaces a block media URL attribute with the translated attachment URL.
+	 *
+	 * @param array  $block         Parsed block.
+	 * @param int    $attachment_id Translated attachment ID.
+	 * @param string $attribute     Block URL attribute name.
+	 * @return array Updated block.
+	 */
+	private function replace_block_media_url( $block, $attachment_id, $attribute ) {
+		$url = wp_get_attachment_url( (int) $attachment_id );
+
+		if ( is_string( $url ) && '' !== $url && isset( $block['attrs'][ $attribute ] ) ) {
+			$block['attrs'][ $attribute ] = $url;
 		}
 
 		return $block;

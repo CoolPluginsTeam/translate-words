@@ -8,6 +8,7 @@ import LoopCallback from './components/loop-callback/index.js';
 import updateGlossaryString from './components/filter-content/update-glossary-string/index.js';
 import { selectGlossaryTerms, selectTargetContent } from './redux-store/features/selectors.js';
 import { buildQuotaRecoverableTranslateInfo, countMergedTranslatedStrings } from './gemini-quota-recoverable.js';
+import { buildMediaPayload, storeMediaStrings } from './components/media-translation/index.js';
 
 const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler, signal)=>{
     window.lmatBulkTranslationQuotaExceeded = false;
@@ -77,7 +78,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
         const postContent=store.getState().parentPostsInfo[postId];
      
         if(postContent){
-            const {originalContent: {title, content, post_name, excerpt, metaFields}, languages, editorType, sourceLanguage} = postContent;
+            const {originalContent, languages, editorType, sourceLanguage} = postContent;
             
             if(!languages || languages.length === 0){
                 console.log(`All target languages for post ${postId} already exist. Skipping translation.`);
@@ -93,7 +94,9 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
             }
 
             // Deep clone the content object to avoid mutating the original reference
-            const source = { title: title, content: JSON.parse(JSON.stringify(content)), post_name: post_name, excerpt: excerpt, metaFields: metaFields && Object.keys(metaFields).length > 0 ? JSON.parse(JSON.stringify(metaFields)) : {} };
+            const source = JSON.parse( JSON.stringify( originalContent ) );
+            source.content = source.content || {};
+            source.metaFields = source.metaFields || {};
 
              await translateContent({sourceLang: sourceLanguage, targetLangs: languages, totalPosts: pendingPosts.length,storeDispatch,prefix, postId, source, editorType, createTranslatePostNonce: nonce, updateDestoryHandler, signal});
         }
@@ -140,6 +143,7 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
     const deepCloneSource=JSON.parse(JSON.stringify(source));
 
     const updateContent=await updateFilterContent({source: deepCloneSource,postId, lang, editorType, service});
+    const mediaPayload = buildMediaPayload( { postId, source, language: lang, provider: service } );
 
     const bulkTranslateRouteUrl = lmatBulkTranslationGlobal.bulkTranslateRouteUrl;
     const nonce = lmatBulkTranslationGlobal.nonce;
@@ -176,6 +180,16 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
         body.post_content=updateContent.content ? JSON.stringify(updateContent.content) : '';
         body.post_meta_fields=updateContent.metaFields ? JSON.stringify(updateContent.metaFields) : '';
         body.post_excerpt=updateContent.excerpt || '';
+
+		if ( mediaPayload.featured_image ) {
+			body.featured_image = JSON.stringify( mediaPayload.featured_image );
+		}
+		if ( mediaPayload.content_media ) {
+			body.content_media = JSON.stringify( mediaPayload.content_media );
+		}
+		if ( mediaPayload.elementor_media ) {
+			body.elementor_media = JSON.stringify( mediaPayload.elementor_media );
+		}
     }
     
     await fetch(bulkTranslateRouteUrl + `/${postId}:${endPoint}`, {
@@ -471,7 +485,19 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
             const postId=postKeys[index];
             const activeProvider=store.getState().serviceProvider;
 
-            const {title, content,post_name, languages, editor_type , metaFields=null, sourceLanguage, excerpt=null} = posts[postId];
+            const {
+				title,
+				content,
+				post_name,
+				languages,
+				editor_type,
+				metaFields = null,
+				sourceLanguage,
+				excerpt = null,
+				featured_image = null,
+				content_media = null,
+				elementor_media = null,
+			} = posts[postId];
             
             if(!sourceLanguage){
                 const postTitle=title || 'N/A';
@@ -538,6 +564,14 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
                     }
                     await filterContent(data);
                 }
+
+				storeMediaStrings( {
+					postId,
+					featuredImage: featured_image,
+					contentMedia: content_media,
+					elementorMedia: elementor_media,
+					storeDispatch,
+				} );
             
                 if(['classic', 'block', 'elementor', 'taxonomy'].includes(editor_type)){
 
@@ -599,6 +633,16 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
                     if(metaFields && Object.keys(metaFields).length > 0){
                         originalContent.metaFields=metaFields;
                     }
+
+					if ( featured_image ) {
+						originalContent.featured_image = featured_image;
+					}
+					if ( Array.isArray( content_media ) ) {
+						originalContent.content_media = content_media;
+					}
+					if ( Array.isArray( elementor_media ) ) {
+						originalContent.elementor_media = elementor_media;
+					}
 
                     storeDispatch(updateParentPostsInfo({postId, data: {editorType: editor_type, originalContent, languages, sourceLanguage, charactersCount, wordsCount, stringsCount}}));
                     storeDispatch(updateCountInfo({totalPosts: store.getState().countInfo.totalPosts+languages.length}));
