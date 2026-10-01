@@ -24,10 +24,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * [facebook] => Facebook locale
  *
  * Facebook locales without equivalent WordPress locale:
+ * 'ak_GH' (Akan)
  * 'ay_BO' (Aymara)
  * 'bp_IN' (Bhojpuri)
  * 'ck_US' (Cherokee)
  * 'en_IN' (English India)
+ * 'gn_PY' (Guarani)
  * 'gx_GR' (Classical Greek)
  * 'ig_NG' (Igbo)
  * 'ik_US' (Inupiak)
@@ -63,10 +65,6 @@ return array(
 		'flag'     => 'za',
 		'facebook' => 'af_ZA',
 	),
-	'ak' => array(
-		'facebook' => 'ak_GH',
-		'label'    => 'Akan',
-	),
 	'am' => array(
 		'code'     => 'am',
 		'locale'   => 'am',
@@ -95,8 +93,14 @@ return array(
 		'flag'     => 'es',
 	),
 	'arq' => array(
-		'facebook' => 'ar_AR',
+		'code'     => 'ar',
+		'locale'   => 'arq',
+		'name'     => 'الدارجة الجزائرية',
 		'label'    => 'Algerian Arabic',
+		'dir'      => 'rtl',
+		'flag'     => 'dz',
+		'facebook' => 'ar_AR',
+		'deepl'    => 'AR',
 	),
 	'ary' => array(
 		'code'     => 'ar',
@@ -133,6 +137,14 @@ return array(
 		'label'    => 'South Azerbaijani',
 		'dir'      => 'rtl',
 		'flag'     => 'az',
+	),
+	'bcc' => array(
+		'code'   => 'bcc',
+		'locale' => 'bcc',
+		'name'   => 'بلوچی مکرانی',
+		'label'  => 'Balochi (Makrani)',
+		'dir'    => 'rtl',
+		'flag'   => 'pk',
 	),
 	'bel' => array(
 		'code'     => 'be',
@@ -213,8 +225,22 @@ return array(
 		'facebook' => 'cb_IQ',
 	),
 	'co' => array(
-		'facebook' => 'co_FR',
+		'code'     => 'co',
+		'locale'   => 'co',
+		'name'     => 'Corsu',
 		'label'    => 'Corsican',
+		'dir'      => 'ltr',
+		'flag'     => 'fr-20r',
+		'facebook' => 'co_FR',
+	),
+	'cor' => array(
+		'code'   => 'kw',
+		'locale' => 'cor',
+		'name'   => 'Kernewek',
+		'label'  => 'Cornish',
+		'dir'    => 'ltr',
+		'flag'   => 'gb-con',
+		'w3c'    => 'kw',
 	),
 	'cs_CZ' => array(
 		'code'     => 'cs',
@@ -296,6 +322,14 @@ return array(
 		'w3c'      => 'de-DE',
 		'facebook' => 'de_DE',
 		'deepl'    => 'DE',
+	),
+	'dv' => array(
+		'code'   => 'dv',
+		'locale' => 'dv',
+		'name'   => 'ދިވެހި',
+		'label'  => 'Dhivehi',
+		'dir'    => 'rtl',
+		'flag'   => 'mv',
 	),
 	'dsb' => array(
 		'code'     => 'dsb',
@@ -473,6 +507,16 @@ return array(
 		'facebook' => 'es_LA',
 		'deepl'    => 'ES-419',
 	),
+	'es_HN' => array(
+		'code'     => 'es',
+		'locale'   => 'es_HN',
+		'name'     => 'Español',
+		'label'    => 'Spanish',
+		'dir'      => 'ltr',
+		'flag'     => 'hn',
+		'facebook' => 'es_LA',
+		'deepl'    => 'ES-419',
+	),
 	'es_MX' => array(
 		'code'     => 'es',
 		'locale'   => 'es_MX',
@@ -579,6 +623,14 @@ return array(
 		'flag'     => 'fo',
 		'facebook' => 'fo_FO',
 	),
+	'fon' => array(
+		'code'   => 'fon',
+		'locale' => 'fon',
+		'name'   => 'Fɔ̀ngbè',
+		'label'  => 'Fon',
+		'dir'    => 'ltr',
+		'flag'   => 'bj',
+	),
 	'fr_BE' => array(
 		'code'     => 'fr',
 		'locale'   => 'fr_BE',
@@ -610,8 +662,14 @@ return array(
 		'deepl'    => 'FR',
 	),
 	'fuc' => array(
-		'facebook' => 'ff_NG',
+		'code'     => 'ff',
+		'locale'   => 'fuc',
+		'name'     => 'Pulaar',
 		'label'    => 'Fulah',
+		'dir'      => 'ltr',
+		'flag'     => 'sn',
+		'w3c'      => 'ff',
+		'facebook' => 'ff_NG',
 	),
 	'fur' => array(
 		'code'     => 'fur',
@@ -635,8 +693,15 @@ return array(
 		'label'    => 'Irish',
 	),
 	'gax' => array(
-		'facebook' => 'om_ET',
+		'code'     => 'om',
+		'locale'   => 'gax',
+		'name'     => 'Afaan Oromoo',
 		'label'    => 'Oromo',
+		'dir'      => 'ltr',
+		'flag'     => 'et',
+		'w3c'      => 'om',
+		'facebook' => 'om_ET',
+		'deepl'    => 'OM',
 	),
 	'gd' => array(
 		'code'     => 'gd',
@@ -654,10 +719,6 @@ return array(
 		'dir'      => 'ltr',
 		'flag'     => 'galicia',
 		'facebook' => 'gl_ES',
-	),
-	'gn' => array(
-		'facebook' => 'gn_PY',
-		'label'    => 'Guarani',
 	),
 	'gu' => array(
 		'code'     => 'gu',
@@ -750,8 +811,13 @@ return array(
 		'deepl'    => 'ID',
 	),
 	'ido' => array(
-		'w3c'      => 'io',
-		'label'    => 'Ido',
+		'code'   => 'io',
+		'locale' => 'ido',
+		'name'   => 'Ido',
+		'label'  => 'Ido',
+		'dir'    => 'ltr',
+		'flag'   => 'io',
+		'w3c'    => 'io',
 	),
 	'is_IS' => array(
 		'code'     => 'is',
@@ -800,6 +866,14 @@ return array(
 		'flag'     => 'ge',
 		'facebook' => 'ka_GE',
 	),
+	'kaa' => array(
+		'code'   => 'kaa',
+		'locale' => 'kaa',
+		'name'   => 'Qaraqalpaq tili',
+		'label'  => 'Karakalpak',
+		'dir'    => 'ltr',
+		'flag'   => 'uz',
+	),
 	'kab' => array(
 		'code'     => 'kab',
 		'locale'   => 'kab',
@@ -807,6 +881,15 @@ return array(
 		'label'    => 'Kabyle',
 		'dir'      => 'ltr',
 		'flag'     => 'dz',
+	),
+	'kal' => array(
+		'code'   => 'kl',
+		'locale' => 'kal',
+		'name'   => 'Kalaallisut',
+		'label'  => 'Greenlandic',
+		'dir'    => 'ltr',
+		'flag'   => 'gl',
+		'w3c'    => 'kl',
 	),
 	'kin' => array(
 		'w3c'      => 'rw',
@@ -820,6 +903,7 @@ return array(
 		'label'    => 'Kyrgyz',
 		'dir'      => 'ltr',
 		'flag'     => 'kg',
+		'facebook' => 'ky_KG',
 	),
 	'kk' => array(
 		'code'     => 'kk',
@@ -858,21 +942,42 @@ return array(
 		'facebook' => 'ko_KR',
 		'deepl'    => 'KO',
 	),
-	'ku' => array(
-		'facebook' => 'ku_TR',
+	'kmr' => array(
+		'code'     => 'ku',
+		'locale'   => 'kmr',
+		'name'     => 'Kurmancî',
 		'label'    => 'Kurdish (Kurmanji)',
-	),
-	'ky_KY' => array(
-		'facebook' => 'ky_KG',
-		'label'    => 'Kyrgyz',
+		'dir'      => 'ltr',
+		'flag'     => 'tr',
+		'facebook' => 'ku_TR',
+		'deepl'    => 'KMR',
 	),
 	'la' => array(
-		'facebook' => 'la_VA',
+		'code'     => 'la',
+		'locale'   => 'la',
+		'name'     => 'Lingua latina',
 		'label'    => 'Latin',
+		'dir'      => 'ltr',
+		'flag'     => 'va',
+		'facebook' => 'la_VA',
+		'deepl'    => 'LA',
 	),
 	'li' => array(
-		'facebook' => 'li_NL',
+		'code'     => 'li',
+		'locale'   => 'lli',
+		'name'     => 'Limburgs',
 		'label'    => 'Limburgish',
+		'dir'      => 'ltr',
+		'flag'     => 'nl',
+		'facebook' => 'li_NL',
+	),
+	'lij' => array(
+		'code'   => 'lij',
+		'locale' => 'lij',
+		'name'   => 'Lìgure',
+		'label'  => 'Ligurian',
+		'dir'    => 'ltr',
+		'flag'   => 'it-42',
 	),
 	'lin' => array(
 		'facebook' => 'ln_CD',
@@ -906,6 +1011,15 @@ return array(
 		'flag'     => 'lv',
 		'facebook' => 'lv_LV',
 		'deepl'    => 'LV',
+	),
+	'me_ME' => array(
+		'code'   => 'cnr',
+		'locale' => 'me_ME',
+		'name'   => 'Crnogorski',
+		'label'  => 'Montenegrin',
+		'dir'    => 'ltr',
+		'flag'   => 'me',
+		'w3c'    => 'cnr',
 	),
 	'mg_MG' => array(
 		'facebook' => 'mg_MG',
@@ -1043,8 +1157,22 @@ return array(
 		'w3c'      => 'oc',
 	),
 	'ory' => array(
+		'code'     => 'or',
+		'locale'   => 'ory',
+		'name'     => 'ଓଡ଼ିଆ',
+		'label'    => 'Odia',
+		'dir'      => 'ltr',
+		'flag'     => 'in',
+		'w3c'      => 'or',
 		'facebook' => 'or_IN',
-		'label'    => 'Oriya',
+	),
+	'os' => array(
+		'code'   => 'os',
+		'locale' => 'os',
+		'name'   => 'ирон ӕвзаг',
+		'label'  => 'Ossetic',
+		'dir'    => 'ltr',
+		'flag'   => 'ru',
 	),
 	'pa_IN' => array(
 		'code'     => 'pa',
@@ -1054,6 +1182,14 @@ return array(
 		'dir'      => 'ltr',
 		'flag'     => 'in',
 		'facebook' => 'pa_IN',
+	),
+	'pcm' => array(
+		'code'   => 'pcm',
+		'locale' => 'pcm',
+		'name'   => 'Naijá',
+		'label'  => 'Nigerian Pidgin',
+		'dir'    => 'ltr',
+		'flag'   => 'ng',
 	),
 	'pl_PL' => array(
 		'code'     => 'pl',
@@ -1133,9 +1269,14 @@ return array(
 		'deepl'    => 'RO',
 	),
 	'roh' => array(
+		'code'     => 'rm',
+		'locale'   => 'roh',
+		'name'     => 'Rumantsch',
+		'label'    => 'Romansh',
+		'dir'      => 'ltr',
+		'flag'     => 'ch',
 		'w3c'      => 'rm',
 		'facebook' => 'rm_CH',
-		'label'    => 'Romansh',
 	),
 	'ru_RU' => array(
 		'code'     => 'ru',
