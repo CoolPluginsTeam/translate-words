@@ -8,6 +8,7 @@ import LoopCallback from './components/loop-callback/index.js';
 import updateGlossaryString from './components/filter-content/update-glossary-string/index.js';
 import { selectGlossaryTerms, selectTargetContent } from './redux-store/features/selectors.js';
 import { buildQuotaRecoverableTranslateInfo, countMergedTranslatedStrings } from './gemini-quota-recoverable.js';
+import { buildMediaPayload, storeMediaStrings } from './components/media-translation/index.js';
 
 const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler, signal)=>{
     window.lmatBulkTranslationQuotaExceeded = false;
@@ -139,6 +140,7 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
     const deepCloneSource=JSON.parse(JSON.stringify(source));
 
     const updateContent=await updateFilterContent({source: deepCloneSource,postId, lang, editorType, service});
+    const mediaPayload = buildMediaPayload( { postId, source, language: lang, provider: service } );
 
     const bulkTranslateRouteUrl = lmatBulkTranslationGlobal.bulkTranslateRouteUrl;
     const nonce = lmatBulkTranslationGlobal.nonce;
@@ -175,6 +177,16 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
         body.post_content=updateContent.content ? JSON.stringify(updateContent.content) : '';
         body.post_meta_fields=updateContent.metaFields ? JSON.stringify(updateContent.metaFields) : '';
         body.post_excerpt=updateContent.excerpt || '';
+
+		if ( mediaPayload.featured_image ) {
+			body.featured_image = JSON.stringify( mediaPayload.featured_image );
+		}
+		if ( mediaPayload.content_media ) {
+			body.content_media = JSON.stringify( mediaPayload.content_media );
+		}
+		if ( mediaPayload.elementor_media ) {
+			body.elementor_media = JSON.stringify( mediaPayload.elementor_media );
+		}
     }
     
     await fetch(bulkTranslateRouteUrl + `/${postId}:${endPoint}`, {
@@ -470,7 +482,19 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
             const postId=postKeys[index];
             const activeProvider=store.getState().serviceProvider;
 
-            const {title, content,post_name, languages, editor_type , metaFields=null, sourceLanguage, excerpt=null} = posts[postId];
+            const {
+				title,
+				content,
+				post_name,
+				languages,
+				editor_type,
+				metaFields = null,
+				sourceLanguage,
+				excerpt = null,
+				featured_image = null,
+				content_media = null,
+				elementor_media = null,
+			} = posts[postId];
             
             if(!sourceLanguage){
                 const postTitle=title || 'N/A';
@@ -537,6 +561,14 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
                     }
                     await filterContent(data);
                 }
+
+				storeMediaStrings( {
+					postId,
+					featuredImage: featured_image,
+					contentMedia: content_media,
+					elementorMedia: elementor_media,
+					storeDispatch,
+				} );
             
                 if(['classic', 'block', 'elementor', 'taxonomy'].includes(editor_type)){
 
@@ -598,6 +630,16 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
                     if(metaFields && Object.keys(metaFields).length > 0){
                         originalContent.metaFields=metaFields;
                     }
+
+					if ( featured_image ) {
+						originalContent.featured_image = featured_image;
+					}
+					if ( Array.isArray( content_media ) ) {
+						originalContent.content_media = content_media;
+					}
+					if ( Array.isArray( elementor_media ) ) {
+						originalContent.elementor_media = elementor_media;
+					}
 
                     storeDispatch(updateParentPostsInfo({postId, data: {editorType: editor_type, originalContent, languages, sourceLanguage, charactersCount, wordsCount, stringsCount}}));
                     storeDispatch(updateCountInfo({totalPosts: store.getState().countInfo.totalPosts+languages.length}));

@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 use Linguator\Custom_Fields\Custom_Fields;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 
 /**
  * Model for synchronizing posts
@@ -46,6 +47,13 @@ class Linguator_Sync_Post_Model {
 	protected $temp_synchronized;
 
 	/**
+	 * Media translation service.
+	 *
+	 * @var Media_Translation_Service
+	 */
+	private $media_translation;
+
+	/**
 	 * Constructor
 	 *
 	 *  
@@ -56,7 +64,8 @@ class Linguator_Sync_Post_Model {
 		$this->options      = &$linguator->options;
 		$this->model        = &$linguator->model;
 		$this->sync         = &$linguator->sync;
-		$this->sync_content = new Linguator_Sync_Post($linguator);
+		$this->sync_content = new Linguator_Sync_Post( $linguator );
+		$this->media_translation = new Media_Translation_Service( $linguator );
 
 		add_filter( 'lmat_copy_taxonomies', array( $this, 'copy_taxonomies' ), 5, 4 );
 		add_filter( 'lmat_copy_post_metas', array( $this, 'copy_post_metas' ), 5, 4 );
@@ -312,7 +321,7 @@ class Linguator_Sync_Post_Model {
 		do_action( 'lmat_post_synchronized', $post_id, $tr_id, $target_language, 'copy' );
 
 		// Update Elementor Translations
-		$this->update_elementor_data($tr_id, $post_data, $post_id);
+		$this->update_elementor_data( $tr_id, $post_data );
 
 		return $tr_id;
 	}
@@ -356,39 +365,40 @@ class Linguator_Sync_Post_Model {
 	 * Update Elementor data
 	 *
 	 * @param int $tr_id The ID of the translated post.
-	 * @param string $elementor_data The Elementor data to update.
+	 * @param int   $tr_id     Translated post ID.
+	 * @param array $post_data Translated post data.
 	 * @return void
 	 */
-	private function update_elementor_data($tr_id, $post_data, $parent_post_id = 0){
-		$current_post_elementor_data = get_post_meta($tr_id, '_elementor_data', true);
-
-		if(!isset($post_data['meta_fields']['_elementor_data'])){
+	private function update_elementor_data( $tr_id, $post_data ) {
+		if ( empty( $post_data['meta_fields']['_elementor_data'] ) ) {
 			return;
 		}
 
-		$elementor_data=$post_data['meta_fields']['_elementor_data'];
+		$elements = json_decode( $post_data['meta_fields']['_elementor_data'], true );
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $elements ) ) {
+			return;
+		}
 
-		// Check if the current post has Elementor data
-		if('' !== $current_post_elementor_data && $elementor_data && '' !== $elementor_data){
-			if(class_exists('Elementor\Plugin')){
-				$plugin=\Elementor\Plugin::$instance;
-				$document=$plugin->documents->get($tr_id);
-	
-				$document->save( [
-					'elements' => json_decode($elementor_data, true),
-				] );
+		$target_language = $this->model->post->get_language( $tr_id );
+		if ( $target_language && $this->media_translation->is_enabled() ) {
+			$media_translations = isset( $post_data['elementor_media'] ) && is_array( $post_data['elementor_media'] )
+				? $post_data['elementor_media']
+				: array();
+			$elements = $this->media_translation->remap_elementor_media( $elements, $target_language, $media_translations );
+		}
 
+		if ( class_exists( 'Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->documents ) ) {
+			$plugin   = \Elementor\Plugin::$instance;
+			$document = $plugin->documents->get( $tr_id );
+
+			if ( $document ) {
+				$document->save( array( 'elements' => $elements ) );
 				$plugin->files_manager->clear_cache();
-			}else{
-
-				if($parent_post_id > 0){
-					$elementor_data=\Elementor\Plugin::$instance->documents->get($parent_post_id)->get_elements_data();
-					$elementor_data=wp_json_encode($elementor_data);
-					$elementor_data=preg_replace('#(?<!\\\\)/#', '\\/', $elementor_data);
-					update_post_meta($tr_id, '_elementor_data', $elementor_data);
-				}
+				return;
 			}
 		}
+
+		update_post_meta( $tr_id, '_elementor_data', wp_slash( wp_json_encode( $elements ) ) );
 	}
 
 	/**
