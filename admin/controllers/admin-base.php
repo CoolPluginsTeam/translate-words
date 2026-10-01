@@ -702,23 +702,15 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	}
 	/**
 	 * Tells if the Linguator's admin bar menu should be hidden for the current page.
-	 * Conventionally, it should be hidden on edition pages.
+	 * Conventionally, it should be hidden on edition pages, term edit pages and Site Editor pages.
 	 *
 	 *
 	 * @return bool
 	 */
 	public function linguator_should_hide_admin_bar_menu(): bool {
-		global $pagenow, $typenow, $taxnow;
+		global $pagenow;
 
-		if ( in_array( $pagenow, array( 'post.php', 'post-new.php' ), true ) ) {
-			return ! empty( $typenow );
-		}
-
-		if ( 'term.php' === $pagenow ) {
-			return ! empty( $taxnow );
-		}
-
-		return false;
+		return in_array( $pagenow, array( 'post.php', 'post-new.php', 'site-editor.php', 'term.php' ), true );
 	}
 
 	/**
