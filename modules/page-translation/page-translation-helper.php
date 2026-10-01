@@ -342,38 +342,33 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				wp_send_json_error( __( 'The source and target posts are not linked translations.', 'translate-words' ), 400 );
 			}
 
-			$updated = false;
-
-			// Featured image translations.
-			if ( ! empty( $_POST['featured_image'] ) ) {
-				$raw = wp_unslash( $_POST['featured_image'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
-				if ( is_string( $raw ) ) {
-					$raw = json_decode( $raw, true );
-					if ( JSON_ERROR_NONE !== json_last_error() ) {
-						wp_send_json_error( __( 'Invalid featured-image translation data.', 'translate-words' ), 400 );
-					}
+			// Decode and authorize the whole request before writing any attachment.
+			$payload = array();
+			foreach ( array( 'featured_image', 'content_media' ) as $key ) {
+				if ( empty( $_POST[ $key ] ) ) {
+					continue;
 				}
-				if ( is_array( $raw ) && 0 < $source_post_id ) {
-					if ( $media_service->apply_featured_image_translations( $source_post_id, $post_id, $raw ) ) {
-						$updated = true;
-					}
+				$raw = wp_unslash( $_POST[ $key ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by the media service.
+				if ( ! is_string( $raw ) ) {
+					wp_send_json_error( __( 'Invalid media translation data.', 'translate-words' ), 400 );
+				}
+				$payload[ $key ] = json_decode( $raw, true );
+				if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $payload[ $key ] ) ) {
+					wp_send_json_error( __( 'Invalid media translation data.', 'translate-words' ), 400 );
 				}
 			}
+			$validation = $media_service->validate_media_payload( $source_post_id, $target_language, $payload );
+			if ( is_wp_error( $validation ) ) {
+				wp_send_json_error( $validation->get_error_message(), 403 );
+			}
 
-			// Content attachment translations.
-			if ( ! empty( $_POST['content_media'] ) ) {
-				$raw = wp_unslash( $_POST['content_media'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by the media service.
-				if ( is_string( $raw ) ) {
-					$raw = json_decode( $raw, true );
-					if ( JSON_ERROR_NONE !== json_last_error() ) {
-						wp_send_json_error( __( 'Invalid content-media translation data.', 'translate-words' ), 400 );
-					}
-				}
-				if ( is_array( $raw ) ) {
-					if ( $media_service->apply_content_media_translations( $post_id, $raw ) ) {
-						$updated = true;
-					}
-				}
+			$updated = false;
+			if ( ! empty( $payload['featured_image'] ) ) {
+				$updated = $media_service->apply_featured_image_translations( $source_post_id, $post_id, $payload['featured_image'] );
+			}
+			if ( ! empty( $payload['content_media'] ) ) {
+				$content_updated = $media_service->apply_content_media_translations( $post_id, $payload['content_media'], $source_post_id );
+				$updated = $updated || $content_updated;
 			}
 
 			wp_send_json_success(

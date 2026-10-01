@@ -1870,6 +1870,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
+			$media_service = new Media_Translation_Service( LMAT() );
+			if ( $media_service->is_enabled() ) {
+				$media_validation = $media_service->validate_media_payload( $source_post_id, $target_language, $post_data );
+				if ( is_wp_error( $media_validation ) ) {
+					return $media_validation;
+				}
+			}
+
 			global $linguator;
 			$post_clone   = new \Linguator_Sync_Post_Model( $linguator );
 			try {
@@ -1908,7 +1916,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					// Content media.
 					$content_media_raw = isset( $post_data['content_media'] ) ? $post_data['content_media'] : null;
 					if ( is_array( $content_media_raw ) && ! empty( $content_media_raw ) ) {
-						$media_service->apply_content_media_translations( $new_post_id, $content_media_raw );
+						$media_service->apply_content_media_translations( $new_post_id, $content_media_raw, $source_post_id );
 					}
 				}
 			}

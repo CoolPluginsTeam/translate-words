@@ -56,6 +56,95 @@ class Media_Translation_Service {
 	}
 
 	/**
+	 * Remaps a known attachment URL without promoting a thumbnail to full size.
+	 * Shared files and unknown/custom URLs retain their existing URL and suffix.
+	 *
+	 * @param int    $source_id Source attachment ID.
+	 * @param int    $target_id Target attachment ID.
+	 * @param string $url       Existing URL.
+	 * @return string
+	 */
+	public static function remap_attachment_url( $source_id, $target_id, $url ) {
+		$source_url = wp_get_attachment_url( $source_id );
+		$target_url = wp_get_attachment_url( $target_id );
+		if ( ! is_string( $url ) || ! $source_url || ! $target_url || $source_url === $target_url ) {
+			return $url;
+		}
+
+		$parts = preg_split( '/(?=[?#])/', $url, 2 );
+		$base = $parts[0];
+		$suffix = isset( $parts[1] ) ? $parts[1] : '';
+		if ( $base === $source_url ) {
+			return $target_url . $suffix;
+		}
+
+		$source_meta = wp_get_attachment_metadata( $source_id );
+		$target_meta = wp_get_attachment_metadata( $target_id );
+		if ( ! empty( $source_meta['sizes'] ) && ! empty( $target_meta['sizes'] ) ) {
+			foreach ( $source_meta['sizes'] as $size => $image ) {
+				if ( empty( $image['file'] ) || empty( $target_meta['sizes'][ $size ]['file'] ) ) {
+					continue;
+				}
+				if ( $base === trailingslashit( dirname( $source_url ) ) . $image['file'] ) {
+					return trailingslashit( dirname( $target_url ) ) . $target_meta['sizes'][ $size ]['file'] . $suffix;
+				}
+			}
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Authorizes all submitted media before any metadata is written.
+	 * Referenced media may be shared or unattached, so post_parent is not used.
+	 *
+	 * @param int          $source_post_id Source page ID.
+	 * @param mixed        $language       Target language.
+	 * @param array        $payload        Decoded media payload.
+	 * @return true|\WP_Error
+	 */
+	public function validate_media_payload( $source_post_id, $language, array $payload ) {
+		$source = get_post( $source_post_id );
+		if ( ! $source instanceof WP_Post || ! current_user_can( 'edit_post', $source_post_id ) || empty( $language ) ) {
+			return new \WP_Error( 'media_forbidden', __( 'You are not authorized to translate this media.', 'translate-words' ), array( 'status' => 403 ) );
+		}
+
+		$allowed = $this->collect_content_attachment_ids( $source->post_content );
+		foreach ( $this->get_elementor_media_strings( $source_post_id ) as $media ) {
+			$allowed[] = (int) $media['id'];
+		}
+		$ids = array();
+		foreach ( array( 'content_media', 'elementor_media' ) as $key ) {
+			if ( isset( $payload[ $key ] ) ) {
+				$ids = array_merge( $ids, array_keys( $this->normalize_translations( $payload[ $key ] ) ) );
+			}
+		}
+		foreach ( $ids as $id ) {
+			if ( ! in_array( $id, $allowed, true ) ) {
+				return new \WP_Error( 'unrelated_media', __( 'The submitted media is not referenced by the source post.', 'translate-words' ), array( 'status' => 403 ) );
+			}
+		}
+		if ( ! empty( $payload['featured_image'] ) ) {
+			$ids[] = (int) get_post_thumbnail_id( $source_post_id );
+		}
+		foreach ( array_unique( $ids ) as $id ) {
+			$attachment = get_post( $id );
+			$target_id = (int) $this->model->post->get_translation( $id, $language );
+			$target = $target_id ? get_post( $target_id ) : null;
+			if (
+				! $attachment instanceof WP_Post || 'attachment' !== $attachment->post_type
+				|| ! current_user_can( 'edit_post', $id )
+				|| ( $target instanceof WP_Post && ! current_user_can( 'edit_post', $target_id ) )
+				|| ( ! $target instanceof WP_Post && ! current_user_can( 'upload_files' ) )
+			) {
+				return new \WP_Error( 'media_forbidden', __( 'You are not authorized to translate this media.', 'translate-words' ), array( 'status' => 403 ) );
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Gets the translatable strings stored on an attachment.
 	 *
 	 * Empty fields are omitted so they are not sent to an AI provider.
@@ -288,16 +377,23 @@ class Media_Translation_Service {
 			|| ! $source_attachment instanceof WP_Post
 			|| 'attachment' !== $source_attachment->post_type
 			|| empty( $language )
+			|| ! current_user_can( 'edit_post', $source_attachment_id )
 		) {
 			return 0;
 		}
 
 		$translated_id = (int) $this->model->post->get_translation( $source_attachment_id, $language );
 		$translated_attachment = $translated_id ? get_post( $translated_id ) : null;
+		if ( $translated_attachment instanceof WP_Post && ! current_user_can( 'edit_post', $translated_id ) ) {
+			return 0;
+		}
 
 		// Translation links can outlive deleted attachments. Replace stale links
 		// instead of treating a missing media record as an existing translation.
 		if ( 0 === $translated_id || ! $translated_attachment instanceof WP_Post || 'attachment' !== $translated_attachment->post_type ) {
+			if ( ! current_user_can( 'upload_files' ) ) {
+				return 0;
+			}
 			$translated_id = (int) $this->model->post->create_media_translation( $source_attachment_id, $language );
 		}
 
@@ -341,6 +437,8 @@ class Media_Translation_Service {
 			|| empty( $translations )
 			|| ! $target_attachment instanceof WP_Post
 			|| 'attachment' !== $target_attachment->post_type
+			|| ! current_user_can( 'edit_post', $target_attachment_id )
+			|| ( $source_attachment_id && ! current_user_can( 'edit_post', $source_attachment_id ) )
 			|| ( 0 < $source_attachment_id && $source_attachment_id === $target_attachment_id )
 			|| (
 				0 < $source_attachment_id
@@ -413,7 +511,7 @@ class Media_Translation_Service {
 	 * @param mixed $translations   Decoded translation payload.
 	 * @return bool Whether at least one attachment was updated.
 	 */
-	public function apply_content_media_translations( $target_post_id, $translations ) {
+	public function apply_content_media_translations( $target_post_id, $translations, $source_post_id = 0 ) {
 		$target_post_id = absint( $target_post_id );
 
 		if ( 0 === $target_post_id || ! $this->is_enabled() ) {
@@ -424,6 +522,9 @@ class Media_Translation_Service {
 		$items    = $this->normalize_translations( $translations );
 
 		if ( empty( $language ) || empty( $items ) ) {
+			return false;
+		}
+		if ( ! $source_post_id || ! current_user_can( 'edit_post', $target_post_id ) || is_wp_error( $this->validate_media_payload( $source_post_id, $language, array( 'content_media' => $translations ) ) ) ) {
 			return false;
 		}
 
@@ -466,6 +567,9 @@ class Media_Translation_Service {
 		$language             = $this->model->post->get_language( $target_post_id );
 
 		if ( 0 === $source_attachment_id || empty( $language ) ) {
+			return false;
+		}
+		if ( ! current_user_can( 'edit_post', $target_post_id ) || is_wp_error( $this->validate_media_payload( $source_post_id, $language, array( 'featured_image' => $translations ) ) ) ) {
 			return false;
 		}
 
@@ -649,7 +753,7 @@ class Media_Translation_Service {
 
 			if ( 0 < $translated_id ) {
 				$data['id'] = $translated_id;
-				$url        = wp_get_attachment_url( $translated_id );
+				$url        = self::remap_attachment_url( $source_attachment_id, $translated_id, $data['url'] );
 
 				if ( is_string( $url ) && '' !== $url ) {
 					$data['url'] = $url;

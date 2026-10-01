@@ -256,7 +256,7 @@ class Linguator_Sync_Post_Model {
 		$post = clone $tr_post;
 		$post->ID=$post_id;
 
-		$tr_post = $this->sync_content->copy_content( $post, $tr_post, $target_language );
+		$tr_post = $this->sync_content->copy_content( $post, $tr_post, $target_language, isset( $post_data['post_content'] ) );
 
 		// The columns to copy in DB.
 		$columns = array(
