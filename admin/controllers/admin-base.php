@@ -310,8 +310,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 			}
 		}
 
-		wp_register_style( 'linguator_admin', plugins_url( "admin/assets/css/build/admin{$suffix}.css", LINGUATOR_ROOT_FILE ), array( 'wp-jquery-ui-dialog' ), LINGUATOR_VERSION );
-		wp_enqueue_style( 'linguator_dialog', plugins_url( "admin/assets/css/build/dialog{$suffix}.css", LINGUATOR_ROOT_FILE ), array( 'linguator_admin' ), LINGUATOR_VERSION );
+		linguator_enqueue_style( 'admin', array( 'wp-jquery-ui-dialog' ), 'linguator_' );
 		
 		// Enqueue custom font for icons
 		$this->enqueue_linguator_font();
