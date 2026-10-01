@@ -14,7 +14,7 @@
     } = wp.components;
     const ServerSideRender = (wp.serverSideRender && wp.serverSideRender.default) || wp.serverSideRender;
     const { addFilter } = wp.hooks;
-  
+
     // ---------------------------------------------------------------------------
     // Icon: translation (simple inline SVG)
     // ---------------------------------------------------------------------------
@@ -99,23 +99,23 @@
             }),
           (!dropdown || showHideCurrentEvenInDropdown) &&
             wp.element.createElement(ToggleControl, {
-              label: __('Show flags', 'translate-words'),
+              label: __('Display flags', 'translate-words'),
               checked: !!show_flags,
               onChange: (v) => update({ show_flags: !!v }),
             }),
           wp.element.createElement(ToggleControl, {
-            label: __('Force switch to homepage', 'translate-words'),
+            label: __('Force link to front page', 'translate-words'),
             checked: !!force_home,
             onChange: (v) => update({ force_home: !!v }),
           }),
           !attributes.dropdown &&
             wp.element.createElement(ToggleControl, {
-              label: __('Hide current language', 'translate-words'),
+              label: __('Hide the current language', 'translate-words'),
               checked: !!hide_current,
               onChange: (v) => update({ hide_current: !!v }),
             }),
           wp.element.createElement(ToggleControl, {
-            label: __('Hide languages without translation', 'translate-words'),
+            label: __('Hide languages with no translation', 'translate-words'),
             checked: !!hide_if_no_translation,
             onChange: (v) => update({ hide_if_no_translation: !!v }),
           })
@@ -271,4 +271,4 @@
       menuItemsToBlocksFilter
     );
   })();
-  
+
