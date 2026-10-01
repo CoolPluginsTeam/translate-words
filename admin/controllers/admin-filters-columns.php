@@ -95,7 +95,12 @@ class Linguator_Admin_Filters_Columns {
 		}
 
 		foreach ( $this->model->get_languages_list() as $language ) {
-			$columns[ 'language_' . $language->slug ] = $this->get_flag_html( $language ) . '<span class="screen-reader-text">' . esc_html( $language->name ) . '</span>';
+			/*
+			 * WP_Screen strips HTML from column labels in Screen Options, revealing the
+			 * language name. List table headers retain the HTML, displaying the flag
+			 * while keeping the language name available to screen readers.
+			 */
+			$columns[ 'language_' . $language->slug ] = $this->get_flag_html( $language, true ) . '<span class="screen-reader-text">' . esc_html( $language->name ) . '</span>';
 		}
 
 		return isset( $end ) ? array_merge( $columns, $end ) : $columns;
@@ -545,10 +550,17 @@ class Linguator_Admin_Filters_Columns {
 	 *
 	 *  
 	 *
-	 * @param Linguator_Language $language Linguator_Language object.
+	 * @param Linguator_Language $language    Linguator_Language object.
+	 * @param bool                $aria_hidden Whether to hide the flag from assistive technology.
 	 * @return string
 	 */
-	protected function get_flag_html( $language ) {
-		return $language->flag ?: sprintf( '<abbr>%s</abbr>', esc_html( $language->slug ) );
+	protected function get_flag_html( $language, $aria_hidden = false ) {
+		$flag = $language->flag ?: sprintf( '<abbr>%s</abbr>', esc_html( $language->slug ) );
+
+		if ( $aria_hidden ) {
+			$flag = (string) preg_replace( '/^<([a-z][a-z0-9]*)\b/i', '<$1 aria-hidden="true"', $flag, 1 );
+		}
+
+		return $flag;
 	}
 }
