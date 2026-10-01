@@ -639,7 +639,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 				) . $title,
 				'href'  => esc_url(
 					wp_nonce_url(
-						add_query_arg( 'lang', $selected->slug, remove_query_arg( 'paged' ) ),
+						$this->get_admin_bar_menu_url( $selected ),
 						'lmat_set_admin_filter_lang',
 						'_lmat_lang_nonce'
 					)
@@ -663,7 +663,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 					'title'  => wp_kses( $lang->flag, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ) ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) . esc_html( $lang->name ),
 					'href'   => esc_url(
 						wp_nonce_url(
-							add_query_arg( 'lang', $lang->slug, remove_query_arg( 'paged' ) ),
+							$this->get_admin_bar_menu_url( $lang ),
 							'lmat_set_admin_filter_lang',
 							'_lmat_lang_nonce'
 						)
@@ -672,6 +672,56 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Returns the admin language filter URL for a given language.
+	 *
+	 * @param object $language The language or an object representing all languages.
+	 * @return string
+	 *
+	 * @phpstan-param object{'slug': string} $language
+	 */
+	protected function get_admin_bar_menu_url( $language ): string {
+		global $pagenow;
+
+		$url = add_query_arg( 'lang', $language->slug, remove_query_arg( 'paged' ) );
+
+		if ( 'edit.php' !== $pagenow || ! $language instanceof Linguator_Language ) {
+			return $url;
+		}
+
+		// Attempt to translate the category or taxonomy filter if present.
+		$post_type = get_post_type();
+
+		if ( ! $post_type ) {
+			return $url;
+		}
+
+		foreach ( get_object_taxonomies( $post_type, 'objects' ) as $tax ) {
+			if ( ! $this->model->is_translated_taxonomy( $tax->name ) ) {
+				continue;
+			}
+
+			$query_var = (string) $tax->query_var;
+			$qv        = get_query_var( $query_var );
+			if ( empty( $qv ) || ! is_string( $qv ) ) {
+				continue;
+			}
+
+			$qv = $this->model->term->get_by( 'slug', $qv, $language, $tax->name );
+
+			if ( ! empty( $qv ) ) {
+				$url = add_query_arg( $query_var, $qv, remove_query_arg( $query_var, $url ) );
+			}
+
+			// For categories, category_name was translated, so remove cat to avoid conflicts.
+			if ( 'category' === $tax->name ) {
+				$url = remove_query_arg( 'cat', $url );
+			}
+		}
+
+		return $url;
 	}
 
 	/**
