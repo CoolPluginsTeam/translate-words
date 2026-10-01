@@ -14,6 +14,7 @@ use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Modules\REST\Request;
 use Linguator\Includes\Capabilities\User;
 use Linguator\Includes\Capabilities\Create\Post as Create_Post;
+use WP_Query;
 use WP_Term;
 
 /**
@@ -86,6 +87,85 @@ class Linguator_CRUD_Posts {
 			add_action( 'delete_attachment', array( $this, 'delete_post' ) );
 			add_filter( 'wp_delete_file', array( $this, 'wp_delete_file' ) );
 		}
+
+		// Filter queries for untranslated posts.
+		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
+		add_action( 'parse_query', array( $this, 'parse_query' ) );
+		add_filter( 'posts_clauses', array( $this, 'posts_clauses' ), 10, 2 );
+	}
+
+	/**
+	 * Adds the untranslated-language query variable.
+	 *
+	 * @param string[] $query_vars The allowed query variable names.
+	 * @return string[]
+	 */
+	public function add_query_vars( $query_vars ) {
+		$query_vars[] = 'untranslated_in';
+		return $query_vars;
+	}
+
+	/**
+	 * Ensures filters are not suppressed when querying untranslated posts.
+	 *
+	 * @param WP_Query $query The query instance, passed by reference.
+	 * @return void
+	 */
+	public function parse_query( $query ) {
+		if ( ! empty( $query->query['untranslated_in'] ) ) {
+			unset( $query->query['suppress_filters'] );
+			unset( $query->query_vars['suppress_filters'] );
+		}
+	}
+
+	/**
+	 * Excludes posts that are in, or already translated into, the requested language.
+	 *
+	 * @param string[] $clauses SQL clauses for the query.
+	 * @param WP_Query $query   The query instance, passed by reference.
+	 * @return string[]
+	 */
+	public function posts_clauses( $clauses, $query ) {
+		global $wpdb;
+
+		if ( empty( $query->query['untranslated_in'] ) || ! is_string( $query->query['untranslated_in'] ) ) {
+			return $clauses;
+		}
+
+		$untranslated_in = $this->model->languages->get( sanitize_key( $query->query['untranslated_in'] ) );
+
+		if ( empty( $untranslated_in ) ) {
+			return $clauses;
+		}
+
+		$language_taxonomy    = $this->model->post->get_tax_language();
+		$term_taxonomy_id     = $untranslated_in->get_tax_prop( $language_taxonomy, 'term_taxonomy_id' );
+		$translation_taxonomy = $this->model->post->get_tax_translations();
+
+		$clauses['where'] .= $wpdb->prepare(
+			" AND {$wpdb->posts}.ID NOT IN (
+				SELECT lmatutr.object_id
+				FROM {$wpdb->term_relationships} AS lmatutr
+				WHERE lmatutr.term_taxonomy_id = %d
+			)",
+			$term_taxonomy_id
+		);
+
+		$clauses['where'] .= $wpdb->prepare(
+			" AND {$wpdb->posts}.ID NOT IN (
+				SELECT lmatutr1.object_id
+				FROM {$wpdb->term_relationships} AS lmatutr1
+				JOIN {$wpdb->term_taxonomy} AS lmatutt ON lmatutt.term_taxonomy_id = lmatutr1.term_taxonomy_id
+				JOIN {$wpdb->term_relationships} AS lmatutr2 ON lmatutr2.term_taxonomy_id = lmatutt.term_taxonomy_id
+				JOIN {$wpdb->term_relationships} AS lmatutr3 ON lmatutr3.object_id = lmatutr2.object_id
+				WHERE lmatutt.taxonomy = %s
+				AND lmatutr3.term_taxonomy_id = %d
+			)",
+			$translation_taxonomy,
+			$term_taxonomy_id
+		);
+
+		return $clauses;
 	}
 
 	/**
