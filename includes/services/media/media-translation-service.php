@@ -293,8 +293,11 @@ class Media_Translation_Service {
 		}
 
 		$translated_id = (int) $this->model->post->get_translation( $source_attachment_id, $language );
+		$translated_attachment = $translated_id ? get_post( $translated_id ) : null;
 
-		if ( 0 === $translated_id ) {
+		// Translation links can outlive deleted attachments. Replace stale links
+		// instead of treating a missing media record as an existing translation.
+		if ( 0 === $translated_id || ! $translated_attachment instanceof WP_Post || 'attachment' !== $translated_attachment->post_type ) {
 			$translated_id = (int) $this->model->post->create_media_translation( $source_attachment_id, $language );
 		}
 

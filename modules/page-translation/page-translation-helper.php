@@ -327,7 +327,18 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				? (int) LMAT()->model->post->get_translation( $source_post_id, $target_language )
 				: 0;
 
-			if ( $linked_post_id !== $post_id ) {
+			// Single-page translation applies content before the editor's first
+			// real save creates the translation link. The CRUD layer stores the
+			// nonce-verified source and language intent on that auto-draft.
+			$target_post = get_post( $post_id );
+			$pending_translation = $target_language
+				&& $target_post instanceof \WP_Post
+				&& 'auto-draft' === $target_post->post_status
+				&& $source_post_id === absint( get_post_meta( $post_id, '_lmat_from_post', true ) )
+				&& $target_language->slug === get_post_meta( $post_id, '_lmat_new_lang', true )
+				&& 0 === $linked_post_id;
+
+			if ( $linked_post_id !== $post_id && ! $pending_translation ) {
 				wp_send_json_error( __( 'The source and target posts are not linked translations.', 'translate-words' ), 400 );
 			}
 
