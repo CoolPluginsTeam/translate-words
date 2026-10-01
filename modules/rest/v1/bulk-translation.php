@@ -2755,6 +2755,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				);
 			}
 
+			$saved_post_name = (string) get_post_field( 'post_name', $new_post_id );
+			if ( 'slug_translate' === $slug_translation_option ) {
+				$saved_post_name = $this->ai_translate_persist_post_slug( $new_post_id, (string) $slug );
+				if ( is_wp_error( $saved_post_name ) ) {
+					return $saved_post_name;
+				}
+			}
+
 			// Apply translated media metadata after the post is created and synced.
 			if ( function_exists( 'LMAT' ) ) {
 				$media_service = new Media_Translation_Service( LMAT() );
