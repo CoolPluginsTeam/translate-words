@@ -21,7 +21,7 @@ if ( ! class_exists( 'WP_Widget_Calendar' ) ) {
  * This classes rewrite the whole Calendar widget functionality as there is no filter on sql queries and only a filter on final output.
  * Code last checked: WP 7.2.
  *
- * A request to add filters on sql queries exists: http://core.trac.wordpress.org/ticket/15202.
+ * A request to add filters on SQL queries exists: http://core.trac.wordpress.org/ticket/15202, closed in favor of https://core.trac.wordpress.org/ticket/29319.
  * Method used in 0.4.x: use of the get_calendar filter and overwrite the output of get_calendar function -> not very efficient (add 4 to 5 sql queries).
  * Method used since 0.5: remove the WP widget and replace it by our own -> our language filter will not work if get_calendar is called directly by a theme.
  *
@@ -215,6 +215,9 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		// week_begins = 0 stands for Sunday.
 		$week_begins = (int) get_option( 'start_of_week' );
 
+		// Read the current date.
+		list( $current_year, $current_month, $current_day ) = array_map( 'intval', explode( '-', current_time( 'Y-m-j' ) ) );
+
 		// Let's figure out when we are.
 		if ( ! empty( $monthnum ) && ! empty( $year ) ) {
 			$thismonth = (int) $monthnum;
@@ -241,8 +244,8 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 				$thismonth = (int) substr( $m, 4, 2 );
 			}
 		} else {
-			$thisyear  = (int) current_time( 'Y' );
-			$thismonth = (int) current_time( 'm' );
+			$thisyear  = $current_year;
+			$thismonth = $current_month;
 		}
 
 		$unixmonth = mktime( 0, 0, 0, $thismonth, 1, $thisyear );
@@ -335,9 +338,9 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 
 			$newrow = false;
 
-			if ( (int) current_time( 'j' ) === $day
-				&& (int) current_time( 'm' ) === $thismonth
-				&& (int) current_time( 'Y' ) === $thisyear
+			if ( $current_day === $day
+				&& $current_month === $thismonth
+				&& $current_year === $thisyear
 			) {
 				$calendar_output .= '<td id="today">';
 			} else {
