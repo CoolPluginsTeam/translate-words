@@ -77,7 +77,7 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 	 *                     no posts. Nothing otherwise.
 	 * @phpstan-return ( $args is array{ display: false|0|''|'0', ... } ? string|null : void )
 	 */
-	static function get_calendar( $args = array() ) {
+	public static function get_calendar( $args = array() ) {
 		global $wpdb, $m, $monthnum, $year, $wp_locale, $posts;
 
 		// Allowed HTML tags for calendar output
