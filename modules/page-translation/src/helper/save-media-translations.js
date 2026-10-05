@@ -97,7 +97,7 @@ const saveMediaTranslations = async ( service, postContent ) => {
         body:    new URLSearchParams( requestBody ),
         } );
         const result = await response.json();
-        if ( ! response.ok || ! result.success ) {
+        if ( ! response.ok || ! result.success || ( result.data && result.data.updated === false ) ) {
             console.error( 'lmat: media translations were not saved', result.data || result );
             return false;
         }

@@ -45,9 +45,9 @@ namespace {
 	function get_post_thumbnail_id( $id ) { return 10; }
 	function sanitize_text_field( $value ) { return strip_tags( $value ); }
 	function wp_kses_post( $value ) { return $value; }
-	function wp_slash( $value ) { return $value; }
+	function wp_slash( $value ) { return addslashes( $value ); }
 	function wp_update_post( $value, $error ) { global $writes; ++$writes; return $value['ID']; }
-	function update_post_meta( $id, $key, $value ) { global $writes; ++$writes; return true; }
+	function update_post_meta( $id, $key, $value ) { global $writes, $meta; ++$writes; $meta[ $id ][ $key ] = stripslashes( $value ); return true; }
 	function esc_attr( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 	function esc_url( $value ) { return esc_attr( $value ); }
 	function wp_html_split( $html ) { return preg_split( '/(<[^>]*>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE ); }
@@ -57,6 +57,14 @@ namespace {
 	}
 	function add_shortcode( $tag, $callback ) {}
 	function do_shortcode( $content ) { return $content; }
+	function shortcode_parse_atts( $text ) {
+		$attributes = array();
+		preg_match_all( '/([a-zA-Z0-9_-]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s]+))/', $text, $matches, PREG_SET_ORDER );
+		foreach ( $matches as $match ) {
+			$attributes[ strtolower( $match[1] ) ] = '' !== $match[2] ? $match[2] : ( '' !== $match[3] ? $match[3] : $match[4] );
+		}
+		return $attributes;
+	}
 	require dirname( __DIR__ ) . '/includes/services/media/media-translation-service.php';
 	require dirname( __DIR__ ) . '/modules/sync/sync-content.php';
 	use Linguator\Includes\Services\Media\Media_Translation_Service;
@@ -134,5 +142,10 @@ namespace {
 	check( 10 === $elementor['id'] && 0 === $writes, 'Elementor remapping must not write an unauthorized attachment.' );
 	$denied = array();
 	check( true === $service->apply_content_media_translations( 2, $payload['content_media'], 1 ) && 1 === $writes, 'Valid media save must still succeed.' );
+	check( array( 10, 11 ) === $service->collect_content_attachment_ids( '[gallery ids="10,11"] [playlist ids="11,10"]' ), 'Gallery and playlist shortcode attachment IDs must be collected once.' );
+	check( array() === $service->collect_content_attachment_ids( '[[gallery ids="10,11"]]' ), 'Escaped gallery shortcodes must remain ignored.' );
+	$alt_with_backslash = 'Path C:' . chr( 92 ) . 'photos';
+	check( true === $service->write_attachment_translations( 20, array( 'alt' => $alt_with_backslash ), 10 ), 'Alt text containing a backslash must save.' );
+	check( $alt_with_backslash === $meta[20]['_wp_attachment_image_alt'], 'Alt text backslashes must survive WordPress metadata unslashing.' );
 	echo "Passed $checks media regression checks.\n";
 }

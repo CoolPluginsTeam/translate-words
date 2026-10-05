@@ -223,6 +223,15 @@ class Media_Translation_Service {
 			$this->add_attachment_ids( $matches[1], $ids );
 		}
 
+		if ( preg_match_all( '/(?<!\[)\[(gallery|playlist)\b([^\]]*)\]/i', $content, $shortcodes, PREG_SET_ORDER ) ) {
+			foreach ( $shortcodes as $shortcode ) {
+				$attributes = shortcode_parse_atts( $shortcode[2] );
+				if ( is_array( $attributes ) && isset( $attributes['ids'] ) && ( is_string( $attributes['ids'] ) || is_numeric( $attributes['ids'] ) ) ) {
+					$this->add_attachment_ids( explode( ',', (string) $attributes['ids'] ), $ids );
+				}
+			}
+		}
+
 		return array_map( 'intval', array_keys( $ids ) );
 	}
 
@@ -496,7 +505,7 @@ class Media_Translation_Service {
 		if ( isset( $translations['alt'] ) && is_string( $translations['alt'] ) && '' !== trim( $translations['alt'] ) ) {
 			$alt = sanitize_text_field( $translations['alt'] );
 			if ( '' !== trim( $alt ) ) {
-				update_post_meta( $target_attachment_id, '_wp_attachment_image_alt', $alt );
+				update_post_meta( $target_attachment_id, '_wp_attachment_image_alt', wp_slash( $alt ) );
 				$updated = true;
 			}
 		}
