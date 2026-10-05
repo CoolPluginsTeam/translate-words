@@ -69,6 +69,8 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 				'update_count_callback' => '_update_generic_term_count', // Count *all* objects to correctly detect unused terms.
 			)
 		);
+
+		$this->add_sanitization_hooks( $this->tax_translations );
 	}
 
 	/**

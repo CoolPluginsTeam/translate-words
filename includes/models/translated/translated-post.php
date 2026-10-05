@@ -102,6 +102,8 @@ class Linguator_Translated_Post extends Linguator_Translated_Object implements L
 			)
 		);
 
+		$this->add_sanitization_hooks( $this->tax_language );
+
 		add_action( 'setup_theme', array( $this, 'add_language_taxonomy_query_var' ) );
 	}
 

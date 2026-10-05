@@ -15,6 +15,7 @@ use Linguator\Includes\Options\Options;
 use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Includes\Helpers\Linguator_Cache;
 use Linguator\Includes\Other\Linguator_Language;
+use WP_Term;
 
 
 
@@ -137,6 +138,59 @@ abstract class Linguator_Translatable_Object {
 				'_lmat'      => true,
 			)
 		);
+
+		$this->add_sanitization_hooks( $this->tax_language );
+	}
+
+	/**
+	 * Sanitizes descriptions written to or read from an internal taxonomy.
+	 *
+	 * @param string $taxonomy Internal taxonomy name.
+	 * @return void
+	 */
+	protected function add_sanitization_hooks( string $taxonomy ): void {
+		add_filter( "pre_{$taxonomy}_description", array( $this, 'sanitize_description' ), 0 );
+		add_filter( "get_{$taxonomy}", array( $this, 'sanitize_term' ), 0 );
+	}
+
+	/**
+	 * Hides disallowed serialized values from hydrated term objects.
+	 * The stored database value is unchanged.
+	 *
+	 * @param mixed $term Term object or value returned by another filter.
+	 * @return mixed
+	 */
+	public function sanitize_term( $term ) {
+		if ( $term instanceof WP_Term && $this->has_disallowed_type( $term->description ) ) {
+			$term->description = '';
+		}
+
+		return $term;
+	}
+
+	/**
+	 * Rejects non-string descriptions and serialized values with disallowed types.
+	 *
+	 * @param mixed $description Term description.
+	 * @return string
+	 */
+	public function sanitize_description( $description ) {
+		if ( ! is_string( $description ) || '' === $description ) {
+			return '';
+		}
+
+		return $this->has_disallowed_type( $description ) ? '' : $description;
+	}
+
+	/**
+	 * Allows serialized arrays, strings, integers, and booleans only.
+	 * Strings resembling a disallowed type may also be rejected.
+	 *
+	 * @param string $description Term description.
+	 * @return bool
+	 */
+	private function has_disallowed_type( string $description ): bool {
+		return 0 !== preg_match( '#(?:^|[;{])(?:[OCEdrR]:|N;)#', $description );
 	}
 
 	/**
