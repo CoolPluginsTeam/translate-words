@@ -91,7 +91,8 @@ const updateClassicContent=async ({source, lang, translatedContent, serviceProvi
             const entity=(/^&[a-zA-Z0-9#]+;$/.test(text));
             const htmlTag = /^<\/?\s*[a-zA-Z0-9#]+\s*\/?>$/.test(text);
             const isEmptyHtmlTag = /^<\s*\/?\s*[a-zA-Z0-9#]+\s*><\/\s*\/?\s*[a-zA-Z0-9#]+\s*>$/.test(text);
-            const blockCommentTag = /<!--[\s\S]*?-->/g.test(text) && text.indexOf('<!--') < text.indexOf('-->');
+            // Skip comment-only lines (e.g. <!--more-->); text around inline comments stays translatable.
+            const blockCommentTag = /^\s*(?:<!--[\s\S]*?-->\s*)+$/.test(text);
 
             const plainText=!entity && !htmlTag && !isEmptyHtmlTag && !blockCommentTag; 
 

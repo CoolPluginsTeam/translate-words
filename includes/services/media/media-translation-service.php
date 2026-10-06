@@ -382,7 +382,8 @@ class Media_Translation_Service {
 			return 0;
 		}
 
-		$translated_id = (int) $this->model->post->get_translation( $source_attachment_id, $language );
+		// Autopoly/Polylang: resolve via get(), then create when missing.
+		$translated_id = (int) $this->model->post->get( $source_attachment_id, $language );
 		$translated_attachment = $translated_id ? get_post( $translated_id ) : null;
 		if ( $translated_attachment instanceof WP_Post && ! current_user_can( 'edit_post', $translated_id ) ) {
 			return 0;
@@ -390,7 +391,11 @@ class Media_Translation_Service {
 
 		// Translation links can outlive deleted attachments. Replace stale links
 		// instead of treating a missing media record as an existing translation.
-		if ( 0 === $translated_id || ! $translated_attachment instanceof WP_Post || 'attachment' !== $translated_attachment->post_type ) {
+		if (
+			0 === $translated_id
+			|| ! $translated_attachment instanceof WP_Post
+			|| 'attachment' !== $translated_attachment->post_type
+		) {
 			if ( ! current_user_can( 'upload_files' ) ) {
 				return 0;
 			}
@@ -509,36 +514,40 @@ class Media_Translation_Service {
 	 *
 	 * @param int   $target_post_id Target post ID.
 	 * @param mixed $translations   Decoded translation payload.
-	 * @return bool Whether at least one attachment was updated.
+	 * @param int   $source_post_id Source post ID (authorization allowlist).
+	 * @return array<int, int> Source attachment ID => translated attachment ID.
 	 */
 	public function apply_content_media_translations( $target_post_id, $translations, $source_post_id = 0 ) {
 		$target_post_id = absint( $target_post_id );
 
 		if ( 0 === $target_post_id || ! $this->is_enabled() ) {
-			return false;
+			return array();
 		}
 
 		$language = $this->model->post->get_language( $target_post_id );
 		$items    = $this->normalize_translations( $translations );
 
 		if ( empty( $language ) || empty( $items ) ) {
-			return false;
+			return array();
 		}
 		if ( ! $source_post_id || ! current_user_can( 'edit_post', $target_post_id ) || is_wp_error( $this->validate_media_payload( $source_post_id, $language, array( 'content_media' => $translations ) ) ) ) {
-			return false;
+			return array();
 		}
 
-		$updated = false;
+		$media_map = array();
 
 		foreach ( $items as $source_attachment_id => $fields ) {
 			$translated_id = $this->resolve_translated_attachment( $source_attachment_id, $language );
 
-			if ( 0 < $translated_id && $this->write_attachment_translations( $translated_id, $fields, $source_attachment_id ) ) {
-				$updated = true;
+			if ( 0 >= $translated_id ) {
+				continue;
 			}
+
+			$media_map[ (int) $source_attachment_id ] = (int) $translated_id;
+			$this->write_attachment_translations( $translated_id, $fields, $source_attachment_id );
 		}
 
-		return $updated;
+		return $media_map;
 	}
 
 	/**
@@ -602,6 +611,77 @@ class Media_Translation_Service {
 		$this->walk_remap_elementor_media( $elements, $language, $translations );
 
 		return $elements;
+	}
+
+	/**
+	 * Remaps Gutenberg / classic content attachment IDs and URLs using a known map.
+	 *
+	 * Does not create translations — callers must resolve the map first
+	 * (e.g. via apply_content_media_translations / resolve_translated_attachment).
+	 *
+	 * @param string          $content   Post content.
+	 * @param array<int, int> $media_map Source attachment ID => translated ID.
+	 * @return string Remapped content.
+	 */
+	public function remap_content( $content, array $media_map ) {
+		if ( ! is_string( $content ) || '' === $content || empty( $media_map ) || ! $this->is_enabled() ) {
+			return is_string( $content ) ? $content : '';
+		}
+
+		$map = array();
+		foreach ( $media_map as $source_id => $target_id ) {
+			$source_id = absint( $source_id );
+			$target_id = absint( $target_id );
+			if ( $source_id > 0 && $target_id > 0 && $source_id !== $target_id ) {
+				$map[ $source_id ] = $target_id;
+			}
+		}
+
+		if ( empty( $map ) ) {
+			return $content;
+		}
+
+		if ( has_blocks( $content ) ) {
+			$blocks = parse_blocks( $content );
+			$blocks = $this->remap_blocks( $blocks, $map );
+			return serialize_blocks( $blocks );
+		}
+
+		return $this->remap_html( $content, $map );
+	}
+
+	/**
+	 * Persists remapped post_content when it differs from the stored value.
+	 *
+	 * @param int             $post_id   Target post ID.
+	 * @param array<int, int> $media_map Source => translated attachment IDs.
+	 * @return bool Whether the post content was updated.
+	 */
+	public function remap_post_content( $post_id, array $media_map ) {
+		$post_id = absint( $post_id );
+		if ( 0 === $post_id || empty( $media_map ) || ! current_user_can( 'edit_post', $post_id ) ) {
+			return false;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post || ! is_string( $post->post_content ) || '' === $post->post_content ) {
+			return false;
+		}
+
+		$remapped = $this->remap_content( $post->post_content, $media_map );
+		if ( $remapped === $post->post_content ) {
+			return false;
+		}
+
+		$result = wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => $remapped,
+			),
+			true
+		);
+
+		return ! is_wp_error( $result );
 	}
 
 	/**
@@ -759,10 +839,16 @@ class Media_Translation_Service {
 					$data['url'] = $url;
 				}
 
-				if ( isset( $translations[ $source_attachment_id ] ) ) {
+				if ( isset( $translations[ $source_attachment_id ] ) && is_array( $translations[ $source_attachment_id ] ) ) {
 					$this->write_attachment_translations(
 						$translated_id,
 						$translations[ $source_attachment_id ],
+						$source_attachment_id
+					);
+				} elseif ( isset( $translations[ (string) $source_attachment_id ] ) && is_array( $translations[ (string) $source_attachment_id ] ) ) {
+					$this->write_attachment_translations(
+						$translated_id,
+						$translations[ (string) $source_attachment_id ],
 						$source_attachment_id
 					);
 				}
@@ -776,4 +862,168 @@ class Media_Translation_Service {
 		}
 		unset( $value );
 	}
+
+	/**
+	 * Remaps attachment IDs inside parsed blocks.
+	 *
+	 * @param array           $blocks Parsed blocks.
+	 * @param array<int, int> $map    Source => translated IDs.
+	 * @return array
+	 */
+	private function remap_blocks( array $blocks, array $map ) {
+		foreach ( $blocks as $k => $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+			$name  = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+
+			if ( in_array( $name, array( 'core/image', 'core/cover', 'core/audio', 'core/video', 'core/file' ), true ) && isset( $attrs['id'] ) ) {
+				$source_id = absint( $attrs['id'] );
+				if ( isset( $map[ $source_id ] ) ) {
+					$target_id   = $map[ $source_id ];
+					$attrs['id'] = $target_id;
+					foreach ( array( 'url', 'src', 'href' ) as $url_key ) {
+						if ( ! empty( $attrs[ $url_key ] ) && is_string( $attrs[ $url_key ] ) ) {
+							$attrs[ $url_key ] = self::remap_attachment_url( $source_id, $target_id, $attrs[ $url_key ] );
+						}
+					}
+				}
+			}
+
+			if ( 'core/gallery' === $name && ! empty( $attrs['ids'] ) && is_array( $attrs['ids'] ) ) {
+				foreach ( $attrs['ids'] as $n => $id ) {
+					$id = absint( $id );
+					if ( isset( $map[ $id ] ) ) {
+						$attrs['ids'][ $n ] = $map[ $id ];
+					}
+				}
+			}
+
+			if ( 'core/media-text' === $name && isset( $attrs['mediaId'] ) ) {
+				$source_id = absint( $attrs['mediaId'] );
+				if ( isset( $map[ $source_id ] ) ) {
+					$target_id        = $map[ $source_id ];
+					$attrs['mediaId'] = $target_id;
+					if ( ! empty( $attrs['mediaUrl'] ) && is_string( $attrs['mediaUrl'] ) ) {
+						$attrs['mediaUrl'] = self::remap_attachment_url( $source_id, $target_id, $attrs['mediaUrl'] );
+					}
+				}
+			}
+
+			$block['attrs'] = $attrs;
+
+			if ( ! empty( $block['innerHTML'] ) && is_string( $block['innerHTML'] ) ) {
+				$block['innerHTML'] = $this->remap_html( $block['innerHTML'], $map );
+			}
+
+			if ( ! empty( $block['innerContent'] ) && is_array( $block['innerContent'] ) ) {
+				foreach ( $block['innerContent'] as $i => $chunk ) {
+					if ( is_string( $chunk ) && '' !== $chunk ) {
+						$block['innerContent'][ $i ] = $this->remap_html( $chunk, $map );
+					}
+				}
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = $this->remap_blocks( $block['innerBlocks'], $map );
+			}
+
+			$blocks[ $k ] = $block;
+		}
+
+		return $blocks;
+	}
+
+	/**
+	 * Remaps wp-image / data-id / caption markers and attachment URLs in HTML.
+	 *
+	 * @param string          $html HTML fragment.
+	 * @param array<int, int> $map  Source => translated IDs.
+	 * @return string
+	 */
+	private function remap_html( $html, array $map ) {
+		if ( ! is_string( $html ) || '' === $html || empty( $map ) ) {
+			return is_string( $html ) ? $html : '';
+		}
+
+		$textarr = wp_html_split( $html );
+		foreach ( $textarr as $i => $text ) {
+			if ( 0 !== strpos( $text, '<img' ) ) {
+				continue;
+			}
+
+			$attributes = wp_kses_attr_parse( $text );
+			if ( ! is_array( $attributes ) ) {
+				continue;
+			}
+
+			$source_id = 0;
+			$target_id = 0;
+
+			foreach ( $attributes as $k => $attr ) {
+				if ( 0 === strpos( $attr, 'class' ) && preg_match( '#wp\-image\-([0-9]+)#', $attr, $matches ) ) {
+					$candidate = absint( $matches[1] );
+					if ( isset( $map[ $candidate ] ) ) {
+						$source_id        = $candidate;
+						$target_id        = $map[ $candidate ];
+						$attributes[ $k ] = str_replace( 'wp-image-' . $candidate, 'wp-image-' . $target_id, $attr );
+					}
+				}
+
+				if ( preg_match( '#^data\-id="([0-9]+)#', $attr, $matches ) ) {
+					$candidate = absint( $matches[1] );
+					if ( isset( $map[ $candidate ] ) ) {
+						$source_id        = $candidate;
+						$target_id        = $map[ $candidate ];
+						$attributes[ $k ] = str_replace( 'data-id="' . $candidate, 'data-id="' . $target_id, $attr );
+					}
+				}
+
+				if ( 0 === strpos( $attr, 'data-link' ) && preg_match( '#attachment_id=([0-9]+)#', $attr, $matches ) ) {
+					$candidate = absint( $matches[1] );
+					if ( isset( $map[ $candidate ] ) ) {
+						$source_id        = $candidate;
+						$target_id        = $map[ $candidate ];
+						$attributes[ $k ] = str_replace( 'attachment_id=' . $candidate, 'attachment_id=' . $target_id, $attr );
+					}
+				}
+			}
+
+			if ( $source_id > 0 && $target_id > 0 ) {
+				foreach ( $attributes as $key => $attribute ) {
+					if ( 0 === strpos( $attribute, 'src=' ) && preg_match( '#src=(["\'])([^"\']*)\1#', $attribute, $matches ) ) {
+						$url                = self::remap_attachment_url( $source_id, $target_id, html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' ) );
+						$attributes[ $key ] = str_replace( $matches[2], esc_url( $url ), $attribute );
+					}
+					if ( preg_match( '#^srcset=(["\'])(.*?)\1#', $attribute, $matches ) ) {
+						$srcset             = html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' );
+						$srcset             = preg_replace_callback(
+							'/(^|,\s*)(\S+)/',
+							static function ( $candidate ) use ( $source_id, $target_id ) {
+								return $candidate[1] . Media_Translation_Service::remap_attachment_url( $source_id, $target_id, $candidate[2] );
+							},
+							$srcset
+						);
+						$attributes[ $key ] = str_replace( $matches[2], esc_attr( $srcset ), $attribute );
+					}
+				}
+			}
+
+			$textarr[ $i ] = implode( $attributes );
+		}
+
+		// Caption shortcode ids, as Linguator_Sync_Content::caption_shortcode() remaps them on copy.
+		return (string) preg_replace_callback(
+			'/(?<![\w-])id=(["\'])attachment_(\d+)\1/',
+			static function ( $matches ) use ( $map ) {
+				$source_id = absint( $matches[2] );
+				return isset( $map[ $source_id ] ) ? 'id=' . $matches[1] . 'attachment_' . $map[ $source_id ] . $matches[1] : $matches[0];
+			},
+			implode( $textarr )
+		);
+	}
+
+
 }

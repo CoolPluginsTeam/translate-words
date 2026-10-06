@@ -328,8 +328,10 @@ class Linguator_Sync_Post {
 	 */
 	public function caption_shortcode( $attr, $content, $tag ) {
 		// Translate the caption id
-		$out = array();
-		$tag = sanitize_key( $tag );
+		$out   = array();
+		$id    = null;
+		$tr_id = null;
+		$tag   = sanitize_key( $tag );
 		if ( ! in_array( $tag, array( 'caption', 'wp_caption' ), true ) ) {
 			return '';
 		}
@@ -389,43 +391,26 @@ class Linguator_Sync_Post {
 				}
 			}
 
-			if ( ! empty( $img_ids ) ) {
-				$html = implode( $textarr );
-				if ( ! $this->preserve_media_text ) {
-					// Match captions to their own figure, rather than to every image
-					// in the document (some images do not have a caption).
-					$html = preg_replace_callback(
-						'~<figure\b[^>]*>.*?</figure>~is',
-						function ( $figure ) {
-							if ( ! preg_match( '~<img\b[^>]*\bclass=["\'][^"\']*\bwp-image-(\d+)\b~i', $figure[0], $image ) ) {
-								return $figure[0];
-							}
-							$attachment = get_post( (int) $image[1] );
-							if ( ! $attachment instanceof WP_Post || '' === $attachment->post_excerpt ) {
-								return $figure[0];
-							}
-							return preg_replace_callback(
-								'~(<figcaption\b[^>]*>).*?(</figcaption>)~is',
-								function ( $caption ) use ( $attachment ) {
-									return $caption[1] . wp_kses_post( $attachment->post_excerpt ) . $caption[2];
-								},
-								$figure[0]
-							);
-						},
-						$html
-					);
-				}
-				return $html;
+			if ( empty( $img_ids ) ) {
+				return $content;
 			}
+
+			// Keep figcaption text already present in content (bulk AI may have
+			// translated it). Attachment post_excerpt is copied untranslated by
+			// create_media_translation, so overwriting here wiped translations.
+			// Matches Autopoly Pro + Polylang media sync behavior.
+			$new_content = implode( $textarr );
+			return is_string( $new_content ) ? $new_content : $content;
 		}
 
 		return $content;
 	}
 
 	/**
-	 * Translates image attachment references while preserving inline text.
+	 * Translates image attachment references and alternative text.
 	 *
-	 * Remaps attachment IDs and URLs, preserving AI text when requested.
+	 * Remaps attachment IDs and URLs; the alt follows the translated attachment
+	 * unless it was customized or already translated.
 	 *
 	 *  
 	 *   The html is passed by reference and the return value is the image ID.
@@ -439,6 +424,9 @@ class Linguator_Sync_Post {
 		if ( ! is_array( $attributes ) ) {
 			return null;
 		}
+
+		$source_id = null;
+		$tr_id     = null;
 
 		// Remap attachment IDs in class, data-id, and data-link attributes.
 		foreach ( $attributes as $k => $attr ) {
@@ -462,16 +450,18 @@ class Linguator_Sync_Post {
 		}
 
 		if ( ! empty( $tr_id ) ) {
-			if ( ! $this->preserve_media_text ) {
-				$alt = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
-				if ( is_string( $alt ) && '' !== $alt ) {
-					foreach ( $attributes as $key => $attribute ) {
-						if ( preg_match( '/^alt\s*=/i', $attribute ) ) {
-							$attributes[ $key ] = 'alt="' . esc_attr( $alt ) . '" ';
-						}
+			// The alt follows the translated attachment only while it is still the source attachment
+			// alt, so a customized or already translated (AI) inline alt is kept.
+			$tr_alt     = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
+			$source_alt = get_post_meta( $source_id, '_wp_attachment_image_alt', true );
+			if ( is_string( $tr_alt ) && '' !== $tr_alt && is_string( $source_alt ) && '' !== $source_alt ) {
+				foreach ( $attributes as $k => $attr ) {
+					if ( preg_match( '#^alt=(["\'])(.*?)\1#', $attr, $matches ) && html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' ) === $source_alt ) {
+						$attributes[ $k ] = str_replace( $matches[0], 'alt="' . esc_attr( $tr_alt ) . '"', $attr );
 					}
 				}
 			}
+
 			if ( ! empty( $source_id ) ) {
 				foreach ( $attributes as $key => $attribute ) {
 					if ( 0 === strpos( $attribute, 'src=' ) && preg_match( '#src=(["\'])([^"\']*)\1#', $attribute, $matches ) ) {
