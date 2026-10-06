@@ -218,6 +218,40 @@ const UpdateClassicPage = async (props) => {
     }
 
     /**
+     * Applies the translated attachment alt to classic inline images when media translation is on.
+     * Like Linguator_Sync_Content::translate_img(), only an alt still equal to the source attachment alt is replaced.
+     *
+     * @param {string} html Classic post content.
+     * @return {string} Content with translated inline image alt.
+     */
+    const translateInlineImageAlt = (html) => {
+        if (!lmatPageTranslationGlobal.mediaSupport || !Array.isArray(postContent.content_media)) {
+            return html;
+        }
+
+        const textarea = document.createElement('textarea');
+
+        return html.replace(/<img\b[^>]*>/gi, (tag) => {
+            const id = tag.match(/\bwp-image-(\d+)\b/);
+            const alt = tag.match(/\salt="([^"]*)"/i);
+            const attachment = id && alt ? postContent.content_media.find((item) => String(item.id) === id[1]) : null;
+
+            if (!attachment || !attachment.alt) {
+                return tag;
+            }
+
+            textarea.innerHTML = alt[1];
+            if (textarea.value !== attachment.alt) {
+                return tag;
+            }
+
+            textarea.textContent = select('block-lmatPageTranslation/translate').getTranslatedString('content', attachment.alt, `lmat_media_${attachment.id}_alt`, service);
+
+            return tag.replace(alt[0], () => ` alt="${textarea.innerHTML.replace(/"/g, '&quot;')}"`);
+        });
+    }
+
+    /**
      * Updates the post content based on translation.
      */
     const postContentUpdate = () => {
@@ -229,7 +263,8 @@ const UpdateClassicPage = async (props) => {
             const entity=(/^&[a-zA-Z0-9#]+;$/.test(text));
             const htmlTag = /^<\/?\s*[a-zA-Z0-9#]+\s*\/?>$/.test(text);
             const isEmptyHtmlTag = /^<\s*\/?\s*[a-zA-Z0-9#]+\s*><\/\s*\/?\s*[a-zA-Z0-9#]+\s*>$/.test(text);
-            const blockCommentTag = /<!--[\s\S]*?-->/g.test(text) && text.indexOf('<!--') < text.indexOf('-->');
+            // Skip comment-only lines (e.g. <!--more-->); text around inline comments stays translatable.
+            const blockCommentTag = /^\s*(?:<!--[\s\S]*?-->\s*)+$/.test(text);
 
             const plainText=!entity && !htmlTag && !isEmptyHtmlTag && !blockCommentTag; 
 
@@ -245,7 +280,7 @@ const UpdateClassicPage = async (props) => {
             }
         });
 
-        const content = strings.join('');
+        const content = translateInlineImageAlt(strings.join(''));
 
         const tabWrapper = document.querySelector('#wp-content-wrap .wp-editor-tabs');
         if (tabWrapper) {

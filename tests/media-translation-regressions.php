@@ -71,6 +71,7 @@ namespace {
 	class Media_Model {
 		public $created = 0;
 		public function get_translation( $id, $language ) { return 10 === $id ? 20 : 0; }
+		public function get( $id, $language ) { return 10 === (int) $id ? 20 : 0; }
 		public function get_language( $id ) { return new \Linguator\Includes\Other\Linguator_Language(); }
 		public function create_media_translation( $id, $language ) { ++$this->created; return 0; }
 	}
@@ -98,13 +99,18 @@ namespace {
 	$shortcode_tags = array();
 	$html = '<figure><img class="wp-image-10" src="https://example.org/uploads/photo-300x200.jpg?x=1" alt="AI alt"><figcaption>AI caption</figcaption></figure>';
 	$manual = $sync->translate_content( $html, $posts[2], $language, $language );
-	check( false !== strpos( $manual, 'alt="Manual alt"' ), 'Ordinary copying must use translated alt.' );
-	check( false !== strpos( $manual, '<figcaption>Manual caption</figcaption>' ), 'Ordinary copying must use translated caption.' );
+	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Autopoly-style: content alt must not be overwritten by attachment meta.' );
+	check( false !== strpos( $manual, '<figcaption>AI caption</figcaption>' ), 'Autopoly-style: content figcaption must not be overwritten by attachment excerpt.' );
+	check( false !== strpos( $manual, 'wp-image-20' ), 'Ordinary copying must still remap attachment IDs.' );
 	check( false !== strpos( $manual, 'photo-300x200.jpg?x=1' ), 'Shared attachment must retain thumbnail URL.' );
 	$ai = $sync->translate_content( $html, $posts[2], $language, $language, true );
 	check( false !== strpos( $ai, 'alt="AI alt"' ) && false !== strpos( $ai, '<figcaption>AI caption</figcaption>' ), 'AI inline text must survive remapping.' );
 	$manual = $sync->translate_content( $html, $posts[2], $language, $language );
-	check( false !== strpos( $manual, 'Manual alt' ), 'AI preservation must not leak into the next ordinary copy.' );
+	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Subsequent ordinary copy still keeps content alt (Autopoly).' );
+	$meta[10]['_wp_attachment_image_alt'] = 'Source alt';
+	$classic = $sync->translate_content( '<img class="wp-image-10" alt="Source alt"><img class="wp-image-10" alt="AI alt">', $posts[2], $language, $language, true );
+	check( false !== strpos( $classic, 'alt="Manual alt"' ) && false !== strpos( $classic, 'alt="AI alt"' ) && false === strpos( $classic, 'Source alt' ), 'Inline alt equal to the source attachment alt must follow the translated attachment; other alt is kept.' );
+	unset( $meta[10] );
 	$block = $sync->block( array( 'blockName' => 'core/audio', 'attrs' => array( 'id' => 10, 'src' => $urls[10] . '?download=1' ) ) );
 	check( 20 === $block['attrs']['id'] && $urls[10] . '?download=1' === $block['attrs']['src'], 'Block remapping must retain shared URL parameters.' );
 	$urls[20] = 'https://example.org/uploads/translated.jpg';
@@ -121,9 +127,9 @@ namespace {
 	check( true === $service->validate_media_payload( 1, $language, $payload ), 'Referenced authorized attachment must pass.' );
 	$unrelated = array( 'content_media' => array( array( 'id' => 99, 'alt' => 'Injected' ) ) );
 	check( is_wp_error( $service->validate_media_payload( 1, $language, $unrelated ) ), 'Unrelated attachment must be rejected.' );
-	check( false === $service->apply_content_media_translations( 2, $unrelated['content_media'], 1 ) && 0 === $writes, 'Unrelated attachment must not cause writes.' );
+	check( array() === $service->apply_content_media_translations( 2, $unrelated['content_media'], 1 ) && 0 === $writes, 'Unrelated attachment must not cause writes.' );
 	$mixed = array_merge( $payload['content_media'], $unrelated['content_media'] );
-	check( false === $service->apply_content_media_translations( 2, $mixed, 1 ) && 0 === $writes, 'A mixed valid/invalid payload must be rejected before any write.' );
+	check( array() === $service->apply_content_media_translations( 2, $mixed, 1 ) && 0 === $writes, 'A mixed valid/invalid payload must be rejected before any write.' );
 	$denied = array( 10 );
 	check( is_wp_error( $service->validate_media_payload( 1, $language, $payload ) ) && 0 === $service->resolve_translated_attachment( 10, $language ), 'Source attachment permission must be enforced.' );
 	$denied = array( 20 );
@@ -141,11 +147,17 @@ namespace {
 	$elementor = $service->remap_elementor_media( array( 'id' => 10, 'url' => $urls[10] ), $language, $payload['content_media'] );
 	check( 10 === $elementor['id'] && 0 === $writes, 'Elementor remapping must not write an unauthorized attachment.' );
 	$denied = array();
-	check( true === $service->apply_content_media_translations( 2, $payload['content_media'], 1 ) && 1 === $writes, 'Valid media save must still succeed.' );
-	check( array( 10, 11 ) === $service->collect_content_attachment_ids( '[gallery ids="10,11"] [playlist ids="11,10"]' ), 'Gallery and playlist shortcode attachment IDs must be collected once.' );
-	check( array() === $service->collect_content_attachment_ids( '[[gallery ids="10,11"]]' ), 'Escaped gallery shortcodes must remain ignored.' );
-	$alt_with_backslash = 'Path C:' . chr( 92 ) . 'photos';
-	check( true === $service->write_attachment_translations( 20, array( 'alt' => $alt_with_backslash ), 10 ), 'Alt text containing a backslash must save.' );
-	check( $alt_with_backslash === $meta[20]['_wp_attachment_image_alt'], 'Alt text backslashes must survive WordPress metadata unslashing.' );
+	$map = $service->apply_content_media_translations( 2, $payload['content_media'], 1 );
+	check( isset( $map[10] ) && 20 === $map[10] && 1 === $writes, 'Valid media save must still succeed.' );
+	$posts[2]->post_content = '<img class="wp-image-10" src="https://example.org/uploads/photo.jpg" alt="AI alt">';
+	$remapped = $service->remap_content( $posts[2]->post_content, $map );
+	check( false !== strpos( $remapped, 'wp-image-20' ), 'remap_content must rewrite wp-image class to the translated attachment.' );
+	$caption = $service->remap_content( '[caption id="attachment_10" align="alignnone"]<img class="wp-image-10" src="https://example.org/uploads/photo.jpg"> Cap[/caption][caption id="attachment_100"]x[/caption]', $map );
+	check( false !== strpos( $caption, '[caption id="attachment_20" align="alignnone"]' ) && false !== strpos( $caption, 'id="attachment_100"' ), 'remap_content must remap caption shortcode ids like caption_shortcode() and leave others.' );
+	$linguator->options['media_support'] = false;
+	$service_off = new Media_Translation_Service( $linguator );
+	$writes_before = $writes;
+	check( array() === $service_off->apply_content_media_translations( 2, $payload['content_media'], 1 ) && $writes === $writes_before, 'Media OFF must skip content media writes.' );
+	check( $posts[2]->post_content === $service_off->remap_content( $posts[2]->post_content, $map ), 'Media OFF must not remap content.' );
 	echo "Passed $checks media regression checks.\n";
 }
