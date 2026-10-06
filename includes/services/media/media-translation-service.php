@@ -391,7 +391,7 @@ class Media_Translation_Service {
 			return 0;
 		}
 
-		// Autopoly/Polylang: resolve via get(), then create when missing.
+		// Resolve the existing translation first, then create it when missing.
 		$translated_id = (int) $this->model->post->get( $source_attachment_id, $language );
 		$translated_attachment = $translated_id ? get_post( $translated_id ) : null;
 		if ( $translated_attachment instanceof WP_Post && ! current_user_can( 'edit_post', $translated_id ) ) {

@@ -350,7 +350,7 @@ class Linguator_Sync_Post_Model {
 			$this->update_elementor_data( $tr_id, $elementor_post_data );
 		}
 
-		// Autopoly-style: AI media strings win over media_support copy values.
+		// AI-translated media strings take precedence over values copied by media support.
 		if ( $this->media_translation->is_enabled() && isset( $post_data['featured_image'] ) && is_array( $post_data['featured_image'] ) ) {
 			$this->media_translation->apply_featured_image_translations( (int) $post_id, (int) $tr_id, $post_data['featured_image'] );
 		}
@@ -394,7 +394,7 @@ class Linguator_Sync_Post_Model {
 	}
 
 	/**
-	 * Update Elementor data with remapped media (Autopoly + Polylang pattern).
+	 * Update Elementor data with remapped media.
 	 *
 	 * Keeps caption_source=attachment; AI caption/title/alt land on the translated attachment.
 	 *
@@ -486,7 +486,7 @@ class Linguator_Sync_Post_Model {
 			$d['sync']   = empty( $d['sync'] ) ? array_fill_keys( $sync_post, $lang ) : array_merge( array_diff( $d['sync'], array( $lang ) ), array_fill_keys( $sync_post, $lang ) );
 		}
 
-		wp_update_term( (int) $term->term_id, 'post_translations', array( 'description' => maybe_serialize( $d ) ) );
+		wp_update_term( (int) $term->term_id, 'lmat_post_translations', array( 'description' => maybe_serialize( $d ) ) );
 	}
 
 	/**

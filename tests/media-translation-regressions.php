@@ -99,14 +99,14 @@ namespace {
 	$shortcode_tags = array();
 	$html = '<figure><img class="wp-image-10" src="https://example.org/uploads/photo-300x200.jpg?x=1" alt="AI alt"><figcaption>AI caption</figcaption></figure>';
 	$manual = $sync->translate_content( $html, $posts[2], $language, $language );
-	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Autopoly-style: content alt must not be overwritten by attachment meta.' );
-	check( false !== strpos( $manual, '<figcaption>AI caption</figcaption>' ), 'Autopoly-style: content figcaption must not be overwritten by attachment excerpt.' );
+	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Content alt must not be overwritten by attachment meta.' );
+	check( false !== strpos( $manual, '<figcaption>AI caption</figcaption>' ), 'Content figcaption must not be overwritten by attachment excerpt.' );
 	check( false !== strpos( $manual, 'wp-image-20' ), 'Ordinary copying must still remap attachment IDs.' );
 	check( false !== strpos( $manual, 'photo-300x200.jpg?x=1' ), 'Shared attachment must retain thumbnail URL.' );
 	$ai = $sync->translate_content( $html, $posts[2], $language, $language, true );
 	check( false !== strpos( $ai, 'alt="AI alt"' ) && false !== strpos( $ai, '<figcaption>AI caption</figcaption>' ), 'AI inline text must survive remapping.' );
 	$manual = $sync->translate_content( $html, $posts[2], $language, $language );
-	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Subsequent ordinary copy still keeps content alt (Autopoly).' );
+	check( false !== strpos( $manual, 'alt="AI alt"' ), 'Subsequent ordinary copy still keeps content alt.' );
 	$meta[10]['_wp_attachment_image_alt'] = 'Source alt';
 	$classic = $sync->translate_content( '<img class="wp-image-10" alt="Source alt"><img class="wp-image-10" alt="AI alt">', $posts[2], $language, $language, true );
 	check( false !== strpos( $classic, 'alt="Manual alt"' ) && false !== strpos( $classic, 'alt="AI alt"' ) && false === strpos( $classic, 'Source alt' ), 'Inline alt equal to the source attachment alt must follow the translated attachment; other alt is kept.' );

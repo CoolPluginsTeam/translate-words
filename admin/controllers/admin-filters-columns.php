@@ -395,6 +395,10 @@ class Linguator_Admin_Filters_Columns {
 			wp_die( 0 );
 		}
 
+		if ( ! current_user_can( 'edit_post', (int) $_POST['post_id'] ) ) {
+			wp_die( 0 );
+		}
+
 		$post_type_object = get_post_type_object( sanitize_key( wp_unslash( $_POST['post_type'] ) ) );
 
 		if ( empty( $post_type_object ) || ! $this->model->is_translated_post_type( $post_type_object->name ) ) {
@@ -435,7 +439,7 @@ class Linguator_Admin_Filters_Columns {
 				'posts_per_page' => count( $translations ),
 				'no_found_rows'  => true,
 				'orderby'        => 'ID',
-				'lang'           => '',
+				'lmat_lang'      => '',
 			)
 		);
 
@@ -477,6 +481,10 @@ class Linguator_Admin_Filters_Columns {
 		}
 
 		if ( ! is_numeric( $_POST['term_id'] ) ) {
+			wp_die( 0 );
+		}
+
+		if ( ! current_user_can( 'edit_term', (int) $_POST['term_id'] ) ) {
 			wp_die( 0 );
 		}
 

@@ -13,6 +13,7 @@ use Linguator\Frontend\Services\Linguator_Accept_Languages_Collection;
 use Linguator\Includes\Other\Linguator_Language;
 use Linguator\Includes\Helpers\Linguator_Cookie;
 use Linguator\Includes\Other\Linguator_Query;
+use Linguator\Includes\Models\Languages;
 
 
 
@@ -73,13 +74,21 @@ abstract class Linguator_Choose_Lang {
 	 * @return void
 	 */
 	public function init() {
-		if ( Linguator::is_ajax_on_front() || ! wp_using_themes() ) {
-			$this->set_language( empty( $_REQUEST['lmat_lang'] ) ? $this->get_preferred_language() : $this->model->get_language( sanitize_key( wp_unslash( $_REQUEST['lmat_lang'] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
-		}
-
 		add_action( 'pre_comment_on_post', array( $this, 'linguator_pre_comment_on_post' ) ); // sets the language of comment
 		add_action( 'parse_query', array( $this, 'parse_main_query' ), 2 ); // sets the language in special cases
 		add_action( 'wp', array( $this, 'linguator_maybe_setcookie' ), 7 );
+
+		if ( ! Linguator::is_ajax_on_front() && wp_using_themes() ) {
+			return;
+		}
+
+		if ( isset( $_REQUEST['lmat_lang'] ) && is_string( $_REQUEST['lmat_lang'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			// Let's accept either WordPress locales or language codes.
+			$lang = wp_unslash( $_REQUEST['lmat_lang'] ); // phpcs:ignore WordPress.Security.NonceVerification, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$lang = $this->model->get_language( Languages::is_locale( $lang ) ? $lang : sanitize_key( $lang ) );
+		}
+
+		$this->set_language( empty( $lang ) ? $this->get_preferred_language() : $lang );
 	}
 
 	/**
@@ -135,7 +144,7 @@ abstract class Linguator_Choose_Lang {
 	 */
 	public function linguator_maybe_setcookie() {
 		// Don't set cookie in javascript when a cache plugin is active.
-		if ( ! linguator_is_cache_active() && ! empty( $this->curlang ) && ! is_404() ) {
+		if ( ! linguator_is_cache_active() && ! empty( $this->curlang ) && ! is_404() && ! is_favicon() ) {
 			$args = array(
 				'domain'   => 2 === $this->options['force_lang'] ? wp_parse_url( $this->links_model->home, PHP_URL_HOST ) : COOKIE_DOMAIN,
 				'samesite' => 3 === $this->options['force_lang'] ? 'None' : 'Lax',

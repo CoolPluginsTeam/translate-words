@@ -808,8 +808,9 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			set_transient( 'lmat_settings_errors', $errors, 30 );
 			$args['settings-updated'] = 1;
 		}
-		// Remove possible 'lmat_action' and 'lang' query args from the referer before redirecting
-		wp_safe_redirect( add_query_arg( $args, remove_query_arg( array( 'lmat_action', 'lang' ), wp_get_referer() ) ) );
+		// Remove all known query args from the referer before redirecting.
+		$to_remove = array( 'lang', 'module', 'lmat_action', 'noheader', '_wpnonce' );
+		wp_safe_redirect( add_query_arg( $args, remove_query_arg( $to_remove, wp_get_referer() ) ) );
 		exit;
 	}
 

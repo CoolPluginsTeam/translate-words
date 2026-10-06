@@ -271,7 +271,6 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		 * 3 => true if loaded in footer
 		 */
 		$scripts = array(
-			'user'    => array( array( 'profile', 'user-edit' ), array( 'jquery' ), false, false ),
 			'widgets' => array( array( 'widgets' ), array( 'jquery' ), false, false ),
 		);
 

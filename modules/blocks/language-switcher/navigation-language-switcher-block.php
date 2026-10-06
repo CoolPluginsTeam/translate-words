@@ -88,6 +88,7 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 			'openSubmenusOnClick',
 			'style',
 			'isResponsive', // Backward compatibility.
+			'submenuVisibility',
 		);
 	}
 

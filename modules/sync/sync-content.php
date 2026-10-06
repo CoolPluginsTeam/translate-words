@@ -398,7 +398,6 @@ class Linguator_Sync_Post {
 			// Keep figcaption text already present in content (bulk AI may have
 			// translated it). Attachment post_excerpt is copied untranslated by
 			// create_media_translation, so overwriting here wiped translations.
-			// Matches Autopoly Pro + Polylang media sync behavior.
 			$new_content = implode( $textarr );
 			return is_string( $new_content ) ? $new_content : $content;
 		}
