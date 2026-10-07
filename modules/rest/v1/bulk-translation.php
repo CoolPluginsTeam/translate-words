@@ -473,7 +473,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$html_tag_maps    = array();
 			$short_key_map    = array();
 			$parse_strings    = $strings;
-			if ( 'ollama' === $provider ) {
+			$ollama_custom_prompt = '';
+			if ( 'ollama' === $provider && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] ) ) {
+				$ollama_custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] );
+			}
+			// Temporary comparison path: custom Ollama prompts receive raw HTML like OpenAI.
+			if ( 'ollama' === $provider && '' === $ollama_custom_prompt ) {
 				$protected        = $this->ai_protect_ollama_html_tags( $strings );
 				$provider_strings = $protected['strings'];
 				$html_tag_maps    = $protected['maps'];
@@ -508,7 +513,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			if ( 'ollama' === $provider ) {
 				$ollama = new Ollama_Translation_Provider( $api_key, $model_id );
-				$text   = $ollama->translate_instruction( $instruction, array_keys( $provider_strings ) );
+				$text   = $ollama->translate_instruction( $instruction, array_keys( $provider_strings ), '' === $ollama_custom_prompt );
 			} else {
 				$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
 				if ( is_wp_error( $provider_setup ) ) {
@@ -1064,6 +1069,37 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'{input_json}'      => $payload,
 						)
 					);
+
+					return $custom_prompt . "\n\n" . 'Mandatory response contract: Return only one valid JSON object containing every key from the input JSON exactly as written. Never rename, translate, shorten, or omit a key. Values whose key is post_name or slug are URL-slug text: translate their words semantically, use lowercase, and separate words with hyphens. Do not wrap the JSON in quotes or a markdown code block.';
+				}
+			}
+			if ( 'ollama' === $provider ) {
+				$custom_prompt = '';
+				if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] ) ) {
+					$custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] );
+				}
+
+				if ( '' !== $custom_prompt ) {
+					$source_language = LMAT()->model->get_language( $source_lang );
+					$target_language = LMAT()->model->get_language( $target_lang );
+					$target_locale   = $target_language ? $target_language->get_locale() : '';
+					$glossary_terms  = str_replace( "Please use the following glossary terms in your translation:\n", '', $glossary_instructions );
+					$glossary_terms  = str_replace( "\n", '; ', trim( $glossary_terms ) );
+					$has_input_json  = false !== strpos( $custom_prompt, '{input_json}' );
+					$custom_prompt   = strtr(
+						$custom_prompt,
+						array(
+							'{source_language}' => sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
+							'{target_language}' => sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
+							'{target_locale}'   => sanitize_text_field( $target_locale ),
+							'{glossary}'        => $glossary_terms,
+							'{input_json}'      => $payload,
+						)
+					);
+
+					if ( ! $has_input_json ) {
+						$custom_prompt .= "\n\nInput JSON: " . $payload;
+					}
 
 					return $custom_prompt . "\n\n" . 'Mandatory response contract: Return only one valid JSON object containing every key from the input JSON exactly as written. Never rename, translate, shorten, or omit a key. Values whose key is post_name or slug are URL-slug text: translate their words semantically, use lowercase, and separate words with hyphens. Do not wrap the JSON in quotes or a markdown code block.';
 				}

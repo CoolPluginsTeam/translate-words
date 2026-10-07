@@ -24,6 +24,11 @@ class Ai_Translation_Configuration extends Abstract_Option {
 	private const OPENAI_CUSTOM_PROMPT_MAX_LENGTH = 10000;
 
 	/**
+	 * Maximum length of the custom Ollama prompt.
+	 */
+	private const OLLAMA_CUSTOM_PROMPT_MAX_LENGTH = 10000;
+
+	/**
 	 * Returns option key.
 	 *
 	 *  
@@ -56,6 +61,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
             'bulk_translation_post_status' => 'draft',
             'slug_translation_option' => 'title_translate',
 			'openai_custom_prompt' => '',
+			'ollama_custom_prompt' => '',
         );
 
         return $data;
@@ -88,6 +94,10 @@ class Ai_Translation_Configuration extends Abstract_Option {
 				'openai_custom_prompt' => array(
 					'type'      => 'string',
 					'maxLength' => self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH,
+				),
+				'ollama_custom_prompt' => array(
+					'type'      => 'string',
+					'maxLength' => self::OLLAMA_CUSTOM_PROMPT_MAX_LENGTH,
 				),
             ),
         );
@@ -139,6 +149,13 @@ class Ai_Translation_Configuration extends Abstract_Option {
 			$filtered_value['openai_custom_prompt'] = function_exists( 'mb_substr' )
 				? mb_substr( $custom_prompt, 0, self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH )
 				: substr( $custom_prompt, 0, self::OPENAI_CUSTOM_PROMPT_MAX_LENGTH );
+		}
+
+		if ( isset( $value['ollama_custom_prompt'] ) ) {
+			$custom_prompt = sanitize_textarea_field( (string) $value['ollama_custom_prompt'] );
+			$filtered_value['ollama_custom_prompt'] = function_exists( 'mb_substr' )
+				? mb_substr( $custom_prompt, 0, self::OLLAMA_CUSTOM_PROMPT_MAX_LENGTH )
+				: substr( $custom_prompt, 0, self::OLLAMA_CUSTOM_PROMPT_MAX_LENGTH );
 		}
 
         return $filtered_value;

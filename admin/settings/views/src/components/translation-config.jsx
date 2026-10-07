@@ -53,6 +53,7 @@ const TranslationConfig = ({ data, setData }) => {
     const [openaiTranslation, setOpenaiTranslation] = useState(Boolean(provider?.openai) && openaiAvailable)
     const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable)
     const [openaiCustomPrompt, setOpenaiCustomPrompt] = useState(aiTranslation?.openai_custom_prompt || '')
+    const [ollamaCustomPrompt, setOllamaCustomPrompt] = useState(aiTranslation?.ollama_custom_prompt || '')
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -78,6 +79,7 @@ const TranslationConfig = ({ data, setData }) => {
             openaiTranslation !== (Boolean(provider?.openai) && openaiAvailable) ||
             ollamaTranslation !== (Boolean(provider?.ollama) && ollamaAvailable) ||
             openaiCustomPrompt !== (aiTranslation?.openai_custom_prompt || '') ||
+            ollamaCustomPrompt !== (aiTranslation?.ollama_custom_prompt || '') ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
     };
@@ -86,7 +88,7 @@ const TranslationConfig = ({ data, setData }) => {
         const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (openaiAvailable && openaiTranslation) || (ollamaAvailable && ollamaTranslation)
         const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (openaiTranslation && apiKeyDirty.openai) || (ollamaTranslation && apiKeyDirty.ollama)
         setHandleButtonDisabled(!hasChanges() && !(apiSectionOpen && hasPendingApiChange))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, openaiCustomPrompt, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, openaiCustomPrompt, ollamaCustomPrompt, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -152,7 +154,8 @@ const TranslationConfig = ({ data, setData }) => {
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption,
-                    openai_custom_prompt: openaiCustomPrompt
+                    openai_custom_prompt: openaiCustomPrompt,
+                    ollama_custom_prompt: ollamaCustomPrompt
                 }
             }
             if (apiKeyPayload?.keys) {
@@ -480,6 +483,23 @@ const TranslationConfig = ({ data, setData }) => {
                                         providerKeys={['ollama']}
                                         onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, ollama: dirty }))}
                                     />
+                                    <div className="mt-5">
+                                        <label className="block mb-2 font-medium" htmlFor="ollama-custom-prompt">
+                                            {__('Custom prompt override (optional)', 'translate-words')}
+                                        </label>
+                                        <textarea
+                                            id="ollama-custom-prompt"
+                                            className="box-border w-full p-3 border border-solid border-border-subtle rounded-md bg-white text-sm leading-6"
+                                            maxLength={10000}
+                                            onChange={(event) => setOllamaCustomPrompt(event.target.value)}
+                                            placeholder={__('Leave empty to use the built-in Ollama translation prompt.', 'translate-words')}
+                                            rows={6}
+                                            value={ollamaCustomPrompt}
+                                        />
+                                        <p className="mt-2 mb-0 text-sm text-text-secondary">
+                                            {__('For comparison testing, a custom prompt replaces the built-in instructions and sends raw HTML. Available placeholders: {source_language}, {target_language}, {target_locale}, {glossary}, and {input_json}.', 'translate-words')}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>
