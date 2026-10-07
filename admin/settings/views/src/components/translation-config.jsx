@@ -52,6 +52,7 @@ const TranslationConfig = ({ data, setData }) => {
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
     const [openaiTranslation, setOpenaiTranslation] = useState(Boolean(provider?.openai) && openaiAvailable)
     const [ollamaTranslation, setOllamaTranslation] = useState(Boolean(provider?.ollama) && ollamaAvailable)
+    const [geminiCustomPrompt, setGeminiCustomPrompt] = useState(aiTranslation?.gemini_custom_prompt || '')
     const [openaiCustomPrompt, setOpenaiCustomPrompt] = useState(aiTranslation?.openai_custom_prompt || '')
     const [ollamaCustomPrompt, setOllamaCustomPrompt] = useState(aiTranslation?.ollama_custom_prompt || '')
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
@@ -78,6 +79,7 @@ const TranslationConfig = ({ data, setData }) => {
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
             openaiTranslation !== (Boolean(provider?.openai) && openaiAvailable) ||
             ollamaTranslation !== (Boolean(provider?.ollama) && ollamaAvailable) ||
+            geminiCustomPrompt !== (aiTranslation?.gemini_custom_prompt || '') ||
             openaiCustomPrompt !== (aiTranslation?.openai_custom_prompt || '') ||
             ollamaCustomPrompt !== (aiTranslation?.ollama_custom_prompt || '') ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
@@ -88,7 +90,7 @@ const TranslationConfig = ({ data, setData }) => {
         const apiSectionOpen = (wpAiClientAvailable && geminiTranslation) || (openaiAvailable && openaiTranslation) || (ollamaAvailable && ollamaTranslation)
         const hasPendingApiChange = (geminiTranslation && apiKeyDirty.gemini) || (openaiTranslation && apiKeyDirty.openai) || (ollamaTranslation && apiKeyDirty.ollama)
         setHandleButtonDisabled(!hasChanges() && !(apiSectionOpen && hasPendingApiChange))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, openaiCustomPrompt, ollamaCustomPrompt, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, openaiTranslation, ollamaTranslation, geminiCustomPrompt, openaiCustomPrompt, ollamaCustomPrompt, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, openaiAvailable, ollamaAvailable, apiKeyDirty])
 
 
     //Save Setting Function 
@@ -154,6 +156,7 @@ const TranslationConfig = ({ data, setData }) => {
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption,
+                    gemini_custom_prompt: geminiCustomPrompt,
                     openai_custom_prompt: openaiCustomPrompt,
                     ollama_custom_prompt: ollamaCustomPrompt
                 }
@@ -394,6 +397,23 @@ const TranslationConfig = ({ data, setData }) => {
                                         providerKeys={['gemini']}
                                         onPendingChange={(dirty) => setApiKeyDirty(previous => ({ ...previous, gemini: dirty }))}
                                     />
+                                    <div className="mt-5">
+                                        <label className="block mb-2 font-medium" htmlFor="gemini-custom-prompt">
+                                            {__('Custom prompt override (optional)', 'translate-words')}
+                                        </label>
+                                        <textarea
+                                            id="gemini-custom-prompt"
+                                            className="box-border w-full p-3 border border-solid border-border-subtle rounded-md bg-white text-sm leading-6"
+                                            maxLength={10000}
+                                            onChange={(event) => setGeminiCustomPrompt(event.target.value)}
+                                            placeholder={__('Leave empty to use the built-in Gemini translation prompt.', 'translate-words')}
+                                            rows={6}
+                                            value={geminiCustomPrompt}
+                                        />
+                                        <p className="mt-2 mb-0 text-sm text-text-secondary">
+                                            {__('When provided, this completely replaces the built-in prompt. Available placeholders: {source_language}, {target_language}, {target_locale}, {glossary}, and {input_json}.', 'translate-words')}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>

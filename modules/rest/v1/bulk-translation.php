@@ -473,6 +473,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$html_tag_maps    = array();
 			$short_key_map    = array();
 			$parse_strings    = $strings;
+			$gemini_custom_prompt = '';
+			if ( 'gemini' === $provider && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['gemini_custom_prompt'] ) ) {
+				$gemini_custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['gemini_custom_prompt'] );
+			}
 			if ( 'ollama' === $provider ) {
 				$protected        = $this->ai_protect_ollama_html_tags( $strings );
 				$provider_strings = $protected['strings'];
@@ -480,9 +484,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 			$provider_strings = $this->ai_translate_prepare_slug_values( $provider_strings );
 
-			if ( in_array( $provider, array( 'ollama', 'openai' ), true ) ) {
+			if ( in_array( $provider, array( 'ollama', 'openai' ), true ) || ( 'gemini' === $provider && '' !== $gemini_custom_prompt ) ) {
 				// Short keys make Ollama's response more reliable and reduce the
-				// output tokens OpenAI spends repeating long internal block keys.
+				// output tokens OpenAI and custom-prompt Gemini spend repeating long keys.
 				// Keep semantic slug keys intact so the provider always recognizes
 				// the normalized slug words as slug content rather than an opaque key.
 				// Restore all shortened keys before returning any translations.
@@ -1041,16 +1045,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$target_lang,
 				empty( $glossary_strings ) ? $strings : $glossary_strings
 			);
-			if ( 'openai' === $provider ) {
+			if ( in_array( $provider, array( 'openai', 'gemini' ), true ) ) {
 				$source_language = LMAT()->model->get_language( $source_lang );
 				$target_language = LMAT()->model->get_language( $target_lang );
 				$target_locale   = $target_language ? $target_language->get_locale() : '';
 				$glossary_terms  = str_replace( "Please use the following glossary terms in your translation:\n", '', $glossary_instructions );
 				$glossary_terms  = str_replace( "\n", '; ', trim( $glossary_terms ) );
 				$custom_prompt   = '';
+				$prompt_option   = 'openai' === $provider ? 'openai_custom_prompt' : 'gemini_custom_prompt';
 
-				if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['openai_custom_prompt'] ) ) {
-					$custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['openai_custom_prompt'] );
+				if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration'][ $prompt_option ] ) ) {
+					$custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration'][ $prompt_option ] );
 				}
 
 				if ( '' !== $custom_prompt ) {
@@ -1310,7 +1315,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						}
 					}
 
-					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys );
+					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys, $provider_id );
 
 					try {
 						$text = $builder
@@ -1334,7 +1339,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					if ( '' !== $model_id && is_callable( array( $builder, 'using_model_preference' ) ) ) {
 						$builder = $builder->using_model_preference( $model_id );
 					}
-					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys );
+					$builder = $this->ai_translate_configure_json_response( $builder, $response_keys, $provider_id );
 					if (
 						'openai' === $provider_id &&
 						$this->ai_translate_openai_supports_no_reasoning( $model_id ) &&
@@ -1364,9 +1369,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 *
 		 * @param object        $builder       WP AI Client prompt builder.
 		 * @param array<string> $response_keys Required response keys.
+		 * @param string        $provider_id   WP AI Client provider id.
 		 * @return object
 		 */
-		private function ai_translate_configure_json_response( $builder, array $response_keys ) {
+		private function ai_translate_configure_json_response( $builder, array $response_keys, string $provider_id ) {
 			$properties = array();
 			$required   = array();
 			foreach ( $response_keys as $key ) {
@@ -1376,11 +1382,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$schema = array(
-				'type'                 => 'object',
-				'properties'           => $properties,
-				'required'             => $required,
-				'additionalProperties' => false,
+				'type'       => 'object',
+				'properties' => $properties,
+				'required'   => $required,
 			);
+			// Google's responseSchema rejects additionalProperties; OpenAI accepts it.
+			if ( 'google' !== $provider_id ) {
+				$schema['additionalProperties'] = false;
+			}
 
 			if ( is_callable( array( $builder, 'as_json_response' ) ) ) {
 				return $builder->as_json_response( $schema );
