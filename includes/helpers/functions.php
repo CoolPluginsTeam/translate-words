@@ -344,11 +344,12 @@ function linguator_content_path_to_url( $file ) {
  *
  * WP &lt; 7.0: Google + Chrome only.
  * WP 7.0+: Google + Chrome + Gemini.
+ * ChatGPT Web and Gemini Web (session cookies) on every version.
  *
  * @return string[]
  */
 function linguator_get_allowed_ai_providers() {
-	$allowed = array( 'chrome_local_ai', 'edge_local_ai', 'google' );
+	$allowed = array( 'chrome_local_ai', 'edge_local_ai', 'google', 'chatgpt_web', 'gemini_web' );
 
 	global $wp_version;
 	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {

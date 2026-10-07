@@ -7,7 +7,7 @@ import AddProgressBar from "../../progress-bar/index.js";
 import ShowStringCount from "../../progress-bar/show-string-count.js";
 
 /**
- * @param {string} providerId gemini
+ * @param {string} providerId gemini|chatgpt_web|gemini_web
  * @returns {(props: Object) => Promise<void>}
  */
 export default function createAiLlmPageTranslator(providerId) {
@@ -52,6 +52,8 @@ export default function createAiLlmPageTranslator(providerId) {
 
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            chatgpt_web: __("Translate with ChatGPT Web", "translate-words"),
+            gemini_web: __("Translate with Gemini Web", "translate-words"),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -204,7 +206,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = "gemini_model";
+                const modelKey = `${providerId}_model`;
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])
@@ -379,7 +381,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
                             const totalStringKeys = Object.keys(strings).length;
                             const canOfferGeminiRecovery =
-                                providerId === "gemini" &&
+                                ["gemini", "chatgpt_web", "gemini_web"].includes(providerId) &&
                                 totalStringKeys > 0 &&
                                 chunks.length > 0 &&
                                 (isQuota || chunkIndex < chunks.length);
@@ -440,7 +442,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 const totalStringKeys = Object.keys(strings).length;
 
                 logAiTranslationError(errorMessage);
-                if (providerId === "gemini" && isQuota && totalStringKeys > 0) {
+                if (["gemini", "chatgpt_web", "gemini_web"].includes(providerId) && isQuota && totalStringKeys > 0) {
                     showGeminiRecoverableError(true);
                 } else {
                     showErrorNotice(errorMessage);

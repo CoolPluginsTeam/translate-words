@@ -6,6 +6,7 @@ import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
 import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
 import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
 import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
+import { OpenAIIcon } from "../../../../../assets/js/src/icons/openai.js";
 
 /**
  * Provides translation services using Yandex Translate.
@@ -64,6 +65,30 @@ export default (props) => {
             BetaEnabled: false,
             ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.gemini,
             ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Add API Key', 'translate-words')}</a> : <></>,
+            Logo: <GeminiIcon className="icon-size" />
+        },
+        chatgpt_web: {
+            Provider: createAiLlmPageTranslator("chatgpt_web"),
+            title: "ChatGPT Web",
+            SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.chatgpt_web ? "Translate" : "Paste Cookie",
+            serviceLabel: "ChatGPT Web",
+            heading: sprintf(__("Translate Using %s", "translate-words"), "ChatGPT Web"),
+            Docs: "https://chatgpt.com/",
+            BetaEnabled: true,
+            ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.chatgpt_web,
+            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.chatgpt_web ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Paste Cookie', 'translate-words')}</a> : <></>,
+            Logo: <OpenAIIcon className="icon-size" />
+        },
+        gemini_web: {
+            Provider: createAiLlmPageTranslator("gemini_web"),
+            title: "Gemini Web",
+            SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.gemini_web ? "Translate" : "Paste Cookie",
+            serviceLabel: "Gemini Web",
+            heading: sprintf(__("Translate Using %s", "translate-words"), "Gemini Web"),
+            Docs: "https://gemini.google.com/app",
+            BetaEnabled: true,
+            ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.gemini_web,
+            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini_web ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" className="lmat-page-translation-provider-error button button-primary">{__('Paste Cookie', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />
         }
     };

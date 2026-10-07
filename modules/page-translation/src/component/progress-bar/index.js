@@ -6,6 +6,8 @@
 const AddProgressBar = (provider) => {
     const providerName = {
         gemini: "Google Gemini",
+        chatgpt_web: "ChatGPT Web",
+        gemini_web: "Gemini Web",
         google: "Google Translate",
     }
 

@@ -130,7 +130,10 @@ class AiLlmBulkTranslator {
         const batchSize = Number(lmatBulkTranslationGlobal?.AIRequestBatchSize);
         return {
             maxTokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 500,
-            concurrency: Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5,
+            // Web session providers share one signed-in browser session: send one request at a time.
+            concurrency: ["chatgpt_web", "gemini_web"].includes(this.serviceProvider)
+                ? 1
+                : (Number.isFinite(batchSize) && batchSize > 0 ? Math.min(10, Math.max(1, batchSize)) : 5),
         };
     };
 
@@ -277,7 +280,7 @@ class AiLlmBulkTranslator {
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
             const chunks = chunkStringMap(stringsToTranslate, { maxTokens });
-            const modelKey = "gemini_model";
+            const modelKey = `${this.serviceProvider}_model`;
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])

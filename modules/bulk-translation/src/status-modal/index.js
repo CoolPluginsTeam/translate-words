@@ -278,6 +278,10 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Edge AI Translator';
             case 'gemini':
                 return 'Google Gemini';
+            case 'chatgpt_web':
+                return 'ChatGPT Web';
+            case 'gemini_web':
+                return 'Gemini Web';
             default:
                 return 'Google Translate';
         }
@@ -303,7 +307,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     return (
         errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
-            {errorModalData.aiError && serviceProvider === 'gemini' && (
+            {errorModalData.aiError && ['gemini', 'chatgpt_web', 'gemini_web'].includes(serviceProvider) && (
                 <div className={`${prefix}-ai-error-buttons`}>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="continue" onClick={AIErrorBtnHandler}>{__('Continue', 'translate-words')}</button>

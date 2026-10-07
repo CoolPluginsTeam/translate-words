@@ -11,6 +11,8 @@ import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ApiKey from './api-key';
+import WebSessionKey, { webSessionProviders, isWebSessionConfigured } from './web-session-key.jsx';
+import { OpenAIIcon } from '../../../../../assets/js/src/icons/openai';
 import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
 
 const TranslationConfig = ({ data, setData }) => {
@@ -50,6 +52,17 @@ const TranslationConfig = ({ data, setData }) => {
     const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
+    const [webTranslation, setWebTranslation] = useState({
+        chatgpt_web: Boolean(provider?.chatgpt_web),
+        gemini_web: Boolean(provider?.gemini_web),
+    })
+    const [webSessionDrafts, setWebSessionDrafts] = useState({})
+    const savedWebModels = () => ({
+        chatgpt_web_model: data?.api_keys_configuration?.models?.chatgpt_web_model || webSessionProviders.chatgpt_web.defaultModel,
+        gemini_web_model: data?.api_keys_configuration?.models?.gemini_web_model || webSessionProviders.gemini_web.defaultModel,
+    })
+    const [webModels, setWebModels] = useState(savedWebModels)
+    const [customPrompt, setCustomPrompt] = useState(aiTranslation?.custom_prompt || '')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [apiKeyDirty, setApiKeyDirty] = useState(false)
@@ -67,13 +80,18 @@ const TranslationConfig = ({ data, setData }) => {
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
-            slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
+            slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate') ||
+            webTranslation.chatgpt_web !== Boolean(provider?.chatgpt_web) ||
+            webTranslation.gemini_web !== Boolean(provider?.gemini_web) ||
+            Object.values(webSessionDrafts).some((value) => (value || '').trim() !== '') ||
+            JSON.stringify(webModels) !== JSON.stringify(savedWebModels()) ||
+            customPrompt !== (aiTranslation?.custom_prompt || '');
     };
 
     useEffect(() => {
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
         setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty, webTranslation, webSessionDrafts, webModels, customPrompt, data])
 
 
     //Save Setting Function 
@@ -96,6 +114,24 @@ const TranslationConfig = ({ data, setData }) => {
                 }
             }
 
+            // Require the session cookie when enabling ChatGPT Web / Gemini Web.
+            const webKeys = {}
+            const webModelPayload = {}
+            Object.keys(webSessionProviders).forEach((webProvider) => {
+                if (!webTranslation[webProvider] || !allowedProviders.includes(webProvider)) return
+                const meta = webSessionProviders[webProvider]
+                const pending = meta.fields.map((field) => (webSessionDrafts[field.key] || '').trim())
+                if (!isWebSessionConfigured(data, webProvider)) {
+                    if (pending[0] === '') {
+                        throw new Error(meta.missing)
+                    }
+                    meta.fields.forEach((field, index) => {
+                        webKeys[field.key] = pending[index]
+                    })
+                }
+                webModelPayload[meta.modelKey] = webModels[meta.modelKey]
+            })
+
             apiBody = {
                 ai_translation_configuration: {
                     provider: {
@@ -105,16 +141,19 @@ const TranslationConfig = ({ data, setData }) => {
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
                         } : {}),
+                        chatgpt_web: webTranslation.chatgpt_web,
+                        gemini_web: webTranslation.gemini_web,
                     },
                     bulk_translation_post_status: bulkTranslationPostStatus,
-                    slug_translation_option: slugTranslationOption
+                    slug_translation_option: slugTranslationOption,
+                    custom_prompt: customPrompt
                 }
             }
-            if (apiKeyPayload?.keys) {
-                apiBody.keys = apiKeyPayload.keys
+            if (apiKeyPayload?.keys || Object.keys(webKeys).length) {
+                apiBody.keys = { ...(apiKeyPayload?.keys || {}), ...webKeys }
             }
-            if (apiKeyPayload?.models) {
-                apiBody.models = apiKeyPayload.models
+            if (apiKeyPayload?.models || Object.keys(webModelPayload).length) {
+                apiBody.models = { ...(apiKeyPayload?.models || {}), ...webModelPayload }
             }
 
             setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
@@ -150,6 +189,7 @@ const TranslationConfig = ({ data, setData }) => {
                         }, settingsResponse)
                         setApiKeyDirty(false)
                     }
+                    setWebSessionDrafts({})
                     return settingsResponse
                 })
                 .catch(error => {
@@ -362,7 +402,66 @@ const TranslationConfig = ({ data, setData }) => {
                             )}
                         </div>
                     )}
+                    {[
+                        { id: 'chatgpt_web', Icon: OpenAIIcon, title: __('ChatGPT Web', 'translate-words'), description: __('ChatGPT Web translates through your signed-in chatgpt.com session (paste its cookies below).', 'translate-words') },
+                        { id: 'gemini_web', Icon: GeminiIcon, title: __('Gemini Web', 'translate-words'), description: __('Gemini Web translates through your signed-in gemini.google.com session (paste its cookies below).', 'translate-words') },
+                    ].filter(({ id }) => allowedProviders.includes(id)).map(({ id, Icon, title, description }) => (
+                        <div style={{ backgroundColor: "#fbfbfb" }} key={id}>
+                            <div className='switcher p-6 rounded-lg'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <Icon className='w-5 h-5' />
+                                        {title}
+                                    </h3>
+                                    <p className="m-0">{description}</p>
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
+                                    <Switch
+                                        aria-label="Switch Element"
+                                        id={`${id.replace('_', '-')}-translation`}
+                                        onChange={() => {
+                                            setWebTranslation((prev) => ({ ...prev, [id]: !prev[id] }))
+                                        }}
+                                        value={webTranslation[id]}
+                                        size="sm"
+                                    />
+                                </Container.Item>
+                            </div>
+                            {webTranslation[id] && (
+                                <div className="px-6 pb-6 pt-0">
+                                    <WebSessionKey
+                                        provider={id}
+                                        data={data}
+                                        setData={setData}
+                                        drafts={webSessionDrafts}
+                                        setDrafts={setWebSessionDrafts}
+                                        models={webModels}
+                                        setModels={setWebModels}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
+                {(webTranslation.chatgpt_web || webTranslation.gemini_web) && (
+                    <div className="mt-5">
+                        <label className="block mb-2 font-medium" htmlFor="custom-prompt">
+                            {__('Custom prompt override (optional)', 'translate-words')}
+                        </label>
+                        <textarea
+                            id="custom-prompt"
+                            className="box-border w-full p-3 border border-solid border-border-subtle rounded-md bg-white text-sm leading-6"
+                            maxLength={10000}
+                            onChange={(event) => setCustomPrompt(event.target.value)}
+                            placeholder={__('Leave empty to use the built-in translation prompt.', 'translate-words')}
+                            rows={6}
+                            value={customPrompt}
+                        />
+                        <p className="mt-2 mb-0 text-sm text-text-secondary">
+                            {__('When provided, this completely replaces the built-in prompt. Available placeholders: {source_language}, {target_language}, {target_locale}, {glossary}, and {input_json}.', 'translate-words')}
+                        </p>
+                    </div>
+                )}
             </Container.Item>
             <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />
             <Container.Item>

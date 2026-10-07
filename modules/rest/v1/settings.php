@@ -540,9 +540,23 @@ class Settings extends Abstract_Controller {
 
 		$this->ai_gemini_model_refresh_needed = false;
 
+		// ChatGPT Web / Gemini Web session cookies are never returned raw either; mask each field.
+		$mask_web_value = static function ( $value ) {
+			$value = (string) $value;
+			return '' === $value ? '' : '••••••••' . substr( $value, -4 );
+		};
+		$chatgpt_web_parts               = \LMAT_ChatGPT_Web_Client::get_stored_parts();
+		$gemini_web_parts                = \LMAT_Gemini_Web_Client::get_stored_parts();
+		$available_models['chatgpt_web'] = \LMAT_ChatGPT_Web_Client::models();
+		$available_models['gemini_web']  = \LMAT_Gemini_Web_Client::models();
+
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
-				'gemini' => $gemini_masked,
+				'gemini'                    => $gemini_masked,
+				'chatgpt_web_session_token' => $mask_web_value( $chatgpt_web_parts['session_token'] ),
+				'chatgpt_web_cf_clearance'  => $mask_web_value( $chatgpt_web_parts['cf_clearance'] ),
+				'gemini_web_psid'           => $mask_web_value( $gemini_web_parts['psid'] ),
+				'gemini_web_psidts'         => $mask_web_value( $gemini_web_parts['psidts'] ),
 			),
 			'models'           => $models,
 			'available_models' => $available_models,
@@ -794,6 +808,42 @@ class Settings extends Abstract_Controller {
 			}
 		}
 
+		// Handle ChatGPT Web / Gemini Web session cookie save; both fields empty resets the provider.
+		$web_session_fields = array(
+			'chatgpt_web' => array( 'chatgpt_web_session_token', 'chatgpt_web_cf_clearance' ),
+			'gemini_web'  => array( 'gemini_web_psid', 'gemini_web_psidts' ),
+		);
+		foreach ( $web_session_fields as $web_provider => $fields ) {
+			if ( ! array_key_exists( $fields[0], $incoming_keys ) && ! array_key_exists( $fields[1], $incoming_keys ) ) {
+				continue;
+			}
+
+			$values = array();
+			foreach ( $fields as $field ) {
+				$value = isset( $incoming_keys[ $field ] ) && is_string( $incoming_keys[ $field ] ) ? $incoming_keys[ $field ] : '';
+				// Cookie values are printable ASCII: drop control/non-ASCII and markup-breaking characters.
+				$values[] = trim( (string) preg_replace( '/[^\x20-\x7E]|[<>"\'\\\\]/', '', $value ) );
+			}
+
+			$client = 'chatgpt_web' === $web_provider ? \LMAT_ChatGPT_Web_Client::class : \LMAT_Gemini_Web_Client::class;
+			if ( '' === $values[0] && '' === $values[1] ) {
+				$client::clear_stored_auth();
+				continue;
+			}
+
+			if ( ! $client::cookie_looks_valid( $client::build_cookie_from_parts( $values[0], $values[1] ) ) ) {
+				return new WP_Error(
+					'lmat_web_session_invalid',
+					'chatgpt_web' === $web_provider
+						? __( 'ChatGPT Web session-token looks incomplete. Paste __Secure-next-auth.session-token (cf_clearance optional).', 'translate-words' )
+						: __( 'Gemini Web cookies look incomplete. Paste __Secure-1PSID (and ideally __Secure-1PSIDTS).', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			$client::save_cookie_parts( $values[0], $values[1] );
+		}
+
 		$errors  = new WP_Error();
 		$schema  = $this->options->get_schema();
 		$options = array_intersect_key(
@@ -802,11 +852,14 @@ class Settings extends Abstract_Controller {
 		);
 
 		// Allow saving provider models through Settings using the same payload shape as the Api Keys endpoint.
-		if ( ! empty( $incoming_models ) && isset( $incoming_models['gemini_model'] ) ) {
+		foreach ( array( 'gemini_model', 'chatgpt_web_model', 'gemini_web_model' ) as $model_key ) {
+			if ( ! isset( $incoming_models[ $model_key ] ) || ! is_scalar( $incoming_models[ $model_key ] ) ) {
+				continue;
+			}
 			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
 				$options['api_keys'] = array();
 			}
-			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
+			$options['api_keys'][ $model_key ] = sanitize_text_field( (string) $incoming_models[ $model_key ] );
 		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)

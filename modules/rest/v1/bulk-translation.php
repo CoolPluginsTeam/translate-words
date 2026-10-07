@@ -298,14 +298,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return \WP_REST_Response|\WP_Error
 		 */
 		public function ai_translate_batch( $request ) {
-			if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-				return new WP_Error(
-					'lmat_ai_unavailable',
-					__( 'WordPress AI Client is not available. Install or enable the AI Client and provider packages.', 'translate-words' ),
-					array( 'status' => 501 )
-				);
-			}
-
 			$params = $request->get_json_params();
 			if ( ! is_array( $params ) ) {
 				$params = array();
@@ -319,8 +311,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
 			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
-			if ( 'gemini' !== $provider ) {
+			$is_web_provider = in_array( $provider, array( 'chatgpt_web', 'gemini_web' ), true );
+			if ( 'gemini' !== $provider && ! $is_web_provider ) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
+			}
+
+			if ( ! $is_web_provider && ! function_exists( 'wp_ai_client_prompt' ) ) {
+				return new WP_Error(
+					'lmat_ai_unavailable',
+					__( 'WordPress AI Client is not available. Install or enable the AI Client and provider packages.', 'translate-words' ),
+					array( 'status' => 501 )
+				);
 			}
 
 			if ( $post_id <= 0 || '' === $source_lang || '' === $target_lang || empty( $strings ) ) {
@@ -342,8 +343,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_google_api_key';
-			$api_key    = (string) get_option( $key_option, '' );
+			if ( 'chatgpt_web' === $provider ) {
+				$api_key = \LMAT_ChatGPT_Web_Client::get_stored_cookie();
+			} elseif ( 'gemini_web' === $provider ) {
+				$api_key = \LMAT_Gemini_Web_Client::get_stored_cookie();
+			} else {
+				$api_key = (string) get_option( 'connectors_ai_google_api_key', '' );
+			}
 			if ( '' === trim( $api_key ) ) {
 				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
 			}
@@ -415,14 +421,28 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string               $provider    gemini.
+		 * @param string               $provider    gemini|chatgpt_web|gemini_web.
 		 * @param string               $source_lang Slug
 		 * @param string               $target_lang Slug
 		 * @param array<string,string> $strings     Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
-			$model_id = $this->ai_translate_resolve_llm_model_id( $model_override );
+			$model_id = $this->ai_translate_resolve_llm_model_id( $provider, $model_override );
+
+			if ( in_array( $provider, array( 'chatgpt_web', 'gemini_web' ), true ) ) {
+				$instruction = $this->ai_translate_build_llm_prompt( $source_lang, $target_lang, $strings, $provider );
+				if ( is_wp_error( $instruction ) ) {
+					return $instruction;
+				}
+
+				$text = $this->ai_translate_call_web_provider( $provider, $source_lang, $target_lang, $api_key, $model_id, $instruction );
+				if ( is_wp_error( $text ) ) {
+					return $text;
+				}
+
+				return $this->ai_translate_parse_llm_response( $text, $strings );
+			}
 
 			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
 			if ( is_wp_error( $provider_setup ) ) {
@@ -455,12 +475,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Resolve Gemini model id from override, options, or default.
+		 * Resolve the provider model id from override, options, or default.
 		 *
+		 * @param string $provider       Provider slug (gemini|chatgpt_web|gemini_web).
 		 * @param string $model_override Optional model override.
 		 * @return string
 		 */
-		private function ai_translate_resolve_llm_model_id( string $model_override = '' ): string {
+		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ): string {
 			$models = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
 				$m = LMAT()->model->options->get( 'api_keys' );
@@ -469,9 +490,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$model_key      = 'gemini_model';
+			$model_key      = $provider . '_model';
 			$model_defaults = array(
-				'gemini_model' => 'gemini-2.5-flash',
+				'gemini_model'      => 'gemini-2.5-flash',
+				'chatgpt_web_model' => \LMAT_ChatGPT_Web_Client::DEFAULT_MODEL,
+				'gemini_web_model'  => \LMAT_Gemini_Web_Client::DEFAULT_MODEL,
 			);
 			$model_id = trim( $model_override );
 			if ( '' === $model_id ) {
@@ -534,15 +557,41 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @param string               $source_lang Source language slug.
 		 * @param string               $target_lang Target language slug.
 		 * @param array<string,string> $strings     Key => source text.
+		 * @param string               $provider    Provider slug; the ChatGPT Web / Gemini Web providers honour the custom prompt.
 		 * @return string|\WP_Error
 		 */
-		private function ai_translate_build_llm_prompt( string $source_lang, string $target_lang, array $strings ) {
+		private function ai_translate_build_llm_prompt( string $source_lang, string $target_lang, array $strings, string $provider = '' ) {
 			$payload = wp_json_encode( $strings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			if ( false === $payload ) {
 				return new WP_Error( 'lmat_ai_encode_error', __( 'Could not prepare translation payload.', 'translate-words' ), array( 'status' => 500 ) );
 			}
 
 			$glossary_instructions = $this->ai_translate_build_glossary_instructions( $source_lang, $target_lang, $strings );
+
+			if ( in_array( $provider, array( 'chatgpt_web', 'gemini_web' ), true ) ) {
+				$custom_prompt = '';
+				if ( property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['custom_prompt'] ) ) {
+					$custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['custom_prompt'] );
+				}
+
+				if ( '' !== $custom_prompt ) {
+					$source_language = LMAT()->model->get_language( $source_lang );
+					$target_language = LMAT()->model->get_language( $target_lang );
+					$glossary_terms  = str_replace( "Please use the following glossary terms in your translation:\n", '', $glossary_instructions );
+					$glossary_terms  = str_replace( "\n", '; ', trim( $glossary_terms ) );
+
+					return strtr(
+						$custom_prompt,
+						array(
+							'{source_language}' => sanitize_text_field( $source_language ? $source_language->name : $source_lang ),
+							'{target_language}' => sanitize_text_field( $target_language ? $target_language->name : $target_lang ),
+							'{target_locale}'   => sanitize_text_field( $target_language ? $target_language->get_locale() : '' ),
+							'{glossary}'        => $glossary_terms,
+							'{input_json}'      => $payload,
+						)
+					);
+				}
+			}
 
 			$instruction = sprintf(
 				'You are a professional translator.
@@ -766,6 +815,44 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			return $text;
+		}
+
+		/**
+		 * Send the prompt through the ChatGPT Web / Gemini Web session client.
+		 *
+		 * Gemini Web reuses one conversation per WP user + language pair while a page or
+		 * bulk job runs, and retries once on a soft-fail (non-JSON) reply.
+		 *
+		 * @param string $provider    chatgpt_web|gemini_web.
+		 * @param string $source_lang Source language slug.
+		 * @param string $target_lang Target language slug.
+		 * @param string $cookie      Stored session Cookie header.
+		 * @param string $model_id    Model id.
+		 * @param string $instruction Prompt text.
+		 * @return string|\WP_Error
+		 */
+		private function ai_translate_call_web_provider( string $provider, string $source_lang, string $target_lang, string $cookie, string $model_id, string $instruction ) {
+			$timeout = absint( get_option( 'lmat_ai_request_timeout', 120 ) );
+			if ( $timeout < 1 ) {
+				$timeout = 120;
+			}
+
+			if ( 'chatgpt_web' === $provider ) {
+				$result = \LMAT_ChatGPT_Web_Client::generate( $instruction, $cookie, $model_id, $timeout );
+			} else {
+				$result = \LMAT_Gemini_Web_Client::generate( $instruction, $cookie, $model_id, $timeout, true, $source_lang . '|' . $target_lang, true );
+			}
+
+			if ( empty( $result['ok'] ) ) {
+				$status = isset( $result['code'] ) && (int) $result['code'] >= 400 ? (int) $result['code'] : 502;
+				return new WP_Error(
+					'lmat_ai_request_failed',
+					isset( $result['error'] ) ? (string) $result['error'] : __( 'AI translation request failed. Please try again shortly.', 'translate-words' ),
+					array( 'status' => $status )
+				);
+			}
+
+			return (string) $result['text'];
 		}
 
 		/**

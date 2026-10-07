@@ -676,7 +676,7 @@ const StringPopUpBody = (props) => {
         } else if (translation) {
             return translation;
         } else {
-            if (['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator', 'gemini'].includes(props.service)) {
+            if (['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator', 'gemini', 'chatgpt_web', 'gemini_web'].includes(props.service)) {
                 // Use FilterTargetContent for pending translations with supported services
                 if (props.translatePendingStatus && !props.service.includes('_ai')) {
                     if (data.filteredString) {

@@ -259,6 +259,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 				$active_providers[] = $provider;
+			} elseif ( in_array( $provider, array( 'chatgpt_web', 'gemini_web' ), true ) ) {
+				$active_providers[] = $provider;
 			}
 		}
 
@@ -274,6 +276,9 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				}
 			}
 		}
+
+		$api_keys_status['chatgpt_web'] = '' !== \LMAT_ChatGPT_Web_Client::get_stored_cookie();
+		$api_keys_status['gemini_web']  = '' !== \LMAT_Gemini_Web_Client::get_stored_cookie();
 
 		$slug_translation_option = 'title_translate';
 

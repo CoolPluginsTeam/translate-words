@@ -70,6 +70,10 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
+// Session-cookie clients for the ChatGPT Web and Gemini Web translation providers.
+require_once __DIR__ . '/includes/ai-providers/chatgpt-web/class-lmat-chatgpt-web-client.php';
+require_once __DIR__ . '/includes/ai-providers/gemini-web/class-lmat-gemini-web-client.php';
+
 // Register Gemini (Google AI) provider only when Gemini is in the allowed list
 // (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).
 add_action(

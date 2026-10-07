@@ -64,13 +64,15 @@ class Api_Keys extends Abstract_Option {
 
 	/**
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
-	 * connectors_ai_google_api_key.
+	 * connectors_ai_google_api_key, and the ChatGPT Web / Gemini Web session cookie options.
 	 *
-	 * @return array{gemini_model:string}
+	 * @return array{gemini_model:string,chatgpt_web_model:string,gemini_web_model:string}
 	 */
 	protected function get_default() {
 		return array(
-			'gemini_model' => 'gemini-2.5-flash',
+			'gemini_model'      => 'gemini-2.5-flash',
+			'chatgpt_web_model' => \LMAT_ChatGPT_Web_Client::DEFAULT_MODEL,
+			'gemini_web_model'  => \LMAT_Gemini_Web_Client::DEFAULT_MODEL,
 		);
 	}
 
@@ -83,13 +85,15 @@ class Api_Keys extends Abstract_Option {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'gemini_model' => array( 'type' => 'string' ),
+				'gemini_model'      => array( 'type' => 'string' ),
+				'chatgpt_web_model' => array( 'type' => 'string' ),
+				'gemini_web_model'  => array( 'type' => 'string' ),
 			),
 		);
 	}
 
 	/**
-	 * Sanitizes stored Gemini model id.
+	 * Sanitizes stored provider model ids.
 	 *
 	 * @param mixed   $value   Incoming value.
 	 * @param Options $options Options registry instance.
@@ -101,25 +105,21 @@ class Api_Keys extends Abstract_Option {
 			$current = array();
 		}
 
-		$default = $this->get_default();
-		$gemini  = isset( $current['gemini_model'] ) && is_scalar( $current['gemini_model'] )
-			? sanitize_text_field( (string) $current['gemini_model'] )
-			: $default['gemini_model'];
+		$sanitized = array();
+		foreach ( $this->get_default() as $model_key => $default_model ) {
+			$model = isset( $current[ $model_key ] ) && is_scalar( $current[ $model_key ] )
+				? sanitize_text_field( (string) $current[ $model_key ] )
+				: $default_model;
 
-		if ( is_array( $value ) && array_key_exists( 'gemini_model', $value ) ) {
-			$v = $value['gemini_model'];
-			if ( null === $v ) {
-				$gemini = '';
-			} elseif ( is_scalar( $v ) ) {
-				$gemini = sanitize_text_field( (string) $v );
-			} else {
-				$gemini = '';
+			if ( is_array( $value ) && array_key_exists( $model_key, $value ) ) {
+				$v     = $value[ $model_key ];
+				$model = is_scalar( $v ) ? sanitize_text_field( (string) $v ) : '';
 			}
+
+			$sanitized[ $model_key ] = $model;
 		}
 
-		return array(
-			'gemini_model' => $gemini,
-		);
+		return $sanitized;
 	}
 
 	/**

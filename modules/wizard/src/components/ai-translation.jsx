@@ -126,6 +126,8 @@ const AiTranslation = () => {
 						gemini: geminiTranslation,
 					}
 					: {}),
+				chatgpt_web: Boolean(provider?.chatgpt_web),
+				gemini_web: Boolean(provider?.gemini_web),
 			};
 
 			const prevProvider = lastSavedRef.current ?? {};
@@ -146,6 +148,9 @@ const AiTranslation = () => {
 					body: JSON.stringify({
 						ai_translation_configuration: {
 							provider: nextProvider,
+							bulk_translation_post_status: aiTranslation?.bulk_translation_post_status || 'draft',
+							slug_translation_option: aiTranslation?.slug_translation_option || 'title_translate',
+							custom_prompt: aiTranslation?.custom_prompt || '',
 						},
 					}),
 				});
