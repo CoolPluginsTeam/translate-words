@@ -78,10 +78,9 @@ class Ollama_Translation_Provider {
 	 *
 	 * @param string            $instruction   Complete glossary-aware translation instruction.
 	 * @param array<int|string> $response_keys Required translation response keys.
-	 * @param bool              $append_html_rule Whether to append the Ollama-specific HTML rule.
 	 * @return string|WP_Error Generated JSON text or a normalized connector error.
 	 */
-	public function translate_instruction( string $instruction, array $response_keys = array(), bool $append_html_rule = true ) {
+	public function translate_instruction( string $instruction, array $response_keys = array() ) {
 		if ( ! Ollama_Translation_Models::is_supported( $this->model ) ) {
 			return new WP_Error(
 				'lmat_ollama_unsupported_model',
@@ -124,7 +123,7 @@ class Ollama_Translation_Provider {
 				),
 				array(
 					'role'    => 'user',
-					'content' => $instruction . ( $append_html_rule ? "\nOllama-specific HTML rule: Treat \\<tag> and \\</tag> sequences as transport wrappers. Translate their visible inner text, but omit those backslash-escaped wrapper tags from the returned value. Preserve genuine unescaped HTML tags and attributes." : '' ),
+					'content' => $instruction . "\nOllama-specific HTML rule: Treat \\<tag> and \\</tag> sequences as transport wrappers. Translate their visible inner text, but omit those backslash-escaped wrapper tags from the returned value. Preserve genuine unescaped HTML tags and attributes.",
 				),
 			),
 			$format,

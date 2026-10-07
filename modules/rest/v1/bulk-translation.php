@@ -473,12 +473,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$html_tag_maps    = array();
 			$short_key_map    = array();
 			$parse_strings    = $strings;
-			$ollama_custom_prompt = '';
-			if ( 'ollama' === $provider && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] ) ) {
-				$ollama_custom_prompt = trim( (string) LMAT()->options['ai_translation_configuration']['ollama_custom_prompt'] );
-			}
-			// Temporary comparison path: custom Ollama prompts receive raw HTML like OpenAI.
-			if ( 'ollama' === $provider && '' === $ollama_custom_prompt ) {
+			if ( 'ollama' === $provider ) {
 				$protected        = $this->ai_protect_ollama_html_tags( $strings );
 				$provider_strings = $protected['strings'];
 				$html_tag_maps    = $protected['maps'];
@@ -513,7 +508,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			if ( 'ollama' === $provider ) {
 				$ollama = new Ollama_Translation_Provider( $api_key, $model_id );
-				$text   = $ollama->translate_instruction( $instruction, array_keys( $provider_strings ), '' === $ollama_custom_prompt );
+				$text   = $ollama->translate_instruction( $instruction, array_keys( $provider_strings ) );
 			} else {
 				$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
 				if ( is_wp_error( $provider_setup ) ) {
