@@ -16,6 +16,8 @@ const General = ({ data, setData }) => {
     const [hideDefault, setHideDefault] = useState(data.hide_default); //For Hide URL language in URL modifications
     const [forceLang, setForceLang] = useState(data.force_lang); // Main Radio Options for URL modifications
     const [rewrite, setRewrite] = useState(data.rewrite); // if the first option is selected then for that radio options
+    const [redirectLang, setRedirectLang] = useState(data.redirect_lang); // Front page URL contains the language code
+    const redirectLangExample = window.lmat_settings.redirect_lang_example || {}; // Example URLs for the front page option
     const [domains, setDomains] = useState([]) // if 3rd option is selected then for that url inputs
     const currentDomain = window.lmat_settings.home_url; // Fetch the current domain of website
     const [AvailablePostTypes, setAvailablePostTypes] = useState([]); // Available Custom Post Types
@@ -60,6 +62,7 @@ const General = ({ data, setData }) => {
             hideDefault: true,
             forceLang: true,
             rewrite: true,
+            redirectLang: true,
             domains: true,
             selectedSynchronization: true,
             selectedPostTypes: true,
@@ -91,6 +94,10 @@ const General = ({ data, setData }) => {
 
         if (rewrite !== data.rewrite) {
             sameChecker.rewrite = false
+        }
+
+        if (redirectLang !== data.redirect_lang) {
+            sameChecker.redirectLang = false
         }
 
 
@@ -166,7 +173,7 @@ const General = ({ data, setData }) => {
         if (flag) {
             setHandleButtonDisabled(true)
         }
-    }, [browser, mediaSupport, hideDefault, forceLang, rewrite, domains, selectedSynchronization, selectedPostTypes, selectedTaxonomies, lmatFeedbackData, selectedLanguageSwitchers, menuSyncVisibility])
+    }, [browser, mediaSupport, hideDefault, forceLang, rewrite, redirectLang, domains, selectedSynchronization, selectedPostTypes, selectedTaxonomies, lmatFeedbackData, selectedLanguageSwitchers, menuSyncVisibility])
 
     //Make the post types and taxonomies from  posttype->posttype_name   to {value: postype ,label:posttype_name (posttype)}
     useEffect(() => {
@@ -356,6 +363,7 @@ const General = ({ data, setData }) => {
                     media_support: mediaSupport,
                     force_lang: forceLang,
                     rewrite: rewrite,
+                    redirect_lang: redirectLang,
                     domains: final_domain,
                     sync: selectedSynchronization,
                     post_types: selectedPostTypes,
@@ -376,6 +384,7 @@ const General = ({ data, setData }) => {
                     media_support: mediaSupport,
                     force_lang: forceLang,
                     rewrite: rewrite,
+                    redirect_lang: redirectLang,
                     sync: selectedSynchronization,
                     post_types: selectedPostTypes,
                     taxonomies: selectedTaxonomies,
@@ -625,6 +634,22 @@ const General = ({ data, setData }) => {
                                         ))
                                     }
                                 </RadioButton.Group>
+                            }
+                            {/* Front page URL contains the language code */}
+                            {
+                                forceLang < 2 && redirectLangExample.home &&
+                                <Checkbox
+                                    label={{
+                                        heading: __('The front page URL contains the language code instead of the page name or page id', 'translate-words'),
+                                        description: sprintf(__('Example: %1$s instead of %2$s', 'translate-words'), redirectLangExample.home, redirectLangExample.page)
+                                    }}
+                                    size="sm"
+                                    className='cursor-pointer'
+                                    checked={redirectLang}
+                                    onChange={() => {
+                                        setRedirectLang(!redirectLang);
+                                    }}
+                                />
                             }
 
                         </Container.Item>

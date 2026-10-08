@@ -579,6 +579,27 @@ class Linguator_Settings extends Linguator_Admin_Base {
     }  
 
 	/**
+	 * Gets the example URLs displayed for the front page URL option.
+	 *
+	 * @return array{home:string,page:string}|array Empty array when no static front page is set.
+	 */
+	private function get_redirect_lang_example() {
+		$page_on_front = (int) get_option( 'page_on_front' );
+		if ( ! $page_on_front ) {
+			return array();
+		}
+
+		// The page on front may have no language yet.
+		$lang = $this->model->post->get_language( $page_on_front );
+		$lang = $lang ?: $this->model->get_default_language();
+
+		return array(
+			'home' => $lang ? $this->links_model->home_url( $lang ) : home_url( '/' ),
+			'page' => _get_page_link( $page_on_front ),
+		);
+	}
+
+	/**
 	 * Enqueues scripts and styles
 	 *
 	 * @return void
@@ -672,6 +693,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'languages'      => $this->model->get_languages_list(),
 					'all_languages'  => self::get_predefined_languages(),
 					'home_url'       => get_home_url(),
+					'redirect_lang_example' => $this->get_redirect_lang_example(),
 					'modules'        => ( $this->modules ? array_keys( $this->modules ) : array() ),
 					'active_tab'     => $this->active_tab,
 					'locoai_plugin_status' => $this->linguator_get_locoai_plugin_status(),

@@ -852,6 +852,11 @@ class Settings extends Abstract_Controller {
 				case 'hide_default':
 					delete_option( 'rewrite_rules' );
 					break;
+
+				case 'redirect_lang':
+					// Refresh language cache as the home urls depend on this option.
+					$this->model->clean_languages_cache();
+					break;
 			
 				case 'post_types':
 				case 'taxonomies':
