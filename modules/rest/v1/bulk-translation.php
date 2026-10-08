@@ -2371,7 +2371,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		/**
 		 * Sanitizes post_content for create-translate-post depending on the page builder/editor.
 		 *
-		 * - classic/wpbakery: allow safe HTML via wp_kses_post().
+		 * - classic/wpbakery: decode the JSON-encoded string sent by bulk-translate.js, then allow safe HTML via wp_kses_post().
 		 * - block/elementor: expect JSON payload; validate JSON but don't run HTML sanitization on it.
 		 *
 		 * @param mixed           $value   Raw incoming value.
@@ -2394,6 +2394,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 				json_decode( $value, true );
 				return ( JSON_ERROR_NONE === json_last_error() ) ? $value : '';
+			}
+
+			// Decode before kses: kses rewrites tag attributes but keeps \" in text, which broke shortcode attributes (e.g. [caption id]).
+			$decoded = json_decode( $value, true );
+			if ( is_string( $decoded ) ) {
+				$value = $decoded;
 			}
 
 			// Default: sanitize as post content HTML.
@@ -2735,20 +2741,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 				$decoded_blocks            = $this->ai_normalize_translation_strings_recursive( $decoded_blocks );
 				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
-			} elseif ( 'classic' === $editor_type ) {
-				// Classic editor content is plain HTML, not JSON.
-				// Some clients may still send JSON-encoded strings; tolerate that without failing the request.
-				$raw_classic = isset( $params['post_content'] ) ? (string) $params['post_content'] : '';
-				$decoded     = json_decode( $raw_classic, true );
-				if ( JSON_ERROR_NONE === json_last_error() && is_string( $decoded ) ) {
-					$post_data['post_content'] = $this->ai_normalize_translation_string( wp_kses_post( $decoded ) );
-				} else {
-					// Use already-sanitized `post_content` from args sanitizer.
-					$post_data['post_content'] = $this->ai_normalize_translation_string(
-						isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : ''
-					);
-				}
 			} else {
+				// Classic and other HTML content is already decoded and sanitized by sanitize_post_content_for_builders().
 				if ( isset( $post_data['post_content'] ) && is_string( $post_data['post_content'] ) ) {
 					$post_data['post_content'] = $this->ai_normalize_translation_string( $post_data['post_content'] );
 				}
@@ -2770,9 +2764,21 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
+			$media_service = new Media_Translation_Service( LMAT() );
+			if ( $media_service->is_enabled() ) {
+				$media_validation = $media_service->validate_media_payload( $source_post_id, $target_language, $post_data );
+				if ( is_wp_error( $media_validation ) ) {
+					return $media_validation;
+				}
+			}
+
 			global $linguator;
 			$post_clone   = new \Linguator_Sync_Post_Model( $linguator );
 			try {
+				// AI-supplied content must keep inline media text while IDs/URLs remap.
+				if ( isset( $post_data['post_content'] ) ) {
+					$post_data['preserve_media_text'] = true;
+				}
 				$new_post_id = $post_clone->copy_post( $source_post_id, $source_language, $target_language, false, $post_data, $editor_type );
 			} catch ( \Throwable $e ) {
 				return new WP_Error(
@@ -2800,24 +2806,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$saved_post_name = $this->ai_translate_persist_post_slug( $new_post_id, (string) $slug );
 				if ( is_wp_error( $saved_post_name ) ) {
 					return $saved_post_name;
-				}
-			}
-
-			// Apply translated media metadata after the post is created and synced.
-			if ( function_exists( 'LMAT' ) ) {
-				$media_service = new Media_Translation_Service( LMAT() );
-				if ( $media_service->is_enabled() ) {
-					// Featured image.
-					$featured_raw = isset( $post_data['featured_image'] ) ? $post_data['featured_image'] : null;
-					if ( is_array( $featured_raw ) && ! empty( $featured_raw ) ) {
-						$media_service->apply_featured_image_translations( $source_post_id, $new_post_id, $featured_raw );
-					}
-
-					// Content media.
-					$content_media_raw = isset( $post_data['content_media'] ) ? $post_data['content_media'] : null;
-					if ( is_array( $content_media_raw ) && ! empty( $content_media_raw ) ) {
-						$media_service->apply_content_media_translations( $new_post_id, $content_media_raw );
-					}
 				}
 			}
 

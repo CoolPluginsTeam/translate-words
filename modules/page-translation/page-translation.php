@@ -64,6 +64,7 @@ class Linguator_Page_Translation {
 			add_action( 'wp_ajax_lmat_update_post_meta_fields', array( $this, 'update_post_meta_fields' ) );
 			add_action( 'wp_ajax_lmat_update_classic_translate_status', array( $this, 'update_classic_translate_status' ) );
 			add_action( 'wp_ajax_lmat_save_media_translations', array( $this->page_translate_helper, 'save_media_translations' ) );
+			add_action( 'save_post', array( $this->page_translate_helper, 'apply_pending_media_map' ), 20 );
 		}
 	}
 

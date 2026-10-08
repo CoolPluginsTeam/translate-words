@@ -85,7 +85,10 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
             const translatedPercentage=translatedWords * 100 / totalWords;
 
-            if(translatedPercentage > 97){
+            // Do not skip innerContent when a figcaption is present: attrs.caption
+            // may be translated while the rendered <figcaption> HTML stays English.
+            const hasFigcaption = /<figcaption\b/i.test( joinInnerContent );
+            if(translatedPercentage > 97 && !hasFigcaption){
                 innerContentTransalted = true;
             }
 

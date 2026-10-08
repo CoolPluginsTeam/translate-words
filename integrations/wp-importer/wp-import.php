@@ -174,7 +174,8 @@ class Linguator_WP_Import extends WP_Import {
 	protected function remap_translations( &$terms, &$processed_objects ) {
 		global $wpdb;
 
-		$u = array();
+		$languages = linguator_languages_list();
+		$u         = array();
 
 		foreach ( $terms as $term ) {
 			$translations = maybe_unserialize( $term['term_description'] );
@@ -185,8 +186,10 @@ class Linguator_WP_Import extends WP_Import {
 
 			foreach ( $translations as $slug => $old_id ) {
 				$slug = sanitize_key( (string) $slug );
-				if ( $old_id && ! empty( $processed_objects[ $old_id ] ) ) {
+				if ( in_array( $slug, $languages, true ) && $old_id && ! empty( $processed_objects[ $old_id ] ) ) {
 					$new_translations[ $slug ] = $processed_objects[ $old_id ];
+				} else {
+					$new_translations[ $slug ] = $old_id; // Preserve values for all keys which are not our language slugs.
 				}
 			}
 

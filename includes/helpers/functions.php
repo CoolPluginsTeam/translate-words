@@ -112,7 +112,7 @@ function linguator_add_notice( WP_Error $error ) {
 			)
 		);
 
-		add_settings_error( 'linguator-multilingual-ai-translation', $error_code, $message, $type );
+		add_settings_error( 'linguator-multilingual-ai-translation', (string) $error_code, $message, $type );
 	}
 }
 
@@ -430,4 +430,82 @@ function linguator_enqueue_datatable_assets() {
 	);
 
 	return 'lmat-custom-data-table';
+}
+
+/**
+ * Enqueues a JavaScript file from Linguator's build directory.
+ *
+ * @param string   $name         Script filename without the extension.
+ * @param string[] $dependencies Optional registered script dependencies.
+ * @param array    $args         Optional script loading strategies.
+ * @param string   $prefix       Optional script-handle prefix.
+ * @return void
+ *
+ * @phpstan-param non-empty-string $name
+ */
+function linguator_enqueue_script( string $name, array $dependencies = array(), array $args = array(), string $prefix = 'lmat-' ): void {
+	linguator_register_script( $name, $dependencies, $args, $prefix );
+	wp_scripts()->enqueue( $prefix . $name );
+}
+
+/**
+ * Registers a JavaScript file from Linguator's build directory.
+ *
+ * @param string   $name         Script filename without the extension.
+ * @param string[] $dependencies Optional registered script dependencies.
+ * @param array    $args         Optional script loading strategies.
+ * @param string   $prefix       Optional script-handle prefix.
+ * @return void
+ *
+ * @phpstan-param non-empty-string $name
+ */
+function linguator_register_script( string $name, array $dependencies = array(), array $args = array(), string $prefix = 'lmat-' ): void {
+	$suffix  = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+	$src     = plugins_url( "admin/assets/js/build/{$name}{$suffix}.js", LINGUATOR_ROOT_FILE );
+
+	if ( '' === $src ) {
+		return;
+	}
+
+	$version = WP_DEBUG ? time() : LINGUATOR_VERSION;
+
+	wp_register_script( $prefix . $name, $src, array_filter( $dependencies ), (string) $version, $args );
+}
+
+/**
+ * Enqueues a stylesheet from Linguator's build directory.
+ *
+ * @param string   $name         Stylesheet filename without the extension.
+ * @param string[] $dependencies Optional registered stylesheet dependencies.
+ * @param string   $prefix       Optional stylesheet-handle prefix.
+ * @return void
+ *
+ * @phpstan-param non-empty-string $name
+ */
+function linguator_enqueue_style( string $name, array $dependencies = array(), string $prefix = 'lmat-' ): void {
+	linguator_register_style( $name, $dependencies, $prefix );
+	wp_styles()->enqueue( $prefix . $name );
+}
+
+/**
+ * Registers a stylesheet from Linguator's build directory.
+ *
+ * @param string   $name         Stylesheet filename without the extension.
+ * @param string[] $dependencies Optional registered stylesheet dependencies.
+ * @param string   $prefix       Optional stylesheet-handle prefix.
+ * @return void
+ *
+ * @phpstan-param non-empty-string $name
+ */
+function linguator_register_style( string $name, array $dependencies = array(), string $prefix = 'lmat-' ): void {
+	$suffix  = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+	$src     = plugins_url( "admin/assets/css/build/{$name}{$suffix}.css", LINGUATOR_ROOT_FILE );
+
+	if ( '' === $src ) {
+		return;
+	}
+
+	$version = WP_DEBUG ? time() : LINGUATOR_VERSION;
+
+	wp_register_style( $prefix . $name, $src, $dependencies, (string) $version );
 }

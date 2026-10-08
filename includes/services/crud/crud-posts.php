@@ -14,6 +14,7 @@ use Linguator\Includes\Other\Linguator_Model;
 use Linguator\Modules\REST\Request;
 use Linguator\Includes\Capabilities\User;
 use Linguator\Includes\Capabilities\Create\Post as Create_Post;
+use WP_Query;
 use WP_Term;
 
 /**
@@ -86,6 +87,85 @@ class Linguator_CRUD_Posts {
 			add_action( 'delete_attachment', array( $this, 'delete_post' ) );
 			add_filter( 'wp_delete_file', array( $this, 'wp_delete_file' ) );
 		}
+
+		// Filter queries for untranslated posts.
+		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
+		add_action( 'parse_query', array( $this, 'parse_query' ) );
+		add_filter( 'posts_clauses', array( $this, 'posts_clauses' ), 10, 2 );
+	}
+
+	/**
+	 * Adds the untranslated-language query variable.
+	 *
+	 * @param string[] $query_vars The allowed query variable names.
+	 * @return string[]
+	 */
+	public function add_query_vars( $query_vars ) {
+		$query_vars[] = 'untranslated_in';
+		return $query_vars;
+	}
+
+	/**
+	 * Ensures filters are not suppressed when querying untranslated posts.
+	 *
+	 * @param WP_Query $query The query instance, passed by reference.
+	 * @return void
+	 */
+	public function parse_query( $query ) {
+		if ( ! empty( $query->query['untranslated_in'] ) ) {
+			unset( $query->query['suppress_filters'] );
+			unset( $query->query_vars['suppress_filters'] );
+		}
+	}
+
+	/**
+	 * Excludes posts that are in, or already translated into, the requested language.
+	 *
+	 * @param string[] $clauses SQL clauses for the query.
+	 * @param WP_Query $query   The query instance, passed by reference.
+	 * @return string[]
+	 */
+	public function posts_clauses( $clauses, $query ) {
+		global $wpdb;
+
+		if ( empty( $query->query['untranslated_in'] ) || ! is_string( $query->query['untranslated_in'] ) ) {
+			return $clauses;
+		}
+
+		$untranslated_in = $this->model->languages->get( sanitize_key( $query->query['untranslated_in'] ) );
+
+		if ( empty( $untranslated_in ) ) {
+			return $clauses;
+		}
+
+		$language_taxonomy    = $this->model->post->get_tax_language();
+		$term_taxonomy_id     = $untranslated_in->get_tax_prop( $language_taxonomy, 'term_taxonomy_id' );
+		$translation_taxonomy = $this->model->post->get_tax_translations();
+
+		$clauses['where'] .= $wpdb->prepare(
+			" AND {$wpdb->posts}.ID NOT IN (
+				SELECT lmatutr.object_id
+				FROM {$wpdb->term_relationships} AS lmatutr
+				WHERE lmatutr.term_taxonomy_id = %d
+			)",
+			$term_taxonomy_id
+		);
+
+		$clauses['where'] .= $wpdb->prepare(
+			" AND {$wpdb->posts}.ID NOT IN (
+				SELECT lmatutr1.object_id
+				FROM {$wpdb->term_relationships} AS lmatutr1
+				JOIN {$wpdb->term_taxonomy} AS lmatutt ON lmatutt.term_taxonomy_id = lmatutr1.term_taxonomy_id
+				JOIN {$wpdb->term_relationships} AS lmatutr2 ON lmatutr2.term_taxonomy_id = lmatutt.term_taxonomy_id
+				JOIN {$wpdb->term_relationships} AS lmatutr3 ON lmatutr3.object_id = lmatutr2.object_id
+				WHERE lmatutt.taxonomy = %s
+				AND lmatutr3.term_taxonomy_id = %d
+			)",
+			$translation_taxonomy,
+			$term_taxonomy_id
+		);
+
+		return $clauses;
 	}
 
 	/**
@@ -503,62 +583,64 @@ class Linguator_CRUD_Posts {
 	public function wp_delete_file( $file ) {
 		global $wpdb;
 
-		$uploadpath = wp_upload_dir();
+		$basefile      = basename( $file );
+		$upload        = wp_upload_dir();
+		$attached_file = trim( str_replace( $upload['basedir'], '', $file ), '/' );
+		$subdir        = trim( str_replace( $basefile, '', $attached_file ), '/' );
+		$filetype      = wp_check_filetype( $file );
 
-		// Get the main attached file.
-		$attached_file = substr_replace( $file, '', 0, strlen( trailingslashit( $uploadpath['basedir'] ) ) );
-		$attached_file = preg_replace( '#-\d+x\d+\.([a-z]+)$#', '.$1', $attached_file );
-
-		$with_scaled = $attached_file;
-		$without_year_month = $attached_file;
-
-		// First, check if attached_file has '-scaled' before the extension, if so, remove it
-		if ( ! preg_match( '/-scaled\.[a-zA-Z0-9]+$/', $attached_file ) ) {
-			$with_scaled = preg_replace( '/(\.[a-zA-Z0-9]+)$/', '-scaled$1', $attached_file );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Must read the current postmeta values while files are being deleted.
+		if ( empty( $filetype['type'] ) || ! str_starts_with( $filetype['type'], 'image/' ) ) {
+			/*
+			 * For non-image files, we just have to check the '_wp_attached_file meta'.
+			 */
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM $wpdb->postmeta
+					WHERE meta_key = '_wp_attached_file' AND meta_value = %s",
+					$attached_file
+				)
+			);
+		} elseif ( ! empty( $subdir ) ) {
+			/*
+			 * For images, we must take care to intermediate sizes and backup.
+			 * - '_wp_attachment_metadata' stores the base filename without subdir
+			 *   for intermediate sizes but includes the subdir for the main file.
+			 * - '_wp_attachment_backup_sizes' stores the base filename, without the subdir.
+			 * - '_wp_attached_file' stores the filename with the subdir.
+			 *
+			 * For filenames stored without subdir, we get it from '_wp_attached_file' to
+			 * avoid a conflict if a file has the same filename in a different subdir.
+			 */
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM $wpdb->postmeta AS pm1
+					JOIN $wpdb->postmeta AS pm2 ON pm1.post_id = pm2.post_id
+					WHERE pm1.meta_key = '_wp_attached_file' AND pm1.meta_value LIKE %s
+					AND pm2.meta_key IN ( '_wp_attachment_metadata', '_wp_attachment_backup_sizes' )
+					AND ( pm2.meta_value LIKE %s OR pm2.meta_value LIKE %s )",
+					$wpdb->esc_like( $subdir ) . '/%', // The subdir is always present in '_wp_attached_file'.
+					'%"' . $wpdb->esc_like( $basefile ) . '"%', // Intermediate sizes in '_wp_attachment_metadata' + '_wp_attachment_backup_sizes'.
+					'%"' . $wpdb->esc_like( $attached_file ) . '"%' // Main file in '_wp_attachment_metadata'.
+				)
+			);
+		} else {
+			/*
+			 * The query above doesn't work if there's no subdir for uploads, so we must handle it
+			 * as a specific case.
+			 */
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM $wpdb->postmeta
+					WHERE meta_key IN ( '_wp_attachment_metadata', '_wp_attachment_backup_sizes' )
+					AND meta_value LIKE %s",
+					'%"' . $wpdb->esc_like( $basefile ) . '"%'
+				)
+			);
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-		// Then, check if the path starts with a year/month (e.g., 2025/07/)
-		if ( preg_match( '/^\d{4}\/\d{2}\//', $without_year_month ) ) {
-			$without_year_month = preg_replace( '/^\d{4}\/\d{2}\//', '', $without_year_month );
-		}
-
-		// Escape user inputs safely
-		$attached_file    = sanitize_text_field( $attached_file );
-		$with_scaled      = sanitize_text_field( $with_scaled );
-		$without_year_month = sanitize_text_field( $without_year_month );
-
-		// Prepare LIKE patterns safely
-		$like_original_text = '%' . $wpdb->esc_like( '"original_image"' ) . '%';
-		$like_with_scaled      = '%' . $wpdb->esc_like( '"'.$with_scaled.'"' ) . '%';
-		$like_without_year_month  = '%' . $wpdb->esc_like( '"'.$without_year_month.'"' ) . '%';
-		$not_like_attached = '%' . $wpdb->esc_like( '"'.$attached_file.'"' ) . '%';
-
-		// Build and prepare the SQL query
-		$query = $wpdb->prepare(
-			"SELECT post_id 
-			FROM {$wpdb->postmeta}
-			WHERE 
-				(meta_key = '_wp_attached_file' AND meta_value = %s)
-				OR 
-				(
-					meta_key = '_wp_attachment_metadata'
-					AND meta_value LIKE %s
-					AND meta_value LIKE %s
-					AND meta_value LIKE %s
-					AND meta_value NOT LIKE %s
-				)",
-			$attached_file,
-			$like_original_text,
-			$like_with_scaled,
-			$like_without_year_month,
-			$not_like_attached
-		);
-
-		// Execute and get IDs
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$ids = $wpdb->get_col( $query );
-
-		if ( ! empty( $ids ) ) {
+		if ( $count > 0 ) {
 			return ''; // Prevent deleting the file.
 		}
 

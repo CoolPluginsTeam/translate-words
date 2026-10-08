@@ -133,14 +133,9 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 			return;
 		}
 
-		$suffix = '.min';
-
-		// Build output lives under admin/assets/js/build per webpack config
-		$script_filename = 'admin/assets/js/build/blocks' . $suffix . '.js';
 		$script_handle = 'lmat_blocks';
-		wp_register_script(
-			$script_handle,
-			plugins_url( $script_filename, LINGUATOR_ROOT_FILE ),
+		linguator_register_script(
+			'blocks',
 			array(
 				'wp-block-editor',
 				'wp-blocks',
@@ -151,14 +146,14 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 				'wp-server-side-render',
 				'lodash',
 			),
-			LINGUATOR_VERSION,
-			true
+			array( 'in_footer' => true ),
+			'lmat_'
 		);
 
 		wp_localize_script( $script_handle, 'lmat_block_editor_blocks_settings', \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'string' ) );
 
 		// Ensure the block editor script is enqueued in the editor context
-		add_action( 'enqueue_block_editor_assets', function() use ( $script_handle, $script_filename ) {
+		add_action( 'enqueue_block_editor_assets', function() use ( $script_handle ) {
 			
 			if ( ! wp_script_is( $script_handle, 'enqueued' ) ) {
 				wp_enqueue_script( $script_handle );

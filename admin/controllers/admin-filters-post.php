@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Admin\Controllers\Linguator_Admin_Filters_Post_Base;
 use Linguator\Admin\Controllers\Linguator_Language;
+use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
 use Linguator\Includes\Other\Linguator_Query;
 use Linguator\Includes\Capabilities\User;
 
@@ -49,6 +50,9 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 
 		// Sets the language in Tiny MCE
 		add_filter( 'tiny_mce_before_init', array( $this, 'linguator_tiny_mce_before_init' ) );
+
+		// Filter untranslated items in the posts list table.
+		add_action( 'restrict_manage_posts', array( $this, 'untranslated_dropdown' ) );
 
 		// Add lang parameter to WordPress default edit links
 		add_filter( 'get_edit_post_link', array( $this, 'linguator_add_lang_to_edit_post_link' ), 10, 3 );
@@ -101,10 +105,19 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 		}
 
 		// Hierarchical post types
-		if ( 'edit' == $screen->base && is_post_type_hierarchical( $screen->post_type ) ) {
-			$pages = get_pages( array( 'sort_column' => 'menu_order, post_title' ) ); // Same arguments as the parent pages dropdown to avoid an extra query.
+		if ( 'edit' == $screen->base && is_post_type_hierarchical( $screen->post_type ) && post_type_supports( $screen->post_type, 'page-attributes' ) ) {
+			$pages = get_pages(
+				array(
+					'sort_column' => 'menu_order, post_title',
+					'post_type'   => $screen->post_type,
+				)
+			); // Same arguments as the parent pages dropdown to avoid an extra query.
 
-			update_post_caches( $pages, $screen->post_type, true, false );
+			if ( ! is_array( $pages ) ) {
+				return;
+			}
+
+			update_object_term_cache( wp_list_pluck( $pages, 'ID' ), $screen->post_type );
 
 			$page_languages = array();
 
@@ -273,6 +286,52 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 			$mce_init['directionality'] = $this->curlang->is_rtl ? 'rtl' : 'ltr';
 		}
 		return $mce_init;
+	}
+
+	/**
+	 * Displays a dropdown for filtering untranslated items in the posts list table.
+	 *
+	 * @param string $post_type The post type.
+	 * @return void
+	 */
+	public function untranslated_dropdown( $post_type ) {
+		if ( ! $this->model->is_translated_post_type( $post_type ) ) {
+			return;
+		}
+
+		$languages = $this->model->get_languages_list();
+
+		foreach ( $languages as $key => $language ) {
+			$languages[ $key ] = $language->to_std_class(); // Important not to modify the language name everywhere.
+			/* translators: %s is a native language name */
+			$languages[ $key ]->name = sprintf( __( 'Untranslated in %s', 'translate-words' ), $language->name );
+		}
+
+		$dropdown = new Linguator_Walker_Dropdown();
+		$selected = isset( $_GET['untranslated_in'] ) && is_string( $_GET['untranslated_in'] )
+			? sanitize_key( wp_unslash( $_GET['untranslated_in'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			: '';
+
+		$dropdown_html = $dropdown->walk(
+			array_merge(
+				array( (object) array( 'slug' => 0, 'name' => __( 'All translation statuses', 'translate-words' ) ) ),
+				$languages
+			),
+			-1,
+			array(
+				'id'       => 'lmat_untranslated_in',
+				'name'     => 'untranslated_in',
+				'class'    => 'postform',
+				'selected' => $selected,
+			)
+		);
+
+		printf(
+			'<label class="screen-reader-text" for="lmat_untranslated_in">%s</label>',
+			esc_html__( 'Filter untranslated items', 'translate-words' )
+		);
+
+		echo $dropdown_html; // phpcs:ignore WordPress.Security.EscapeOutput
 	}
 
 	/**

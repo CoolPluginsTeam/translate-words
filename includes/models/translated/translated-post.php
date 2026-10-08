@@ -102,6 +102,8 @@ class Linguator_Translated_Post extends Linguator_Translated_Object implements L
 			)
 		);
 
+		$this->add_sanitization_hooks( $this->tax_language );
+
 		add_action( 'setup_theme', array( $this, 'add_language_taxonomy_query_var' ) );
 	}
 
@@ -315,8 +317,7 @@ class Linguator_Translated_Post extends Linguator_Translated_Object implements L
 			);
 
 			if ( in_array( $post->post_status, $states ) ) {
-				$user = wp_get_current_user();
-				return is_user_logged_in() && ( current_user_can( 'edit_posts' ) || (int) $user->ID === (int) $post->post_author );
+				return current_user_can( 'read_post', $post->ID );
 			}
 		}
 
