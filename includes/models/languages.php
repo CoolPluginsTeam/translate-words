@@ -227,6 +227,7 @@ class Languages {
 
 		$id = (int) $r['term_id'];
 
+		$r = wp_update_term( $id, 'lmat_language', array( 'term_group' => (int) $args['term_group'] ) ); // Can't set the term group directly in wp_insert_term().
 		if ( is_wp_error( $r ) ) {
 			return new WP_Error( 'lmat_add_language', __( 'Could not set the language order.', 'translate-words' ) );
 		}
