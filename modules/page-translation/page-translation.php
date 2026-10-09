@@ -103,7 +103,19 @@ class Linguator_Page_Translation {
 		}
 	}
 
-	public function linguator_classic_translate_button() {
+	/**
+	 * Print the classic-editor translate button.
+	 *
+	 * The media_buttons hook runs for every wp_editor() on the screen, including
+	 * ACF WYSIWYG fields. Only the main post content editor should get this button.
+	 *
+	 * @param string $editor_id Editor instance id passed by media_buttons.
+	 */
+	public function linguator_classic_translate_button( $editor_id = 'content' ) {
+
+		if ( 'content' !== $editor_id ) {
+			return;
+		}
 
 		global $linguator;
 		global $post;
