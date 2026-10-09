@@ -148,6 +148,11 @@ class Linguator_Sync_Post_Model {
 		$tr_id     = $this->model->post->get( $post_id, $this->model->get_language( $target_language ) );
 		$tr_post   = get_post( $post_id );
 		$languages = array_keys( $this->get( $post_id ) );
+
+		// The target translation may belong to someone else; never write to a post the current user can't edit.
+		if ( $tr_id && ! current_user_can( 'edit_post', $tr_id ) ) {
+			return 0;
+		}
 		
 		if ( ! $tr_post instanceof WP_Post ) {
 			// Something went wrong!

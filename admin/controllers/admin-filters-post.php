@@ -193,7 +193,16 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 				return;
 			}
 
-			$this->save_translations( $post_id, array_map( 'absint', wp_unslash( $_POST['post_tr_lang'] ) ) );
+			// Only link posts the current user can edit; keep translations that are already linked.
+			$tr_ids   = array_map( 'absint', wp_unslash( $_POST['post_tr_lang'] ) );
+			$existing = array_map( 'intval', $this->model->post->get_translations( $post_id ) );
+			$tr_ids   = array_filter(
+				$tr_ids,
+				function ( $id ) use ( $post_id, $existing ) {
+					return ! $id || $id === (int) $post_id || in_array( $id, $existing, true ) || current_user_can( 'edit_post', $id );
+				}
+			);
+			$this->save_translations( $post_id, $tr_ids );
 	}
 
 	/**
