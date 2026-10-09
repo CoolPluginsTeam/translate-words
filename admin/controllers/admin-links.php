@@ -344,7 +344,14 @@ class Linguator_Admin_Links extends Linguator_Links {
 		}
 
 		check_admin_referer( 'translate_media' );
-		return $this->linguator_get_objects_from_new_post_translation_request( absint( wp_unslash( $_GET['from_media'] ) ), sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
+
+		// Only attachments the user can read, and only for users allowed to upload files.
+		$from_media = absint( wp_unslash( $_GET['from_media'] ) );
+		if ( 'attachment' !== get_post_type( $from_media ) || ! current_user_can( 'upload_files' ) || ! current_user_can( 'read_post', $from_media ) ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to translate this media.', 'translate-words' ), '', array( 'response' => 403, 'back_link' => true ) );
+		}
+
+		return $this->linguator_get_objects_from_new_post_translation_request( $from_media, sanitize_key( wp_unslash( $_GET['new_lang'] ) ) );
 	}
 
 	/**

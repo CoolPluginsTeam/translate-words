@@ -474,7 +474,12 @@ class Linguator_Admin_Filters_Term {
 
 		// Save translations after checking the translated term is in the right language ( as well as cast id to int ).
 		if ( isset( $_POST['term_tr_lang'] ) ) {
+			// Only link terms the current user can edit; keep translations that are already linked.
+			$existing = array_map( 'intval', $this->model->term->get_translations( $term_id ) );
 			foreach ( array_map( 'absint', wp_unslash( $_POST['term_tr_lang'] ) ) as $lang => $tr_id ) {
+				if ( $tr_id && $tr_id !== (int) $term_id && ! in_array( $tr_id, $existing, true ) && ! current_user_can( 'edit_term', $tr_id ) ) {
+					continue;
+				}
 				$tr_lang = $this->model->term->get_language( $tr_id );
 				$translations[ $lang ] = $tr_lang && $tr_lang->slug == $lang ? $tr_id : 0;
 			}
