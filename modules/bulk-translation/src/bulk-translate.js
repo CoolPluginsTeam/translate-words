@@ -117,7 +117,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
     await translatePost(0);
 }
 
-const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatch, postId, prefix, source, editorType, createTranslatePostNonce, updateDestoryHandler, signal})=>{
+export const translateContent=async ({sourceLang, targetLangs, totalPosts, storeDispatch, postId, prefix, source, editorType, createTranslatePostNonce, updateDestoryHandler, signal})=>{
 
     const activeProvider=store.getState().serviceProvider;
     const providerDetails=Provider({Service: activeProvider});
@@ -247,9 +247,9 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
             }else if(data.code && data.message){
                 updateData={status: 'error', messageClass: 'error', errorMessage: __('Post not created. Please try again.', 'translate-words'), errorHtml: '<div class="lmat-error-html">'+data.message+'</div>'};
             }else if(!data.success || data.data){
-                const errorMessage = __('custom message', 'translate-words');
+                const errorMessage = __('Something went wrong. Please try again.', 'translate-words');
                 const detail = data.data == null ? errorMessage : data.data;
-                updateData={status: 'error', messageClass: 'error', errorMessage, errorHtml: '<div class="lmat-error-html">'+detail+'</div>'};
+                updateData={status: 'error', messageClass: 'error', errorMessage, errorHtml: '<div class="lmat-error-html">'+detail+'</div>', allowTranslate: data.data == null};
             }else if(!data.data.post_id){
                 updateData={status: 'error', messageClass: 'error', errorMessage: __('Post not created. Please try again.', 'translate-words'), errorHtml: '<div class="lmat-error-html">'+data.data+'</div>'};
             }else if(typeof data === 'string'){

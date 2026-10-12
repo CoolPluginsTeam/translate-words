@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { bulkTranslateEntries, initBulkTranslate } from '../bulk-translate.js';
+import { bulkTranslateEntries, initBulkTranslate, translateContent } from '../bulk-translate.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTranslatePostInfo, selectProgressStatus, selectCountInfo, selectPendingPosts, selectServiceProvider, selectErrorPostsInfo, selectTargetLanguages } from '../redux-store/features/selectors.js';
 import { __, sprintf } from '@wordpress/i18n';
@@ -7,6 +7,7 @@ import ErrorModalBox from '../components/error-modal-box/index.js';
 import { store } from '../redux-store/store.js';
 import DOMPurify from 'dompurify';
 import { geminiTranslateAgain, geminiTranslateComplete } from '../gemini-bulk-recovery.js';
+import { updatePendingPosts, updateTranslatePostInfo } from '../redux-store/features/actions.js';
 import { installLanguagePackFromStatus } from '../components/translate-provider/local-ai/index.js';
 
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
@@ -43,6 +44,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     const destroyHandlersRef = useRef([]);
     const abortControllerRef = useRef(null);
+    const createNonceRef = useRef('');
+    const retryingRef = useRef(false);
 
     const runTranslationCleanup = useCallback(() => {
         abortControllerRef.current?.abort();
@@ -79,6 +82,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                     return;
                 }
 
+                createNonceRef.current = response.nonce;
                 initBulkTranslate(response.postKeys, response.nonce, storeDispatch, prefix, updateDestoryHandler, signal);
             } catch (err) {
                 if (signal.aborted) {
@@ -198,6 +202,60 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
         setBulkStatus(status);
     }
 
+    const retryFailedTranslation = async () => {
+        const failed = errorModalData;
+        if (retryingRef.current || !failed || !failed.allowTranslate || !failed.parentPostId || !failed.targetLanguage) {
+            return;
+        }
+
+        const postId = failed.parentPostId;
+        const targetLang = failed.targetLanguage;
+        const postContent = store.getState().parentPostsInfo[postId];
+        if (!postContent) {
+            return;
+        }
+
+        const { originalContent, editorType, sourceLanguage } = postContent;
+        const source = JSON.parse(JSON.stringify(originalContent || {}));
+        source.content = source.content || {};
+        source.metaFields = source.metaFields || {};
+
+        const key = `${postId}_${targetLang}`;
+        retryingRef.current = true;
+        storeDispatch(updatePendingPosts([key]));
+        storeDispatch(updateTranslatePostInfo({
+            [key]: {
+                status: 'running',
+                messageClass: '',
+                errorMessage: '',
+                errorHtml: false,
+                allowTranslate: false,
+            },
+        }));
+        setProgressBarVisibility(true);
+        setCharactersCountVisibility(false);
+        updateBulkStatus('running');
+        closeErrorModal();
+
+        try {
+            await translateContent({
+                sourceLang: sourceLanguage,
+                targetLangs: [targetLang],
+                totalPosts: Math.max(1, store.getState().countInfo.totalPosts || 1),
+                storeDispatch,
+                postId,
+                prefix,
+                source,
+                editorType,
+                createTranslatePostNonce: createNonceRef.current,
+                updateDestoryHandler,
+                signal: abortControllerRef.current?.signal,
+            });
+        } finally {
+            retryingRef.current = false;
+        }
+    };
+
     const getBulkStatus=()=>{
         switch(bulkStatus){
             case 'running':
@@ -302,7 +360,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     }
 
     return (
-        errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} >
+        errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} beforeClose={errorModalData.allowTranslate ? <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={retryFailedTranslation}>{__('Translate', 'translate-words')}</button> : null} >
             {errorModalData.aiError && serviceProvider === 'gemini' && (
                 <div className={`${prefix}-ai-error-buttons`}>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
