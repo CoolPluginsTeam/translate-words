@@ -247,7 +247,9 @@ export const updateContent=async ({source, postId, sourceLang, lang, editorType,
             }else if(data.code && data.message){
                 updateData={status: 'error', messageClass: 'error', errorMessage: __('Post not created. Please try again.', 'translate-words'), errorHtml: '<div class="lmat-error-html">'+data.message+'</div>'};
             }else if(!data.success || data.data){
-                updateData={status: 'error', messageClass: 'error', errorMessage: __('Post not created. Please try again.', 'translate-words'), errorHtml: '<div class="lmat-error-html">'+data.data+'</div>'};
+                const errorMessage = __('custom message', 'translate-words');
+                const detail = data.data == null ? errorMessage : data.data;
+                updateData={status: 'error', messageClass: 'error', errorMessage, errorHtml: '<div class="lmat-error-html">'+detail+'</div>'};
             }else if(!data.data.post_id){
                 updateData={status: 'error', messageClass: 'error', errorMessage: __('Post not created. Please try again.', 'translate-words'), errorHtml: '<div class="lmat-error-html">'+data.data+'</div>'};
             }else if(typeof data === 'string'){
