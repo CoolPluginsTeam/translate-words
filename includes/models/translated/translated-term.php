@@ -166,7 +166,7 @@ class Linguator_Translated_Term extends Linguator_Translated_Object implements L
 		// Always keep a group for terms to allow relationships remap when importing from a WXR file.
 		$group        = uniqid( 'lmat_' );
 		$translations = array( $slug => $id );
-		wp_insert_term( $group, $this->tax_translations, array( 'description' => maybe_serialize( $translations ) ) );
+		wp_insert_term( $group, $this->tax_translations, array( 'description' => (string) maybe_serialize( $translations ) ) );
 		wp_set_object_terms( $id, $group, $this->tax_translations );
 	}
 
@@ -438,6 +438,45 @@ class Linguator_Translated_Term extends Linguator_Translated_Object implements L
 		}
 
 		return $term;
+	}
+
+	/**
+	 * Gets a translated term by a term field.
+	 *
+	 * @param string              $field    Term field: term_id, slug, name, or term_taxonomy_id.
+	 * @param int|string          $value    Term field value to search for.
+	 * @param Linguator_Language  $lang     Target language.
+	 * @param string              $taxonomy Taxonomy name. Optional for term_id.
+	 * @return int|string The translated field value, or an empty value if it was not found.
+	 */
+	public function get_by( string $field, $value, Linguator_Language $lang, string $taxonomy = '' ) {
+		if ( 'term_id' === $field ) {
+			return $this->get( (int) $value, $lang );
+		}
+
+		$empty = 'term_taxonomy_id' === $field ? 0 : '';
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				$field        => $value,
+				'hide_empty' => false,
+				'lang'       => '',
+			)
+		);
+
+		if ( empty( $terms ) || ! is_array( $terms ) ) {
+			return $empty;
+		}
+
+		$term = reset( $terms );
+		if ( ! $term instanceof WP_Term ) {
+			return $empty;
+		}
+
+		$translated_id   = $this->get( $term->term_id, $lang );
+		$translated_term = get_term( $translated_id );
+
+		return $translated_term instanceof WP_Term ? $translated_term->$field : $empty;
 	}
 
 	/**

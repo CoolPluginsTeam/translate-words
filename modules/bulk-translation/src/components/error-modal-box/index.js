@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 
 const PURIFY_OPTS = { ADD_ATTR: ['target', 'rel', 'data-clipboard-text'] };
 
-const ErrorModalBox = ({ message, onClose, Title, prefix, children }) => {
+const ErrorModalBox = ({ message, onClose, Title, prefix, children, beforeClose }) => {
 
     let stringifiedMessage = '';
     if (message) {
@@ -87,6 +87,7 @@ const ErrorModalBox = ({ message, onClose, Title, prefix, children }) => {
                     {children}
                 </div>
                 <div className={`${prefix}-error-modal-box-footer`}>
+                    {beforeClose}
                     <button className={`${prefix}-error-modal-box-close button button-primary`} onClick={onClose}>{__('Back', 'translate-words')}</button>
                 </div>
             </div>

@@ -78,8 +78,7 @@ class Linguator_Translatable_Objects implements \IteratorAggregate {
 	 *
 	 * @phpstan-return ArrayIterator<string, Linguator_Translatable_Object>
 	 */
-	#[\ReturnTypeWillChange]
-	public function getIterator() {
+	public function getIterator(): \ArrayIterator {
 		return new \ArrayIterator( $this->objects );
 	}
 

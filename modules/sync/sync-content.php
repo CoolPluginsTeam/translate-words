@@ -4,6 +4,7 @@
  */
 
 use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 
 /**
  * Smart copy of post content
@@ -11,6 +12,8 @@ use Linguator\Includes\Other\Linguator_Language;
  *  
  */
 class Linguator_Sync_Post {
+	/** @var bool Preserve inline text supplied by an AI translation. */
+	protected $preserve_media_text = false;
 	/**
 	 * Stores the plugin options.
 	 *
@@ -78,7 +81,7 @@ class Linguator_Sync_Post {
 	 * @param Linguator_Language|string $target_language The language of the post to copy to.
 	 * @return WP_Post|void
 	 */
-	public function copy_content( $from_post, $target_post, $target_language ) {
+	public function copy_content( $from_post, $target_post, $target_language, $preserve_media_text = false ) {
 		$from_language   = $this->model->post->get_language( $from_post->ID );
 		$target_language = $this->model->get_language( $target_language );
 		if ( ! $from_language || ! $target_language ) {
@@ -86,25 +89,47 @@ class Linguator_Sync_Post {
 		}
 
 		$target_post->post_title = $from_post->post_title;
-		$target_post->post_name  = wp_unique_post_slug(
-			$from_post->post_name,
+		$desired_slug = $from_post->post_name;
+		// WordPress skips uniqueness checks for drafts, but bulk translations start as drafts.
+		$slug_status  = in_array( $target_post->post_status, array( 'draft', 'pending', 'auto-draft' ), true )
+			? 'publish'
+			: $target_post->post_status;
+		$unique_slug  = wp_unique_post_slug(
+			$desired_slug,
 			$target_post->ID,
-			$target_post->post_status,
+			$slug_status,
 			$target_post->post_type,
 			$target_post->post_parent
 		);
+
+		if ( '' !== $desired_slug && $unique_slug !== $desired_slug ) {
+			$language_suffix = sanitize_title( $target_language->slug );
+			if ( '' !== $language_suffix ) {
+				$unique_slug = wp_unique_post_slug(
+					sanitize_title( $desired_slug . '-' . $language_suffix ),
+					$target_post->ID,
+					$slug_status,
+					$target_post->post_type,
+					$target_post->post_parent
+				);
+			}
+		}
+
+		$target_post->post_name = $unique_slug;
 
 		$target_post->post_excerpt = $this->translate_content(
 			$from_post->post_excerpt,
 			$target_post,
 			$from_language,
-			$target_language
+			$target_language,
+			$preserve_media_text
 		);
 		$target_post->post_content = $this->translate_content(
 			$from_post->post_content,
 			$target_post,
 			$from_language,
-			$target_language
+			$target_language,
+			$preserve_media_text
 		);
 
 		return $target_post;
@@ -123,12 +148,13 @@ class Linguator_Sync_Post {
 	 * @param Linguator_Language $target_language The language to translate to.
 	 * @return string Translated text
 	 */
-	public function translate_content( $content, $target_post, Linguator_Language $from_language, Linguator_Language $target_language ) {
+	public function translate_content( $content, $target_post, Linguator_Language $from_language, Linguator_Language $target_language, $preserve_media_text = false ) {
 		global $shortcode_tags;
 
 		$this->target_post     = $target_post;
 		$this->from_language   = $from_language;
 		$this->target_language = $target_language;
+		$this->preserve_media_text = (bool) $preserve_media_text;
 
 		// Hack shortcodes.
 		$backup = $shortcode_tags;
@@ -322,8 +348,10 @@ class Linguator_Sync_Post {
 	 */
 	public function caption_shortcode( $attr, $content, $tag ) {
 		// Translate the caption id
-		$out = array();
-		$tag = sanitize_key( $tag );
+		$out   = array();
+		$id    = null;
+		$tr_id = null;
+		$tag   = sanitize_key( $tag );
 		if ( ! in_array( $tag, array( 'caption', 'wp_caption' ), true ) ) {
 			return '';
 		}
@@ -346,7 +374,7 @@ class Linguator_Sync_Post {
 		}
 
 		// Translate the caption content
-		if ( ! empty( $id ) && ! empty( $tr_id ) ) {
+		if ( ! $this->preserve_media_text && ! empty( $id ) && ! empty( $tr_id ) ) {
 			$p    = get_post( (int) $id );
 			$tr_p = get_post( $tr_id );
 			if ( $p && $tr_p ) {
@@ -360,7 +388,11 @@ class Linguator_Sync_Post {
 	}
 
 	/**
-	 * Translate images and caption in inner html
+	 * Translate images and caption in inner html.
+	 *
+	 * Remaps attachment IDs, classes and URLs in img tags.
+	 * Uses translated attachment text during ordinary copying, while preserving
+	 * inline text explicitly supplied by the AI translation flow.
 	 *
 	 * Since 2.5
 	 *
@@ -373,7 +405,7 @@ class Linguator_Sync_Post {
 
 			$img_ids = array();
 			foreach ( $textarr as $i => $text ) {
-				// Translate img class and alternative text
+				// Remap img class, data-id and data-link attachment IDs.
 				if ( 0 === strpos( $text, '<img' ) ) {
 					$img_ids[] = $this->translate_img( $textarr[ $i ] );
 				}
@@ -383,32 +415,21 @@ class Linguator_Sync_Post {
 				return $content;
 			}
 
+			// Keep figcaption text already present in content (bulk AI may have
+			// translated it). Attachment post_excerpt is copied untranslated by
+			// create_media_translation, so overwriting here wiped translations.
 			$new_content = implode( $textarr );
-			$key = 0;
-			$new_content = preg_replace_callback(
-				'@(?<before><figcaption.*?>)(.+?)(?<after></figcaption>)@',
-				function ( $matches ) use ( $img_ids, &$key ) {
-					$tr_post = get_post( $img_ids[ $key ] );
-					$key++;
-					if ( ! empty( $tr_post->post_excerpt ) ) {
-						return $matches['before'] . $tr_post->post_excerpt . $matches['after'];
-					} else {
-						return $matches[0];
-					}
-				},
-				$new_content
-			);
-
-			if ( is_string( $new_content ) ) {
-				return $new_content;
-			}
+			return is_string( $new_content ) ? $new_content : $content;
 		}
 
 		return $content;
 	}
 
 	/**
-	 * Translates <img> 'class' and 'alt' attributes.
+	 * Translates image attachment references and alternative text.
+	 *
+	 * Remaps attachment IDs and URLs; the alt follows the translated attachment
+	 * unless it was customized or already translated.
 	 *
 	 *  
 	 *   The html is passed by reference and the return value is the image ID.
@@ -423,32 +444,59 @@ class Linguator_Sync_Post {
 			return null;
 		}
 
-		// Replace class
+		$source_id = null;
+		$tr_id     = null;
+
+		// Remap attachment IDs in class, data-id, and data-link attributes.
 		foreach ( $attributes as $k => $attr ) {
 			if ( 0 === strpos( $attr, 'class' ) && preg_match( '#wp\-image\-([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
+				$source_id = (int) $matches[1];
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'wp-image-' . $matches[1], 'wp-image-' . $tr_id, $attr );
-
 			}
 
 			if ( preg_match( '#^data\-id="([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
+				$source_id = (int) $matches[1];
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'data-id="' . $matches[1], 'data-id="' . $tr_id, $attr );
 			}
 
 			if ( 0 === strpos( $attr, 'data-link' ) && preg_match( '#attachment_id=([0-9]+)#', $attr, $matches ) && ! empty( $matches[1] ) ) {
+				$source_id = (int) $matches[1];
 				$tr_id            = $this->translate_media( (int) $matches[1] );
 				$attributes[ $k ] = str_replace( 'attachment_id=' . $matches[1], 'attachment_id=' . $tr_id, $attr );
 			}
 		}
 
 		if ( ! empty( $tr_id ) ) {
-			// Got a tr_id, attempt to replace the alt text
-			$alt = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
-			if ( is_string( $alt ) && ! empty( $alt ) ) {
+			// The alt follows the translated attachment only while it is still the source attachment
+			// alt, so a customized or already translated (AI) inline alt is kept.
+			$tr_alt     = get_post_meta( $tr_id, '_wp_attachment_image_alt', true );
+			$source_alt = get_post_meta( $source_id, '_wp_attachment_image_alt', true );
+			if ( is_string( $tr_alt ) && '' !== $tr_alt && is_string( $source_alt ) && '' !== $source_alt ) {
 				foreach ( $attributes as $k => $attr ) {
-					if ( 0 === strpos( $attr, 'alt' ) ) {
-						$attributes[ $k ] = 'alt="' . esc_attr( $alt ) . '" ';
+					if ( preg_match( '#^alt=(["\'])(.*?)\1#', $attr, $matches ) && html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' ) === $source_alt ) {
+						$attributes[ $k ] = str_replace( $matches[0], 'alt="' . esc_attr( $tr_alt ) . '"', $attr );
+					}
+				}
+			}
+
+			if ( ! empty( $source_id ) ) {
+				foreach ( $attributes as $key => $attribute ) {
+					if ( 0 === strpos( $attribute, 'src=' ) && preg_match( '#src=(["\'])([^"\']*)\1#', $attribute, $matches ) ) {
+						$url = Media_Translation_Service::remap_attachment_url( $source_id, $tr_id, html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' ) );
+						$attributes[ $key ] = str_replace( $matches[2], esc_url( $url ), $attribute );
+					}
+					if ( preg_match( '#^srcset=(["\'])(.*?)\1#', $attribute, $matches ) ) {
+						$srcset = html_entity_decode( $matches[2], ENT_QUOTES, 'UTF-8' );
+						$srcset = preg_replace_callback(
+							'/(^|,\s*)(\S+)/',
+							function ( $candidate ) use ( $source_id, $tr_id ) {
+								return $candidate[1] . Media_Translation_Service::remap_attachment_url( $source_id, $tr_id, $candidate[2] );
+							},
+							$srcset
+						);
+						$attributes[ $key ] = str_replace( $matches[2], esc_attr( $srcset ), $attribute );
 					}
 				}
 			}
@@ -556,21 +604,31 @@ class Linguator_Sync_Post {
 			case 'core/audio':
 			case 'core/video':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$source_id = $block['attrs']['id'];
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'src', $source_id );
 				}
 				break;
 			case 'core/cover':
 			case 'core/image':
 				if ( array_key_exists( 'id', $block['attrs'] ) ) {
-					$block['attrs']['id'] = $this->translate_media( $block['attrs']['id'] );
+					$source_id = $block['attrs']['id'];
+					$translated_id        = $this->translate_media( $block['attrs']['id'] );
+					$block['attrs']['id'] = $translated_id;
+					$block                 = $this->replace_block_media_url( $block, $translated_id, 'url', $source_id );
 				}
 				$block = $this->translate_block_content( $block );
 				break;
 
 			case 'core/file':
+				if ( empty( $block['attrs']['id'] ) ) {
+					break;
+				}
 				$source_id = $block['attrs']['id'];
-				$tr_id = $this->translate_media( $source_id );
+				$tr_id     = $this->translate_media( $source_id );
 				$block['attrs']['id'] = $tr_id;
+				$block = $this->replace_block_media_url( $block, $tr_id, 'href', $source_id );
 				$textarr = wp_html_split( $block['innerHTML'] );
 				$source_post = get_post( $source_id );
 				if ( ! $source_post instanceof WP_Post ) {
@@ -598,7 +656,13 @@ class Linguator_Sync_Post {
 				break;
 
 			case 'core/media-text':
-				$block['attrs']['mediaId'] = $this->translate_media( $block['attrs']['mediaId'] );
+				if ( empty( $block['attrs']['mediaId'] ) ) {
+					break;
+				}
+				$source_id = $block['attrs']['mediaId'];
+				$translated_id                 = $this->translate_media( $source_id );
+				$block['attrs']['mediaId']     = $translated_id;
+				$block                         = $this->replace_block_media_url( $block, $translated_id, 'mediaUrl', $source_id );
 				$block['innerContent'][0] = $this->translate_html( $block['innerContent'][0] );
 				break;
 
@@ -612,6 +676,22 @@ class Linguator_Sync_Post {
 					$block = $this->translate_block_content( $block );
 				}
 				break;
+		}
+
+		return $block;
+	}
+
+	/**
+	 * Replaces a block media URL attribute with the translated attachment URL.
+	 *
+	 * @param array  $block         Parsed block.
+	 * @param int    $attachment_id Translated attachment ID.
+	 * @param string $attribute     Block URL attribute name.
+	 * @return array Updated block.
+	 */
+	private function replace_block_media_url( $block, $attachment_id, $attribute, $source_id ) {
+		if ( isset( $block['attrs'][ $attribute ] ) ) {
+			$block['attrs'][ $attribute ] = Media_Translation_Service::remap_attachment_url( $source_id, $attachment_id, $block['attrs'][ $attribute ] );
 		}
 
 		return $block;

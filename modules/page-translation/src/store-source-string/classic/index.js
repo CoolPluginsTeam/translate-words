@@ -38,7 +38,8 @@ const ClassicSaveSource = (post_data) => {
             const entity=(/^&[a-zA-Z0-9#]+;$/.test(text));
             const htmlTag = /^<\/?\s*[a-zA-Z0-9#]+\s*\/?>$/.test(text);
             const isEmptyHtmlTag = /^<\s*\/?\s*[a-zA-Z0-9#]+\s*><\/\s*\/?\s*[a-zA-Z0-9#]+\s*>$/.test(text);
-            const blockCommentTag = /<!--[\s\S]*?-->/g.test(text) && text.indexOf('<!--') < text.indexOf('-->');
+            // Skip comment-only lines (e.g. <!--more-->); text around inline comments stays translatable.
+            const blockCommentTag = /^\s*(?:<!--[\s\S]*?-->\s*)+$/.test(text);
 
             const plainText=!entity && !htmlTag && !isEmptyHtmlTag && !blockCommentTag; 
 
@@ -60,6 +61,32 @@ const ClassicSaveSource = (post_data) => {
             if(post_data[key] && post_data[key].trim() !== ''){
                 dispatch('block-lmatPageTranslation/translate').slugSaveSource(post_data[key]);
             }
+        }
+
+        // Register featured-image strings into the translation queue.
+        if ( key === 'featured_image' && lmatPageTranslationGlobal.mediaSupport && post_data[key] ) {
+            const fi = post_data[key];
+            [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                if ( fi[field] && fi[field].trim() !== '' ) {
+                    dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                        `lmat_media_featured_${ field }`, fi[field]
+                    );
+                }
+            } );
+        }
+
+        // Register content-attachment strings into the translation queue.
+        if ( key === 'content_media' && lmatPageTranslationGlobal.mediaSupport && Array.isArray( post_data[key] ) ) {
+            post_data[key].forEach( ( attachment ) => {
+                const attachId = attachment.id;
+                [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                    if ( attachment[field] && attachment[field].trim() !== '' ) {
+                        dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                            `lmat_media_${ attachId }_${ field }`, attachment[field]
+                        );
+                    }
+                } );
+            } );
         }
     });
 };

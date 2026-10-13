@@ -66,13 +66,8 @@ jQuery(function ($) {
             $.each(lmat_term_languages, function (lg, term_tax) {
               $.each(term_tax, function (tax, terms) {
                 $.each(terms, function (i) {
-                  // Backward compatibility with WordPress < 6.7.
-                  // Support both old (WP < 6.7) and new (WP >= 6.7) ID formats.
-                  // Old format: category-123 (WordPress < 6.7).
-                  // New format: in-category-123-1 (WordPress >= 6.7).
                   var termId = lmat_term_languages[lg][tax][i];
-                  var selector = "#".concat(tax, "-").concat(termId, ", [id^=\"in-").concat(tax, "-").concat(termId, "-\"]");
-                  $(selector).toggle(lang === lg);
+                  $("[id^=\"in-".concat(tax, "-").concat(termId, "-\"]")).toggle(lang === lg);
                 });
               });
             });

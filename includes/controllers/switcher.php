@@ -61,10 +61,10 @@ class Linguator_Switcher {
 		$options = array(
 			'dropdown'               => array( 'string' => __( 'Displays as a dropdown', 'translate-words' ), 'default' => 0 ),
 			'show_names'             => array( 'string' => __( 'Displays language names', 'translate-words' ), 'default' => 1 ),
-			'show_flags'             => array( 'string' => __( 'Displays flags', 'translate-words' ), 'default' => 0 ),
-			'force_home'             => array( 'string' => __( 'Forces link to front page', 'translate-words' ), 'default' => 0 ),
-			'hide_current'           => array( 'string' => __( 'Hides the current language', 'translate-words' ), 'default' => 0 ),
-			'hide_if_no_translation' => array( 'string' => __( 'Hides languages with no translation', 'translate-words' ), 'default' => 0 ),
+			'show_flags'             => array( 'string' => __( 'Display flags', 'translate-words' ), 'default' => 0 ),
+			'force_home'             => array( 'string' => __( 'Force link to front page', 'translate-words' ), 'default' => 0 ),
+			'hide_current'           => array( 'string' => __( 'Hide the current language', 'translate-words' ), 'default' => 0 ),
+			'hide_if_no_translation' => array( 'string' => __( 'Hide languages with no translation', 'translate-words' ), 'default' => 0 ),
 		);
 		return wp_list_pluck( $options, $key );
 	}

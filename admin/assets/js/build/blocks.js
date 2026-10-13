@@ -138,7 +138,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         });
       }
     }), (!dropdown || showHideCurrentEvenInDropdown) && wp.element.createElement(ToggleControl, {
-      label: __('Show flags', 'translate-words'),
+      label: __('Display flags', 'translate-words'),
       checked: !!show_flags,
       onChange: function onChange(v) {
         return update({
@@ -146,7 +146,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         });
       }
     }), wp.element.createElement(ToggleControl, {
-      label: __('Force switch to homepage', 'translate-words'),
+      label: __('Force link to front page', 'translate-words'),
       checked: !!force_home,
       onChange: function onChange(v) {
         return update({
@@ -154,7 +154,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         });
       }
     }), !attributes.dropdown && wp.element.createElement(ToggleControl, {
-      label: __('Hide current language', 'translate-words'),
+      label: __('Hide the current language', 'translate-words'),
       checked: !!hide_current,
       onChange: function onChange(v) {
         return update({
@@ -162,7 +162,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         });
       }
     }), wp.element.createElement(ToggleControl, {
-      label: __('Hide languages without translation', 'translate-words'),
+      label: __('Hide languages with no translation', 'translate-words'),
       checked: !!hide_if_no_translation,
       onChange: function onChange(v) {
         return update({

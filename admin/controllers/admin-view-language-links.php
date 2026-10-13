@@ -161,7 +161,7 @@ if ( ! class_exists( 'Linguator_Admin_View_Language_Links' ) ) :
 						$index++;
 					}
 
-					$all_url=function_exists('add_query_arg') ? add_query_arg('lang', 'all') : 'edit.php?post_type='.esc_attr($post_type).'&lang=all';
+						$all_url=function_exists('add_query_arg') ? add_query_arg(array('lang' => 'all', 'all_posts' => 1)) : 'edit.php?post_type='.esc_attr($post_type).'&lang=all&all_posts=1';
 					// Language links must include nonce so admin language filter can update user meta safely.
 					$all_url = wp_nonce_url( $all_url, 'lmat_set_admin_filter_lang', '_lmat_lang_nonce' );
 					$current_lang_link='all' !== $linguator_active_languages ? esc_url($all_url) : '';

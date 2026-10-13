@@ -50,7 +50,7 @@ class Widget extends Abstract_Screen {
 		$widgets_to_show = array( 'custom_html' );
 		$widget_ids = array_diff( $widget_ids, $widgets_to_show );
 
-		$widgets_to_hide = array( 'linguator' );
+		$widgets_to_hide = array( 'linguator_widget' );
 		$widget_ids = array_merge( $widget_ids, $widgets_to_hide );
 
 		return $widget_ids;

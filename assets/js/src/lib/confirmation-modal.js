@@ -25,8 +25,8 @@ export const initializeConfirmationModal = () => {
 
 	const dialogResult = new Promise(
 		( confirm, cancel ) => {
-			const confirmDialog = ( what ) => { // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
-				switch ( what ) { // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
+			const confirmDialog = ( what ) => {
+				switch ( what ) {
 					case 'yes':
 						// Confirm the new language.
 						languagesList.data( 'old-value', languagesList.children( ':selected' ).first().val() );
@@ -38,8 +38,8 @@ export const initializeConfirmationModal = () => {
 						cancel( 'Cancel' );
 						break;
 				}
-				dialogContainer.dialog( 'close' ); // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
-			} // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
+				dialogContainer.dialog( 'close' );
+			}
 
 			// Initialize dialog box in the case a language is selected but not added in the list.
 			const dialogOptions = {

@@ -133,6 +133,32 @@ const GutenbergBlockSaveSource = (block, blockRules) => {
                 dispatch('block-lmatPageTranslation/translate').slugSaveSource(block[key]);
             }
         }
+
+        // Register featured-image strings into the translation queue.
+        if ( key === 'featured_image' && lmatPageTranslationGlobal.mediaSupport && block[key] ) {
+            const fi = block[key];
+            [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                if ( fi[field] && fi[field].trim() !== '' ) {
+                    dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                        `lmat_media_featured_${ field }`, fi[field]
+                    );
+                }
+            } );
+        }
+
+        // Register content-attachment strings into the translation queue.
+        if ( key === 'content_media' && lmatPageTranslationGlobal.mediaSupport && Array.isArray( block[key] ) ) {
+            block[key].forEach( ( attachment ) => {
+                const attachId = attachment.id;
+                [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                    if ( attachment[field] && attachment[field].trim() !== '' ) {
+                        dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                            `lmat_media_${ attachId }_${ field }`, attachment[field]
+                        );
+                    }
+                } );
+            } );
+        }
     });
 }
 

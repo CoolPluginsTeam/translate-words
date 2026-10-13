@@ -182,6 +182,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Includes\\Services\\Links\\Linguator_Links_Model' => __DIR__ . '/../..' . '/includes/services/links/links-model.php',
         'Linguator\\Includes\\Services\\Links\\Linguator_Links_Permalinks' => __DIR__ . '/../..' . '/includes/services/links/links-permalinks.php',
         'Linguator\\Includes\\Services\\Links\\Linguator_Links_Subdomain' => __DIR__ . '/../..' . '/includes/services/links/links-subdomain.php',
+        'Linguator\\Includes\\Services\\Media\\Media_Translation_Service' => __DIR__ . '/../..' . '/includes/services/media/media-translation-service.php',
         'Linguator\\Includes\\Services\\Translation\\Translation_Term_Model' => __DIR__ . '/../..' . '/includes/services/translation/translation-term-translate.php',
         'Linguator\\Includes\\Walkers\\Linguator_Walker' => __DIR__ . '/../..' . '/includes/walkers/walker.php',
         'Linguator\\Includes\\Walkers\\Linguator_Walker_Dropdown' => __DIR__ . '/../..' . '/includes/walkers/walker-dropdown.php',

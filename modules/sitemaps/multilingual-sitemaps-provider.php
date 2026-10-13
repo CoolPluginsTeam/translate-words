@@ -14,6 +14,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Linguator_Multilingual_Sitemaps_Provider extends WP_Sitemaps_Provider {
 	/**
+	 * Separator between name and language slug.
+	 */
+	public const SEPARATOR = '---lmat-sep---';
+
+	/**
+	 * Pattern to match a name with language.
+	 *  `.*` in `(?<SUBTYPE>.*)` because users don't have sub-types. See `get_sitemap_data()`.
+	 */
+	private const PATTERN = '#^(?<SUBTYPE>.*)' . self::SEPARATOR . '(?<LANG>.+)$#';
+
+	/**
 	 * The decorated sitemaps provider.
 	 *
 	 *  
@@ -108,23 +119,30 @@ class Linguator_Multilingual_Sitemaps_Provider extends WP_Sitemaps_Provider {
 	}
 
 	/**
-	 * Gets data for a given sitemap type.
+	 * Returns data for a given sitemap sub-type.
+	 * Suffixes the given sub-type with a language slug, so `get_sitemap_url()` can receive it.
 	 *
 	 *  
 	 *
-	 * @param string $object_subtype_name Object subtype name if any.
-	 * @param string $lang                Optional language name.
+	 * @param string $object_subtype_name Object sub-type name if any.
+	 * @param string $lang                Optional language slug.
 	 * @return array
 	 */
 	protected function get_sitemap_data( $object_subtype_name, $lang = '' ) {
 		$object_subtype_name = (string) $object_subtype_name;
 
-		if ( ! empty( $lang ) ) {
-			self::$filter_lang = $lang;
+		if ( empty( $lang ) ) {
+			return array(
+				'name'  => $object_subtype_name,
+				'pages' => $this->get_max_num_pages( $object_subtype_name ),
+			);
 		}
 
+		// Allow `page---lmat-sep---fr` (page is a "posts sub-type") and `---lmat-sep---fr` (the "users" type doesn't have sub-types).
+		self::$filter_lang = $lang;
+
 		$return = array(
-			'name'  => implode( '-', array_filter( array( $object_subtype_name, $lang ) ) ),
+			'name'  => sprintf( "{$object_subtype_name}%s{$lang}", self::SEPARATOR ),
 			'pages' => $this->get_max_num_pages( $object_subtype_name ),
 		);
 
@@ -146,10 +164,12 @@ class Linguator_Multilingual_Sitemaps_Provider extends WP_Sitemaps_Provider {
 		add_filter( 'wp_sitemaps_taxonomies_query_args', array( self::class, 'query_args' ) );
 
 		$object_subtypes = $this->get_object_subtypes();
+		$language_slugs  = $this->model->get_languages_list( array( 'fields' => 'slug' ) );
 
 		if ( empty( $object_subtypes ) ) {
-			foreach ( $this->model->get_languages_list( array( 'fields' => 'slug' ) ) as $language ) {
-				$sitemap_data[] = $this->get_sitemap_data( '', $language );
+			// No sub-types. Ex: users.
+			foreach ( $language_slugs as $language_slug ) {
+				$sitemap_data[] = $this->get_sitemap_data( '', $language_slug );
 			}
 		}
 
@@ -165,12 +185,14 @@ class Linguator_Multilingual_Sitemaps_Provider extends WP_Sitemaps_Provider {
 		}
 
 		foreach ( array_keys( $object_subtypes ) as $object_subtype_name ) {
-			if ( call_user_func( $func, $object_subtype_name ) ) {
-				foreach ( $this->model->get_languages_list( array( 'fields' => 'slug' ) ) as $language ) {
-					$sitemap_data[] = $this->get_sitemap_data( $object_subtype_name, $language );
-				}
-			} else {
+			if ( ! call_user_func( $func, $object_subtype_name ) ) {
+				// Not a translated sub-type.
 				$sitemap_data[] = $this->get_sitemap_data( $object_subtype_name );
+				continue;
+			}
+
+			foreach ( $language_slugs as $language_slug ) {
+				$sitemap_data[] = $this->get_sitemap_data( $object_subtype_name, $language_slug );
 			}
 		}
 
@@ -187,16 +209,16 @@ class Linguator_Multilingual_Sitemaps_Provider extends WP_Sitemaps_Provider {
 	 * @return string The composed URL for a sitemap entry.
 	 */
 	public function get_sitemap_url( $name, $page ) {
-		// Check if a language was added in $name.
-		$pattern = '#(' . implode( '|', $this->model->get_languages_list( array( 'fields' => 'slug' ) ) ) . ')$#';
-		if ( preg_match( $pattern, $name, $matches ) ) {
-			$lang = $this->model->get_language( $matches[1] );
+		// Check if a language was added in `$name`.
+		if ( preg_match( self::PATTERN, $name, $matches ) ) {
+			$lang = $this->model->get_language( $matches['LANG'] );
 
 			if ( ! empty( $lang ) ) {
-				$name = preg_replace( '#(-?' . $lang->slug . ')$#', '', $name );
-				$url = $this->provider->get_sitemap_url( $name, $page );
+				$url = $this->provider->get_sitemap_url( $matches['SUBTYPE'], $page );
 				return $this->links_model->add_language_to_link( $url, $lang );
 			}
+			// Should not happen but we don't want our separator to stay in the final URL.
+			$name = $matches['SUBTYPE'];
 		}
 
 		// If no language is present in $name, we may attempt to get the current sitemap url (e.g. in redirect_canonical() ).

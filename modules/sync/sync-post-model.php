@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 use Linguator\Custom_Fields\Custom_Fields;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 
 /**
  * Model for synchronizing posts
@@ -46,6 +47,21 @@ class Linguator_Sync_Post_Model {
 	protected $temp_synchronized;
 
 	/**
+	 * Media translation service.
+	 *
+	 * @var Media_Translation_Service
+	 */
+	private $media_translation;
+
+	/**
+	 * Pending Elementor in-content media translations (source attachment ID => fields).
+	 * Consumed by update_elementor_data() during remap.
+	 *
+	 * @var array|null
+	 */
+	protected $pending_elementor_media = null;
+
+	/**
 	 * Constructor
 	 *
 	 *  
@@ -56,7 +72,8 @@ class Linguator_Sync_Post_Model {
 		$this->options      = &$linguator->options;
 		$this->model        = &$linguator->model;
 		$this->sync         = &$linguator->sync;
-		$this->sync_content = new Linguator_Sync_Post($linguator);
+		$this->sync_content = new Linguator_Sync_Post( $linguator );
+		$this->media_translation = new Media_Translation_Service( $linguator );
 
 		add_filter( 'lmat_copy_taxonomies', array( $this, 'copy_taxonomies' ), 5, 4 );
 		add_filter( 'lmat_copy_post_metas', array( $this, 'copy_post_metas' ), 5, 4 );
@@ -116,9 +133,26 @@ class Linguator_Sync_Post_Model {
 	public function copy_post( $post_id, $source_language, $target_language, $save_group = true, $post_data = array() ) {
 		global $wpdb;
 
+		$elementor_post_data = null;
+		if ( isset( $post_data['meta_fields']['_elementor_data'] ) ) {
+			$elementor_post_data = $post_data['meta_fields']['_elementor_data'];
+			if ( is_string( $elementor_post_data ) && '' !== $elementor_post_data && function_exists( 'linguator_replace_links_with_translations' ) ) {
+				$elementor_post_data = linguator_replace_links_with_translations( $elementor_post_data, $target_language, $source_language );
+			}
+			unset( $post_data['meta_fields']['_elementor_data'] );
+			$this->pending_elementor_media = ( isset( $post_data['elementor_media'] ) && is_array( $post_data['elementor_media'] ) )
+				? $post_data['elementor_media']
+				: null;
+		}
+
 		$tr_id     = $this->model->post->get( $post_id, $this->model->get_language( $target_language ) );
 		$tr_post   = get_post( $post_id );
 		$languages = array_keys( $this->get( $post_id ) );
+
+		// The target translation may belong to someone else; never write to a post the current user can't edit.
+		if ( $tr_id && ! current_user_can( 'edit_post', $tr_id ) ) {
+			return 0;
+		}
 		
 		if ( ! $tr_post instanceof WP_Post ) {
 			// Something went wrong!
@@ -247,7 +281,12 @@ class Linguator_Sync_Post_Model {
 		$post = clone $tr_post;
 		$post->ID=$post_id;
 
-		$tr_post = $this->sync_content->copy_content( $post, $tr_post, $target_language );
+		// Write AI media strings before copying so inline image alt follows the translated attachment.
+		if ( $this->media_translation->is_enabled() && isset( $post_data['content_media'] ) && is_array( $post_data['content_media'] ) ) {
+			$this->media_translation->apply_content_media_translations( (int) $tr_id, $post_data['content_media'], (int) $post_id );
+		}
+
+		$tr_post = $this->sync_content->copy_content( $post, $tr_post, $target_language, ! empty( $post_data['preserve_media_text'] ) );
 
 		// The columns to copy in DB.
 		$columns = array(
@@ -311,8 +350,15 @@ class Linguator_Sync_Post_Model {
 		 */
 		do_action( 'lmat_post_synchronized', $post_id, $tr_id, $target_language, 'copy' );
 
-		// Update Elementor Translations
-		$this->update_elementor_data($tr_id, $post_data, $post_id);
+		// Update Elementor Translations (Elementor media IDs/URLs + attachment strings).
+		if ( isset( $elementor_post_data ) && ! empty( $elementor_post_data ) ) {
+			$this->update_elementor_data( $tr_id, $elementor_post_data );
+		}
+
+		// AI-translated media strings take precedence over values copied by media support.
+		if ( $this->media_translation->is_enabled() && isset( $post_data['featured_image'] ) && is_array( $post_data['featured_image'] ) ) {
+			$this->media_translation->apply_featured_image_translations( (int) $post_id, (int) $tr_id, $post_data['featured_image'] );
+		}
 
 		return $tr_id;
 	}
@@ -353,41 +399,60 @@ class Linguator_Sync_Post_Model {
 	}
 
 	/**
-	 * Update Elementor data
+	 * Update Elementor data with remapped media.
 	 *
-	 * @param int $tr_id The ID of the translated post.
-	 * @param string $elementor_data The Elementor data to update.
+	 * Keeps caption_source=attachment; AI caption/title/alt land on the translated attachment.
+	 *
+	 * @param int    $tr_id          Translated post ID.
+	 * @param string $elementor_data Elementor elements JSON.
 	 * @return void
 	 */
-	private function update_elementor_data($tr_id, $post_data, $parent_post_id = 0){
-		$current_post_elementor_data = get_post_meta($tr_id, '_elementor_data', true);
-
-		if(!isset($post_data['meta_fields']['_elementor_data'])){
+	private function update_elementor_data( $tr_id, $elementor_data ) {
+		if ( empty( $elementor_data ) || ! is_string( $elementor_data ) ) {
 			return;
 		}
 
-		$elementor_data=$post_data['meta_fields']['_elementor_data'];
+		$current_post_elementor_data = get_post_meta( $tr_id, '_elementor_data', true );
 
-		// Check if the current post has Elementor data
-		if('' !== $current_post_elementor_data && $elementor_data && '' !== $elementor_data){
-			if(class_exists('Elementor\Plugin')){
-				$plugin=\Elementor\Plugin::$instance;
-				$document=$plugin->documents->get($tr_id);
-	
-				$document->save( [
-					'elements' => json_decode($elementor_data, true),
-				] );
+		$elements = json_decode( $elementor_data, true );
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $elements ) ) {
+			$this->pending_elementor_media = null;
+			return;
+		}
 
-				$plugin->files_manager->clear_cache();
-			}else{
-
-				if($parent_post_id > 0){
-					$elementor_data=\Elementor\Plugin::$instance->documents->get($parent_post_id)->get_elements_data();
-					$elementor_data=wp_json_encode($elementor_data);
-					$elementor_data=preg_replace('#(?<!\\\\)/#', '\\/', $elementor_data);
-					update_post_meta($tr_id, '_elementor_data', $elementor_data);
-				}
+		// Remap Elementor media IDs/URLs to translated attachments (media_support).
+		if ( $this->media_translation->is_enabled() ) {
+			$lang = $this->model->post->get_language( $tr_id );
+			$media_translations = array();
+			if ( ! empty( $this->pending_elementor_media ) && is_array( $this->pending_elementor_media ) ) {
+				$media_translations = $this->pending_elementor_media;
+				$this->pending_elementor_media = null;
 			}
+			if ( $lang ) {
+				$elements = $this->media_translation->remap_elementor_media( $elements, $lang, $media_translations );
+			}
+		} else {
+			$this->pending_elementor_media = null;
+		}
+
+		if ( class_exists( 'Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->documents ) ) {
+			$plugin   = \Elementor\Plugin::$instance;
+			$document = $plugin->documents->get( $tr_id );
+
+			if ( $document && ( '' !== $current_post_elementor_data || ! empty( $elements ) ) ) {
+				if ( '' === get_post_meta( $tr_id, '_elementor_edit_mode', true ) ) {
+					update_post_meta( $tr_id, '_elementor_edit_mode', 'builder' );
+				}
+				$document->save( array( 'elements' => $elements ) );
+				$plugin->files_manager->clear_cache();
+				return;
+			}
+		}
+
+		$encoded = wp_json_encode( $elements );
+		if ( is_string( $encoded ) ) {
+			$encoded = preg_replace( '#(?<!\\\\)/#', '\\/', $encoded );
+			update_post_meta( $tr_id, '_elementor_data', wp_slash( $encoded ) );
 		}
 	}
 
@@ -426,7 +491,7 @@ class Linguator_Sync_Post_Model {
 			$d['sync']   = empty( $d['sync'] ) ? array_fill_keys( $sync_post, $lang ) : array_merge( array_diff( $d['sync'], array( $lang ) ), array_fill_keys( $sync_post, $lang ) );
 		}
 
-		wp_update_term( (int) $term->term_id, 'post_translations', array( 'description' => maybe_serialize( $d ) ) );
+		wp_update_term( (int) $term->term_id, 'lmat_post_translations', array( 'description' => maybe_serialize( $d ) ) );
 	}
 
 	/**

@@ -690,10 +690,10 @@ button.lmat-page-translation-setting-close:hover {
     width: 4px;
     height: 4px;
     border-radius: 999px;
-    background: #ffffff;
-    margin-left: 1px;
-    margin-top: 6px;
-    opacity: 0.25;
+    background: currentColor;
+    margin-left: 2px;
+    flex-shrink: 0;
+    opacity: 0.45;
     animation: lmat-page-translation-savingBlink 1.05s infinite ease-in-out;
     animation-delay: calc(var(--i) * 0.18s - 1.05s);
     will-change: opacity, transform;
@@ -703,7 +703,7 @@ button.lmat-page-translation-setting-close:hover {
 
     0%,
     20% {
-        opacity: 0.25;
+        opacity: 0.45;
         transform: translateY(0);
     }
 
@@ -718,7 +718,7 @@ button.lmat-page-translation-setting-close:hover {
     }
 
     100% {
-        opacity: 0.25;
+        opacity: 0.45;
         transform: translateY(0);
     }
 }

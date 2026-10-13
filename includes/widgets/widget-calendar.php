@@ -19,9 +19,9 @@ if ( ! class_exists( 'WP_Widget_Calendar' ) ) {
 
 /**
  * This classes rewrite the whole Calendar widget functionality as there is no filter on sql queries and only a filter on final output.
- * Code last checked: WP 5.5.
+ * Code last checked: WP 7.2.
  *
- * A request to add filters on sql queries exists: http://core.trac.wordpress.org/ticket/15202.
+ * A request to add filters on SQL queries exists: http://core.trac.wordpress.org/ticket/15202, closed in favor of https://core.trac.wordpress.org/ticket/29319.
  * Method used in 0.4.x: use of the get_calendar filter and overwrite the output of get_calendar function -> not very efficient (add 4 to 5 sql queries).
  * Method used since 0.5: remove the WP widget and replace it by our own -> our language filter will not work if get_calendar is called directly by a theme.
  *
@@ -73,9 +73,11 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 	 *     @type bool   $display   Whether to display the calendar output. Default true.
 	 *     @type string $post_type Optional. Post type. Default 'post'.
 	 * }
-	 * @return void|string Void if `$display` argument is true, calendar HTML if `$display` is false.
+	 * @return string|void Calendar HTML when `$display` is false, null when the site has
+	 *                     no posts. Nothing otherwise.
+	 * @phpstan-return ( $args is array{ display: false|0|''|'0', ... } ? string|null : void )
 	 */
-	static function get_calendar( $args = array() ) {
+	public static function get_calendar( $args = array() ) {
 		global $wpdb, $m, $monthnum, $year, $wp_locale, $posts;
 
 		// Allowed HTML tags for calendar output
@@ -206,16 +208,19 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 			if ( ! $gotsome ) {
 				$cache[ $key ] = '';
 				wp_cache_set( 'get_calendar', $cache, 'calendar' );
-				return;
+				return null;
 			}
 		}
 
 		// week_begins = 0 stands for Sunday.
 		$week_begins = (int) get_option( 'start_of_week' );
 
+		// Read the current date.
+		list( $current_year, $current_month, $current_day ) = array_map( 'intval', explode( '-', current_time( 'Y-m-j' ) ) );
+
 		// Let's figure out when we are.
 		if ( ! empty( $monthnum ) && ! empty( $year ) ) {
-			$thismonth = zeroise( (int) $monthnum, 2 );
+			$thismonth = (int) $monthnum;
 			$thisyear  = (int) $year;
 		} elseif ( ! empty( $w ) ) {
 			// We need to get the month from MySQL.
@@ -229,18 +234,18 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 			);
 
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- This is safe query and already prepared in $prepared_query.
-			$thismonth = $wpdb->get_var( $prepared_query );
+			$thismonth = (int) $wpdb->get_var( $prepared_query );
 
 		} elseif ( ! empty( $m ) ) {
 			$thisyear = (int) substr( $m, 0, 4 );
 			if ( strlen( $m ) < 6 ) {
-				$thismonth = '01';
+				$thismonth = 1;
 			} else {
-				$thismonth = zeroise( (int) substr( $m, 4, 2 ), 2 );
+				$thismonth = (int) substr( $m, 4, 2 );
 			}
 		} else {
-			$thisyear  = current_time( 'Y' );
-			$thismonth = current_time( 'm' );
+			$thisyear  = $current_year;
+			$thismonth = $current_month;
 		}
 
 		$unixmonth = mktime( 0, 0, 0, $thismonth, 1, $thisyear );
@@ -319,7 +324,7 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 
 		// See how much we should pad in the beginning.
 		$pad = calendar_week_mod( (int) gmdate( 'w', $unixmonth ) - $week_begins );
-		if ( 0 != $pad ) {
+		if ( $pad > 0 ) {
 			$calendar_output .= "\n\t\t" . '<td colspan="' . esc_attr( $pad ) . '" class="pad">&nbsp;</td>';
 		}
 
@@ -330,11 +335,13 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 			if ( $newrow ) {
 				$calendar_output .= "\n\t</tr>\n\t<tr>\n\t\t";
 			}
+
 			$newrow = false;
 
-			if ( current_time( 'j' ) == $day &&
-				current_time( 'm' ) == $thismonth &&
-				current_time( 'Y' ) == $thisyear ) {
+			if ( $current_day === $day
+				&& $current_month === $thismonth
+				&& $current_year === $thisyear
+			) {
 				$calendar_output .= '<td id="today">';
 			} else {
 				$calendar_output .= '<td>';
@@ -357,13 +364,13 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 
 			$calendar_output .= '</td>';
 
-			if ( 6 == calendar_week_mod( (int) gmdate( 'w', mktime( 0, 0, 0, $thismonth, $day, $thisyear ) ) - $week_begins ) ) {
+			if ( 6 === (int) calendar_week_mod( (int) gmdate( 'w', mktime( 0, 0, 0, $thismonth, $day, $thisyear ) ) - $week_begins ) ) {
 				$newrow = true;
 			}
 		}
 
 		$pad = 7 - calendar_week_mod( (int) gmdate( 'w', mktime( 0, 0, 0, $thismonth, $day, $thisyear ) ) - $week_begins );
-		if ( 0 != $pad && 7 != $pad ) {
+		if ( 0 < $pad && $pad < 7 ) {
 			$calendar_output .= "\n\t\t" . '<td class="pad" colspan="' . esc_attr( $pad ) . '">&nbsp;</td>';
 		}
 
@@ -374,9 +381,11 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		$calendar_output .= '<nav aria-label="' . __( 'Previous and next months', 'translate-words' ) . '" class="wp-calendar-nav">';
 
 		if ( $previous ) {
-			$calendar_output .= "\n\t\t" . '<span class="wp-calendar-nav-prev"><a href="' . get_month_link( $previous->year, $previous->month ) . '">&laquo; ' .
-				$wp_locale->get_month_abbrev( $wp_locale->get_month( $previous->month ) ) .
-			'</a></span>';
+			$calendar_output .= "\n\t\t" . sprintf(
+				'<span class="wp-calendar-nav-prev"><a href="%1$s">&laquo; %2$s</a></span>',
+				get_month_link( $previous->year, $previous->month ),
+				$wp_locale->get_month_abbrev( $wp_locale->get_month( $previous->month ) )
+			);
 		} else {
 			$calendar_output .= "\n\t\t" . '<span class="wp-calendar-nav-prev">&nbsp;</span>';
 		}
@@ -384,9 +393,11 @@ class Linguator_Widget_Calendar extends WP_Widget_Calendar {
 		$calendar_output .= "\n\t\t" . '<span class="pad">&nbsp;</span>';
 
 		if ( $next ) {
-			$calendar_output .= "\n\t\t" . '<span class="wp-calendar-nav-next"><a href="' . get_month_link( $next->year, $next->month ) . '">' .
-				$wp_locale->get_month_abbrev( $wp_locale->get_month( $next->month ) ) .
-			' &raquo;</a></span>';
+			$calendar_output .= "\n\t\t" . sprintf(
+				'<span class="wp-calendar-nav-next"><a href="%1$s">%2$s &raquo;</a></span>',
+				get_month_link( $next->year, $next->month ),
+				$wp_locale->get_month_abbrev( $wp_locale->get_month( $next->month ) )
+			);
 		} else {
 			$calendar_output .= "\n\t\t" . '<span class="wp-calendar-nav-next">&nbsp;</span>';
 		}

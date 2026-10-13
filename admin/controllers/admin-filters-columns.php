@@ -9,9 +9,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
+use WP_Post;
+use WP_Query;
 use WP_Screen;
 use WP_Ajax_Response;
 use WP_Term;
+use WP_Term_Query;
 
 
 /**
@@ -92,7 +95,12 @@ class Linguator_Admin_Filters_Columns {
 		}
 
 		foreach ( $this->model->get_languages_list() as $language ) {
-			$columns[ 'language_' . $language->slug ] = $this->get_flag_html( $language ) . '<span class="screen-reader-text">' . esc_html( $language->name ) . '</span>';
+			/*
+			 * WP_Screen strips HTML from column labels in Screen Options, revealing the
+			 * language name. List table headers retain the HTML, displaying the flag
+			 * while keeping the language name available to screen readers.
+			 */
+			$columns[ 'language_' . $language->slug ] = $this->get_flag_html( $language, true ) . '<span class="screen-reader-text">' . esc_html( $language->name ) . '</span>';
 		}
 
 		return isset( $end ) ? array_merge( $columns, $end ) : $columns;
@@ -383,39 +391,79 @@ class Linguator_Admin_Filters_Columns {
 			wp_die( 0 );
 		}
 
-		$post_id = absint( wp_unslash( $_POST['post_id'] ) );
-		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! is_numeric( $_POST['post_id'] ) ) {
 			wp_die( 0 );
 		}
 
-		$post_type = sanitize_key( wp_unslash( $_POST['post_type'] ) );
-
-		if ( ! post_type_exists( $post_type ) || ! $this->model->is_translated_post_type( $post_type ) ) {
+		if ( ! current_user_can( 'edit_post', (int) $_POST['post_id'] ) ) {
 			wp_die( 0 );
 		}
 
-		/** @var WP_Posts_List_Table $wp_list_table */
+		$post_type_object = get_post_type_object( sanitize_key( wp_unslash( $_POST['post_type'] ) ) );
+
+		if ( empty( $post_type_object ) || ! $this->model->is_translated_post_type( $post_type_object->name ) ) {
+			wp_die( 0 );
+		}
+
 		$wp_list_table = _get_list_table( 'WP_Posts_List_Table', array( 'screen' => sanitize_key( wp_unslash( $_POST['screen'] ) ) ) );
 
-		$x = new WP_Ajax_Response();
-
-		// Collect old translations
-		$translations = empty( $_POST['translations'] ) ? array() : explode( ',', sanitize_text_field( wp_unslash( $_POST['translations'] ) ) );
-		$translations = array_map( 'intval', $translations );
-
-		$translations = array_merge( $translations, array( $post_id ) ); // Add current post
-
-		foreach ( $translations as $post_id ) {
-			$level = is_post_type_hierarchical( $post_type ) ? count( get_ancestors( $post_id, $post_type ) ) : 0;
-			if ( $post = get_post( $post_id ) ) {
-				ob_start();
-				$wp_list_table->single_row( $post, $level );
-				$data = ob_get_clean();
-				$x->add( array( 'what' => 'row', 'data' => $data, 'supplemental' => array( 'post_id' => $post_id ) ) );
-			}
+		if ( empty( $wp_list_table ) ) {
+			wp_die( 0 );
 		}
 
-		$x->send();
+		$response = new WP_Ajax_Response();
+
+		// Collect old translations.
+		if ( ! empty( $_POST['translations'] ) && is_string( $_POST['translations'] ) ) {
+			$translations = explode( ',', wp_unslash( $_POST['translations'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			$translations = array_filter( $translations, 'is_numeric' );
+			$translations = array_map( 'intval', $translations );
+			$translations = array_filter( $translations );
+		} else {
+			$translations = array();
+		}
+
+		$translations = array_merge( $translations, $this->model->post->get_translations( (int) $_POST['post_id'] ) );
+		$translations = array_unique( $translations );
+
+		if ( empty( $translations ) ) { // May occur if the modified post has no language.
+			$response->send();
+		}
+
+		/** @var WP_Post[] */
+		$posts = ( new WP_Query() )->query(
+			array(
+				// Do not add `post_status`, as this allows `WP_Query` to handle user capabilities to read private posts.
+				'post__in'       => $translations,
+				'post_type'      => $post_type_object->name,
+				'posts_per_page' => count( $translations ),
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'lmat_lang'      => '',
+			)
+		);
+
+		foreach ( $posts as $post ) {
+			if ( $post_type_object->hierarchical ) {
+				$level = count( get_ancestors( $post->ID, $post->post_type, 'post_type' ) );
+			} else {
+				$level = 0;
+			}
+
+			ob_start();
+			$wp_list_table->single_row( $post, $level );
+			$data = (string) ob_get_clean();
+
+			$response->add(
+				array(
+					'what'         => 'row',
+					'data'         => $data,
+					'supplemental' => array( 'post_id' => $post->ID ),
+				)
+			);
+		}
+
+		$response->send();
 	}
 
 	/**
@@ -432,44 +480,77 @@ class Linguator_Admin_Filters_Columns {
 			wp_die( 0 );
 		}
 
-		$taxonomy = sanitize_key( wp_unslash( $_POST['taxonomy'] ) );
-		$term_id  = absint( wp_unslash( $_POST['term_id'] ) );
-
-		if ( ! taxonomy_exists( $taxonomy ) || ! $this->model->is_translated_taxonomy( $taxonomy ) ) {
+		if ( ! is_numeric( $_POST['term_id'] ) ) {
 			wp_die( 0 );
 		}
 
-		if ( ! $term_id || ! current_user_can( 'edit_term', $term_id ) ) {
+		if ( ! current_user_can( 'edit_term', (int) $_POST['term_id'] ) ) {
 			wp_die( 0 );
 		}
 
-		/** @var WP_Terms_List_Table $wp_list_table */
+		$taxonomy_object = get_taxonomy( sanitize_key( wp_unslash( $_POST['taxonomy'] ) ) );
+
+		if ( empty( $taxonomy_object ) || ! $this->model->is_translated_taxonomy( $taxonomy_object->name ) ) {
+			wp_die( 0 );
+		}
+
 		$wp_list_table = _get_list_table( 'WP_Terms_List_Table', array( 'screen' => sanitize_key( wp_unslash( $_POST['screen'] ) ) ) );
 
-		$x = new WP_Ajax_Response();
+		if ( empty( $wp_list_table ) ) {
+			wp_die( 0 );
+		}
 
-		// Collect old translations
-		$translations = empty( $_POST['translations'] ) ? array() : explode( ',', sanitize_text_field( wp_unslash( $_POST['translations'] ) ) );
-		$translations = array_map( 'intval', $translations );
+		$response = new WP_Ajax_Response();
 
-		$translations = array_merge( $translations, $this->model->term->get_translations( $term_id ) ); // Add current translations
-		$translations = array_unique( $translations ); // Remove duplicates
+		// Collect old translations.
+		if ( ! empty( $_POST['translations'] ) && is_string( $_POST['translations'] ) ) {
+			$translations = explode( ',', wp_unslash( $_POST['translations'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			$translations = array_filter( $translations, 'is_numeric' );
+			$translations = array_map( 'intval', $translations );
+			$translations = array_filter( $translations );
+		} else {
+			$translations = array();
+		}
 
-		foreach ( $translations as $term_id ) {
-			$level = is_taxonomy_hierarchical( $taxonomy ) ? count( get_ancestors( $term_id, $taxonomy ) ) : 0;
-			$tag   = get_term( $term_id, $taxonomy );
+		$translations = array_merge( $translations, $this->model->term->get_translations( (int) $_POST['term_id'] ) );
+		$translations = array_unique( $translations );
 
-			if ( ! $tag instanceof WP_Term ) {
-				continue;
+		if ( empty( $translations ) ) { // May occur if the modified term has no language.
+			$response->send();
+		}
+
+		/** @var WP_Term[] */
+		$terms = ( new WP_Term_Query() )->query(
+			array(
+				'include'    => $translations,
+				'taxonomy'   => $taxonomy_object->name,
+				'hide_empty' => false,
+				'orderby'    => 'term_id',
+				'lang'       => '',
+			)
+		);
+
+		foreach ( $terms as $term ) {
+			if ( $taxonomy_object->hierarchical ) {
+				$level = count( get_ancestors( $term->term_id, $taxonomy_object->name, 'taxonomy' ) );
+			} else {
+				$level = 0;
 			}
 
 			ob_start();
-			$wp_list_table->single_row( $tag, $level );
-			$data = ob_get_clean();
-			$x->add( array( 'what' => 'row', 'data' => $data, 'supplemental' => array( 'term_id' => $term_id ) ) );
+			$wp_list_table->single_row( $term, $level );
+			$data = (string) ob_get_clean();
+
+			$response->add(
+				array(
+					'what'         => 'row',
+					'data'         => $data,
+					'supplemental' => array( 'term_id' => $term->term_id ),
+				)
+			);
 		}
 
-		$x->send();
+		$response->send();
 	}
 
 	/**
@@ -477,10 +558,17 @@ class Linguator_Admin_Filters_Columns {
 	 *
 	 *  
 	 *
-	 * @param Linguator_Language $language Linguator_Language object.
+	 * @param Linguator_Language $language    Linguator_Language object.
+	 * @param bool                $aria_hidden Whether to hide the flag from assistive technology.
 	 * @return string
 	 */
-	protected function get_flag_html( $language ) {
-		return $language->flag ?: sprintf( '<abbr>%s</abbr>', esc_html( $language->slug ) );
+	protected function get_flag_html( $language, $aria_hidden = false ) {
+		$flag = $language->flag ?: sprintf( '<abbr>%s</abbr>', esc_html( $language->slug ) );
+
+		if ( $aria_hidden ) {
+			$flag = (string) preg_replace( '/^<([a-z][a-z0-9]*)\b/i', '<$1 aria-hidden="true"', $flag, 1 );
+		}
+
+		return $flag;
 	}
 }

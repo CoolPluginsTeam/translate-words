@@ -69,6 +69,8 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 				'update_count_callback' => '_update_generic_term_count', // Count *all* objects to correctly detect unused terms.
 			)
 		);
+
+		$this->add_sanitization_hooks( $this->tax_translations );
 	}
 
 	/**
@@ -161,7 +163,7 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 			return array();
 		}
 
-		$this->prime_object_term_cache( array_merge( array( $id ), $translations ) );
+		$this->update_object_term_cache( array_merge( array( $id ), $translations ) );
 
 		$lang = $this->get_language( $id );
 
@@ -190,14 +192,14 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 		if ( empty( $term ) ) {
 			// Create a new term if necessary.
 			$group = uniqid( 'lmat_' );
-			wp_insert_term( $group, $this->tax_translations, array( 'description' => maybe_serialize( $translations ) ) );
+			wp_insert_term( $group, $this->tax_translations, array( 'description' => (string) maybe_serialize( $translations ) ) );
 		} else {
 			// Take care not to overwrite extra data stored in the description field, if any.
 			$group = (int) $term->term_id;
 			$descr = maybe_unserialize( $term->description );
 			$descr = is_array( $descr ) ? array_diff_key( $descr, $old_translations ) : array(); // Remove old translations.
 			$descr = array_merge( $descr, $translations ); // Add new one.
-			wp_update_term( $group, $this->tax_translations, array( 'description' => maybe_serialize( $descr ) ) );
+			wp_update_term( $group, $this->tax_translations, array( 'description' => (string) maybe_serialize( $descr ) ) );
 		}
 
 		// Link all translations to the new term.
@@ -247,17 +249,21 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 		$descr = maybe_unserialize( $term->description );
 
 		if ( ! empty( $descr ) && is_array( $descr ) ) {
-			$slug = array_search( $id, $this->get_translations( $id ) ); // In case some plugin stores the same value with different key.
-
-			if ( false !== $slug ) {
-				unset( $descr[ $slug ] );
-			}
+			/*
+			 * Search the ID to remove only among our language keys
+			 * in case some plugin stores the same value with different key.
+			 * Remove all keys with this ID as `get_translations()` may return
+			 * temporarily 2 languages for the same ID (old and new language)
+			 * when `set_language()` is called.
+			 */
+			$slugs = array_keys( $this->get_translations( $id ), $id, true );
+			$descr = array_diff_key( $descr, array_flip( $slugs ) );
 		}
 
 		if ( empty( $descr ) || ! is_array( $descr ) ) {
 			wp_delete_term( (int) $term->term_id, $this->tax_translations );
 		} else {
-			wp_update_term( (int) $term->term_id, $this->tax_translations, array( 'description' => maybe_serialize( $descr ) ) );
+			wp_update_term( (int) $term->term_id, $this->tax_translations, array( 'description' => (string) maybe_serialize( $descr ) ) );
 		}
 	}
 

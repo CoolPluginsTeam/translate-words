@@ -65,6 +65,32 @@ const WPBakerySaveSource = (post_data) => {
                 dispatch('block-lmatPageTranslation/translate').slugSaveSource(post_data[key]);
             }
         }
+
+        // Register featured-image strings into the translation queue.
+        if ( key === 'featured_image' && lmatPageTranslationGlobal.mediaSupport && post_data[key] ) {
+            const fi = post_data[key];
+            [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                if ( fi[field] && fi[field].trim() !== '' ) {
+                    dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                        `lmat_media_featured_${ field }`, fi[field]
+                    );
+                }
+            } );
+        }
+
+        // Register content-attachment strings into the translation queue.
+        if ( key === 'content_media' && lmatPageTranslationGlobal.mediaSupport && Array.isArray( post_data[key] ) ) {
+            post_data[key].forEach( ( attachment ) => {
+                const attachId = attachment.id;
+                [ 'title', 'alt', 'caption', 'description' ].forEach( ( field ) => {
+                    if ( attachment[field] && attachment[field].trim() !== '' ) {
+                        dispatch('block-lmatPageTranslation/translate').contentSaveSource(
+                            `lmat_media_${ attachId }_${ field }`, attachment[field]
+                        );
+                    }
+                } );
+            } );
+        }
     });
 };
 

@@ -117,7 +117,7 @@ jQuery(
 
 				dialogResult.then(
 					() => {
-						let data = { // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
+						let data = {
 							action:     'lmat_post_lang_choice',
 							lang:       selectedOption.value,
 							post_type:  $( '#post_type' ).val(),

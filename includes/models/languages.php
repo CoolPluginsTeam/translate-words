@@ -227,6 +227,7 @@ class Languages {
 
 		$id = (int) $r['term_id'];
 
+		$r = wp_update_term( $id, 'lmat_language', array( 'term_group' => (int) $args['term_group'] ) ); // Can't set the term group directly in wp_insert_term().
 		if ( is_wp_error( $r ) ) {
 			return new WP_Error( 'lmat_add_language', __( 'Could not set the language order.', 'translate-words' ) );
 		}
@@ -324,7 +325,7 @@ class Languages {
 		// Update the language itself.
 		$errors = $this->update_secondary_language_terms( $args['slug'], $args['name'], $lang );
 
-		if ( is_wp_error( $errors ) ) {
+		if ( $errors->has_errors() ) {
 			return $errors;
 		}
 
@@ -653,11 +654,19 @@ class Languages {
 	 * @return Linguator_Language|false Default language object, `false` if no language found.
 	 */
 	public function get_default() {
-		if ( empty( $this->options['default_lang'] ) ) {
-			return false;
+		if ( ! empty( $this->options['default_lang'] ) ) {
+			return $this->get( $this->options['default_lang'] );
 		}
 
-		return $this->get( $this->options['default_lang'] );
+		// The default language may have been lost. One is required, so let's select one arbitrarily.
+		foreach ( $this->get_terms() as $term ) {
+			if ( 'lmat_language' === $term->taxonomy ) {
+				$this->update_default( $term->slug );
+				return $this->get( $this->options['default_lang'] );
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -846,6 +855,16 @@ class Languages {
 	}
 
 	/**
+	 * Checks if a given value matches the locale format.
+	 *
+	 * @param string $value The value to check.
+	 * @return bool
+	 */
+	public static function is_locale( $value ): bool {
+		return is_string( $value ) && (bool) preg_match( '#' . self::LOCALE_PATTERN . '#', $value );
+	}
+
+	/**
 	 * Builds the language metas into an array and serializes it, to be stored in the term description.
 	 *
 	 *  
@@ -952,7 +971,7 @@ class Languages {
 		$errors = new WP_Error();
 
 		// Validate locale with the same pattern as WP 4.3. 
-		if ( empty( $args['locale'] ) || ! preg_match( '#' . self::LOCALE_PATTERN . '#', $args['locale'], $matches ) ) {
+		if ( empty( $args['locale'] ) || ! self::is_locale( $args['locale'] ) ) {
 			$errors->add( 'lmat_invalid_locale', __( 'Enter a valid WordPress locale', 'translate-words' ) );
 		}
 
@@ -1336,7 +1355,7 @@ class Languages {
 			return array();
 		}
 
-		// Sort terms by 'language' taxonomy first, then by term_group, then by term_id.
+		// Sort terms by 'lmat_language' taxonomy first, then by term_group, then by term_id.
 		$callback = static function ( $a, $b ) {
 			if ( $a->taxonomy === $b->taxonomy ) {
 				if ( $a->term_group === $b->term_group ) {
@@ -1345,7 +1364,7 @@ class Languages {
 				return $a->term_group < $b->term_group ? -1 : 1;
 			}
 
-			return 'language' === $a->taxonomy ? -1 : 1;
+			return 'lmat_language' === $a->taxonomy ? -1 : 1;
 		};
 
 		usort( $terms, $callback );

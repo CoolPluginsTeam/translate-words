@@ -401,6 +401,14 @@ class Linguator_Language {
 			$flag['src'] = esc_url( set_url_scheme( $flag['url'], 'relative' ) );
 		}
 
+		if ( isset( $flag['width'] ) ) {
+			$flag['width'] = absint( $flag['width'] );
+		}
+
+		if ( isset( $flag['height'] ) ) {
+			$flag['height'] = absint( $flag['height'] );
+		}
+
 		return $flag;
 	}
 

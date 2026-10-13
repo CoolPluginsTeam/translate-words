@@ -271,7 +271,6 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		 * 3 => true if loaded in footer
 		 */
 		$scripts = array(
-			'user'    => array( array( 'profile', 'user-edit' ), array( 'jquery' ), false, false ),
 			'widgets' => array( array( 'widgets' ), array( 'jquery' ), false, false ),
 		);
 
@@ -310,8 +309,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 			}
 		}
 
-		wp_register_style( 'linguator_admin', plugins_url( "admin/assets/css/build/admin{$suffix}.css", LINGUATOR_ROOT_FILE ), array( 'wp-jquery-ui-dialog' ), LINGUATOR_VERSION );
-		wp_enqueue_style( 'linguator_dialog', plugins_url( "admin/assets/css/build/dialog{$suffix}.css", LINGUATOR_ROOT_FILE ), array( 'linguator_admin' ), LINGUATOR_VERSION );
+		linguator_enqueue_style( 'admin', array( 'wp-jquery-ui-dialog' ), 'linguator_' );
 		
 		// Enqueue custom font for icons
 		$this->enqueue_linguator_font();
@@ -639,7 +637,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 				) . $title,
 				'href'  => esc_url(
 					wp_nonce_url(
-						add_query_arg( 'lang', $selected->slug, remove_query_arg( 'paged' ) ),
+						$this->get_admin_bar_menu_url( $selected ),
 						'lmat_set_admin_filter_lang',
 						'_lmat_lang_nonce'
 					)
@@ -663,7 +661,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 					'title'  => wp_kses( $lang->flag, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ) ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ) . esc_html( $lang->name ),
 					'href'   => esc_url(
 						wp_nonce_url(
-							add_query_arg( 'lang', $lang->slug, remove_query_arg( 'paged' ) ),
+							$this->get_admin_bar_menu_url( $lang ),
 							'lmat_set_admin_filter_lang',
 							'_lmat_lang_nonce'
 						)
@@ -672,6 +670,54 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Returns the admin language filter URL for a given language.
+	 *
+	 * @param object $language The language or an object representing all languages.
+	 * @return string
+	 *
+	 * @phpstan-param object{'slug': string} $language
+	 */
+	protected function get_admin_bar_menu_url( $language ): string {
+		global $pagenow, $post_type;
+
+		$url = add_query_arg( 'lang', $language->slug, remove_query_arg( 'paged' ) );
+
+		if ( 'edit.php' !== $pagenow || ! $language instanceof Linguator_Language ) {
+			return $url;
+		}
+
+		// Attempt to translate the category or taxonomy filter if present.
+		if ( ! $post_type ) {
+			return $url;
+		}
+
+		foreach ( get_object_taxonomies( $post_type, 'objects' ) as $tax ) {
+			if ( ! $this->model->is_translated_taxonomy( $tax->name ) ) {
+				continue;
+			}
+
+			$query_var = (string) $tax->query_var;
+			$qv        = get_query_var( $query_var );
+			if ( empty( $qv ) || ! is_string( $qv ) ) {
+				continue;
+			}
+
+			$qv = $this->model->term->get_by( 'slug', $qv, $language, $tax->name );
+
+			if ( ! empty( $qv ) ) {
+				$url = add_query_arg( $query_var, $qv, remove_query_arg( $query_var, $url ) );
+			}
+
+			// For categories, category_name was translated, so remove cat to avoid conflicts.
+			if ( 'category' === $tax->name ) {
+				$url = remove_query_arg( 'cat', $url );
+			}
+		}
+
+		return $url;
 	}
 
 	/**
@@ -702,23 +748,15 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 	}
 	/**
 	 * Tells if the Linguator's admin bar menu should be hidden for the current page.
-	 * Conventionally, it should be hidden on edition pages.
+	 * Conventionally, it should be hidden on edition pages, term edit pages and Site Editor pages.
 	 *
 	 *
 	 * @return bool
 	 */
 	public function linguator_should_hide_admin_bar_menu(): bool {
-		global $pagenow, $typenow, $taxnow;
+		global $pagenow;
 
-		if ( in_array( $pagenow, array( 'post.php', 'post-new.php' ), true ) ) {
-			return ! empty( $typenow );
-		}
-
-		if ( 'term.php' === $pagenow ) {
-			return ! empty( $taxnow );
-		}
-
-		return false;
+		return in_array( $pagenow, array( 'post.php', 'post-new.php', 'site-editor.php', 'term.php' ), true );
 	}
 
 	/**

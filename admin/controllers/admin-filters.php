@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Filters\Linguator_Filters;
+use Linguator\Includes\Other\Linguator_Language;
 
 
 
@@ -67,25 +68,43 @@ class Linguator_Admin_Filters extends Linguator_Filters {
 	}
 
 	/**
-	 * Outputs hidden information to modify the biography form with js.
-	 *
-	 *  
+	 * Enqueues scripts for the multilingual biography on the user's profile admin page.
 	 *
 	 * @param WP_User $profileuser The current WP_User object.
 	 * @return void
 	 */
 	public function linguator_personal_options( $profileuser ) {
-		foreach ( $this->model->get_languages_list() as $lang ) {
-			$meta        = $lang->is_default ? 'description' : 'description_' . $lang->slug;
-			$description = get_user_meta( $profileuser->ID, $meta, true );
+		$screen = get_current_screen();
 
-			printf(
-				'<input type="hidden" class="biography" name="%s___%s" value="%s" />',
-				esc_attr( $lang->slug ),
-				esc_attr( $lang->name ),
-				sanitize_user_field( 'description', $description, $profileuser->ID, 'edit' )
+		if ( empty( $screen ) || ! in_array( $screen->base, array( 'profile', 'user-edit' ), true ) ) {
+			return;
+		}
+
+		if ( ! $this->model->has_languages() ) {
+			return;
+		}
+
+		$data = array();
+
+		wp_enqueue_script( 'lmat_user', plugins_url( 'admin/assets/js/build/user.min.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, array( 'in_footer' => true ) );
+
+		foreach ( $this->model->get_languages_list() as $lang ) {
+			$meta        = $lang->is_default ? 'description' : "description_{$lang->slug}";
+			$description = get_user_meta( $profileuser->ID, $meta, true );
+			$description = is_string( $description ) ? $description : '';
+
+			$data[] = array(
+				'slug'        => esc_attr( $lang->slug ),
+				'name'        => esc_html( $lang->name ),
+				'lang'        => esc_attr( $lang->get_locale( 'display' ) ),
+				'direction'   => $lang->is_rtl ? 'rtl' : 'ltr',
+				'flag'        => Linguator_Language::get_flag_information( $lang->flag_code ),
+				'description' => sanitize_user_field( 'description', $description, $profileuser->ID, 'edit' ),
 			);
 		}
+
+		$script = sprintf( 'const lmatDescriptionData = %s;', wp_json_encode( $data ) );
+		wp_add_inline_script( 'lmat_user', $script, 'before' );
 	}
 
 	/**

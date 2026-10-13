@@ -131,6 +131,7 @@ return array(
     'Linguator\\Includes\\Services\\Links\\Linguator_Links_Model' => $baseDir . '/includes/services/links/links-model.php',
     'Linguator\\Includes\\Services\\Links\\Linguator_Links_Permalinks' => $baseDir . '/includes/services/links/links-permalinks.php',
     'Linguator\\Includes\\Services\\Links\\Linguator_Links_Subdomain' => $baseDir . '/includes/services/links/links-subdomain.php',
+    'Linguator\\Includes\\Services\\Media\\Media_Translation_Service' => $baseDir . '/includes/services/media/media-translation-service.php',
     'Linguator\\Includes\\Services\\Translation\\Translation_Term_Model' => $baseDir . '/includes/services/translation/translation-term-translate.php',
     'Linguator\\Includes\\Walkers\\Linguator_Walker' => $baseDir . '/includes/walkers/walker.php',
     'Linguator\\Includes\\Walkers\\Linguator_Walker_Dropdown' => $baseDir . '/includes/walkers/walker-dropdown.php',

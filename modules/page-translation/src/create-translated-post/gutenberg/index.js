@@ -4,13 +4,14 @@ import YoastSeoFields from '../../component/translate-seo-fields/yoast-seo-field
 import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import SeoPressFields from '../../component/translate-seo-fields/seo-press.js';
 import translatedMetaFields from '../meta-fields/index.js';
+import saveMediaTranslations from '../../helper/save-media-translations.js';
 
 /**
  * Translates the post content and updates the post title, excerpt, and content.
  * 
  * @param {Object} props - The properties containing post content, translation function, and block rules.
  */
-const translatePost = (props) => {
+const translatePost = async (props) => {
     const { editPost } = dispatch('core/editor');
     const { modalClose, postContent, service } = props;
 
@@ -189,6 +190,9 @@ const translatePost = (props) => {
     if(lmatPageTranslationGlobal.postMetaSync === 'false'){
         updatePostMetaFields();
     }
+
+    // Save translated attachment metadata.
+    await saveMediaTranslations( service, postContent );
 
     // Close string modal box
     modalClose();

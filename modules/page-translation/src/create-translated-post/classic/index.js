@@ -3,13 +3,14 @@ import YoastSeoFields from '../../component/translate-seo-fields/yoast-seo-field
 import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import SeoPressFields from '../../component/translate-seo-fields/seo-press.js'
 import translatedMetaFields from '../meta-fields/index.js';
+import saveMediaTranslations from '../../helper/save-media-translations.js';
 
 /**
  * Translates the post content and updates the post title, excerpt, and content.
  * 
  * @param {Object} props - The properties containing post content, translation function, and block rules.
  */
-const UpdateClassicPage = (props) => {
+const UpdateClassicPage = async (props) => {
     const { modalClose, postContent, service } = props;
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
 
@@ -217,6 +218,40 @@ const UpdateClassicPage = (props) => {
     }
 
     /**
+     * Applies the translated attachment alt to classic inline images when media translation is on.
+     * Like Linguator_Sync_Content::translate_img(), only an alt still equal to the source attachment alt is replaced.
+     *
+     * @param {string} html Classic post content.
+     * @return {string} Content with translated inline image alt.
+     */
+    const translateInlineImageAlt = (html) => {
+        if (!lmatPageTranslationGlobal.mediaSupport || !Array.isArray(postContent.content_media)) {
+            return html;
+        }
+
+        const textarea = document.createElement('textarea');
+
+        return html.replace(/<img\b[^>]*>/gi, (tag) => {
+            const id = tag.match(/\bwp-image-(\d+)\b/);
+            const alt = tag.match(/\salt="([^"]*)"/i);
+            const attachment = id && alt ? postContent.content_media.find((item) => String(item.id) === id[1]) : null;
+
+            if (!attachment || !attachment.alt) {
+                return tag;
+            }
+
+            textarea.innerHTML = alt[1];
+            if (textarea.value !== attachment.alt) {
+                return tag;
+            }
+
+            textarea.textContent = select('block-lmatPageTranslation/translate').getTranslatedString('content', attachment.alt, `lmat_media_${attachment.id}_alt`, service);
+
+            return tag.replace(alt[0], () => ` alt="${textarea.innerHTML.replace(/"/g, '&quot;')}"`);
+        });
+    }
+
+    /**
      * Updates the post content based on translation.
      */
     const postContentUpdate = () => {
@@ -228,7 +263,8 @@ const UpdateClassicPage = (props) => {
             const entity=(/^&[a-zA-Z0-9#]+;$/.test(text));
             const htmlTag = /^<\/?\s*[a-zA-Z0-9#]+\s*\/?>$/.test(text);
             const isEmptyHtmlTag = /^<\s*\/?\s*[a-zA-Z0-9#]+\s*><\/\s*\/?\s*[a-zA-Z0-9#]+\s*>$/.test(text);
-            const blockCommentTag = /<!--[\s\S]*?-->/g.test(text) && text.indexOf('<!--') < text.indexOf('-->');
+            // Skip comment-only lines (e.g. <!--more-->); text around inline comments stays translatable.
+            const blockCommentTag = /^\s*(?:<!--[\s\S]*?-->\s*)+$/.test(text);
 
             const plainText=!entity && !htmlTag && !isEmptyHtmlTag && !blockCommentTag; 
 
@@ -244,7 +280,7 @@ const UpdateClassicPage = (props) => {
             }
         });
 
-        const content = strings.join('');
+        const content = translateInlineImageAlt(strings.join(''));
 
         const tabWrapper = document.querySelector('#wp-content-wrap .wp-editor-tabs');
         if (tabWrapper) {
@@ -356,18 +392,19 @@ const UpdateClassicPage = (props) => {
     // Update post content
     postContentUpdate();
 
-    // Close string modal box
-    setTimeout(() => {
-        modalClose();
-    }, 500);
-
     // Update all translation supported post meta fields using ajax request
     if(lmatPageTranslationGlobal.postMetaSync === 'false'){
         updatePostMetaFields();
     }
 
+    // Save translated attachment metadata.
+    await saveMediaTranslations( service, postContent );
+
     // Update translate status
     updateTranslateStatus();
+
+    // Close string modal box
+    modalClose();
 }
 
 export default UpdateClassicPage;

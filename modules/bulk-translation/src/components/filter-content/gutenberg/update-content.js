@@ -1,6 +1,7 @@
 import {selectTranslatedContent, selectBlockParseRules, selectSourceEntries, selectSourceContent} from '../../../redux-store/features/selectors.js';
 import {store} from '../../../redux-store/store.js';
 import updateMetaFields from '../metaFields/update-meta-fields.js';
+import { updateImageAlt } from './image-alt.js';
 
 /**
  * @param {Object} source
@@ -294,6 +295,20 @@ const updateGutenbergContent=async ({source, lang, translatedContent, servicePro
     }
 
     updateContent(source, translatedContent);
+
+    // serialize_blocks uses innerContent, and Gutenberg derives image alt from
+    // that HTML rather than from the block comment's JSON attributes.
+    const updateImageBlocks = ( blocks, path = [ 'content' ] ) => {
+        Object.entries( blocks || [] ).forEach( ( [ index, block ] ) => {
+            const blockPath = [ ...path, index ];
+            const altKey = [ ...blockPath, 'attrs', 'alt' ].join( '_lmat_bulk_content_temp_' );
+            if ( Object.prototype.hasOwnProperty.call( translatedContent, altKey ) ) {
+                updateImageAlt( block, getTransaltedValue( altKey ) );
+            }
+            updateImageBlocks( block.innerBlocks, [ ...blockPath, 'innerBlocks' ] );
+        } );
+    };
+    updateImageBlocks( source.content );
 
     if("false" === lmatBulkTranslationGlobal.postMetaSync && source.metaFields && Object.keys(source.metaFields).length > 0){
       source.metaFields=updateMetaFields(source.metaFields, lang, serviceProvider, postId);

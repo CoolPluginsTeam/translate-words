@@ -1174,6 +1174,17 @@
   margin-top: 0;
   padding: 16px 22.4px 16px;
   text-align: end;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+
+#lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-error-modal-box-container .lmat-bulk-translate-error-modal-box-footer button[data-status="translateAgain"] {
+  background: #30b230 !important;
+  color: #fff !important;
+  border-color: #239d23 !important;
+  margin: 0;
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-error-modal-box-container .lmat-bulk-translate-error-modal-box-footer .lmat-bulk-translate-error-modal-box-close {

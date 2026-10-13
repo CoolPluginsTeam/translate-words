@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Services\Translation\Translation_Term_Model;
+use Linguator\Includes\Services\Media\Media_Translation_Service;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
 use Translation_Entry;
@@ -173,6 +174,24 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_post_meta_fields_param' ),
 							'validate_callback' => array( $this, 'validate_post_meta_fields_param' ),
+						),
+						'featured_image'   => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => array( $this, 'sanitize_media_translations_param' ),
+							'validate_callback' => array( $this, 'validate_media_translations_param' ),
+						),
+						'content_media'     => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => array( $this, 'sanitize_media_translations_param' ),
+							'validate_callback' => array( $this, 'validate_media_translations_param' ),
+						),
+						'elementor_media'   => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => array( $this, 'sanitize_media_translations_param' ),
+							'validate_callback' => array( $this, 'validate_media_translations_param' ),
 						),
 					),
 				)
@@ -1285,6 +1304,77 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
+		 * Validates an optional JSON media-translation payload.
+		 *
+		 * @param mixed $value Request value.
+		 * @return bool
+		 */
+		public function validate_media_translations_param( $value ) {
+			if ( null === $value || '' === $value ) {
+				return true;
+			}
+
+			if ( ! is_string( $value ) ) {
+				return false;
+			}
+
+			$decoded = json_decode( $value, true );
+			return JSON_ERROR_NONE === json_last_error() && is_array( $decoded );
+		}
+
+		/**
+		 * Sanitizes a JSON media-translation payload using its field semantics.
+		 *
+		 * @param mixed $value Request value.
+		 * @return string Sanitized JSON.
+		 */
+		public function sanitize_media_translations_param( $value ) {
+			if ( ! is_string( $value ) || '' === $value ) {
+				return '';
+			}
+
+			$decoded = json_decode( $value, true );
+			if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+				return '';
+			}
+
+			return wp_json_encode( $this->sanitize_media_translations_recursive( $decoded ) );
+		}
+
+		/**
+		 * Recursively sanitizes media translation fields while preserving IDs.
+		 *
+		 * @param array $value Decoded media payload.
+		 * @return array Sanitized payload.
+		 */
+		private function sanitize_media_translations_recursive( array $value ) {
+			$sanitized = array();
+
+			foreach ( $value as $key => $item ) {
+				if ( is_array( $item ) ) {
+					$sanitized[ $key ] = $this->sanitize_media_translations_recursive( $item );
+					continue;
+				}
+
+				switch ( $key ) {
+					case 'id':
+						$sanitized[ $key ] = absint( $item );
+						break;
+					case 'title':
+					case 'alt':
+						$sanitized[ $key ] = sanitize_text_field( (string) $item );
+						break;
+					case 'caption':
+					case 'description':
+						$sanitized[ $key ] = wp_kses_post( (string) $item );
+						break;
+				}
+			}
+
+			return $sanitized;
+		}
+
+		/**
 		 * Sanitize taxonomy term description for REST (allowed post HTML).
 		 *
 		 * @param mixed $value Raw request value.
@@ -1395,7 +1485,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		/**
 		 * Sanitizes post_content for create-translate-post depending on the page builder/editor.
 		 *
-		 * - classic/wpbakery: allow safe HTML via wp_kses_post().
+		 * - classic/wpbakery: decode the JSON-encoded string sent by bulk-translate.js, then allow safe HTML via wp_kses_post().
 		 * - block/elementor: expect JSON payload; validate JSON but don't run HTML sanitization on it.
 		 *
 		 * @param mixed           $value   Raw incoming value.
@@ -1418,6 +1508,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 				json_decode( $value, true );
 				return ( JSON_ERROR_NONE === json_last_error() ) ? $value : '';
+			}
+
+			// Decode before kses: kses rewrites tag attributes but keeps \" in text, which broke shortcode attributes (e.g. [caption id]).
+			$decoded = json_decode( $value, true );
+			if ( is_string( $decoded ) ) {
+				$value = $decoded;
 			}
 
 			// Default: sanitize as post content HTML.
@@ -1597,6 +1693,34 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
 			}
 
+			// Append media strings per post when media translation is enabled.
+			if ( function_exists( 'LMAT' ) ) {
+				$media_service = new Media_Translation_Service( LMAT() );
+				if ( $media_service->is_enabled() ) {
+					foreach ( array_keys( $posts_translate ) as $pid ) {
+						$pid = absint( $pid );
+						if ( 0 === $pid ) {
+							continue;
+						}
+
+						$featured = $media_service->get_featured_image_strings( $pid );
+						if ( ! empty( $featured ) ) {
+							$data['posts'][ $pid ]['featured_image'] = $featured;
+						}
+
+						$content_media = $media_service->get_content_media_strings( $pid );
+						if ( ! empty( $content_media ) ) {
+							$data['posts'][ $pid ]['content_media'] = $content_media;
+						}
+
+						$elementor_media = $media_service->get_elementor_media_strings( $pid );
+						if ( ! empty( $elementor_media ) ) {
+							$data['posts'][ $pid ]['elementor_media'] = $elementor_media;
+						}
+					}
+				}
+			}
+
 			if ( $gutenberg_block ) {
 				$block_parse_rules       = Supported_Blocks::get_instance()->block_parsing_rules();
 				$data['blockParseRules'] = json_encode( $block_parse_rules );
@@ -1607,6 +1731,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			} else {
 				wp_send_json_error( 'No posts to translate' );
 			}
+		}
+
+		/**
+		 * Choose the slug when a provider omits it or repeats the source slug.
+		 *
+		 * @param string|false $slug        Provider's translated slug.
+		 * @param string       $title       Translated title.
+		 * @param string       $source_slug Source post slug.
+		 * @return string
+		 */
+		private function select_translated_post_slug( $slug, $title, $source_slug ) {
+			$translated_slug = $slug ? sanitize_title( $slug ) : '';
+			$source_slug     = sanitize_title( urldecode( $source_slug ) );
+			$title_slug      = sanitize_title( $title );
+
+			if ( ( '' === $translated_slug || $translated_slug === $source_slug ) && '' !== $title_slug ) {
+				return $title_slug;
+			}
+
+			return '' !== $translated_slug ? $translated_slug : $source_slug;
 		}
 
 		/**
@@ -1678,14 +1822,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					: $decoded_meta_fields;
 			}
 
-			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
-				$post_data['post_name'] = sanitize_title( $slug );
-			} elseif ( $slug_translation_option === 'slug_keep' ) {
-				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
-			} else {
-				$post_data['post_name'] = sanitize_title( $title );
-			}
-
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
 				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
@@ -1717,20 +1853,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 				$decoded_blocks            = $this->ai_normalize_translation_strings_recursive( $decoded_blocks );
 				$post_data['post_content'] = serialize_blocks( $decoded_blocks );
-			} elseif ( 'classic' === $editor_type ) {
-				// Classic editor content is plain HTML, not JSON.
-				// Some clients may still send JSON-encoded strings; tolerate that without failing the request.
-				$raw_classic = isset( $params['post_content'] ) ? (string) $params['post_content'] : '';
-				$decoded     = json_decode( $raw_classic, true );
-				if ( JSON_ERROR_NONE === json_last_error() && is_string( $decoded ) ) {
-					$post_data['post_content'] = $this->ai_normalize_translation_string( wp_kses_post( $decoded ) );
-				} else {
-					// Use already-sanitized `post_content` from args sanitizer.
-					$post_data['post_content'] = $this->ai_normalize_translation_string(
-						isset( $post_data['post_content'] ) ? (string) $post_data['post_content'] : ''
-					);
-				}
 			} else {
+				// Classic and other HTML content is already decoded and sanitized by sanitize_post_content_for_builders().
 				if ( isset( $post_data['post_content'] ) && is_string( $post_data['post_content'] ) ) {
 					$post_data['post_content'] = $this->ai_normalize_translation_string( $post_data['post_content'] );
 				}
@@ -1741,9 +1865,44 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$post_data['post_excerpt'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) $post_data['post_excerpt'] ) );
 			}
 
+			if ( $slug_translation_option === 'slug_translate' ) {
+				$post_data['post_name'] = $this->select_translated_post_slug(
+					$slug,
+					$post_data['post_title'],
+					(string) get_post_field( 'post_name', $source_post_id )
+				);
+			} elseif ( $slug_translation_option === 'slug_keep' ) {
+				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
+			} else {
+				$post_data['post_name'] = sanitize_title( $post_data['post_title'] );
+			}
+
+			foreach ( array( 'featured_image', 'content_media', 'elementor_media' ) as $media_key ) {
+				if ( empty( $params[ $media_key ] ) || ! is_string( $params[ $media_key ] ) ) {
+					continue;
+				}
+
+				$media_payload = json_decode( $params[ $media_key ], true );
+				if ( JSON_ERROR_NONE === json_last_error() && is_array( $media_payload ) ) {
+					$post_data[ $media_key ] = $media_payload;
+				}
+			}
+
+			$media_service = new Media_Translation_Service( LMAT() );
+			if ( $media_service->is_enabled() ) {
+				$media_validation = $media_service->validate_media_payload( $source_post_id, $target_language, $post_data );
+				if ( is_wp_error( $media_validation ) ) {
+					return $media_validation;
+				}
+			}
+
 			global $linguator;
 			$post_clone   = new \Linguator_Sync_Post_Model( $linguator );
 			try {
+				// AI-supplied content must keep inline media text while IDs/URLs remap.
+				if ( isset( $post_data['post_content'] ) ) {
+					$post_data['preserve_media_text'] = true;
+				}
 				$new_post_id = $post_clone->copy_post( $source_post_id, $source_language, $target_language, false, $post_data, $editor_type );
 			} catch ( \Throwable $e ) {
 				return new WP_Error(
@@ -1765,6 +1924,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					array( 'status' => 500 )
 				);
 			}
+
 
 			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
