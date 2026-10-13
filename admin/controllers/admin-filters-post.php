@@ -193,6 +193,18 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 				return;
 			}
 
+			/**
+			 * Filters whether translation relationships should be left untouched when
+			 * a post is saved from the Classic Editor.
+			 *
+			 * @param bool    $skip    Whether to skip saving translations.
+			 * @param int     $post_id Post ID.
+			 * @param WP_Post $post    Post object.
+			 */
+			if ( apply_filters( 'lmat_skip_save_post_translations', false, $post_id, $post ) ) {
+				return;
+			}
+
 			// Only link posts the current user can edit; keep translations that are already linked.
 			$tr_ids   = array_map( 'absint', wp_unslash( $_POST['post_tr_lang'] ) );
 			$existing = array_map( 'intval', $this->model->post->get_translations( $post_id ) );
@@ -323,7 +335,7 @@ class Linguator_Admin_Filters_Post extends Linguator_Admin_Filters_Post_Base {
 
 		$dropdown_html = $dropdown->walk(
 			array_merge(
-				array( (object) array( 'slug' => 0, 'name' => __( 'All translation statuses', 'translate-words' ) ) ),
+				array( (object) array( 'slug' => 0, 'name' => __( 'All translation status', 'translate-words' ) ) ),
 				$languages
 			),
 			-1,
