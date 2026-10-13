@@ -1734,6 +1734,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
+		 * Choose the slug when a provider omits it or repeats the source slug.
+		 *
+		 * @param string|false $slug        Provider's translated slug.
+		 * @param string       $title       Translated title.
+		 * @param string       $source_slug Source post slug.
+		 * @return string
+		 */
+		private function select_translated_post_slug( $slug, $title, $source_slug ) {
+			$translated_slug = $slug ? sanitize_title( $slug ) : '';
+			$source_slug     = sanitize_title( urldecode( $source_slug ) );
+			$title_slug      = sanitize_title( $title );
+
+			if ( ( '' === $translated_slug || $translated_slug === $source_slug ) && '' !== $title_slug ) {
+				return $title_slug;
+			}
+
+			return '' !== $translated_slug ? $translated_slug : $source_slug;
+		}
+
+		/**
 		 * Create a translated copy of a post (capabilities verified in permission_callback).
 		 *
 		 * @param WP_REST_Request $request Request.
@@ -1802,14 +1822,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					: $decoded_meta_fields;
 			}
 
-			if ( $slug_translation_option === 'slug_translate' && $slug && ! empty( $slug ) ) {
-				$post_data['post_name'] = sanitize_title( $slug );
-			} elseif ( $slug_translation_option === 'slug_keep' ) {
-				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
-			} else {
-				$post_data['post_name'] = sanitize_title( $title );
-			}
-
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
 				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
@@ -1851,6 +1863,18 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$post_data['post_title'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) ( $post_data['post_title'] ?? '' ) ) );
 			if ( isset( $post_data['post_excerpt'] ) ) {
 				$post_data['post_excerpt'] = sanitize_text_field( $this->ai_normalize_translation_string( (string) $post_data['post_excerpt'] ) );
+			}
+
+			if ( $slug_translation_option === 'slug_translate' ) {
+				$post_data['post_name'] = $this->select_translated_post_slug(
+					$slug,
+					$post_data['post_title'],
+					(string) get_post_field( 'post_name', $source_post_id )
+				);
+			} elseif ( $slug_translation_option === 'slug_keep' ) {
+				$post_data['post_name'] = sanitize_text_field( get_post_field( 'post_name', $source_post_id ) );
+			} else {
+				$post_data['post_name'] = sanitize_title( $post_data['post_title'] );
 			}
 
 			foreach ( array( 'featured_image', 'content_media', 'elementor_media' ) as $media_key ) {

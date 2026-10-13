@@ -89,13 +89,33 @@ class Linguator_Sync_Post {
 		}
 
 		$target_post->post_title = $from_post->post_title;
-		$target_post->post_name  = wp_unique_post_slug(
-			$from_post->post_name,
+		$desired_slug = $from_post->post_name;
+		// WordPress skips uniqueness checks for drafts, but bulk translations start as drafts.
+		$slug_status  = in_array( $target_post->post_status, array( 'draft', 'pending', 'auto-draft' ), true )
+			? 'publish'
+			: $target_post->post_status;
+		$unique_slug  = wp_unique_post_slug(
+			$desired_slug,
 			$target_post->ID,
-			$target_post->post_status,
+			$slug_status,
 			$target_post->post_type,
 			$target_post->post_parent
 		);
+
+		if ( '' !== $desired_slug && $unique_slug !== $desired_slug ) {
+			$language_suffix = sanitize_title( $target_language->slug );
+			if ( '' !== $language_suffix ) {
+				$unique_slug = wp_unique_post_slug(
+					sanitize_title( $desired_slug . '-' . $language_suffix ),
+					$target_post->ID,
+					$slug_status,
+					$target_post->post_type,
+					$target_post->post_parent
+				);
+			}
+		}
+
+		$target_post->post_name = $unique_slug;
 
 		$target_post->post_excerpt = $this->translate_content(
 			$from_post->post_excerpt,
