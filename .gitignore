@@ -19,3 +19,4 @@ node_modules
 *.js*LICENSE.txt 
 fix-issues-files.txt
 fix-issues.csv
+.phpunit.result.cache
