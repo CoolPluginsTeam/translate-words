@@ -301,31 +301,24 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			return $block_parse_rules;
 		}
 
+		/**
+		 * Builds the block translation rules from the bundled wpml-config.xml and merges saved custom block rules on top.
+		 *
+		 * @return array Rules keyed as ['LmatBlockParseRules' => [ block_name => [ 'attributes' => [...] ] ] ], or an empty array when the config cannot be read.
+		 */
 		public function linguator_get_block_parse_rules() {
-			$relative_path = 'modules/page-translation/block-translation-rules/block-rules.json';
-			global $wp_filesystem;
+			$config_path = trailingslashit( plugin_dir_path( LINGUATOR_ROOT_FILE ) ) . 'modules/page-translation/block-translation-rules/wpml-config.xml';
+			$xml_rules   = $this->linguator_parse_single_wpml_config( $config_path );
 
-			// Initialize the WordPress filesystem.
-			if ( ! function_exists( 'WP_Filesystem' ) ) {
-				require_once ABSPATH . 'wp-admin/includes/file.php';
-			}
-
-			WP_Filesystem();
-
-			$local_path = trailingslashit( plugin_dir_path( LINGUATOR_ROOT_FILE ) ) . $relative_path;
-			if ( $wp_filesystem && $wp_filesystem->exists( $local_path ) && $wp_filesystem->is_readable( $local_path ) ) {
-				$block_rules = $wp_filesystem->get_contents( $local_path );
-			} else {
-				$block_rules = array();
-			}
-
-			if ( empty( $block_rules ) ) {
+			if ( empty( $xml_rules ) ) {
 				return array();
 			}
 
-			$block_translation_rules = json_decode( $block_rules, true );
+			$block_translation_rules = array(
+				'LmatBlockParseRules' => $this->linguator_prepare_xml_block_rules( $xml_rules ),
+			);
 
-			$this->custom_block_data_array = isset( $block_translation_rules['LmatBlockParseRules'] ) ? $block_translation_rules['LmatBlockParseRules'] : null;
+			$this->custom_block_data_array = $block_translation_rules['LmatBlockParseRules'];
 
 			$custom_block_translation = get_option( 'lmat_custom_block_translation', false );
 
@@ -339,6 +332,62 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			$block_translation_rules['LmatBlockParseRules'] = $this->custom_block_data_array ? $this->custom_block_data_array : array();
 
 			return $block_translation_rules;
+		}
+
+		/**
+		 * Converts parsed XML block rules into the attribute rule format used by the translation scripts.
+		 *
+		 * Drops XPath-only rules, regex-style keys and url keys, and skips blocks left without translatable attributes.
+		 *
+		 * @param array $xml_rules Block rules keyed by block name.
+		 * @return array Rules keyed by block name, each wrapped in an 'attributes' entry.
+		 */
+		private function linguator_prepare_xml_block_rules( array $xml_rules ) {
+			$prepared = array();
+
+			foreach ( $xml_rules as $block_name => $rules ) {
+				if ( ! is_array( $rules ) ) {
+					continue;
+				}
+
+				unset( $rules['xpaths'] );
+				$attributes = $this->linguator_clean_xml_attribute_rules( $rules );
+
+				if ( ! empty( $attributes ) ) {
+					$prepared[ $block_name ] = array( 'attributes' => $attributes );
+				}
+			}
+
+			return $prepared;
+		}
+
+		/**
+		 * Recursively removes regex-style keys and url keys from attribute rules, pruning branches left empty.
+		 *
+		 * @param array $rules Attribute rules for a block or a nested attribute.
+		 * @return array Cleaned attribute rules.
+		 */
+		private function linguator_clean_xml_attribute_rules( array $rules ) {
+			$cleaned = array();
+
+			foreach ( $rules as $key => $value ) {
+				if ( is_string( $key ) && ( 'url' === strtolower( $key ) || ( strlen( $key ) > 1 && '/' === $key[0] && '/' === substr( $key, -1 ) ) ) ) {
+					continue;
+				}
+
+				if ( is_array( $value ) ) {
+					$value = $this->linguator_clean_xml_attribute_rules( $value );
+					if ( empty( $value ) ) {
+						continue;
+					}
+				} elseif ( true !== $value ) {
+					continue;
+				}
+
+				$cleaned[ $key ] = $value;
+			}
+
+			return $cleaned;
 		}
 
 		private function linguator_filter_custom_block_rules( array $id_keys, $value, $block_rules, $attr_key = false ) {
@@ -376,6 +425,122 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			}
 
 			$current_array = $value;
+		}
+
+		/**
+		 * Parses the <gutenberg-blocks> section of a WPML-format config file into block rules keyed by block name.
+		 *
+		 * @param string $file_path Absolute path to the wpml-config.xml file.
+		 * @return array Extracted block translation rules.
+		 */
+		private function linguator_parse_single_wpml_config( $file_path ) {
+			$rules = array();
+
+			if ( ! function_exists( 'simplexml_load_string' ) ) {
+				return $rules;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			WP_Filesystem();
+
+			$xml_contents = $wp_filesystem && $wp_filesystem->is_readable( $file_path ) ? $wp_filesystem->get_contents( $file_path ) : false;
+
+			if ( false === $xml_contents || '' === trim( $xml_contents ) ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Genuine failure diagnostic, mirrors the parse-failure log below.
+				error_log( sprintf( 'Linguator Error: Failed to read XML file at %s', $file_path ) );
+				return $rules;
+			}
+
+			// Prevent XXE attacks by disabling external entities (deprecated and unnecessary on PHP 8+).
+			$old_disable_entity_loader = null;
+			if ( \PHP_VERSION_ID < 80000 && function_exists( 'libxml_disable_entity_loader' ) ) {
+				$old_disable_entity_loader = libxml_disable_entity_loader( true ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Only called on PHP < 8.
+			}
+
+			// Collect libxml errors internally for malformed XML and prevent network entity loading.
+			$old_internal_errors = libxml_use_internal_errors( true );
+			$xml                 = simplexml_load_string( $xml_contents, 'SimpleXMLElement', LIBXML_NONET );
+			libxml_clear_errors();
+			libxml_use_internal_errors( $old_internal_errors );
+
+			if ( null !== $old_disable_entity_loader && function_exists( 'libxml_disable_entity_loader' ) ) {
+				libxml_disable_entity_loader( $old_disable_entity_loader ); // phpcs:ignore Generic.PHP.DeprecatedFunctions.Deprecated -- Only called on PHP < 8.
+			}
+
+			if ( ! $xml ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Genuine failure diagnostic for malformed XML.
+				error_log( sprintf( 'Linguator Error: Failed to parse XML file at %s', $file_path ) );
+				return $rules;
+			}
+
+			if ( ! isset( $xml->{'gutenberg-blocks'} ) ) {
+				return $rules;
+			}
+
+			if ( isset( $xml->{'gutenberg-blocks'}->{'gutenberg-block'} ) ) {
+				foreach ( $xml->{'gutenberg-blocks'}->{'gutenberg-block'} as $block ) {
+					$block_type = (string) $block['type'];
+					if ( empty( $block_type ) ) {
+						continue;
+					}
+
+					$translate = (string) $block['translate'];
+					if ( '0' === $translate ) {
+						continue;
+					}
+
+					$attributes           = $this->linguator_parse_wpml_keys( $block );
+					$rules[ $block_type ] = ! empty( $attributes ) ? $attributes : array();
+
+					if ( isset( $block->xpath ) ) {
+						$xpaths = array();
+						foreach ( $block->xpath as $xpath_node ) {
+							$xpaths[] = (string) $xpath_node;
+						}
+						if ( ! empty( $xpaths ) ) {
+							$rules[ $block_type ]['xpaths'] = $xpaths;
+						}
+					}
+				}
+			}
+
+			return $rules;
+		}
+
+		/**
+		 * Recursively converts <key> nodes into a nested rules array; a key named * becomes a list rule.
+		 *
+		 * @param \SimpleXMLElement $xml_node The XML node containing key elements.
+		 * @return array Extracted attributes and their translation settings.
+		 */
+		private function linguator_parse_wpml_keys( $xml_node ) {
+			$attributes = array();
+			if ( isset( $xml_node->key ) ) {
+				foreach ( $xml_node->key as $key_node ) {
+					$key_name = (string) $key_node['name'];
+					if ( empty( $key_name ) ) {
+						continue;
+					}
+
+					if ( isset( $key_node->key ) && count( $key_node->key ) > 0 ) {
+						$nested = $this->linguator_parse_wpml_keys( $key_node );
+						if ( '*' === $key_name ) {
+							return array( $nested );
+						}
+						$attributes[ $key_name ] = $nested;
+					} else {
+						if ( '*' === $key_name ) {
+							return array( true );
+						}
+						$attributes[ $key_name ] = true;
+					}
+				}
+			}
+			return $attributes;
 		}
 
 		/**
