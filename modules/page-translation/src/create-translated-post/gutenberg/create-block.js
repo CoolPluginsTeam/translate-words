@@ -1,4 +1,5 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
+import { getRuleAttributeGroups, hasOnlyXpathRules, getXpathAttributePaths } from "../../component/xpath-attribute-paths/index.js";
 
 /**
  * Filters and translates attributes of a block based on provided rules.
@@ -11,7 +12,7 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
     
     const { select } = wp.data;
 
-    const filterAttrArr = Object.values(blockParseRules);
+    const filterAttrArr = getRuleAttributeGroups(blockParseRules);
     const blockAttr = block.attributes;
     const blockId = block.clientId;
 
@@ -91,6 +92,21 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
             updateTranslatedAttr(idArr, data[key]);
         });
     });
+
+    // Blocks described only by XPath rules: translate the attributes holding the selected text.
+    if (hasOnlyXpathRules(blockParseRules)) {
+        let blockMarkup = '';
+
+        try {
+            blockMarkup = wp.blocks.serialize({ ...block, innerBlocks: [] });
+        } catch (error) {
+            blockMarkup = '';
+        }
+
+        getXpathAttributePaths(blockMarkup, blockParseRules.xpaths, blockAttr).forEach(path => {
+            updateTranslatedAttr(path, true);
+        });
+    }
 
     return block;
 }

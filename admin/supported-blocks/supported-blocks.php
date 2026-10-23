@@ -359,7 +359,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 */
 		private function linguator_parse_wpml_config_blocks() {
 			$config_files = $this->linguator_get_wpml_config_files();
-			$signature    = array( LINGUATOR_VERSION );
+			$signature    = array( LINGUATOR_VERSION, 'xpaths' );
 
 			foreach ( $config_files as $config_file ) {
 				$signature[] = $config_file . '|' . (int) filemtime( $config_file );
@@ -455,7 +455,9 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 */
 		private function linguator_merge_block_rules_recursive( array $base, array $override ) {
 			foreach ( $override as $key => $value ) {
-				if ( is_array( $value ) && isset( $base[ $key ] ) && is_array( $base[ $key ] ) ) {
+				if ( 'xpaths' === $key && is_array( $value ) && isset( $base[ $key ] ) && is_array( $base[ $key ] ) ) {
+					$base[ $key ] = array_values( array_unique( array_merge( $base[ $key ], $value ) ) );
+				} elseif ( is_array( $value ) && isset( $base[ $key ] ) && is_array( $base[ $key ] ) ) {
 					$base[ $key ] = $this->linguator_merge_block_rules_recursive( $base[ $key ], $value );
 				} else {
 					$base[ $key ] = $value;
@@ -477,24 +479,47 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		/**
 		 * Converts parsed XML block rules into the attribute rule format used by the translation scripts.
 		 *
-		 * Drops XPath-only rules, regex-style keys and url keys, and skips blocks left without translatable attributes.
+		 * Drops regex-style keys and url keys. XPath selectors are kept in an 'xpaths' entry next to
+		 * 'attributes', so blocks described only by XPath rules get an empty 'attributes' entry.
+		 * Blocks left with neither attributes nor XPath selectors are skipped.
 		 *
 		 * @param array $xml_rules Block rules keyed by block name.
-		 * @return array Rules keyed by block name, each wrapped in an 'attributes' entry.
+		 * @return array Rules keyed by block name, each with an 'attributes' entry and an optional 'xpaths' entry.
 		 */
 		private function linguator_prepare_xml_block_rules( array $xml_rules ) {
 			$prepared = array();
+
+			/**
+			 * Filters the blocks whose XPath-only rules are ignored.
+			 *
+			 * Raw HTML blocks are excluded by default because their rule selects the whole markup,
+			 * including scripts, forms and embeds.
+			 *
+			 * @param string[] $excluded_blocks Block names.
+			 */
+			$excluded_xpath_blocks = (array) apply_filters( 'lmat_excluded_xpath_only_blocks', array( 'core/html' ) );
 
 			foreach ( $xml_rules as $block_name => $rules ) {
 				if ( ! is_array( $rules ) ) {
 					continue;
 				}
 
+				$xpaths = array();
+				if ( isset( $rules['xpaths'] ) && is_array( $rules['xpaths'] ) ) {
+					$xpaths = array_values( array_unique( array_filter( array_map( 'trim', array_filter( $rules['xpaths'], 'is_string' ) ) ) ) );
+				}
+
 				unset( $rules['xpaths'] );
 				$attributes = $this->linguator_clean_xml_attribute_rules( $rules );
 
-				if ( ! empty( $attributes ) ) {
-					$prepared[ $block_name ] = array( 'attributes' => $attributes );
+				if ( empty( $attributes ) && ( empty( $xpaths ) || in_array( $block_name, $excluded_xpath_blocks, true ) ) ) {
+					continue;
+				}
+
+				$prepared[ $block_name ] = array( 'attributes' => $attributes );
+
+				if ( ! empty( $xpaths ) ) {
+					$prepared[ $block_name ]['xpaths'] = $xpaths;
 				}
 			}
 
@@ -639,6 +664,10 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					if ( isset( $block->xpath ) ) {
 						$xpaths = array();
 						foreach ( $block->xpath as $xpath_node ) {
+							// Link selectors point at URLs, which are never sent for translation.
+							if ( 'link' === (string) $xpath_node['type'] ) {
+								continue;
+							}
 							$xpaths[] = (string) $xpath_node;
 						}
 						if ( ! empty( $xpaths ) ) {

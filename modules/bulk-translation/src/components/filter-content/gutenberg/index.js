@@ -199,13 +199,14 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
         let currentBlock=block?.attrs;
 
-        const attributeKeys=Object.keys(currentBlock);
-        const blockRules=Object.keys(blockRule?.attributes);
+        const attributeKeys=Object.keys(currentBlock || {});
+        const attributeRules=blockRule?.attributes || {};
+        const blockRules=Object.keys(attributeRules);
 
         const allowedAttributeKeys=blockRules.filter(key=>attributeKeys.includes(key));
 
         const runLoopAsyncAttr=async(key, index)=>{
-            const activeBlockRule=blockRule?.attributes[key];
+            const activeBlockRule=attributeRules[key];
             const currentKey = JSON.parse(JSON.stringify(keys));
 
             if(true === activeBlockRule){
