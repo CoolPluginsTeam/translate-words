@@ -334,20 +334,96 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 				);
 			}
 
+			// Custom rules saved by the user take precedence and are deep merged over the built-in and third-party rules.
+			$custom_block_translation = $this->linguator_sanitize_custom_block_rules( get_option( 'lmat_custom_block_translation', array() ) );
+
+			if ( ! empty( $custom_block_translation ) ) {
+				$block_translation_rules['LmatBlockParseRules'] = $this->linguator_merge_block_rules_recursive(
+					$block_translation_rules['LmatBlockParseRules'],
+					$custom_block_translation
+				);
+			}
+
 			$this->custom_block_data_array = $block_translation_rules['LmatBlockParseRules'];
 
-			$custom_block_translation = get_option( 'lmat_custom_block_translation', false );
+			return $block_translation_rules;
+		}
 
-			if ( ! empty( $custom_block_translation ) && is_array( $custom_block_translation ) ) {
-				foreach ( $custom_block_translation as $key => $block_data ) {
-					$block_rules = isset( $block_translation_rules['LmatBlockParseRules'][ $key ] ) ? $block_translation_rules['LmatBlockParseRules'][ $key ] : null;
-					$this->linguator_filter_custom_block_rules( array( $key ), $block_data, $block_rules );
+		/**
+		 * Normalizes stored custom block rules into nested arrays keyed by block name.
+		 *
+		 * Objects are converted to arrays. Rule values are kept only when they are booleans
+		 * or arrays, and the reserved 'xpaths' entry is kept only as a list of strings.
+		 *
+		 * @param mixed $custom_rules Custom rules as stored in the option (array or object).
+		 * @return array Sanitized custom rules keyed by block name.
+		 */
+		private function linguator_sanitize_custom_block_rules( $custom_rules ) {
+			if ( is_object( $custom_rules ) ) {
+				$custom_rules = json_decode( wp_json_encode( $custom_rules ), true );
+			}
+
+			if ( empty( $custom_rules ) || ! is_array( $custom_rules ) ) {
+				return array();
+			}
+
+			$sanitized = array();
+
+			foreach ( $custom_rules as $block_name => $block_rules ) {
+				if ( ! is_string( $block_name ) || '' === $block_name ) {
+					continue;
+				}
+
+				$block_rules = $this->linguator_sanitize_custom_rule_value( $block_rules );
+
+				if ( is_array( $block_rules ) && ! empty( $block_rules ) ) {
+					$sanitized[ $block_name ] = $block_rules;
 				}
 			}
 
-			$block_translation_rules['LmatBlockParseRules'] = $this->custom_block_data_array ? $this->custom_block_data_array : array();
+			return $sanitized;
+		}
 
-			return $block_translation_rules;
+		/**
+		 * Recursively normalizes a custom rule value.
+		 *
+		 * @param mixed $value Rule value (array, object or scalar).
+		 * @return array|bool|null Normalized value, or null when the value is not a valid rule.
+		 */
+		private function linguator_sanitize_custom_rule_value( $value ) {
+			if ( is_object( $value ) ) {
+				$value = json_decode( wp_json_encode( $value ), true );
+			}
+
+			if ( is_bool( $value ) ) {
+				return $value;
+			}
+
+			if ( ! is_array( $value ) ) {
+				return null;
+			}
+
+			$sanitized = array();
+
+			foreach ( $value as $key => $item ) {
+				if ( 'xpaths' === $key ) {
+					if ( is_array( $item ) ) {
+						$xpaths = array_values( array_filter( $item, 'is_string' ) );
+						if ( ! empty( $xpaths ) ) {
+							$sanitized['xpaths'] = $xpaths;
+						}
+					}
+					continue;
+				}
+
+				$item = $this->linguator_sanitize_custom_rule_value( $item );
+
+				if ( null !== $item ) {
+					$sanitized[ $key ] = $item;
+				}
+			}
+
+			return $sanitized;
 		}
 
 		/**
