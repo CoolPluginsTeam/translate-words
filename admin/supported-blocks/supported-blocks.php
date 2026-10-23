@@ -33,7 +33,6 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 *
 		 * @var array
 		 */
-		private $custom_block_data_array = array();
 
 		/**
 		 * Linguator plugin category.
@@ -299,10 +298,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 * Handles the block parsing rules AJAX request.
 		 */
 		public function block_parsing_rules() {
-			$this->custom_block_data_array = array();
-			$block_parse_rules = $this->linguator_get_block_parse_rules();
-			
-			return $block_parse_rules;
+			return $this->linguator_get_block_parse_rules();
 		}
 
 		/**
@@ -343,8 +339,6 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 					$custom_block_translation
 				);
 			}
-
-			$this->custom_block_data_array = $block_translation_rules['LmatBlockParseRules'];
 
 			return $block_translation_rules;
 		}
@@ -631,43 +625,6 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			return $cleaned;
 		}
 
-		private function linguator_filter_custom_block_rules( array $id_keys, $value, $block_rules, $attr_key = false ) {
-			$block_rules = is_object( $block_rules ) ? json_decode( json_encode( $block_rules ) ) : $block_rules;
-
-			if ( ! isset( $block_rules ) ) {
-				return $this->linguator_merge_nested_attribute( $id_keys, $value );
-			}
-			if ( is_object( $value ) && isset( $block_rules ) ) {
-				foreach ( $value as $key => $item ) {
-					if ( isset( $block_rules[ $key ] ) && is_object( $item ) ) {
-						$this->linguator_filter_custom_block_rules( array_merge( $id_keys, array( $key ) ), $item, $block_rules[ $key ], false );
-						continue;
-					} elseif ( ! isset( $block_rules[ $key ] ) && true === $item ) {
-						$this->linguator_merge_nested_attribute( array_merge( $id_keys, array( $key ) ), true );
-						continue;
-					} elseif ( ! isset( $block_rules[ $key ] ) && is_object( $item ) ) {
-						$this->linguator_merge_nested_attribute( array_merge( $id_keys, array( $key ) ), $item );
-						continue;
-					}
-				}
-			}
-		}
-
-		private function linguator_merge_nested_attribute( array $id_keys, $value ) {
-			$value = is_object( $value ) ? json_decode( json_encode( $value ), true ) : $value;
-
-			$current_array = &$this->custom_block_data_array;
-
-			foreach ( $id_keys as $index => $id ) {
-				if ( ! isset( $current_array[ $id ] ) ) {
-					$current_array[ $id ] = array();
-				}
-				$current_array = &$current_array[ $id ];
-			}
-
-			$current_array = $value;
-		}
-
 		/**
 		 * Parses the <gutenberg-blocks> section of a WPML-format config file into block rules keyed by block name.
 		 *
@@ -794,34 +751,30 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		}
 
 		/**
-		 * Update the custom blocks content.
+		 * Saves the attributes marked as translatable in the custom block editor.
 		 *
-		 * @param array $updated_blocks_data The updated blocks data.
+		 * Only user-marked rules are stored. They are deep merged into the previously saved custom
+		 * rules, so new attributes on an already customized block are added instead of discarded.
+		 * Built-in and third-party rules are merged at load time and are never copied into the option.
+		 *
+		 * @param array|object $updated_blocks_data Marked rules keyed by block name.
+		 * @return void
 		 */
-		public function update_custom_blocks_content($updated_blocks_data){
+		public function update_custom_blocks_content( $updated_blocks_data ) {
+			$updated_rules = $this->linguator_sanitize_custom_block_rules( $updated_blocks_data );
 
-			$this->custom_block_data_array = array();
-
-			if ( $updated_blocks_data ) {
-				$block_parse_rules = $this->block_parsing_rules();
-
-				if ( isset( $block_parse_rules['LmatBlockParseRules'] ) ) {
-					$previous_translate_data = get_option( 'lmat_custom_block_translation', false );
-					if ( $previous_translate_data && ! empty( $previous_translate_data ) ) {
-						$this->custom_block_data_array = $previous_translate_data;
-					}
-
-					foreach ( $updated_blocks_data as $key => $block_data ) {
-						$this->linguator_filter_custom_block_rules( array( $key ), $block_data, $block_parse_rules['LmatBlockParseRules'][ $key ] );
-					}
-
-					if ( count( $this->custom_block_data_array ) > 0 ) {
-						update_option( 'lmat_custom_block_translation', $this->custom_block_data_array );
-					}
-
-					delete_option( 'lmat_custom_block_data' );
-				}
+			if ( empty( $updated_rules ) ) {
+				return;
 			}
+
+			$custom_rules = $this->linguator_sanitize_custom_block_rules( get_option( 'lmat_custom_block_translation', array() ) );
+			$custom_rules = $this->linguator_merge_block_rules_recursive( $custom_rules, $updated_rules );
+
+			if ( ! empty( $custom_rules ) ) {
+				update_option( 'lmat_custom_block_translation', $custom_rules );
+			}
+
+			delete_option( 'lmat_custom_block_data' );
 		}
 	}
 }
