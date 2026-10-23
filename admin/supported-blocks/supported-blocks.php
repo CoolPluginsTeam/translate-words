@@ -63,6 +63,10 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			add_filter('lmat_frontend_settings_assets', array($this, 'stop_frontend_setting_assets'), 10, 3);
 			add_filter('lmat_admin_settings_assets', array($this, 'linguator_supported_blocks_assets'), 10, 3);
 			add_filter('lmat_render_languages_page', array($this, 'linguator_render_supported_blocks_page'), 10, 3);
+			add_action( 'upgrader_process_complete', array( $this, 'linguator_clear_wpml_blocks_cache' ) );
+			add_action( 'activated_plugin', array( $this, 'linguator_clear_wpml_blocks_cache' ) );
+			add_action( 'deactivated_plugin', array( $this, 'linguator_clear_wpml_blocks_cache' ) );
+			add_action( 'switch_theme', array( $this, 'linguator_clear_wpml_blocks_cache' ) );
 		}
 
 		/*
@@ -318,6 +322,18 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 				'LmatBlockParseRules' => $this->linguator_prepare_xml_block_rules( $xml_rules ),
 			);
 
+			/**
+			 * Filters whether block rules from wpml-config.xml files shipped by active plugins and themes are loaded.
+			 *
+			 * @param bool $enabled Whether third-party block rules are loaded. Default false.
+			 */
+			if ( apply_filters( 'lmat_enable_third_party_wpml_config', false ) ) {
+				$block_translation_rules['LmatBlockParseRules'] = $this->linguator_merge_block_rules_recursive(
+					$block_translation_rules['LmatBlockParseRules'],
+					$this->linguator_parse_wpml_config_blocks()
+				);
+			}
+
 			$this->custom_block_data_array = $block_translation_rules['LmatBlockParseRules'];
 
 			$custom_block_translation = get_option( 'lmat_custom_block_translation', false );
@@ -332,6 +348,130 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			$block_translation_rules['LmatBlockParseRules'] = $this->custom_block_data_array ? $this->custom_block_data_array : array();
 
 			return $block_translation_rules;
+		}
+
+		/**
+		 * Collects block rules from wpml-config.xml files in active plugins and the active child and parent themes.
+		 *
+		 * Results are cached in a transient keyed by a fingerprint of the found files, their modification times and the plugin version.
+		 *
+		 * @return array Prepared rules keyed by block name, each wrapped in an 'attributes' entry.
+		 */
+		private function linguator_parse_wpml_config_blocks() {
+			$config_files = $this->linguator_get_wpml_config_files();
+			$signature    = array( LINGUATOR_VERSION );
+
+			foreach ( $config_files as $config_file ) {
+				$signature[] = $config_file . '|' . (int) filemtime( $config_file );
+			}
+
+			$fingerprint = md5( implode( "\n", $signature ) );
+			$cached_data = get_transient( 'lmat_wpml_blocks_rules' );
+
+			if ( is_array( $cached_data ) && isset( $cached_data['fingerprint'], $cached_data['rules'] ) && $cached_data['fingerprint'] === $fingerprint && is_array( $cached_data['rules'] ) ) {
+				return $cached_data['rules'];
+			}
+
+			$wpml_rules = array();
+
+			foreach ( $config_files as $config_file ) {
+				$parsed = $this->linguator_parse_single_wpml_config( $config_file );
+
+				if ( ! empty( $parsed ) ) {
+					$wpml_rules = $this->linguator_merge_block_rules_recursive( $wpml_rules, $this->linguator_prepare_xml_block_rules( $parsed ) );
+				}
+			}
+
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debug-only notice when the cache is rebuilt.
+				error_log( sprintf( 'Linguator: rebuilt third-party block rules from %d wpml-config.xml file(s), %d block(s).', count( $config_files ), count( $wpml_rules ) ) );
+			}
+
+			set_transient(
+				'lmat_wpml_blocks_rules',
+				array(
+					'fingerprint' => $fingerprint,
+					'rules'       => $wpml_rules,
+				),
+				12 * HOUR_IN_SECONDS
+			);
+
+			return $wpml_rules;
+		}
+
+		/**
+		 * Lists readable wpml-config.xml files in the root of active plugins (including network-activated ones) and active themes.
+		 *
+		 * This plugin's own folder is skipped because its bundled config is loaded separately.
+		 *
+		 * @return string[] Absolute file paths.
+		 */
+		private function linguator_get_wpml_config_files() {
+			$active_plugins = (array) get_option( 'active_plugins', array() );
+
+			if ( is_multisite() ) {
+				$active_plugins = array_merge( $active_plugins, array_keys( (array) get_site_option( 'active_sitewide_plugins', array() ) ) );
+			}
+
+			$own_dir = wp_normalize_path( untrailingslashit( plugin_dir_path( LINGUATOR_ROOT_FILE ) ) );
+			$dirs    = array();
+
+			foreach ( $active_plugins as $plugin ) {
+				$plugin_dir = dirname( $plugin );
+
+				if ( '.' === $plugin_dir || '' === $plugin_dir ) {
+					continue;
+				}
+
+				$dirs[] = wp_normalize_path( WP_PLUGIN_DIR . '/' . $plugin_dir );
+			}
+
+			$dirs[] = wp_normalize_path( get_stylesheet_directory() );
+			$dirs[] = wp_normalize_path( get_template_directory() );
+
+			$files = array();
+
+			foreach ( array_unique( $dirs ) as $dir ) {
+				if ( $dir === $own_dir ) {
+					continue;
+				}
+
+				$xml_file = $dir . '/wpml-config.xml';
+
+				if ( is_file( $xml_file ) && is_readable( $xml_file ) ) {
+					$files[] = $xml_file;
+				}
+			}
+
+			return $files;
+		}
+
+		/**
+		 * Recursively merges block rules so nested attribute keys are added instead of replacing whole branches.
+		 *
+		 * @param array $base     Existing rules.
+		 * @param array $override Rules to merge in; scalar values win on conflict.
+		 * @return array Merged rules.
+		 */
+		private function linguator_merge_block_rules_recursive( array $base, array $override ) {
+			foreach ( $override as $key => $value ) {
+				if ( is_array( $value ) && isset( $base[ $key ] ) && is_array( $base[ $key ] ) ) {
+					$base[ $key ] = $this->linguator_merge_block_rules_recursive( $base[ $key ], $value );
+				} else {
+					$base[ $key ] = $value;
+				}
+			}
+
+			return $base;
+		}
+
+		/**
+		 * Deletes the cached third-party block rules so they are rebuilt on the next request.
+		 *
+		 * @return void
+		 */
+		public function linguator_clear_wpml_blocks_cache() {
+			delete_transient( 'lmat_wpml_blocks_rules' );
 		}
 
 		/**
