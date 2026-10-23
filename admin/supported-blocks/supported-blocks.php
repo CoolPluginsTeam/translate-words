@@ -325,9 +325,9 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			/**
 			 * Filters whether block rules from wpml-config.xml files shipped by active plugins and themes are loaded.
 			 *
-			 * @param bool $enabled Whether third-party block rules are loaded. Default false.
+			 * @param bool $enabled Whether third-party block rules are loaded. Default true.
 			 */
-			if ( apply_filters( 'lmat_enable_third_party_wpml_config', false ) ) {
+			if ( apply_filters( 'lmat_enable_third_party_wpml_config', true ) ) {
 				$block_translation_rules['LmatBlockParseRules'] = $this->linguator_merge_block_rules_recursive(
 					$block_translation_rules['LmatBlockParseRules'],
 					$this->linguator_parse_wpml_config_blocks()
