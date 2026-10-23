@@ -695,6 +695,11 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 						continue;
 					}
 
+					// Link keys hold URLs, which are never sent for translation.
+					if ( 'link' === (string) $key_node['type'] ) {
+						continue;
+					}
+
 					if ( isset( $key_node->key ) && count( $key_node->key ) > 0 ) {
 						$nested = $this->linguator_parse_wpml_keys( $key_node );
 						if ( '*' === $key_name ) {

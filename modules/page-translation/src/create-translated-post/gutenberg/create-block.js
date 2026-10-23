@@ -1,5 +1,5 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
-import { getRuleAttributeGroups, hasOnlyXpathRules, getXpathAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
 
 /**
  * Filters and translates attributes of a block based on provided rules.
@@ -86,15 +86,11 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
         FilterBlockNestedAttr(idArr, filterAttrObj, blockAttr, updateTranslatedAttr);
     }
 
-    filterAttrArr.forEach(data => {
-        Object.keys(data).forEach(key => {
-            const idArr = new Array(key);
-            updateTranslatedAttr(idArr, data[key]);
-        });
-    });
+    // XPath rules: resolve the attributes holding the selected text from the source markup,
+    // before any attribute is replaced, skipping paths already handled by attribute rules.
+    let xpathPaths = [];
 
-    // Blocks described only by XPath rules: translate the attributes holding the selected text.
-    if (hasOnlyXpathRules(blockParseRules)) {
+    if (Array.isArray(blockParseRules?.xpaths) && blockParseRules.xpaths.length > 0) {
         let blockMarkup = '';
 
         try {
@@ -103,10 +99,19 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
             blockMarkup = '';
         }
 
-        getXpathAttributePaths(blockMarkup, blockParseRules.xpaths, blockAttr).forEach(path => {
-            updateTranslatedAttr(path, true);
-        });
+        xpathPaths = getXpathRuleAttributePaths(blockMarkup, blockParseRules, blockAttr);
     }
+
+    filterAttrArr.forEach(data => {
+        Object.keys(data).forEach(key => {
+            const idArr = new Array(key);
+            updateTranslatedAttr(idArr, data[key]);
+        });
+    });
+
+    xpathPaths.forEach(path => {
+        updateTranslatedAttr(path, true);
+    });
 
     return block;
 }

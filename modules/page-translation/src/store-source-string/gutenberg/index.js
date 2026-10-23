@@ -1,7 +1,7 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
 import { dispatch, select } from "@wordpress/data";
 import { serialize } from "@wordpress/blocks";
-import { getRuleAttributeGroups, hasOnlyXpathRules, getXpathAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
 
 /**
  * Filters and translates attributes of a block.
@@ -67,8 +67,9 @@ const filterTranslateAttr = (blockId, blockAttr, filterAttr, block) => {
         });
     });
 
-    // Blocks described only by XPath rules: translate the attributes holding the selected text.
-    if (block && hasOnlyXpathRules(filterAttr)) {
+    // XPath rules: also save the attributes holding the selected text, skipping paths
+    // already handled by attribute rules.
+    if (block && Array.isArray(filterAttr?.xpaths) && filterAttr.xpaths.length > 0) {
         let blockMarkup = '';
 
         try {
@@ -77,7 +78,7 @@ const filterTranslateAttr = (blockId, blockAttr, filterAttr, block) => {
             blockMarkup = '';
         }
 
-        getXpathAttributePaths(blockMarkup, filterAttr.xpaths, blockAttr).forEach(path => {
+        getXpathRuleAttributePaths(blockMarkup, filterAttr, blockAttr).forEach(path => {
             saveTranslatedAttr(path, true);
         });
     }

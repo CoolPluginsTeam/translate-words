@@ -33,23 +33,78 @@ export const getRuleAttributeGroups = ( blockRule ) => {
 };
 
 /**
- * Checks whether a block rule relies on XPath selectors only, without any attribute rule.
+ * Checks whether an attribute path is already handled by the attribute rules of a block.
  *
- * @param {Object} blockRule Block rule.
- * @return {boolean} True when the rule has XPath selectors and no attribute rules.
+ * Array rules (wildcards) match any array index and apply their inner rule to
+ * object values, mirroring how attribute rules are walked.
+ *
+ * @param {Array} path   Attribute path, an array of keys.
+ * @param {Array} groups Attribute rule objects.
+ * @return {boolean} True when an attribute rule covers the path.
  */
-export const hasOnlyXpathRules = ( blockRule ) => {
+const isPathCoveredByRules = ( path, groups ) =>
+	groups.some( ( group ) => {
+		let rule = group;
+
+		for ( const key of path ) {
+			if ( true === rule ) {
+				return true;
+			}
+
+			if ( Array.isArray( rule ) ) {
+				rule = rule[ 0 ];
+
+				if ( 'number' === typeof key ) {
+					continue;
+				}
+			}
+
+			if (
+				! rule ||
+				'object' !== typeof rule ||
+				! Object.prototype.hasOwnProperty.call( rule, key )
+			) {
+				return false;
+			}
+
+			rule = rule[ key ];
+		}
+
+		return true === rule;
+	} );
+
+/**
+ * Returns the attribute paths selected by the XPath rules of a block that are not
+ * already handled by its attribute rules.
+ *
+ * @param {string} html      Serialized block markup.
+ * @param {Object} blockRule Block rule, e.g. { attributes: {...}, xpaths: [...] }.
+ * @param {Object} attributes Block attributes.
+ * @param {Object} win       Window providing DOMParser, XPathResult and Node.
+ * @return {Array} List of attribute paths, each an array of keys.
+ */
+export const getXpathRuleAttributePaths = (
+	html,
+	blockRule,
+	attributes,
+	win = window
+) => {
 	if (
 		! blockRule ||
 		! Array.isArray( blockRule.xpaths ) ||
 		0 === blockRule.xpaths.length
 	) {
-		return false;
+		return [];
 	}
 
-	return getRuleAttributeGroups( blockRule ).every(
-		( group ) => 0 === Object.keys( group ).length
-	);
+	const groups = getRuleAttributeGroups( blockRule );
+
+	return getXpathAttributePaths(
+		html,
+		blockRule.xpaths,
+		attributes,
+		win
+	).filter( ( path ) => ! isPathCoveredByRules( path, groups ) );
 };
 
 /**
