@@ -14,6 +14,7 @@ require_once __DIR__ . '/abstract-controller.php';
 require_once __DIR__ . '/v1/languages.php';
 require_once __DIR__ . '/v1/settings.php';
 require_once __DIR__ . '/v1/bulk-translation.php';
+require_once __DIR__ . '/v1/scan.php';
 
 add_action(
 	'lmat_init',

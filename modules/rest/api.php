@@ -49,6 +49,13 @@ class API {
 
 
 	/**
+	 * REST site scan.
+	 *
+	 * @var V1\Scan|null
+	 */
+	public $scan;
+
+	/**
 	 * @var Linguator_Model
 	 */
 	private $model;
@@ -83,5 +90,8 @@ class API {
 
 		$this->page_translate = new V1\Page_Translation( $this->model );
 		$this->page_translate->register_routes();
+
+		$this->scan = new V1\Scan( $this->model );
+		$this->scan->register_routes();
 	}
 }

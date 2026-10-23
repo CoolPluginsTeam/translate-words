@@ -160,6 +160,10 @@
   pointer-events: auto;
 }
 
+.lmat-styles .\!visible {
+  visibility: visible !important;
+}
+
 .lmat-styles .visible {
   visibility: visible;
 }
@@ -632,6 +636,10 @@
 
 .lmat-styles .mt-2\.5 {
   margin-top: 0.625rem;
+}
+
+.lmat-styles .mt-3 {
+  margin-top: 0.75rem;
 }
 
 .lmat-styles .mt-4 {
@@ -1913,6 +1921,11 @@
   border-color: rgb(254 202 202 / var(--tw-border-opacity, 1));
 }
 
+.lmat-styles .border-gray-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(243 244 246 / var(--tw-border-opacity, 1));
+}
+
 .lmat-styles .border-gray-200 {
   --tw-border-opacity: 1;
   border-color: rgb(229 231 235 / var(--tw-border-opacity, 1));
@@ -2458,6 +2471,10 @@
 
 .lmat-styles .pr-3 {
   padding-right: 0.75rem;
+}
+
+.lmat-styles .pr-4 {
+  padding-right: 1rem;
 }
 
 .lmat-styles .pr-8 {

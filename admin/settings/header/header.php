@@ -133,6 +133,7 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 
 				$tabs['switcher']['redirect']     = true;
 				$tabs['switcher']['redirect_url'] = $default_url . '&tab=switcher';
+
 				
 				// Only set redirect for advanced-settings if the tab exists
 				if ( isset( $tabs['advanced-settings'] ) ) {

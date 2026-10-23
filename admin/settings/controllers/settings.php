@@ -127,6 +127,17 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		if($this->active_tab === 'lang'){
 			$selected_tab='lang';
 		}
+		if ( 'scan' === $this->active_tab ) {
+			$selected_tab = 'scan';
+		}
+
+		// Keep existing scan bookmarks working after moving it out of Settings.
+		add_action( 'load-' . self::get_screen_id( 'settings' ), function () {
+			if ( 'scan' === $this->selected_tab ) {
+				wp_safe_redirect( admin_url( 'admin.php?page=lmat_scan' ) );
+				exit;
+			}
+		} );
 
 		if('loco' === $selected_tab || '' === $selected_tab){
 			$this->selected_tab = 'general';
@@ -446,6 +457,13 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 * @return void
 	 */
 	public function languages_page() {
+		if ( 'scan' === $this->active_tab ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have permission to access this page.', 'translate-words' ) );
+			}
+			echo '<div class="wrap lmat-styles"><div id="lmat-site-scan" class="px-8 py-4"></div></div>';
+			return;
+		}
 		/*
 		Filter to render the languages page
 		@param bool $render_lmat_languages_page
@@ -722,7 +740,14 @@ class Linguator_Settings extends Linguator_Admin_Base {
 				LINGUATOR_VERSION
 			);
 
-			
+			if ( 'scan' === $this->active_tab ) {
+				wp_enqueue_style(
+					'lmat_scan_inspector',
+					plugins_url( 'admin/assets/css/scan-inspector.css', LINGUATOR_ROOT_FILE ),
+					array( 'lmat_settings' ),
+					(string) filemtime( LINGUATOR_DIR . '/admin/assets/css/scan-inspector.css' )
+				);
+			}
 		}else if($admin_settings_assets){
 			$this->header->header_assets();
 

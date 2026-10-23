@@ -1,0 +1,267 @@
+<?php
+/**
+ * Base class for all site scan checks.
+ *
+ * @package Linguator
+ */
+
+namespace Linguator\Modules\Scan;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+use Linguator\Includes\Other\Linguator_Model;
+
+/**
+ * Provides safe access to Linguator internals so individual checks stay short.
+ *
+ * @since 2.3.0
+ */
+abstract class Abstract_Check {
+
+	/**
+	 * Category label shown in the UI.
+	 *
+	 * @var string
+	 */
+	protected $group = '';
+
+	/**
+	 * Report section the check feeds: content, urls or site.
+	 *
+	 * @var string
+	 */
+	protected $section = 'site';
+
+	/**
+	 * When set, the check only produces the result with this id.
+	 *
+	 * @var string|null
+	 */
+	protected $only = null;
+	protected $row_keys = array();
+
+	public function scope_rows( array $keys ): void {
+		$this->row_keys = $keys;
+	}
+
+	/**
+	 * Linguator model.
+	 *
+	 * @var Linguator_Model
+	 */
+	protected $model;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param Linguator_Model $model Linguator model.
+	 */
+	public function __construct( Linguator_Model $model ) {
+		$this->model = $model;
+	}
+
+	/**
+	 * Runs the check.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return Result[]
+	 */
+	abstract public function run(): array;
+
+	/**
+	 * Report section the check feeds.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return string
+	 */
+	public function section(): string {
+		return $this->section;
+	}
+
+	/**
+	 * Limits the next run to one result id so a single issue can be rechecked cheaply.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string|null $id Result id, or null for everything.
+	 * @return void
+	 */
+	public function only( ?string $id ): void {
+		$this->only = $id;
+	}
+
+	/**
+	 * Whether the check should produce a result id under the current `only` filter.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $id Result id.
+	 * @return bool
+	 */
+	protected function wants( string $id ): bool {
+		return null === $this->only || $this->only === $id;
+	}
+
+	/**
+	 * Extra report data the check collected during run(), such as language coverage.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return array
+	 */
+	public function extra(): array {
+		return array();
+	}
+
+	/**
+	 * Active languages, excluding languages the site owner deactivated.
+	 *
+	 * Reporting a missing translation for a deliberately deactivated language is a false positive.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return \Linguator\Includes\Other\Linguator_Language[]
+	 */
+	protected function active_languages(): array {
+		$list = $this->model->get_languages_list();
+		if ( ! is_array( $list ) ) {
+			return array();
+		}
+
+		return array_values(
+			array_filter(
+				$list,
+				static function ( $lang ) {
+					return is_object( $lang ) && ( ! isset( $lang->active ) || $lang->active );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Default language slug.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return string
+	 */
+	protected function default_lang(): string {
+		$default = $this->model->get_default_language();
+		return $default ? (string) $default->slug : '';
+	}
+
+	/**
+	 * Reads a Linguator option.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $key           Option name.
+	 * @param mixed  $default_value Value returned when the option is missing.
+	 * @return mixed
+	 */
+	protected function option( string $key, $default_value = null ) {
+		try {
+			$value = $this->model->options->get( $key );
+		} catch ( \Throwable $e ) {
+			return $default_value;
+		}
+
+		return null === $value ? $default_value : $value;
+	}
+
+	/**
+	 * Language label such as "French (fr)".
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param object $lang Language object.
+	 * @return string
+	 */
+	protected function lang_label( $lang ): string {
+		return sprintf(
+			/* translators: 1: language name, 2: language code */
+			__( '%1$s (%2$s)', 'translate-words' ),
+			$lang->name,
+			$lang->slug
+		);
+	}
+
+	/**
+	 * Post types translated by Linguator that a site owner can manage.
+	 *
+	 * Non-public types (patterns, templates, font faces…) are not content anyone translates by hand.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return string[]
+	 */
+	protected function translated_post_types(): array {
+		$types = $this->model->get_translated_post_types();
+		if ( ! is_array( $types ) ) {
+			return array();
+		}
+
+		// Elementor templates are layouts, not content a visitor reads in a language.
+		$types = array_diff( $types, array( 'elementor_library' ) );
+
+		$out = array();
+		foreach ( $types as $type ) {
+			$object = get_post_type_object( (string) $type );
+			if ( $object && ! empty( $object->public ) && ! empty( $object->show_ui ) ) {
+				$out[] = (string) $type;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * URL that starts a new translation of a post, as the post list "+" icon does.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int    $post_id   Source post ID.
+	 * @param string $lang_slug Target language slug.
+	 * @return string Empty when the post does not exist.
+	 */
+	protected function new_translation_url( int $post_id, string $lang_slug ): string {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post ) {
+			return '';
+		}
+
+		// Not wp_nonce_url(): it HTML-escapes the URL, and the "&amp;" would reach the server as a literal parameter name.
+		return add_query_arg(
+			array(
+				'post_type' => $post->post_type,
+				'from_post' => $post_id,
+				'new_lang'  => sanitize_key( $lang_slug ),
+				'_wpnonce'  => wp_create_nonce( 'new-post-translation' ),
+			),
+			admin_url( 'post-new.php' )
+		);
+	}
+
+	/**
+	 * Builds a result.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $id      Unique id.
+	 * @param string $status  One of the Result status constants.
+	 * @param string $label   Title.
+	 * @param string $message Explanation.
+	 * @return Result
+	 */
+	protected function result( string $id, string $status, string $label, string $message = '' ): Result {
+		$result          = new Result( $id, $status, $this->group, $label, $message );
+		$result->section = $this->section;
+		return $result;
+	}
+}

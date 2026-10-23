@@ -798,6 +798,7 @@ abstract class Linguator_Admin_Base extends Linguator_Base {
 		);
 
 		$tabs['settings'] = __( 'Settings', 'translate-words' );
+		$tabs['scan'] = __( 'Site Scan', 'translate-words' );
 
 		$tabs['settings&tab=general&loco=true'] = __( 'Theme & plugins localization', 'translate-words' );
 

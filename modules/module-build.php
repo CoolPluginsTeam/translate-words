@@ -11,6 +11,7 @@ return array(
 	'inline-translation',
 	'page-translation',
 	'rest',
+	'scan',
 	'site-health',
 	'sitemaps',
 	'sync',

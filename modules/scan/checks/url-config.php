@@ -1,0 +1,169 @@
+<?php
+/**
+ * URL configuration checks.
+ *
+ * @package Linguator
+ */
+
+namespace Linguator\Modules\Scan\Checks;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+use Linguator\Modules\Scan\Abstract_Check;
+use Linguator\Modules\Scan\Result;
+
+/**
+ * Permalink structure, URL modifications and per-language domains.
+ *
+ * @since 2.3.0
+ */
+class Url_Config extends Abstract_Check {
+
+	/**
+	 * @var string
+	 */
+	protected $group = 'URLs & Routing';
+
+	/**
+	 * @var string
+	 */
+	protected $section = 'urls';
+
+	/**
+	 * Runs the check.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return Result[]
+	 */
+	public function run(): array {
+		$languages = $this->active_languages();
+		if ( count( $languages ) < 2 ) {
+			return array();
+		}
+
+		$results    = array();
+		$force_lang = (int) $this->option( 'force_lang', 1 );
+		$settings   = admin_url( 'admin.php?page=lmat_settings&tab=general' );
+
+		if ( '' === (string) get_option( 'permalink_structure' ) && $force_lang > 0 ) {
+			$results[] = $this->result(
+				'url_permalinks',
+				Result::WARNING,
+				__( 'Plain permalinks in use', 'translate-words' ),
+				__( 'Pretty permalinks are off. Language URLs like /fr/ will not work correctly. Switch to a post-name permalink structure.', 'translate-words' )
+			)->with_fix( admin_url( 'options-permalink.php' ), __( 'Permalinks', 'translate-words' ) );
+		} else {
+			$results[] = $this->result(
+				'url_permalinks',
+				Result::PASS,
+				__( 'Language URLs configured', 'translate-words' ),
+				__( 'Permalink structure supports language URLs.', 'translate-words' )
+			);
+		}
+
+		if ( 3 === $force_lang ) {
+			$results[] = $this->domains_result( $languages, $settings );
+		}
+
+		$results[] = $this->duplicate_locale_result( $languages );
+
+		return $results;
+	}
+
+	/**
+	 * In domain mode every language needs its own domain.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param object[] $languages Active languages.
+	 * @param string   $fix_url   Settings URL.
+	 * @return Result
+	 */
+	private function domains_result( array $languages, string $fix_url ): Result {
+		$domains = (array) $this->option( 'domains', array() );
+		$details = array();
+
+		foreach ( $languages as $lang ) {
+			if ( ! empty( $domains[ $lang->slug ] ) ) {
+				continue;
+			}
+
+			$details[] = array(
+				'label'        => $this->lang_label( $lang ),
+				'message'      => __( 'No domain is set for this language.', 'translate-words' ),
+				'action_url'   => admin_url( 'admin.php?page=lmat' ),
+				'action_label' => __( 'Edit language', 'translate-words' ),
+				'ignore_key'   => 'url_domains:' . $lang->slug,
+			);
+		}
+
+		if ( empty( $details ) ) {
+			return $this->result(
+				'url_domains',
+				Result::PASS,
+				__( 'Language domains set', 'translate-words' ),
+				__( 'Every language has its own domain.', 'translate-words' )
+			);
+		}
+
+		return $this->result(
+			'url_domains',
+			Result::CRITICAL,
+			__( 'Language domains missing', 'translate-words' ),
+			__( 'The site uses one domain per language, but some languages have none. Visitors cannot reach them.', 'translate-words' )
+		)
+			->with_fix( $fix_url, __( 'URL settings', 'translate-words' ) )
+			->with_details( $details );
+	}
+
+	/**
+	 * Two languages sharing a locale break translated strings and hreflang output.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param object[] $languages Active languages.
+	 * @return Result
+	 */
+	private function duplicate_locale_result( array $languages ): Result {
+		$seen    = array();
+		$details = array();
+
+		foreach ( $languages as $lang ) {
+			if ( isset( $seen[ $lang->locale ] ) ) {
+				$details[] = array(
+					'label'        => $this->lang_label( $lang ),
+					'message'      => sprintf(
+						/* translators: 1: locale, 2: other language name */
+						__( 'Locale %1$s is already used by %2$s.', 'translate-words' ),
+						$lang->locale,
+						$seen[ $lang->locale ]
+					),
+					'action_url'   => admin_url( 'admin.php?page=lmat' ),
+					'action_label' => __( 'Edit language', 'translate-words' ),
+					'ignore_key'   => 'url_locale:' . $lang->slug,
+				);
+				continue;
+			}
+			$seen[ $lang->locale ] = $lang->name;
+		}
+
+		if ( empty( $details ) ) {
+			return $this->result(
+				'url_locales',
+				Result::PASS,
+				__( 'Language locales are unique', 'translate-words' ),
+				__( 'No two languages share a locale.', 'translate-words' )
+			);
+		}
+
+		return $this->result(
+			'url_locales',
+			Result::WARNING,
+			__( 'Languages share a locale', 'translate-words' ),
+			__( 'Languages with the same locale cannot be told apart by WordPress. Give each language its own locale.', 'translate-words' )
+		)->with_details( $details );
+	}
+}
