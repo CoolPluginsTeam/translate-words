@@ -6,6 +6,8 @@ import updateGlossaryString from '../update-glossary-string/index.js';
 import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
 import {store} from '../../../redux-store/store.js';
 import { extractImageAlt } from './image-alt.js';
+import { getXpathRuleAttributePaths } from '../../../../../page-translation/src/component/xpath-attribute-paths/index.js';
+import { isTechnicalAttribute } from '../../../../../page-translation/src/component/technical-value/index.js';
 
 /**
  * @param {Object} content The content to filter
@@ -62,9 +64,15 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
         let innerContentTransalted=false;
 
         let transltedStrings=[];
+        let xpathAttrCount=0;
         if(allowedBlocks.includes(blockContent.blockName)){
             if(blockContent.attrs && Object.keys(blockContent.attrs).length > 0){
-                transltedStrings = await filterBlockAttr([...keys, 'attrs'], blockContent, blockParseRules?.LmatBlockParseRules[blockContent.blockName]);
+                const blockRule=blockParseRules?.LmatBlockParseRules[blockContent.blockName];
+                transltedStrings = await filterBlockAttr([...keys, 'attrs'], blockContent, blockRule);
+
+                const xpathStrings = await filterBlockXpathAttr([...keys, 'attrs'], blockContent, blockRule);
+                xpathAttrCount = xpathStrings.length;
+                transltedStrings.push(...xpathStrings);
             }
         }
 
@@ -87,7 +95,9 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
             // Do not skip innerContent when a figcaption is present: attrs.caption
             // may be translated while the rendered <figcaption> HTML stays English.
-            const hasFigcaption = /<figcaption\b/i.test( joinInnerContent );
+            // Blocks whose XPath text is mapped to attributes rebuild their HTML from those
+            // attributes, so the figcaption text is replaced together with the other strings.
+            const hasFigcaption = 0 === xpathAttrCount && /<figcaption\b/i.test( joinInnerContent );
             if(translatedPercentage > 97 && !hasFigcaption){
                 innerContentTransalted = true;
             }
@@ -155,6 +165,8 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
             const runLoopAsyncInner=async(key, index)=>{
                 if(typeof blockRule[key] === 'boolean' && true === blockRule[key] && currentBlock && currentBlock[key]){
+                    if(isTechnicalAttribute([...keys, key], currentBlock[key])) return;
+
                     const uniqueKey=[...keys, key].join('_lmat_bulk_content_temp_');
                     const stringContent=await getStringContent(currentBlock[key], uniqueKey);
 
@@ -171,6 +183,8 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
         }else if(Object.getPrototypeOf(blockRule) === Array.prototype){
             const runLoopAsyncInner=async(item, index)=>{
                 if(typeof blockRule[0] === 'boolean' && true === blockRule[0]){
+                    if(isTechnicalAttribute([...keys, index], item)) return;
+
                     const uniqueKey=[...keys, index].join('_lmat_bulk_content_temp_');
 
                     const stringContent=await getStringContent(item, uniqueKey);
@@ -212,7 +226,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
             if(true === activeBlockRule){
                 currentKey.push(key);
                 const uniqueKey=currentKey.join('_lmat_bulk_content_temp_');
-                if(currentBlock[key] && '' !== currentBlock[key]){
+                if(currentBlock[key] && '' !== currentBlock[key] && !isTechnicalAttribute([key], currentBlock[key])){
                     const stringContent=await getStringContent(currentBlock[key], uniqueKey);
 
                     if(stringContent && '' !== stringContent){
@@ -226,6 +240,56 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
         }
 
         await loopCallback(runLoopAsyncAttr, allowedAttributeKeys, 0);
+
+        return translatedKeys;
+    }
+
+    /**
+     * Collects the comment attributes holding text selected by the XPath rules of a block.
+     *
+     * Only non-core blocks are handled: their saved markup is rebuilt from these attributes,
+     * so translating them keeps the attributes and the HTML in sync. Paths already handled
+     * by attribute rules are skipped by the path lookup.
+     *
+     * @param {Array}  keys      Key path of the block attributes.
+     * @param {Object} block     Parsed block.
+     * @param {Object} blockRule Block rule, e.g. { attributes: {...}, xpaths: [...] }.
+     * @returns {Array} Collected source strings.
+     */
+    const filterBlockXpathAttr=async (keys, block, blockRule)=>{
+        const translatedKeys=[];
+
+        if(!blockRule || !Array.isArray(blockRule.xpaths) || 0 === blockRule.xpaths.length || !block.blockName || block.blockName.startsWith('core/') || !block.innerHTML || '' === block.innerHTML.trim()){
+            return translatedKeys;
+        }
+
+        let paths=[];
+
+        try{
+            paths=getXpathRuleAttributePaths(block.innerHTML, blockRule, block.attrs);
+        }catch(error){
+            paths=[];
+        }
+
+        const runLoopAsyncPath=async(path, index)=>{
+            const value=path.reduce((current, key)=>(current && 'object' === typeof current ? current[key] : undefined), block.attrs);
+
+            if('string' !== typeof value || '' === value.trim() || isTechnicalAttribute(path, value)){
+                return;
+            }
+
+            const uniqueKey=[...keys, ...path].join('_lmat_bulk_content_temp_');
+            const stringContent=await getStringContent(value, uniqueKey);
+
+            if(stringContent && '' !== stringContent){
+                translatedKeys.push(stringContent);
+                storeSourceString(uniqueKey, value, stringContent);
+            }
+        }
+
+        if(paths.length > 0){
+            await loopCallback(runLoopAsyncPath, paths, 0);
+        }
 
         return translatedKeys;
     }

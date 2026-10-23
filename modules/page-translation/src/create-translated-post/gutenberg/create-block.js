@@ -1,5 +1,6 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
 import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { isTechnicalAttribute } from "../../component/technical-value/index.js";
 
 /**
  * Filters and translates attributes of a block based on provided rules.
@@ -68,6 +69,10 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
             }
 
             if (undefined !== blockAttrContent && typeof blockAttrContent === 'string' && blockAttrContent.trim() !== '') {
+                if (isTechnicalAttribute(newIdArr, blockAttrContent)) {
+                    return;
+                }
+
                 let filterKey = uniqueId.replace(/[^\p{L}\p{N}]/gu, '');
                 let translateContent = '';
 

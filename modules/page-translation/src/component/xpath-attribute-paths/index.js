@@ -1,19 +1,4 @@
-/**
- * Attribute keys that hold technical values and are never translated, even when
- * their value equals text selected by an XPath rule.
- */
-const NON_TRANSLATABLE_KEYS = [
-	'url',
-	'href',
-	'src',
-	'id',
-	'type',
-	'anchor',
-	'className',
-	'providerNameSlug',
-	'linkDestination',
-	'sizeSlug',
-];
+import { isTechnicalAttribute, isTechnicalAttributeKey } from '../technical-value/index.js';
 
 /**
  * Returns the attribute rule groups of a block rule, leaving out the XPath list.
@@ -217,6 +202,7 @@ export const getXpathAttributePaths = (
 		if ( null !== stringValue ) {
 			if (
 				'' !== stringValue.trim() &&
+				! isTechnicalAttribute( currentPath, stringValue ) &&
 				matchedTexts.has( toPlainText( stringValue, doc ) )
 			) {
 				paths.push( currentPath );
@@ -229,7 +215,7 @@ export const getXpathAttributePaths = (
 		}
 
 		Object.keys( value ).forEach( ( key ) => {
-			if ( NON_TRANSLATABLE_KEYS.includes( key ) ) {
+			if ( isTechnicalAttributeKey( key ) ) {
 				return;
 			}
 

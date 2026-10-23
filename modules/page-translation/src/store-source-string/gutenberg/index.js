@@ -2,6 +2,7 @@ import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
 import { dispatch, select } from "@wordpress/data";
 import { serialize } from "@wordpress/blocks";
 import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { isTechnicalAttribute } from "../../component/technical-value/index.js";
 
 /**
  * Filters and translates attributes of a block.
@@ -47,7 +48,7 @@ const filterTranslateAttr = (blockId, blockAttr, filterAttr, block) => {
 
                 let filterKey = uniqueId.replace(/[^\p{L}\p{N}]/gu, '');
 
-                if (!/[\p{L}\p{N}]/gu.test(blockAttrContent)) {
+                if (!/[\p{L}\p{N}]/gu.test(blockAttrContent) || isTechnicalAttribute(newIdArr, blockAttrContent)) {
                     return false;
                 }
 
