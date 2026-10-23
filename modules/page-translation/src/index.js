@@ -84,7 +84,7 @@ const StringModalBodyNotice = () => {
         message: (
           <p>
             {__(
-              "No block rules were found. It appears that the block-rules.JSON file could not be fetched, possibly because it is blocked by your server settings. Please check your server configuration to resolve this issue.",
+              "No block rules were found. The block translation rules could not be loaded, possibly because the request was blocked by your server settings. Please check your server configuration to resolve this issue.",
               "translate-words"
             )}
           </p>

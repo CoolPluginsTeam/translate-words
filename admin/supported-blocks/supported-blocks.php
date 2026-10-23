@@ -733,6 +733,11 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 						continue;
 					}
 
+					// Keys marked translate="0" are never sent for translation, including their nested keys.
+					if ( '0' === (string) $key_node['translate'] ) {
+						continue;
+					}
+
 					if ( isset( $key_node->key ) && count( $key_node->key ) > 0 ) {
 						$nested = $this->linguator_parse_wpml_keys( $key_node );
 						if ( '*' === $key_name ) {
