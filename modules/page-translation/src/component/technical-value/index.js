@@ -120,3 +120,29 @@ export const isTechnicalAttribute = ( path, value ) => {
 
 	return isTechnicalValue( value );
 };
+
+/**
+ * Checks whether an attribute path is set by a rule the user added for the block.
+ *
+ * Array levels of the rule apply to every item, so numeric indices in the path follow the first rule entry.
+ *
+ * @param {Object} userRules User-added rules keyed by block name, e.g. { 'my/block': { attributes: { type: true } } }.
+ * @param {string} blockName Block name.
+ * @param {Array}  path      Attribute path, an array of keys.
+ * @return {boolean} True when the user rule marks the path as translatable.
+ */
+export const isUserRuleAttribute = ( userRules, blockName, path ) => {
+	let rule = userRules?.[ blockName ]?.attributes;
+
+	for ( const key of Array.isArray( path ) ? path : [ path ] ) {
+		if ( Array.isArray( rule ) ) {
+			rule = rule[ 0 ];
+		} else if ( rule && 'object' === typeof rule ) {
+			rule = rule[ key ];
+		} else {
+			return false;
+		}
+	}
+
+	return true === rule;
+};

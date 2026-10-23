@@ -305,6 +305,7 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 		 * Builds the block translation rules from the bundled wpml-config.xml and merges saved custom block rules on top.
 		 *
 		 * @return array Rules keyed as ['LmatBlockParseRules' => [ block_name => [ 'attributes' => [...] ] ] ], or an empty array when the config cannot be read.
+		 *               When custom rules add attribute paths, those paths are also listed under 'LmatUserBlockRules' in the same structure.
 		 */
 		public function linguator_get_block_parse_rules() {
 			$config_path = trailingslashit( plugin_dir_path( LINGUATOR_ROOT_FILE ) ) . 'modules/page-translation/block-translation-rules/wpml-config.xml';
@@ -334,6 +335,9 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			$custom_block_translation = $this->linguator_sanitize_custom_block_rules( get_option( 'lmat_custom_block_translation', array() ) );
 
 			if ( ! empty( $custom_block_translation ) ) {
+				// Attribute paths added by the user, kept apart so they are translated even when their value looks technical.
+				$block_translation_rules['LmatUserBlockRules'] = $this->linguator_diff_block_rules( $custom_block_translation, $block_translation_rules['LmatBlockParseRules'] );
+
 				$block_translation_rules['LmatBlockParseRules'] = $this->linguator_merge_block_rules_recursive(
 					$block_translation_rules['LmatBlockParseRules'],
 					$custom_block_translation
@@ -341,6 +345,39 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 			}
 
 			return $block_translation_rules;
+		}
+
+		/**
+		 * Returns the translatable attribute rules of $rules that are not already set in $base.
+		 *
+		 * XPath entries and disabled (false) rules are ignored.
+		 *
+		 * @param array $rules Rules to compare.
+		 * @param array $base  Rules to compare against.
+		 * @return array Rules present only in $rules, in the same structure.
+		 */
+		private function linguator_diff_block_rules( array $rules, array $base ) {
+			$diff = array();
+
+			foreach ( $rules as $key => $value ) {
+				if ( 'xpaths' === $key || false === $value ) {
+					continue;
+				}
+
+				$base_value = isset( $base[ $key ] ) ? $base[ $key ] : null;
+
+				if ( is_array( $value ) ) {
+					$value = is_array( $base_value ) ? $this->linguator_diff_block_rules( $value, $base_value ) : $this->linguator_diff_block_rules( $value, array() );
+
+					if ( ! empty( $value ) ) {
+						$diff[ $key ] = $value;
+					}
+				} elseif ( true === $value && true !== $base_value ) {
+					$diff[ $key ] = true;
+				}
+			}
+
+			return $diff;
 		}
 
 		/**

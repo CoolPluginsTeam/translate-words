@@ -1,6 +1,6 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
 import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
-import { isTechnicalAttribute } from "../../component/technical-value/index.js";
+import { isTechnicalAttribute, isUserRuleAttribute } from "../../component/technical-value/index.js";
 
 /**
  * Filters and translates attributes of a block based on provided rules.
@@ -16,6 +16,7 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
     const filterAttrArr = getRuleAttributeGroups(blockParseRules);
     const blockAttr = block.attributes;
     const blockId = block.clientId;
+    const userRules = select('block-lmatPageTranslation/translate').getBlockRules()?.LmatUserBlockRules;
 
     // Function to update a nested attribute in the block
     const updateNestedAttribute = (obj, path, value) => {
@@ -69,7 +70,7 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
             }
 
             if (undefined !== blockAttrContent && typeof blockAttrContent === 'string' && blockAttrContent.trim() !== '') {
-                if (isTechnicalAttribute(newIdArr, blockAttrContent)) {
+                if (isTechnicalAttribute(newIdArr, blockAttrContent) && !isUserRuleAttribute(userRules, block.name, newIdArr)) {
                     return;
                 }
 

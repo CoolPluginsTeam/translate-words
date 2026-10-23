@@ -7,7 +7,7 @@ import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
 import {store} from '../../../redux-store/store.js';
 import { extractImageAlt } from './image-alt.js';
 import { getXpathRuleAttributePaths } from '../../../../../page-translation/src/component/xpath-attribute-paths/index.js';
-import { isTechnicalAttribute } from '../../../../../page-translation/src/component/technical-value/index.js';
+import { isTechnicalAttribute, isUserRuleAttribute } from '../../../../../page-translation/src/component/technical-value/index.js';
 
 /**
  * @param {Object} content The content to filter
@@ -22,6 +22,23 @@ import { isTechnicalAttribute } from '../../../../../page-translation/src/compon
 const FilterGutenbergContent = async ({content, service, blockParseRules, postId, storeDispatch, filterHtmlContent, sourceLanguage}) => {
     const allowedBlocks=Object.keys(blockParseRules?.LmatBlockParseRules);
     const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
+
+    /**
+     * Checks whether a collected attribute must be skipped as technical. Attributes set by
+     * user-added rules are always translated.
+     *
+     * @param {Array} path  Key path of the attribute, e.g. ['content', 0, 'attrs', 'title'].
+     * @param {*}     value Attribute value.
+     * @returns {boolean}
+     */
+    const isSkippedAttribute=(path, value)=>{
+        if(!isTechnicalAttribute(path, value)) return false;
+
+        const attrsIndex=path.indexOf('attrs');
+        const block=attrsIndex > 0 ? path.slice(1, attrsIndex).reduce((current, key)=>(current ? current[key] : undefined), content) : null;
+
+        return !(block && isUserRuleAttribute(blockParseRules?.LmatUserBlockRules, block.blockName, path.slice(attrsIndex + 1)));
+    }
 
     const loopCallback=async (callback, loop, index)=>{
         await callback(loop[index], index);
@@ -64,14 +81,12 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
         let innerContentTransalted=false;
 
         let transltedStrings=[];
-        let xpathAttrCount=0;
         if(allowedBlocks.includes(blockContent.blockName)){
             if(blockContent.attrs && Object.keys(blockContent.attrs).length > 0){
                 const blockRule=blockParseRules?.LmatBlockParseRules[blockContent.blockName];
                 transltedStrings = await filterBlockAttr([...keys, 'attrs'], blockContent, blockRule);
 
                 const xpathStrings = await filterBlockXpathAttr([...keys, 'attrs'], blockContent, blockRule);
-                xpathAttrCount = xpathStrings.length;
                 transltedStrings.push(...xpathStrings);
             }
         }
@@ -95,9 +110,12 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
             // Do not skip innerContent when a figcaption is present: attrs.caption
             // may be translated while the rendered <figcaption> HTML stays English.
-            // Blocks whose XPath text is mapped to attributes rebuild their HTML from those
-            // attributes, so the figcaption text is replaced together with the other strings.
-            const hasFigcaption = 0 === xpathAttrCount && /<figcaption\b/i.test( joinInnerContent );
+            // Non-core blocks rebuild their HTML from the translated attributes, so they can still
+            // skip it when every figcaption text is covered by the collected strings.
+            const hasFigcaption = Array.from(tempNode.querySelectorAll('figcaption')).some(figcaption=>{
+                const captionText=figcaption.innerText.trim();
+                return '' !== captionText && (blockContent.blockName.startsWith('core/') || !transltedStrings.some(item=>item.includes(captionText)));
+            });
             if(translatedPercentage > 97 && !hasFigcaption){
                 innerContentTransalted = true;
             }
@@ -165,7 +183,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
 
             const runLoopAsyncInner=async(key, index)=>{
                 if(typeof blockRule[key] === 'boolean' && true === blockRule[key] && currentBlock && currentBlock[key]){
-                    if(isTechnicalAttribute([...keys, key], currentBlock[key])) return;
+                    if(isSkippedAttribute([...keys, key], currentBlock[key])) return;
 
                     const uniqueKey=[...keys, key].join('_lmat_bulk_content_temp_');
                     const stringContent=await getStringContent(currentBlock[key], uniqueKey);
@@ -183,7 +201,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
         }else if(Object.getPrototypeOf(blockRule) === Array.prototype){
             const runLoopAsyncInner=async(item, index)=>{
                 if(typeof blockRule[0] === 'boolean' && true === blockRule[0]){
-                    if(isTechnicalAttribute([...keys, index], item)) return;
+                    if(isSkippedAttribute([...keys, index], item)) return;
 
                     const uniqueKey=[...keys, index].join('_lmat_bulk_content_temp_');
 
@@ -226,7 +244,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
             if(true === activeBlockRule){
                 currentKey.push(key);
                 const uniqueKey=currentKey.join('_lmat_bulk_content_temp_');
-                if(currentBlock[key] && '' !== currentBlock[key] && !isTechnicalAttribute([key], currentBlock[key])){
+                if(currentBlock[key] && '' !== currentBlock[key] && !isSkippedAttribute(currentKey, currentBlock[key])){
                     const stringContent=await getStringContent(currentBlock[key], uniqueKey);
 
                     if(stringContent && '' !== stringContent){
