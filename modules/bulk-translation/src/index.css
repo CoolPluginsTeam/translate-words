@@ -577,12 +577,8 @@
   min-width: 120px;
 }
 
-/* Language flag in the status table, sized to match admin flags (18x12). */
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table tbody td:nth-child(1) img {
-  width: 18px;
-  height: 12px;
   margin-right: 6px;
-  vertical-align: middle;
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table tbody td:not(:nth-child(1)) {
@@ -939,13 +935,6 @@
   display: -ms-flexbox;
   display: flex;
   padding-right: .5rem;
-}
-
-/* Language flag next to each target language checkbox, sized to match admin flags (18x12). */
-#lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-body .lmat-bulk-translate-languages .lmat-bulk-translate-language .lmat-bulk-translate-language-label img {
-  width: 18px;
-  height: 12px;
-  vertical-align: middle;
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-body .lmat-bulk-translate-languages .lmat-bulk-translate-language input[name="languages"]:disabled ~ img {

@@ -493,7 +493,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                         rows.push(
                                             <tr key={key} className={`${prefix}-td-${info.status}`}>
                                                 <td className={`${prefix}-status-flag`}>
-                                                    {info.flagUrl && <img src={info.flagUrl} width="18" height="12" alt={info.targetLanguage}/>}
+                                                    {info.flagUrl && <img src={info.flagUrl} width="20" alt={info.targetLanguage}/>}
                                                     {info.languageName || info.targetLanguage}
                                                 </td>
                                                 {info.status === 'error' ?

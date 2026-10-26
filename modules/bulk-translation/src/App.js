@@ -261,8 +261,6 @@ const App = ({ onDestory, prefix, postIds }) => {
                                             >
                                                 <img
                                                     src={languageObject[language].flag}
-                                                    width="18"
-                                                    height="12"
                                                     alt={languageObject[language].name} />
                                                 &nbsp; {languageObject[language].name}
                                             </label>
