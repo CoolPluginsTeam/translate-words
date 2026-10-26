@@ -120,30 +120,122 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	}
 
 	/**
-	 * Returns the block attributes, by default the legacy switcher options.
+	 * Returns the block attributes.
 	 *
 	 * @return array
 	 */
 	protected function get_attributes() {
-		$attributes = array(
-			'className' => array(
+		return array(
+			'layout'                 => array(
+				'type'    => 'string',
+				'enum'    => array( 'vertical', 'horizontal', 'dropdown', 'select' ),
+				'default' => 'vertical',
+			),
+			'show_labels'            => array(
+				'type'    => 'string',
+				'enum'    => array( 'names', 'codes', '' ),
+				'default' => 'names',
+			),
+			'show_flags'             => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'force_home'             => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'hide_current'           => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'hide_if_no_translation' => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'flag_aspect_ratio'      => array(
+				'type'    => 'string',
+				'enum'    => array( '3:2', '1:1' ),
+				'default' => '3:2',
+			),
+			'flag_border_radius'     => array(
+				'type'    => 'number',
+				'default' => 0,
+			),
+			'flag_width'             => array(
+				'type'    => 'string',
+				'default' => '18px',
+			),
+			'flag_label_spacing'     => array(
+				'type'    => 'string',
+				'default' => '0.3em',
+			),
+			'className'              => array(
 				'type'    => 'string',
 				'default' => '',
 			),
-			'lmatLang'  => array(
+			'lmatLang'               => array(
 				'type'    => 'string',
 				'default' => '',
 			),
 		);
+	}
 
-		foreach ( \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
-			$attributes[ $option ] = array(
-				'type'    => 'boolean',
-				'default' => $default,
-			);
+	/**
+	 * Converts the attributes of blocks saved before the layout settings, when not migrated in the editor yet.
+	 *
+	 * @param array  $attributes      The block attributes.
+	 * @param string $default_layout  Layout used for legacy blocks not displayed as dropdown.
+	 * @param string $dropdown_layout Layout used for legacy blocks displayed as dropdown.
+	 * @return array
+	 */
+	protected function migrate_legacy_attributes( array $attributes, string $default_layout = 'vertical', string $dropdown_layout = 'select' ): array {
+		if ( ! array_key_exists( 'dropdown', $attributes ) && ! array_key_exists( 'show_names', $attributes ) ) {
+			return $attributes;
 		}
 
+		$show_names = ! isset( $attributes['show_names'] ) || ! empty( $attributes['show_names'] );
+
+		$attributes['layout']      = empty( $attributes['dropdown'] ) ? $default_layout : $dropdown_layout;
+		$attributes['show_labels'] = $show_names ? 'names' : '';
+		$attributes['show_flags']  = $show_names ? ! empty( $attributes['show_flags'] ) : true;
+
+		unset( $attributes['dropdown'], $attributes['show_names'] );
+
 		return $attributes;
+	}
+
+	/**
+	 * Sets the language chosen in the editor as current language while rendering a preview.
+	 *
+	 * @return mixed Previous current language, false if unchanged.
+	 */
+	protected function switch_to_edit_language() {
+		if ( ! $this->is_edit_context || empty( $this->admin_current_lang ) || empty( $this->links ) ) {
+			return false;
+		}
+
+		$language = $this->model->get_language( $this->admin_current_lang );
+
+		if ( empty( $language ) ) {
+			return false;
+		}
+
+		$previous             = $this->links->curlang;
+		$this->links->curlang = $language;
+
+		return $previous;
+	}
+
+	/**
+	 * Restores the current language changed by {@see self::switch_to_edit_language()}.
+	 *
+	 * @param mixed $previous Previous current language, false if unchanged.
+	 * @return void
+	 */
+	protected function restore_language( $previous ) {
+		if ( false !== $previous ) {
+			$this->links->curlang = $previous;
+		}
 	}
 
 	/**

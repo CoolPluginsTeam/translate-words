@@ -2,6 +2,11 @@
 
 namespace Linguator\Modules\Blocks;
 
+use Linguator\Includes\Switcher\Switcher;
+use Linguator\Includes\Switcher\Element\Abstract_Element;
+use Linguator\Includes\Switcher\Element\Nav as Element;
+use Linguator\Includes\Switcher\Settings\Menu as Settings;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -65,6 +70,23 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 	}
 
 	/**
+	 * Returns the attributes of the navigation language switcher block.
+	 *
+	 * @return array
+	 */
+	protected function get_attributes() {
+		$attributes = parent::get_attributes();
+
+		$attributes['layout'] = array(
+			'type'    => 'string',
+			'enum'    => array( 'horizontal', 'dropdown' ),
+			'default' => 'horizontal',
+		);
+
+		return $attributes;
+	}
+
+	/**
 	 * Returns the supported pieces of context for the 'linguator/navigation-language-switcher' block.
 	 * This context will be inherited from the 'core/navigation' block.
 	 *
@@ -102,62 +124,98 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 	 * @param \WP_Block $block The parsed block.
 	 * @return string The HTML string output to serve.
 	 */
-	public function render( $attributes, $content, $block ) {
-		$attributes        = $this->set_attributes_for_block( $attributes );
-		$switcher          = new \Linguator\Includes\Controllers\Linguator_Switcher();
-		$switcher_elements = (array) $switcher->the_languages( $this->links, array_merge( $attributes, array( 'raw' => true ) ) );
-
-		if ( empty( $switcher_elements ) ) {
+	public function render( $attributes, $content, $block ) { //phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+		if ( empty( $this->links ) ) {
 			return '';
 		}
 
-		if ( $attributes['dropdown'] ) {
-			$inner_nav_link_blocks = array();
-			$top_level_lang        = reset( $switcher_elements );
-			foreach ( $switcher_elements as $switcher_element ) {
-				if ( $switcher_element['current_lang'] && ! $attributes['hide_current'] ) {
-					$top_level_lang = $switcher_element;
-				}
-			}
+		$attributes = $this->migrate_legacy_attributes( (array) $attributes, 'horizontal', 'dropdown' );
+		$attributes = $this->set_attributes_for_block( $attributes );
 
-			foreach ( $switcher_elements as $switcher_element ) {
-				if ( $switcher_element['slug'] === $top_level_lang['slug'] ) {
-					continue; // Skip the active language so it's not repeated in the dropdown list
-				}
+		$attributes['className'] = isset( $attributes['className'] ) ? (string) $attributes['className'] : '';
 
-				$inner_nav_link_blocks[] = $this->create_inner_block( 'core/navigation-link', $attributes, $switcher_element, $block->context );
-			}
+		$previous_lang = $this->switch_to_edit_language();
+		$output        = $this->render_switcher( $attributes, $block );
+		$this->restore_language( $previous_lang );
 
-			$generated_class = wp_apply_generated_classname_support( $block->block_type )['class'];
-			$submenu_block   = $this->create_inner_block( 'core/navigation-submenu', $attributes, $top_level_lang, $block->context, $inner_nav_link_blocks, $generated_class );
-			$output        = $submenu_block->render();
-		} else {
-			$output = '';
-			$generated_class = wp_apply_generated_classname_support( $block->block_type )['class'];
-
-			foreach ( $switcher_elements as $switcher_element ) {
-				$output .= $this->create_inner_block( 'core/navigation-link', $attributes, $switcher_element, $block->context, array(), $generated_class )->render();
-			}
+		if ( '' === $output ) {
+			return '';
 		}
 
 		// Final sanitization to ensure flag/name/output content is safe.
-		$output = wp_kses( (string) $output, $this->get_allowed_switcher_html() );
+		$output = wp_kses( $output, $this->get_allowed_switcher_html() );
 
 		if ( version_compare( $GLOBALS['wp_version'], '6.5-alpha', '<' ) ) {
 			/*
 			 * Backward compatibility with WordPress < 6.5.
 			 * Since WordPress 6.5, our block is rendered automatically inside the auto-generated `<ul>` wrapper.
 			 */
-			return wp_kses(
-				sprintf(
-				'<ul class="wp-block-navigation__container wp-block-navigation">%s</ul>',
-				$output
-				),
-				$this->get_allowed_switcher_html()
-			);
+			return sprintf( '<ul class="wp-block-navigation__container wp-block-navigation">%s</ul>', $output );
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Renders the switcher as core navigation blocks.
+	 *
+	 * @param array     $attributes The block attributes.
+	 * @param \WP_Block $block      The parsed block.
+	 * @return string
+	 */
+	private function render_switcher( array $attributes, $block ): string {
+		$settings = new Settings( $attributes );
+		$elements = ( new Switcher( $settings, $this->links ) )->get_elements();
+
+		if ( empty( $elements ) ) {
+			return '';
+		}
+
+		$generated_class = wp_apply_generated_classname_support( $block->block_type );
+		if ( ! empty( $generated_class['class'] ) ) {
+			$attributes['className'] = trim( $attributes['className'] . ' ' . $generated_class['class'] );
+		}
+
+		if ( 'dropdown' === $settings->layout ) {
+			$top_level_element = $this->get_top_level_element( $settings );
+
+			if ( empty( $top_level_element ) ) {
+				return '';
+			}
+
+			$inner_nav_link_blocks   = array();
+			$attributes_wo_classname = array_merge( $attributes, array( 'className' => '' ) );
+
+			foreach ( $elements as $element ) {
+				$inner_nav_link_blocks[] = $this->create_inner_block( 'core/navigation-link', $attributes_wo_classname, $element, $block->context );
+			}
+
+			return (string) $this->create_inner_block( 'core/navigation-submenu', $attributes, $top_level_element, $block->context, $inner_nav_link_blocks )->render();
+		}
+
+		$output = '';
+
+		foreach ( $elements as $element ) {
+			$output .= $this->create_inner_block( 'core/navigation-link', $attributes, $element, $block->context )->render();
+		}
+
+		return $output;
+	}
+
+	/**
+	 * Returns the element displayed at the top of the dropdown, matching the current language.
+	 *
+	 * @param Settings $settings Switcher settings.
+	 * @return Element|null
+	 */
+	private function get_top_level_element( Settings $settings ) {
+		$curlang = ! empty( $this->links->curlang ) ? $this->links->curlang : $this->model->get_default_language();
+
+		if ( empty( $curlang ) ) {
+			return null;
+		}
+
+		return new Element( $curlang, $settings, $this->links );
 	}
 
 	/**
@@ -181,7 +239,7 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 					'schema' => array(
 						'type'                 => 'object',
 						'additionalProperties' => array(
-							'type' => 'boolean',
+							'type' => array( 'boolean', 'integer', 'number', 'string' ),
 						),
 					),
 				),
@@ -246,43 +304,28 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 	/**
 	 * Creates a navigation block and keeps its generated label outside block attributes.
 	 *
-	 * @param string     $block_name     Core block name.
-	 * @param array      $attributes     Language switcher settings.
-	 * @param array      $switcher_item  Data for one language.
-	 * @param array      $context        Parent block context.
-	 * @param \WP_Block[] $inner_blocks   Optional child blocks.
-	 * @param string     $generated_class Additional class for an outer block.
+	 * @param string           $block_name   Core block name.
+	 * @param array            $attributes   Language switcher block attributes.
+	 * @param Abstract_Element $element      Switcher element of one language.
+	 * @param array            $context      Parent block context.
+	 * @param \WP_Block[]      $inner_blocks Optional child blocks.
 	 * @return \WP_Block
 	 */
-	private function create_inner_block( $block_name, $attributes, $switcher_item, $context, $inner_blocks = array(), $generated_class = '' ) {
-		$core_attributes = $this->linguator_get_core_block_attributes( $switcher_item );
-		if ( '' !== $generated_class ) {
-			$core_attributes['className'] .= ' ' . $generated_class;
-		}
-
+	private function create_inner_block( string $block_name, array $attributes, Abstract_Element $element, array $context, array $inner_blocks = array() ) {
 		$block = new \WP_Block(
 			array(
 				'blockName'   => $block_name,
-				'attrs'       => $core_attributes,
+				'attrs'       => $this->linguator_get_core_block_attributes( $attributes, $element ),
 				'innerBlocks' => $inner_blocks,
 			),
 			$context
 		);
 
-		$label = '';
-		if ( $attributes['show_flags'] ) {
-			$label .= wp_kses( (string) $switcher_item['flag'], $this->get_allowed_switcher_html() );
-		}
-		if ( $attributes['show_names'] ) {
-			$name = esc_html( (string) $switcher_item['name'] );
-			$label .= $attributes['show_flags'] ? ' ' . $name : $name;
-		}
-
 		$this->internal_blocks->offsetSet(
 			$block,
 			array(
-				'locale' => sanitize_text_field( (string) $switcher_item['locale'] ),
-				'label'  => $label,
+				'locale' => sanitize_text_field( (string) $element->locale ),
+				'label'  => $this->apply_flag_styles_to_markup( $element->get_label(), $attributes ),
 			)
 		);
 
@@ -291,15 +334,27 @@ class Linguator_Navigation_Language_Switcher_Block extends Linguator_Abstract_La
 
 	/**
 	 * Returns attributes for a core navigation block created by the switcher.
-	 * @param array $switcher_item Array of a switcher item data.
+	 *
+	 * @param array            $attributes Language switcher block attributes.
+	 * @param Abstract_Element $element    Switcher element of one language.
 	 * @return array Attributes to be rendered by core.
 	 */
-	private function linguator_get_core_block_attributes( $switcher_item ) {
+	private function linguator_get_core_block_attributes( array $attributes, Abstract_Element $element ): array {
+		$class_name = trim( implode( ' ', array_map( 'sanitize_html_class', (array) $element->item_classes ) ) );
+
+		if ( ! empty( $attributes['show_flags'] ) ) {
+			$aspect_ratio = ! empty( $attributes['flag_aspect_ratio'] ) ? (string) $attributes['flag_aspect_ratio'] : '3:2';
+			$class_name  .= ' lmat-aspect-ratio-' . sanitize_html_class( str_replace( ':', '', $aspect_ratio ) );
+		}
+
+		if ( ! empty( $attributes['className'] ) ) {
+			$class_name .= ' ' . $attributes['className'];
+		}
+
 		return array(
 			'label'     => static::PLACEHOLDER,
-			'url'       => esc_url_raw( (string) $switcher_item['url'] ),
-			'className' => trim( implode( ' ', array_map( 'sanitize_html_class', (array) $switcher_item['classes'] ) ) ),
+			'url'       => esc_url_raw( (string) $element->url ),
+			'className' => trim( $class_name ),
 		);
 	}
 }
-

@@ -67,123 +67,6 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   };
 
   // ---------------------------------------------------------------------------
-  // Shared attributes
-  // ---------------------------------------------------------------------------
-  var sharedAttributes = {
-    dropdown: {
-      type: 'boolean',
-      default: false
-    },
-    show_names: {
-      type: 'boolean',
-      default: true
-    },
-    show_flags: {
-      type: 'boolean',
-      default: false
-    },
-    force_home: {
-      type: 'boolean',
-      default: false
-    },
-    hide_current: {
-      type: 'boolean',
-      default: false
-    },
-    hide_if_no_translation: {
-      type: 'boolean',
-      default: false
-    }
-  };
-
-  // ---------------------------------------------------------------------------
-  // Helper: ensure at least one of show_names/show_flags is true
-  // ---------------------------------------------------------------------------
-  function enforceNamesOrFlags(nextAttrs, currentAttrs) {
-    var result = _objectSpread(_objectSpread({}, currentAttrs), nextAttrs);
-    if (result.show_names === false && result.show_flags === false) {
-      // If the user just turned one off and both are now false, re-enable the other.
-      // Prefer re-enabling the one that did NOT change in this update.
-      if (typeof nextAttrs.show_names !== 'undefined') {
-        result.show_flags = true;
-      } else {
-        result.show_names = true;
-      }
-    }
-    return result;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Reusable inspector panel for both blocks
-  // ---------------------------------------------------------------------------
-  function SwitcherInspector(_ref2) {
-    var attributes = _ref2.attributes,
-      setAttributes = _ref2.setAttributes,
-      _ref2$showHideCurrent = _ref2.showHideCurrentEvenInDropdown,
-      showHideCurrentEvenInDropdown = _ref2$showHideCurrent === void 0 ? false : _ref2$showHideCurrent;
-    var dropdown = attributes.dropdown,
-      show_names = attributes.show_names,
-      show_flags = attributes.show_flags,
-      force_home = attributes.force_home,
-      hide_current = attributes.hide_current,
-      hide_if_no_translation = attributes.hide_if_no_translation;
-    var update = function update(patch) {
-      setAttributes(enforceNamesOrFlags(patch, attributes));
-    };
-    return wp.element.createElement(InspectorControls, {}, wp.element.createElement(PanelBody, {
-      title: __('Language switcher settings', 'translate-words')
-    }, wp.element.createElement(ToggleControl, {
-      label: __('Display as dropdown', 'translate-words'),
-      checked: !!dropdown,
-      onChange: function onChange(v) {
-        return update({
-          dropdown: !!v
-        });
-      }
-    }), (!dropdown || showHideCurrentEvenInDropdown) && wp.element.createElement(ToggleControl, {
-      label: __('Show language names', 'translate-words'),
-      checked: !!show_names,
-      onChange: function onChange(v) {
-        return update({
-          show_names: !!v
-        });
-      }
-    }), (!dropdown || showHideCurrentEvenInDropdown) && wp.element.createElement(ToggleControl, {
-      label: __('Display flags', 'translate-words'),
-      checked: !!show_flags,
-      onChange: function onChange(v) {
-        return update({
-          show_flags: !!v
-        });
-      }
-    }), wp.element.createElement(ToggleControl, {
-      label: __('Force link to front page', 'translate-words'),
-      checked: !!force_home,
-      onChange: function onChange(v) {
-        return update({
-          force_home: !!v
-        });
-      }
-    }), !attributes.dropdown && wp.element.createElement(ToggleControl, {
-      label: __('Hide the current language', 'translate-words'),
-      checked: !!hide_current,
-      onChange: function onChange(v) {
-        return update({
-          hide_current: !!v
-        });
-      }
-    }), wp.element.createElement(ToggleControl, {
-      label: __('Hide languages with no translation', 'translate-words'),
-      checked: !!hide_if_no_translation,
-      onChange: function onChange(v) {
-        return update({
-          hide_if_no_translation: !!v
-        });
-      }
-    })));
-  }
-
-  // ---------------------------------------------------------------------------
   // Regular block: linguator/language-switcher
   // ---------------------------------------------------------------------------
   var CSS_LENGTH_UNITS = [{
@@ -258,67 +141,77 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   }, {});
 
   // Converts blocks saved with the `dropdown` and `show_names` attributes.
-  var deprecated = [{
-    attributes: {
-      dropdown: {
-        type: 'boolean',
-        default: false
+  var getDeprecated = function getDeprecated(defaults, dropdownLayout) {
+    return [{
+      attributes: {
+        dropdown: {
+          type: 'boolean',
+          default: false
+        },
+        show_names: {
+          type: 'boolean',
+          default: true
+        },
+        show_flags: {
+          type: 'boolean',
+          default: false
+        },
+        force_home: {
+          type: 'boolean',
+          default: false
+        },
+        hide_current: {
+          type: 'boolean',
+          default: false
+        },
+        hide_if_no_translation: {
+          type: 'boolean',
+          default: false
+        },
+        className: {
+          type: 'string',
+          default: ''
+        }
       },
-      show_names: {
-        type: 'boolean',
-        default: true
+      isEligible: function isEligible(attributes) {
+        return 'dropdown' in attributes || 'show_names' in attributes;
       },
-      show_flags: {
-        type: 'boolean',
-        default: false
+      migrate: function migrate(attributes) {
+        return migrateLegacyAttributes(attributes, defaults, dropdownLayout);
       },
-      force_home: {
-        type: 'boolean',
-        default: false
-      },
-      hide_current: {
-        type: 'boolean',
-        default: false
-      },
-      hide_if_no_translation: {
-        type: 'boolean',
-        default: false
-      },
-      className: {
-        type: 'string',
-        default: ''
+      save: function save() {
+        return null;
       }
-    },
-    isEligible: function isEligible(attributes) {
-      return 'dropdown' in attributes || 'show_names' in attributes;
-    },
-    migrate: function migrate(attributes) {
-      var dropdown = attributes.dropdown,
-        show_names = attributes.show_names,
-        show_flags = attributes.show_flags,
-        force_home = attributes.force_home,
-        hide_current = attributes.hide_current,
-        hide_if_no_translation = attributes.hide_if_no_translation,
-        className = attributes.className;
-      return _objectSpread(_objectSpread({}, switcherDefaults), {}, {
-        layout: dropdown ? 'select' : 'vertical',
-        show_labels: show_names ? 'names' : '',
-        show_flags: show_names ? !!show_flags : true,
-        force_home: !!force_home,
-        hide_current: !!hide_current,
-        hide_if_no_translation: !!hide_if_no_translation,
-        className: className || ''
-      });
-    },
-    save: function save() {
-      return null;
-    }
-  }];
+    }];
+  };
+
+  // Maps the `dropdown` and `show_names` attributes to the current ones.
+  function migrateLegacyAttributes(attributes, defaults, dropdownLayout) {
+    var dropdown = attributes.dropdown,
+      show_names = attributes.show_names,
+      show_flags = attributes.show_flags,
+      force_home = attributes.force_home,
+      hide_current = attributes.hide_current,
+      hide_if_no_translation = attributes.hide_if_no_translation,
+      className = attributes.className;
+    return _objectSpread(_objectSpread({}, defaults), {}, {
+      layout: dropdown ? dropdownLayout : defaults.layout,
+      show_labels: show_names ? 'names' : '',
+      show_flags: show_names ? !!show_flags : true,
+      force_home: !!force_home,
+      hide_current: !!hide_current,
+      hide_if_no_translation: !!hide_if_no_translation,
+      className: className || ''
+    });
+  }
+  var deprecated = getDeprecated(switcherDefaults, 'select');
 
   // Toolbar and inspector controls of the language switcher block.
-  function SwitcherControls(_ref3) {
-    var attributes = _ref3.attributes,
-      setAttributes = _ref3.setAttributes;
+  function SwitcherControls(_ref2) {
+    var attributes = _ref2.attributes,
+      setAttributes = _ref2.setAttributes,
+      _ref2$allowedLayouts = _ref2.allowedLayouts,
+      allowedLayouts = _ref2$allowedLayouts === void 0 ? null : _ref2$allowedLayouts;
     var layout = attributes.layout,
       show_labels = attributes.show_labels,
       show_flags = attributes.show_flags,
@@ -348,7 +241,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }, {
       label: __('Selector', 'translate-words'),
       value: 'select'
-    }];
+    }].filter(function (option) {
+      return !allowedLayouts || allowedLayouts.includes(option.value);
+    });
     var layoutToolbarControls = layoutOptions.filter(function (option) {
       return 'select' !== option.value;
     }).map(function (option) {
@@ -601,13 +496,26 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   // Navigation child block: linguator/navigation-language-switcher
   // ---------------------------------------------------------------------------
   var NAV_BLOCK = 'linguator/navigation-language-switcher';
+  var navAttributes = _objectSpread(_objectSpread({}, switcherAttributes), {}, {
+    layout: {
+      type: 'string',
+      enum: ['horizontal', 'dropdown'],
+      default: 'horizontal'
+    }
+  });
+  var navDefaults = _objectSpread(_objectSpread({}, switcherDefaults), {}, {
+    layout: 'horizontal'
+  });
+  var navDeprecated = getDeprecated(navDefaults, 'dropdown');
   registerBlockType(NAV_BLOCK, {
+    apiVersion: 3,
     title: __('Language switcher', 'translate-words'),
     description: __('Add a language switcher to the Navigation block.', 'translate-words'),
     icon: TranslationIcon,
     category: 'widgets',
     parent: ['core/navigation'],
-    attributes: _objectSpread({}, sharedAttributes),
+    attributes: navAttributes,
+    deprecated: navDeprecated,
     usesContext: ['textColor', 'customTextColor', 'backgroundColor', 'customBackgroundColor', 'overlayTextColor', 'customOverlayTextColor', 'overlayBackgroundColor', 'customOverlayBackgroundColor', 'fontSize', 'customFontSize', 'showSubmenuIcon', 'openSubmenusOnClick', 'style'],
     transforms: {
       from: [{
@@ -622,25 +530,30 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var attributes = props.attributes,
         setAttributes = props.setAttributes,
         context = props.context;
-      var _ref4 = context || {},
-        showSubmenuIcon = _ref4.showSubmenuIcon,
-        openSubmenusOnClick = _ref4.openSubmenusOnClick;
-      var dropdown = attributes.dropdown;
-      var maybeSubmenuIcon = dropdown && (showSubmenuIcon || openSubmenusOnClick) ? wp.element.createElement('span', {
+      var _ref3 = context || {},
+        showSubmenuIcon = _ref3.showSubmenuIcon,
+        openSubmenusOnClick = _ref3.openSubmenusOnClick;
+      var layout = attributes.layout,
+        show_flags = attributes.show_flags,
+        flag_aspect_ratio = attributes.flag_aspect_ratio;
+      var aspectRatioClass = show_flags && flag_aspect_ratio ? "lmat-aspect-ratio-".concat(flag_aspect_ratio.replace(':', '')) : '';
+      var blockProps = useBlockProps ? useBlockProps({
+        className: aspectRatioClass || undefined
+      }) : {};
+      var maybeSubmenuIcon = 'dropdown' === layout && (showSubmenuIcon || openSubmenusOnClick) ? el('span', {
         className: 'wp-block-navigation__submenu-icon'
-      }, wp.element.createElement(SubmenuChevron)) : null;
-      return wp.element.createElement(Fragment, {}, wp.element.createElement(SwitcherInspector, {
+      }, el(SubmenuChevron)) : null;
+      return el('div', blockProps, el(SwitcherControls, {
         attributes: attributes,
         setAttributes: setAttributes,
-        // In the nav block we allow toggling names/flags even in dropdown for clarity
-        showHideCurrentEvenInDropdown: true
-      }), wp.element.createElement(Disabled, {}, wp.element.createElement('div', {
+        allowedLayouts: ['horizontal', 'dropdown']
+      }), el(Disabled, {}, el('div', {
         className: 'wp-block-navigation-item'
-      }, ServerSideRender ? wp.element.createElement(ServerSideRender, {
+      }, ServerSideRender ? el(ServerSideRender, {
         block: NAV_BLOCK,
         attributes: attributes,
         className: 'wp-block-navigation__container block-editor-block-list__layout'
-      }) : wp.element.createElement('div', {}, __('Language Switcher (Navigation) preview (SSR not available).', 'translate-words')), maybeSubmenuIcon)));
+      }) : el('div', {}, __('Language Switcher (Navigation) preview (SSR not available).', 'translate-words')), maybeSubmenuIcon)));
     },
     save: function save() {
       return null;
@@ -669,7 +582,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var menuItem = (menuItems || []).find(function (m) {
         return m && m.url === '#lmat_switcher';
       });
-      var attrs = menuItem && menuItem.meta && menuItem.meta._lmat_menu_item || {};
+      var meta = menuItem && menuItem.meta && menuItem.meta._lmat_menu_item || {};
+      var attrs = 'layout' in meta || !('dropdown' in meta || 'show_names' in meta) ? meta : migrateLegacyAttributes(meta, navDefaults, 'dropdown');
       var newBlock = createBlock(NAV_BLOCK, attrs);
       if (menuItem && typeof menuItem.id !== 'undefined') {
         blocksMapping[menuItem.id] = newBlock.clientId;

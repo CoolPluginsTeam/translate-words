@@ -56,67 +56,6 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 	}
 
 	/**
-	 * Returns the block attributes.
-	 *
-	 * @return array
-	 */
-	protected function get_attributes() {
-		return array(
-			'layout'                 => array(
-				'type'    => 'string',
-				'enum'    => array( 'vertical', 'horizontal', 'dropdown', 'select' ),
-				'default' => 'vertical',
-			),
-			'show_labels'            => array(
-				'type'    => 'string',
-				'enum'    => array( 'names', 'codes', '' ),
-				'default' => 'names',
-			),
-			'show_flags'             => array(
-				'type'    => 'boolean',
-				'default' => false,
-			),
-			'force_home'             => array(
-				'type'    => 'boolean',
-				'default' => false,
-			),
-			'hide_current'           => array(
-				'type'    => 'boolean',
-				'default' => false,
-			),
-			'hide_if_no_translation' => array(
-				'type'    => 'boolean',
-				'default' => false,
-			),
-			'flag_aspect_ratio'      => array(
-				'type'    => 'string',
-				'enum'    => array( '3:2', '1:1' ),
-				'default' => '3:2',
-			),
-			'flag_border_radius'     => array(
-				'type'    => 'number',
-				'default' => 0,
-			),
-			'flag_width'             => array(
-				'type'    => 'string',
-				'default' => '18px',
-			),
-			'flag_label_spacing'     => array(
-				'type'    => 'string',
-				'default' => '0.3em',
-			),
-			'className'              => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-			'lmatLang'               => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-		);
-	}
-
-	/**
 	 * Returns the block supports and styles.
 	 *
 	 * @return array
@@ -146,28 +85,6 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 	}
 
 	/**
-	 * Converts the attributes of blocks saved before the layout settings, when not migrated in the editor yet.
-	 *
-	 * @param array $attributes The block attributes.
-	 * @return array
-	 */
-	protected function migrate_legacy_attributes( array $attributes ): array {
-		if ( ! array_key_exists( 'dropdown', $attributes ) && ! array_key_exists( 'show_names', $attributes ) ) {
-			return $attributes;
-		}
-
-		$show_names = ! isset( $attributes['show_names'] ) || ! empty( $attributes['show_names'] );
-
-		$attributes['layout']      = empty( $attributes['dropdown'] ) ? 'vertical' : 'select';
-		$attributes['show_labels'] = $show_names ? 'names' : '';
-		$attributes['show_flags']  = $show_names ? ! empty( $attributes['show_flags'] ) : true;
-
-		unset( $attributes['dropdown'], $attributes['show_names'] );
-
-		return $attributes;
-	}
-
-	/**
 	 * Renders the `linguator/language-switcher` block on server.
 	 *
 	 * @param array     $attributes The block attributes.
@@ -194,7 +111,9 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 		}
 
 		$settings        = new Settings( $attributes );
+		$previous_lang   = $this->switch_to_edit_language();
 		$switcher_output = ( new Switcher( $settings, $this->links ) )->get();
+		$this->restore_language( $previous_lang );
 
 		if ( empty( $switcher_output ) ) {
 			return '';
