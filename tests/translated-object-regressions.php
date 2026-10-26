@@ -19,7 +19,7 @@ namespace {
 		return (int) $id;
 	}
 
-	function maybe_unserialize( $value ) {
+	function linguator_maybe_unserialize( $value ) {
 		return unserialize( $value );
 	}
 

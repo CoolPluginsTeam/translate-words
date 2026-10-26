@@ -94,7 +94,7 @@ class Linguator_Language_Factory {
 		}
 
 		// The description fields can contain any property.
-		$description = maybe_unserialize( $terms['lmat_language']->description );
+		$description = linguator_maybe_unserialize( $terms['lmat_language']->description );
 
 		if ( is_array( $description ) ) {
 			$description = array_intersect_key(

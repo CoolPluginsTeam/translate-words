@@ -160,6 +160,22 @@ function linguator_sanitize_ids( $ids ) {
 	
 }
 
+/**
+ * Unserializes a value only if it is serialized, without instantiating any object.
+ *
+ * Works like maybe_unserialize() but prevents object injection by disallowing classes.
+ *
+ * @param mixed $data Data that might be unserialized.
+ * @return mixed Unserialized data, or the original value if not serialized.
+ */
+function linguator_maybe_unserialize( $data ) {
+	if ( is_serialized( $data ) ) {
+		return @unserialize( trim( $data ), array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+	}
+
+	return $data;
+}
+
 
 if ( ! function_exists( 'linguator_extract_taxonomy_name' ) ) {
 	/**
