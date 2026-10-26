@@ -400,6 +400,9 @@ class Scan extends Abstract_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function run_scan() {
+		if ( $blocked = $this->scan_blocked() ) {
+			return $blocked;
+		}
 		if ( ! $this->model->has_languages() ) {
 			return $this->add_status_to_error(
 				new WP_Error( 'lmat_scan_no_languages', __( 'Add at least one language before scanning.', 'translate-words' ) )
@@ -422,6 +425,9 @@ class Scan extends Abstract_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function scan_section( WP_REST_Request $request ) {
+		if ( $blocked = $this->scan_blocked() ) {
+			return $blocked;
+		}
 		wp_raise_memory_limit( 'admin' );
 
 		$report = ( new Scanner( $this->model ) )->scan_section( (string) $request->get_param( 'section' ) );
@@ -438,6 +444,9 @@ class Scan extends Abstract_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function recheck( WP_REST_Request $request ) {
+		if ( $blocked = $this->scan_blocked() ) {
+			return $blocked;
+		}
 		wp_raise_memory_limit( 'admin' );
 		$keys = $request->get_param( 'keys' );
 		// A row is rechecked on its own when it names a post, and otherwise its whole issue is rechecked.
@@ -475,7 +484,28 @@ class Scan extends Abstract_Controller {
 
 		$this->model->set_language_in_mass();
 
-		return $this->section_response( ( new Scanner( $this->model ) )->scan_section( 'content' ) );
+		return new WP_REST_Response( $this->prepare_report( Scanner::get_saved_report() ) );
+	}
+
+	/**
+	 * An error that stops a scan while content still has no language, or null when a scan may run.
+	 *
+	 * The button is disabled in the page, but a request can still arrive from a tab left open before the content
+	 * was assigned.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @return WP_Error|null
+	 */
+	private function scan_blocked(): ?WP_Error {
+		if ( ! Scanner::has_unassigned_content( $this->model ) ) {
+			return null;
+		}
+
+		return $this->add_status_to_error(
+			new WP_Error( 'lmat_scan_unassigned', __( 'Some content has no language. Set it to the default language, then scan.', 'translate-words' ) ),
+			409
+		);
 	}
 
 	/**
@@ -566,6 +596,7 @@ class Scan extends Abstract_Controller {
 	 */
 	private function prepare_report( ?array $report ): array {
 		$base = array(
+			'unassigned'          => Scanner::has_unassigned_content( $this->model ),
 			'elementor_available' => \Linguator\Modules\Scan\Checks\Elementor::available(),
 			'scan_icon_url' => plugins_url( 'assets/logo/site-scan.svg', LINGUATOR_ROOT_FILE ),
 			'environment' => $this->environment(),
@@ -599,6 +630,17 @@ class Scan extends Abstract_Controller {
 		}
 
 		$report   = Scanner::apply_ignored( $report );
+
+		// Reports saved before content without a language became a notice may still hold it as an issue.
+		$report['results'] = array_values(
+			array_filter(
+				(array) $report['results'],
+				static function ( $result ) {
+					return ! in_array( $result['id'] ?? '', array( 'content_no_language', 'term_no_language' ), true );
+				}
+			)
+		);
+		$report['summary'] = Scanner::summarize( $report['results'] );
 		$coverage = isset( $report['coverage'] ) && is_array( $report['coverage'] ) ? $report['coverage'] : array();
 		$format   = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 

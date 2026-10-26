@@ -153,6 +153,37 @@ class Elementor_Fields {
 	}
 
 	/**
+	 * Number of widgets in a document.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return int
+	 */
+	public static function count_widgets( int $post_id ): int {
+		$count = 0;
+		$stack = array( array( self::tree( $post_id ), 0 ) );
+
+		while ( $stack ) {
+			list( $elements, $depth ) = array_pop( $stack );
+			if ( $depth > self::MAX_DEPTH ) {
+				continue;
+			}
+			foreach ( $elements as $element ) {
+				if ( ! is_array( $element ) ) {
+					continue;
+				}
+				$count += empty( $element['widgetType'] ) ? 0 : 1;
+				if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
+					$stack[] = array( $element['elements'], $depth + 1 );
+				}
+			}
+		}
+
+		return $count;
+	}
+
+	/**
 	 * Whether a document holds at least one widget.
 	 *
 	 * @since 2.3.0
@@ -524,6 +555,59 @@ class Elementor_Fields {
 			|| (bool) preg_match( '#^(?:https?:)?//\S+$#i', $value )
 			|| (bool) preg_match( '#^www\.\S+$#i', $value )
 			|| is_email( $value );
+	}
+
+	/**
+	 * Shortens text for a label, cutting at a character limit.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $text  Text.
+	 * @param int    $limit Characters to keep.
+	 * @return string
+	 */
+	public static function snippet( string $text, int $limit ): string {
+		$text   = trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
+		$length = function_exists( 'mb_strlen' ) ? mb_strlen( $text, 'UTF-8' ) : strlen( $text );
+		if ( $length <= $limit ) {
+			return $text;
+		}
+
+		return ( function_exists( 'mb_substr' ) ? mb_substr( $text, 0, $limit - 1, 'UTF-8' ) : substr( $text, 0, $limit - 1 ) ) . '…';
+	}
+
+	/**
+	 * Turns a detail row into the "same text as the original language" card for one Elementor widget.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $widget_type Widget type.
+	 * @param string $field_key   Field key.
+	 * @param string $text        Text that still matches the original.
+	 * @param string $post_title  Title of the page or template that holds the widget.
+	 * @param string $language    Language name.
+	 * @param array  $row         Base detail row.
+	 * @return array
+	 */
+	public static function same_text_row( string $widget_type, string $field_key, string $text, string $post_title, string $language, array $row ): array {
+		$row['layout']       = 'widget';
+		$row['label']        = sprintf(
+			/* translators: 1: widget name, 2: its text, 3: page or template title, 4: language name */
+			__( '%1$s "%2$s" in "%3$s" (%4$s)', 'translate-words' ),
+			self::widget_label( $widget_type ),
+			self::snippet( $text, 40 ),
+			'' !== $post_title ? $post_title : __( '(no title)', 'translate-words' ),
+			$language
+		);
+		$row['message']      = sprintf(
+			/* translators: 1: the text, 2: language name */
+			__( 'This widget text shows "%1$s". It still matches the default language and has not been translated into %2$s yet.', 'translate-words' ),
+			self::snippet( $text, 90 ),
+			$language
+		);
+		$row['action_label'] = __( 'Translate in Elementor', 'translate-words' );
+
+		return $row;
 	}
 
 	/**

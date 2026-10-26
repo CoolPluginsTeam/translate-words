@@ -2420,12 +2420,21 @@ a.lmat-scan-content-lang-chip-link:focus {
 .lmat-styles .lmat-inspector .lmat-scan-post-list li { margin: 2px 0; }
 .lmat-styles .lmat-inspector .lmat-scan-post-list span { color: #64748b; }
 
-/* Elementor insights summary. */
-.lmat-styles .lmat-inspector .lmat-scan-insights { margin: 12px 0 16px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
-.lmat-styles .lmat-inspector .lmat-scan-insights h3 { margin: 0 0 4px; font-size: 14px; }
-.lmat-styles .lmat-inspector .lmat-scan-insights p { margin: 0 0 8px; color: #64748b; font-size: 13px; }
-.lmat-styles .lmat-inspector .lmat-scan-insights-types { display: flex; flex-wrap: wrap; gap: 6px; }
-.lmat-styles .lmat-inspector .lmat-scan-insights-type { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }
-.lmat-styles .lmat-inspector .lmat-scan-insights-first { margin-top: 10px; font-size: 13px; }
-.lmat-styles .lmat-inspector .lmat-scan-insights-first ul { margin: 4px 0 0 18px; list-style: disc; }
-.lmat-styles .lmat-inspector .lmat-scan-insights-first li span { color: #64748b; }
+
+/* Notice shown while content without a language blocks the scan. */
+.lmat-styles .lmat-inspector .lmat-scan-nolang-notice { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; padding: 12px 16px; border: 1px solid #f59e0b; border-left-width: 4px; border-radius: 8px; background: #fffbeb; color: #78350f; }
+.lmat-styles .lmat-inspector .lmat-scan-nolang-notice p { flex: 1 1 320px; margin: 0; font-size: 13px; }
+.lmat-styles .lmat-inspector .lmat-scan-nolang-notice .dashicons { color: #d97706; }
+
+/* One Elementor widget whose text still matches the original language. */
+.lmat-styles .lmat-inspector .lmat-scan-detail-row--card { grid-template-columns: auto minmax(0, 1fr) auto; background: #fff; border-radius: 12px; padding: 14px 16px; }
+.lmat-styles .lmat-inspector .lmat-scan-detail-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff1e6; color: #ea580c; }
+.lmat-styles .lmat-inspector .lmat-scan-detail-row--card .lmat-scan-detail-title strong { font-size: 14px; color: #0f172a; }
+.lmat-styles .lmat-inspector .lmat-scan-detail-row--card .lmat-scan-detail-text { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+.lmat-styles .lmat-inspector .lmat-scan-detail-row--card .button .dashicons { width: 14px; height: 14px; font-size: 14px; margin-right: 4px; vertical-align: text-bottom; }
+@media (max-width: 900px) { .lmat-styles .lmat-inspector .lmat-scan-detail-row--card { grid-template-columns: auto minmax(0, 1fr); } .lmat-styles .lmat-inspector .lmat-scan-detail-row--card .lmat-scan-content-actions { grid-column: 1 / -1; } }
+
+/* Documents, widgets and health of the Elementor scan. */
+.lmat-styles .lmat-inspector .lmat-scan-elementor-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 4px 0 0; padding: 0; list-style: none; color: #475569; font-size: 13px; }
+.lmat-styles .lmat-inspector .lmat-scan-elementor-stats li { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.lmat-styles .lmat-inspector .lmat-scan-elementor-stats .dashicons { width: 16px; height: 16px; font-size: 16px; color: #64748b; }

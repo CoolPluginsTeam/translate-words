@@ -23,7 +23,7 @@ export const LanguageChip = ({ language, href, showName = false }) => {
 export const groupResults = (results) => {
     const groups = new Map()
     for (const result of results) {
-        const family = result.id === 'term_no_language' && result.status !== 'pass' ? 'content_no_language' : result.id.startsWith('content_identical_') ? 'content_identical' : result.id.startsWith('content_link_') ? 'content_links' : result.id.startsWith('content_placeholder_') ? 'content_placeholder' : result.id.startsWith('content_acf_') ? 'content_acf' : result.id.startsWith('term_missing_') ? 'term_missing' : result.id.startsWith('url_config_') && result.status !== 'pass' ? 'url_configuration' : result.id.startsWith('nav_') ? 'navigation' : result.id.startsWith('url_route_') && result.status !== 'pass' && result.id !== 'url_route_untestable' && result.id !== 'url_route_site_gated' ? 'routing_health' : result.id === 'translated_permalink_review' ? 'translated_permalinks' : result.status === 'pass' ? result.id : result.id.startsWith('string_') ? 'strings_missing' : result.id.startsWith('menu_') && !['menu_none', 'menu_dead_links'].includes(result.id) ? 'menu_assignments' : result.id.startsWith('content_unpublished_') ? 'content_unpublished' : result.section === 'content' && !['content_no_language', 'content_source_updated'].includes(result.id) ? 'content_missing' : result.id
+        const family = result.id.startsWith('content_identical_') ? 'content_identical' : result.id.startsWith('content_link_') ? 'content_links' : result.id.startsWith('content_placeholder_') ? 'content_placeholder' : result.id.startsWith('content_acf_') ? 'content_acf' : result.id.startsWith('term_missing_') ? 'term_missing' : result.id.startsWith('url_config_') && result.status !== 'pass' ? 'url_configuration' : result.id.startsWith('nav_') ? 'navigation' : result.id.startsWith('url_route_') && result.status !== 'pass' && result.id !== 'url_route_untestable' && result.id !== 'url_route_site_gated' ? 'routing_health' : result.id === 'translated_permalink_review' ? 'translated_permalinks' : result.status === 'pass' ? result.id : result.id.startsWith('string_') ? 'strings_missing' : result.id.startsWith('menu_') && !['menu_none', 'menu_dead_links'].includes(result.id) ? 'menu_assignments' : result.id.startsWith('content_unpublished_') ? 'content_unpublished' : result.section === 'content' && !['content_no_language', 'content_source_updated'].includes(result.id) ? 'content_missing' : result.id
         const key = `${result.section}:${result.status}:${family}`
         if (!groups.has(key)) groups.set(key, { ...result, id: family, members: [], details: [] })
         const group = groups.get(key)
@@ -42,9 +42,6 @@ export const groupResults = (results) => {
         } else if (family === 'content_identical') {
             group.label = result.status === 'pass' ? __('Translated content differs', 'translate-words') : __('Identical Content', 'translate-words')
             group.message = result.status === 'pass' ? __('Linked translations use different title and body text.', 'translate-words') : __('Some translated pages still contain the exact same title or body text as the original language.', 'translate-words')
-        } else if (family === 'content_no_language' && result.status !== 'pass') {
-            group.label = __('Content without a language', 'translate-words')
-            group.message = __('Some content has no language and will not show on translated pages. Assign the default language to it.', 'translate-words')
         } else if (family === 'routing_health') {
             group.label = __('Language URLs', 'translate-words')
             group.message = __('Some language URLs did not load as expected. Open each one to confirm.', 'translate-words')
@@ -82,8 +79,26 @@ export const Pill = ({ active, onClick, children, count }) => <button type='butt
 
 export const rowIdOf = row => row.targets.map(target => target.ignore_key).filter(Boolean).join(',')
 
-export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onIgnoreMany, onRecheck, onRecheckRow, onDiff, onAction, whyHow, languages = [], initialOpen = false }) => {
-    const [open, setOpen] = useState(initialOpen || !!whyHow)
+// One accordion open at a time. Nothing chosen yet means the first item is open; choosing another closes it.
+export const useAccordion = (keys) => {
+    const [chosen, setChosen] = useState(undefined)
+    const first = keys[0] ?? null
+    const active = chosen === undefined ? first : chosen
+    return {
+        isOpen: key => active === key,
+        toggle: key => isOpen => setChosen(current => {
+            const now = current === undefined ? first : current
+            return isOpen ? key : (now === key ? null : current)
+        }),
+        reset: () => setChosen(undefined),
+    }
+}
+
+export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onIgnoreMany, onRecheck, onRecheckRow, onDiff, onAction, whyHow, languages = [], initialOpen = false, open: controlledOpen, onToggle }) => {
+    const [localOpen, setLocalOpen] = useState(initialOpen || !!whyHow)
+    const controlled = controlledOpen !== undefined
+    const open = controlled ? controlledOpen : localOpen
+    const setOpen = next => controlled ? (next !== open && onToggle?.(next)) : setLocalOpen(next)
     const [page, setPage] = useState(0)
     const status = STATUS[result.status] || STATUS.info
     const rows = (result.details || []).filter(row => (!filters?.type || row.post_type === filters.type) && (!filters?.search || String(row.label).toLowerCase().includes(filters.search.toLowerCase())))
@@ -102,7 +117,7 @@ export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onI
     const hasLanguageColumn = items.some(row => row.targets.some(target => languageForRow(target, languages)))
     const hasTypes = items.some(row => row.post_type)
     const isSwitcher = result.id === 'lang_switcher'
-    const isList = ['content_identical', 'content_links', 'content_placeholder', 'content_acf'].includes(result.id)
+    const isList = ['content_identical', 'content_links', 'content_placeholder', 'content_acf', 'elementor_untranslated'].includes(result.id)
     const isElementor = result.section === 'elementor'
     return <details open={open} onToggle={event => setOpen(event.currentTarget.open)} className={`lmat-scan-issue-card lmat-scan-issue-${status.tone}`}>
         <summary className='lmat-scan-issue-summary'>
@@ -119,11 +134,12 @@ export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onI
                 {!isSwitcher && result.status !== 'pass' && !rows.length && <button className='button button-small' disabled={busy} onClick={() => onIgnore(result.members?.[0]?.id || result.id)}>{__('Ignore', 'translate-words')}</button>}
             </div>
             {whyHow && <div className='lmat-inspector-guidance'>{result.why && <p><strong>{__('Why this matters', 'translate-words')}</strong><br />{result.why}</p>}{result.how && <p><strong>{__('How to fix', 'translate-words')}</strong><br />{result.how}</p>}</div>}
-            {items.length > 0 && isList && <div className='lmat-scan-detail-list'>{pageRows.map((row, index) => <div key={row.ignore_key || index} className='lmat-scan-detail-row' data-track-id={row.source_id || result.members?.[0]?.id || result.id} data-track-section={result.section} data-track-keys={JSON.stringify(row.targets.map(target => target.ignore_key).filter(Boolean))}>
-                <div className='lmat-scan-detail-title'><strong>{row.label}</strong>{row.context && <p>{__('Found in:', 'translate-words')} <em>"{row.context}"</em></p>}</div>
-                <div className='lmat-scan-detail-message'>{row.message}</div>
+            {items.length > 0 && isList && <div className='lmat-scan-detail-list'>{pageRows.map((row, index) => <div key={row.ignore_key || index} className={`lmat-scan-detail-row${row.layout === 'widget' ? ' lmat-scan-detail-row--card' : ''}`} data-track-id={row.source_id || result.members?.[0]?.id || result.id} data-track-section={result.section} data-track-keys={JSON.stringify(row.targets.map(target => target.ignore_key).filter(Boolean))}>
+                {row.layout === 'widget' && <span className='lmat-scan-detail-icon' aria-hidden='true'><Icon name='media-document' /></span>}
+                <div className='lmat-scan-detail-title'><strong>{row.label}</strong>{row.layout === 'widget' && <p className='lmat-scan-detail-text'>{row.message}</p>}{row.context && <p>{__('Found in:', 'translate-words')} <em>"{row.context}"</em></p>}</div>
+                {row.layout !== 'widget' && <div className='lmat-scan-detail-message'>{row.message}</div>}
                 <div className='lmat-scan-content-actions'>
-                    {row.action_url && <a className='button button-small' href={row.action_url} target='_blank' rel='noopener noreferrer'>{row.action_label || __('Edit', 'translate-words')}</a>}
+                    {row.action_url && <a className='button button-small' href={row.action_url} target='_blank' rel='noopener noreferrer'>{row.layout === 'widget' && <Icon name='edit' />}{row.action_label || __('Edit', 'translate-words')}</a>}
                     {row.page_fix_url && <a className='button button-small' href={row.page_fix_url} target='_blank' rel='noopener noreferrer'>{row.page_fix_label || __('Fix page', 'translate-words')}</a>}
                     {row.ai_url && <a className='button button-small button-primary' href={row.ai_url} target='_blank' rel='noopener noreferrer'>{__('AI Translation', 'translate-words')}</a>}
                     {row.ignore_key && <button className={`button button-small${rowStatus[rowIdOf(row)]?.state === 'checking' ? ' is-loading' : ''}`} disabled={busy || rowStatus[rowIdOf(row)]?.state === 'checking'} onClick={() => onRecheckRow(result, row)}><Icon name='update' />{__('Rescan issue', 'translate-words')}</button>}
@@ -146,8 +162,8 @@ export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onI
     </details>
 }
 
-export const IgnoredPanel = ({ items, onRestore, busy, expanded = false, languages = [] }) => !items?.length ? null : (
-    <details className='lmat-scan-passed-panel lmat-scan-ignored-panel' open={expanded}>
+export const IgnoredPanel = ({ items, onRestore, busy, expanded = false, languages = [], open, onToggle }) => !items?.length ? null : (
+    <details className='lmat-scan-passed-panel lmat-scan-ignored-panel' open={open ?? expanded} onToggle={event => open !== undefined && event.currentTarget.open !== open && onToggle?.(event.currentTarget.open)}>
         <summary className='lmat-scan-passed-summary'>
             <Icon name='hidden' className='lmat-scan-passed-icon' />
             <span className='lmat-scan-passed-main'><strong>{sprintf(__('Ignored Issues (%d)', 'translate-words'), items.length)}</strong><span>{__('Warnings you dismissed. Restore one to show it again after the next scan refresh.', 'translate-words')}</span></span>
@@ -160,9 +176,9 @@ export const IgnoredPanel = ({ items, onRestore, busy, expanded = false, languag
     </details>
 )
 
-export const PassedChecks = ({ results, expanded = false }) => {
+export const PassedChecks = ({ results, expanded = false, open, onToggle }) => {
     const [search, setSearch] = useState('')
     if (!results.length) return null
     const shown = results.filter(result => `${result.label} ${result.message}`.toLowerCase().includes(search.toLowerCase()))
-    return <details className='lmat-scan-passed-panel' open={expanded}><summary className='lmat-scan-passed-summary'><Icon name='yes-alt' className='lmat-scan-passed-icon' /><span className='lmat-scan-passed-main'><strong>{sprintf(__('Passed Checks (%d)', 'translate-words'), results.length)}</strong><span>{__('Checks in this area that passed. Collapsed by default.', 'translate-words')}</span></span><span className='lmat-scan-issue-meta'><span className='lmat-scan-badge lmat-scan-badge-pass'><Icon name='yes' />{__('Passed', 'translate-words')}</span><Icon name='arrow-down-alt2' className='lmat-scan-accordion-arrow' /></span></summary><div className='lmat-scan-passed-body'><div className='lmat-scan-passed-tools'><label className='lmat-scan-passed-search'><Icon name='search' /><input type='search' value={search} onChange={event => setSearch(event.target.value)} aria-label={__('Search passed checks', 'translate-words')} placeholder={__('Search passed checks...', 'translate-words')} /></label></div><div className='lmat-scan-passed-list'>{shown.map(result => <article className='lmat-scan-pass-card' key={`${result.section}:${result.id}`}><span className='lmat-scan-group-tag'>{result.group}</span><strong>{result.label}</strong><p>{result.message}</p></article>)}</div>{!shown.length && <p role='status'>{__('No checks match this search.', 'translate-words')}</p>}</div></details>
+    return <details className='lmat-scan-passed-panel' open={open ?? expanded} onToggle={event => open !== undefined && event.currentTarget.open !== open && onToggle?.(event.currentTarget.open)}><summary className='lmat-scan-passed-summary'><Icon name='yes-alt' className='lmat-scan-passed-icon' /><span className='lmat-scan-passed-main'><strong>{sprintf(__('Passed Checks (%d)', 'translate-words'), results.length)}</strong><span>{__('Checks in this area that passed. Collapsed by default.', 'translate-words')}</span></span><span className='lmat-scan-issue-meta'><span className='lmat-scan-badge lmat-scan-badge-pass'><Icon name='yes' />{__('Passed', 'translate-words')}</span><Icon name='arrow-down-alt2' className='lmat-scan-accordion-arrow' /></span></summary><div className='lmat-scan-passed-body'><div className='lmat-scan-passed-tools'><label className='lmat-scan-passed-search'><Icon name='search' /><input type='search' value={search} onChange={event => setSearch(event.target.value)} aria-label={__('Search passed checks', 'translate-words')} placeholder={__('Search passed checks...', 'translate-words')} /></label></div><div className='lmat-scan-passed-list'>{shown.map(result => <article className='lmat-scan-pass-card' key={`${result.section}:${result.id}`}><span className='lmat-scan-group-tag'>{result.group}</span><strong>{result.label}</strong><p>{result.message}</p></article>)}</div>{!shown.length && <p role='status'>{__('No checks match this search.', 'translate-words')}</p>}</div></details>
 }

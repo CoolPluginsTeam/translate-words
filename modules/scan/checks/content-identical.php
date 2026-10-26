@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Modules\Scan\Abstract_Check;
 use Linguator\Modules\Scan\Elementor_Fields;
+use Linguator\Modules\Scan\Frontend_Inspector;
 use Linguator\Modules\Scan\Result;
 
 /**
@@ -260,26 +261,21 @@ class Content_Identical extends Abstract_Check {
 					continue;
 				}
 
-				$rows[] = array(
-					'label'        => sprintf(
-						/* translators: 1: widget name, 2: post title, 3: language name */
-						__( '%1$s of "%2$s" (%3$s)', 'translate-words' ),
-						Elementor_Fields::widget_label( $element['widget_type'] ),
-						'' !== $title ? $title : __( '(no title)', 'translate-words' ),
-						$lang->name
-					),
-					'message'      => sprintf(
-						/* translators: %s: text that still matches the original language */
-						__( 'Not translated yet — still shows: "%s"', 'translate-words' ),
-						$this->snippet( $original )
-					),
-					'action_url'   => $edit ? add_query_arg( 'action', 'elementor', $edit ) : '',
-					'action_label' => __( 'Translate in Elementor', 'translate-words' ),
-					'ai_url'       => admin_url( 'edit.php?post_type=' . rawurlencode( $type ) ),
-					'ignore_key'   => 'content_identical:' . $source_id . ':' . $slug . ':el_' . $element_id . '_' . md5( $field_key ),
-					'language'     => $slug,
-					'post_type'    => $type,
+				$row            = Elementor_Fields::same_text_row(
+					$element['widget_type'],
+					(string) $field_key,
+					$original,
+					(string) $title,
+					(string) $lang->name,
+					array(
+						'action_url' => $edit ? add_query_arg( array( 'action' => 'elementor', Frontend_Inspector::FOCUS_ARG => $element_id ), $edit ) : '',
+						'ai_url'     => admin_url( 'edit.php?post_type=' . rawurlencode( $type ) ),
+						'ignore_key' => 'content_identical:' . $source_id . ':' . $slug . ':el_' . $element_id . '_' . md5( $field_key ),
+						'language'   => $slug,
+						'post_type'  => $type,
+					)
 				);
+				$rows[] = $row;
 			}
 		}
 

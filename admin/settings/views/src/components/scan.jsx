@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { __, _n, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 import DiffModal from './scan-diff'
-import { rowIdOf, STATUS, Icon, LanguageFlag, Pill, IssueCard, IgnoredPanel, PassedChecks, groupResults } from './scan-parts'
+import { rowIdOf, STATUS, Icon, LanguageFlag, Pill, IssueCard, IgnoredPanel, PassedChecks, groupResults, useAccordion } from './scan-parts'
 
 const request = (path, method = 'GET', data) => apiFetch({ path: `lmat/v1/scan${path}`, method, headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': getNonce() }, ...(data ? { data } : {}) })
 const SECTIONS = [
@@ -14,6 +14,12 @@ const SECTIONS = [
     { key: 'site', label: __('Site Setup', 'translate-words'), icon: 'admin-settings', blurb: __('Languages, homepage, menus, strings and the language switcher.', 'translate-words'), scanLabel: __('Scan site setup', 'translate-words') },
 ]
 const TABS = [{ key: 'overview', label: __('Overview', 'translate-words'), icon: 'dashboard' }, ...SECTIONS, { key: 'coverage', label: __('Coverage', 'translate-words'), icon: 'chart-area' }]
+const TAB_HASH = 'lmat-tab-'
+const tabFromHash = () => {
+    const key = (window.location.hash || '').replace(/^#/, '')
+    const wanted = key.startsWith(TAB_HASH) ? key.slice(TAB_HASH.length) : ''
+    return TABS.some(item => item.key === wanted) ? wanted : 'overview'
+}
 const PENDING_KEY = 'lmat_scan_pending_rescans'
 const readPending = () => { try { const list = JSON.parse(window.localStorage.getItem(PENDING_KEY) || '[]'); return Array.isArray(list) ? list : [] } catch (error) { return [] } }
 const writePending = list => { try { list.length ? window.localStorage.setItem(PENDING_KEY, JSON.stringify(list)) : window.localStorage.removeItem(PENDING_KEY) } catch (error) { /* storage unavailable */ } }
@@ -67,29 +73,16 @@ const Breakdown = ({ report, onGoto }) => {
 
 const Overview = ({ report, groups, cardProps, onGoto, onScan }) => {
     const critical = groups.filter(result => result.status === 'critical')
+    const accordion = useAccordion(critical.map(result => result.id))
     const partial = Object.keys(report.partial_scans || {})
     return <>
         {partial.length > 0 && <div className='lmat-scan-partial-scan-notice' role='status'><Icon name='info' /><p>{sprintf(__('Some sections were rescanned on their own (%s). Run a full scan to refresh everything together.', 'translate-words'), partial.map(key => SECTIONS.find(section => section.key === key)?.label || key).join(', '))}</p></div>}
-        <div className='lmat-scan-top-grid'>{report.has_scan ? <Breakdown report={report} onGoto={onGoto} /> : <section className='lmat-scan-card lmat-scan-first-scan'><div className='lmat-scan-section-heading'><div><h2><Icon name='search' />{__('Run your first scan', 'translate-words')}</h2><p>{__('Scan your site to check languages, URLs, content, menus, strings and the language switcher. Your health score and any issues found will appear when the scan is complete.', 'translate-words')}</p></div></div><p className='lmat-scan-first-scan-note'>{__('It only scans your site, no changes are made to any content or settings.', 'translate-words')}</p><div className='lmat-scan-card-actions'><button className='button button-primary' disabled={cardProps.busy} onClick={onScan}>{__('Scan Website', 'translate-words')}</button></div></section>}<Environment report={report} /></div>
-        {critical.length > 0 ? <section className='lmat-scan-card lmat-scan-fix-order'><div className='lmat-scan-section-heading'><div><h2>{__('Fix These First', 'translate-words')}</h2><p>{__('Critical issues that are most likely to break the visitor experience.', 'translate-words')}</p></div></div><div className='lmat-scan-card-stack'>{critical.map(result => <IssueCard key={result.id} result={result} whyHow {...cardProps} />)}</div></section> : report.has_scan && <section className='lmat-scan-card lmat-scan-overview-clear'><Icon name='yes-alt' /><div><h2>{__('No critical issues', 'translate-words')}</h2><p>{__('Nothing needs urgent attention. Open the other tabs to review warnings.', 'translate-words')}</p></div></section>}
+        <div className='lmat-scan-top-grid'>{report.has_scan ? <Breakdown report={report} onGoto={onGoto} /> : <section className='lmat-scan-card lmat-scan-first-scan'><div className='lmat-scan-section-heading'><div><h2><Icon name='search' />{__('Run your first scan', 'translate-words')}</h2><p>{__('Scan your site to check languages, URLs, content, menus, strings and the language switcher. Your health score and any issues found will appear when the scan is complete.', 'translate-words')}</p></div></div><p className='lmat-scan-first-scan-note'>{__('It only scans your site, no changes are made to any content or settings.', 'translate-words')}</p><div className='lmat-scan-card-actions'><button className='button button-primary' disabled={cardProps.busy || cardProps.blocked} onClick={onScan}>{__('Scan Website', 'translate-words')}</button></div></section>}<Environment report={report} /></div>
+        {critical.length > 0 ? <section className='lmat-scan-card lmat-scan-fix-order'><div className='lmat-scan-section-heading'><div><h2>{__('Fix These First', 'translate-words')}</h2><p>{__('Critical issues that are most likely to break the visitor experience.', 'translate-words')}</p></div></div><div className='lmat-scan-card-stack'>{critical.map(result => <IssueCard key={result.id} result={result} whyHow open={accordion.isOpen(result.id)} onToggle={accordion.toggle(result.id)} {...cardProps} />)}</div></section> : report.has_scan && <section className='lmat-scan-card lmat-scan-overview-clear'><Icon name='yes-alt' /><div><h2>{__('No critical issues', 'translate-words')}</h2><p>{__('Nothing needs urgent attention. Open the other tabs to review warnings.', 'translate-words')}</p></div></section>}
     </>
 }
 
 const DOCUMENT_TYPES = { header: __('Headers', 'translate-words'), footer: __('Footers', 'translate-words'), single: __('Single templates', 'translate-words'), archive: __('Archives', 'translate-words'), popup: __('Popups', 'translate-words'), 'loop-item': __('Loop items', 'translate-words'), section: __('Sections', 'translate-words'), container: __('Containers', 'translate-words'), page: __('Pages', 'translate-words'), 'wp-page': __('Pages', 'translate-words'), 'wp-post': __('Posts', 'translate-words'), 'error-404': __('404 pages', 'translate-words'), 'search-results': __('Search results', 'translate-words'), elementor_library: __('Templates', 'translate-words'), elementor_component: __('Components', 'translate-words') }
-const DOCUMENT_ORDER = ['header', 'footer', 'single', 'archive', 'popup', 'loop-item', 'section', 'container', 'page', 'wp-page', 'wp-post']
-
-// What was scanned, and which problems are worth fixing first.
-const ElementorInsights = ({ summary, problems }) => {
-    if (!summary?.checked) return null
-    const types = Object.entries(summary.types || {}).sort(([a], [b]) => (DOCUMENT_ORDER.indexOf(a) + 1 || 99) - (DOCUMENT_ORDER.indexOf(b) + 1 || 99))
-    const first = [...problems].sort((a, b) => (b.status === 'critical') - (a.status === 'critical') || (b.details?.length || 0) - (a.details?.length || 0)).slice(0, 3)
-    return <div className='lmat-scan-insights'>
-        <h3>{__('Elementor Translation Insights', 'translate-words')}</h3>
-        <p>{sprintf(_n('%d template or component scanned.', '%d templates and components scanned.', summary.checked, 'translate-words'), summary.checked)}{summary.sampled && ` ${__('Only the latest ones were scanned.', 'translate-words')}`}</p>
-        <div className='lmat-scan-insights-types'>{types.map(([key, count]) => <span key={key} className='lmat-scan-insights-type'>{DOCUMENT_TYPES[key] || key}<b>{count}</b></span>)}</div>
-        {first.length > 0 && <div className='lmat-scan-insights-first'><strong>{__('Fix these first', 'translate-words')}</strong><ul>{first.map(result => <li key={result.id}>{result.label} <span>({result.details?.length || 1})</span></li>)}</ul></div>}
-    </div>
-}
 
 const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRestore, onRestoreAll }) => {
     const [severity, setSeverity] = useState('all')
@@ -101,15 +94,17 @@ const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRe
     const critical = problems.filter(result => result.status === 'critical')
     const passed = results.filter(result => result.status === 'pass')
     const ignored = report.ignored_items.filter(item => item.section === section.key)
+    const typeOf = row => section.key === 'elementor' ? row.template_type : row.post_type
     const typeCounts = useMemo(() => {
         const counts = {}
-        problems.forEach(result => (result.details || []).forEach(row => { if (row.post_type) counts[row.post_type] = (counts[row.post_type] || 0) + 1 }))
+        problems.forEach(result => (result.details || []).forEach(row => { const key = typeOf(row); if (key) counts[key] = (counts[key] || 0) + 1 }))
         return counts
     }, [groups, section.key])
-    const visible = problems.filter(result => result.status !== 'critical' && (severity === 'all' || result.status === severity) && ((!type && !search) || (result.details || []).some(row => (!type || row.post_type === type) && (!search || String(row.label).toLowerCase().includes(search.toLowerCase())))))
+    const visible = problems.filter(result => result.status !== 'critical' && (severity === 'all' || result.status === severity) && ((!type && !search) || (result.details || []).some(row => (!type || typeOf(row) === type) && (!search || String(row.label).toLowerCase().includes(search.toLowerCase())))))
+    const accordion = useAccordion(severity === 'pass' ? ['passed'] : severity === 'ignored' ? ['ignored'] : visible.map(result => result.id))
+    useEffect(() => accordion.reset(), [severity, search, type])
     return <section className={`lmat-scan-card lmat-scan-grouped-section ${section.key === 'content' ? 'lmat-scan-content-section' : ''}`}>
-        <div className='lmat-scan-section-heading'><div><h2><Icon name={section.icon} />{section.label}</h2><p>{section.blurb}</p></div><div className='lmat-scan-section-scan-bar'><button className='button button-secondary' disabled={cardProps.busy} onClick={() => onScan(section.key)}><Icon name='update' />{section.scanLabel}</button><p className='lmat-scan-section-scan-meta'><Icon name='clock' />{sprintf(__('Last checked: %s', 'translate-words'), needsElementorScan ? __('Not scanned yet', 'translate-words') : report.partial_scans?.[section.key] || report.time_formatted)}</p></div></div>
-        {section.key === 'elementor' && <ElementorInsights summary={report.elementor_summary} problems={problems} />}
+        <div className='lmat-scan-section-heading'><div><h2><Icon name={section.icon} />{section.label}</h2>{section.key === 'elementor' && report.elementor_summary?.checked ? <ul className='lmat-scan-elementor-stats'><li><Icon name='media-document' />{sprintf(_n('Scanned %d document', 'Scanned %d documents', report.elementor_summary.checked, 'translate-words'), report.elementor_summary.checked)}</li><li><Icon name='screenoptions' />{sprintf(_n('%d widget', '%d widgets', report.elementor_summary.widgets || 0, 'translate-words'), report.elementor_summary.widgets || 0)}</li>{report.health.builder != null && <li><Icon name='heart' />{sprintf(__('Health %d%%', 'translate-words'), report.health.builder)}</li>}</ul> : <p>{section.blurb}</p>}</div><div className='lmat-scan-section-scan-bar'><button className='button button-secondary' disabled={cardProps.busy || cardProps.blocked} onClick={() => onScan(section.key)}><Icon name='update' />{section.scanLabel}</button><p className='lmat-scan-section-scan-meta'><Icon name='clock' />{sprintf(__('Last checked: %s', 'translate-words'), needsElementorScan ? __('Not scanned yet', 'translate-words') : report.partial_scans?.[section.key] || report.time_formatted)}</p></div></div>
         <div className='lmat-scan-section-filters'>
             {section.key === 'content' && <div className='lmat-scan-filter-search'><Icon name='search' /><input className='lmat-scan-filter-search-input' type='search' aria-label={__('Search by title', 'translate-words')} placeholder={__('Search by title...', 'translate-words')} value={search} onChange={event => setSearch(event.target.value)} /></div>}
             <div className='lmat-scan-filter-pills lmat-scan-filter-pills--severity' role='group' aria-label={__('Filter by severity', 'translate-words')}>
@@ -117,12 +112,12 @@ const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRe
                 {Object.entries(STATUS).map(([key, value]) => <Pill key={key} active={severity === key} onClick={() => setSeverity(key)} count={results.filter(result => result.status === key).length}>{value.label}</Pill>)}
                 <Pill active={severity === 'ignored'} onClick={() => setSeverity('ignored')} count={ignored.length}>{__('Ignored', 'translate-words')}</Pill>
             </div>
-            {section.key === 'content' && Object.keys(typeCounts).length > 1 && <div className='lmat-scan-filter-pills lmat-scan-filter-pills--types'><Pill active={!type} onClick={() => setType('')}>{__('All types', 'translate-words')}</Pill>{Object.entries(typeCounts).map(([key, count]) => <Pill key={key} active={type === key} onClick={() => setType(key)} count={count}>{key === 'page' ? __('Pages', 'translate-words') : key === 'post' ? __('Posts', 'translate-words') : key}</Pill>)}</div>}
+            {(section.key === 'content' || section.key === 'elementor') && Object.keys(typeCounts).length > 1 && <div className='lmat-scan-filter-pills lmat-scan-filter-pills--types'><Pill active={!type} onClick={() => setType('')}>{__('All types', 'translate-words')}</Pill>{Object.entries(typeCounts).map(([key, count]) => <Pill key={key} active={type === key} onClick={() => setType(key)} count={count}>{section.key === 'elementor' ? (DOCUMENT_TYPES[key] || key) : key === 'page' ? __('Pages', 'translate-words') : key === 'post' ? __('Posts', 'translate-words') : key}</Pill>)}</div>}
         </div>
         {critical.length > 0 && (severity === 'all' || severity === 'critical') && <div className='lmat-scan-critical-pointer'><Icon name='dismiss' /><p>{sprintf(__('%d critical issue types in this area are listed in Fix These First.', 'translate-words'), critical.length)}</p><button className='button button-secondary' onClick={() => onGoto('overview')}>{__('Open Overview', 'translate-words')}</button></div>}
-        {severity !== 'pass' && severity !== 'ignored' && <div className='lmat-scan-card-stack'>{visible.map((result, index) => <IssueCard key={`${result.id}:${severity}:${search}:${type}`} result={result} initialOpen={index === 0} filters={{ search, type }} {...cardProps} />)}{!visible.length && !(critical.length && (severity === 'all' || severity === 'critical')) && <p role='status' className='lmat-scan-url-empty'>{needsElementorScan ? __('Run Scan Elementor to check your templates.', 'translate-words') : problems.length ? __('No issues match this filter.', 'translate-words') : __('No issues in this section.', 'translate-words')}</p>}</div>}
-        {(severity === 'all' || severity === 'pass') && <PassedChecks key={`passed-${severity}`} results={passed} expanded={severity === 'pass'} />}
-        {(severity === 'all' || severity === 'ignored') && <IgnoredPanel key={`ignored-${severity}`} languages={report.languages || []} expanded={severity === 'ignored'} items={ignored} busy={cardProps.busy} onRestore={onRestore} />}
+        {severity !== 'pass' && severity !== 'ignored' && <div className='lmat-scan-card-stack'>{visible.map(result => <IssueCard key={`${result.id}:${severity}:${search}:${type}`} result={result} open={accordion.isOpen(result.id)} onToggle={accordion.toggle(result.id)} filters={{ search, type }} {...cardProps} />)}{!visible.length && !(critical.length && (severity === 'all' || severity === 'critical')) && <p role='status' className='lmat-scan-url-empty'>{needsElementorScan ? __('Run Scan Elementor to check your templates.', 'translate-words') : problems.length ? __('No issues match this filter.', 'translate-words') : __('No issues in this section.', 'translate-words')}</p>}</div>}
+        {(severity === 'all' || severity === 'pass') && <PassedChecks key={`passed-${severity}`} results={passed} open={accordion.isOpen('passed')} onToggle={accordion.toggle('passed')} />}
+        {(severity === 'all' || severity === 'ignored') && <IgnoredPanel key={`ignored-${severity}`} languages={report.languages || []} open={accordion.isOpen('ignored')} onToggle={accordion.toggle('ignored')} items={ignored} busy={cardProps.busy} onRestore={onRestore} />}
         {severity === 'ignored' && !ignored.length && <p role='status'>{__('No ignored items in this section.', 'translate-words')}</p>}
     </section>
 }
@@ -137,7 +132,17 @@ const Scan = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [busy, setBusy] = useState(false)
-    const [tab, setTab] = useState('overview')
+    // The open tab lives in the URL hash, so a reload or a shared link comes back to the same tab.
+    const [tab, setTabState] = useState(tabFromHash)
+    const setTab = useCallback(key => {
+        setTabState(key)
+        try { window.history.replaceState(null, '', `#${TAB_HASH}${key}`) } catch (error) { /* The tab still changes without a hash. */ }
+    }, [])
+    useEffect(() => {
+        const onHash = () => setTabState(tabFromHash())
+        window.addEventListener('hashchange', onHash)
+        return () => window.removeEventListener('hashchange', onHash)
+    }, [])
     const [diff, setDiff] = useState(null)
     const [rowStatus, setRowStatus] = useState({})
     const setStatus = useCallback((id, value) => setRowStatus(current => { const next = { ...current }; value ? next[id] = value : delete next[id]; return next }), [])
@@ -202,11 +207,15 @@ const Scan = () => {
         try { keys = JSON.parse(holder.dataset.trackKeys || '[]') } catch (error) { keys = [] }
         queuePending({ id: holder.dataset.trackId, section: holder.dataset.trackSection, keys })
     }
+    // A saved tab can point at a section this site does not have, such as Elementor after it was deactivated.
+    useEffect(() => {
+        if (report && tab === 'elementor' && !report.elementor_available && !report.results.some(result => result.section === 'elementor')) setTab('overview')
+    }, [report, tab, setTab])
     const groups = useMemo(() => groupResults(report?.results || []), [report])
     if (loading) return <div role='status' className='lmat-inspector-loading'><Icon name='update' />{__('Loading scan results…', 'translate-words')}</div>
     if (!report) return <div role='alert'><h2>{__('Unable to load scan results', 'translate-words')}</h2><p>{error?.message}</p><button className='button' onClick={load}>{__('Try again', 'translate-words')}</button></div>
     const cardProps = {
-        busy, languages: report.languages || [],
+        busy, blocked: !!report.unassigned, languages: report.languages || [],
         onIgnore: key => call('/ignore', { key, ignore: true }),
         onIgnoreMany: async keys => {
             setBusy(true)
@@ -230,9 +239,14 @@ const Scan = () => {
         if (next !== undefined) { event.preventDefault(); setTab(tabs[next].key); event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus() }
     }
     return <div className='lmat-inspector lmat-scan-wrap'>
+        {report.unassigned && <div className='lmat-scan-nolang-notice' role='alert'>
+            <Icon name='warning' />
+            <p>{__('There are posts, pages, categories or tags without a language. Set them all to the default language so they can be scanned and translated. Scanning is paused until then.', 'translate-words')}</p>
+            <button type='button' className='button button-primary' disabled={busy} onClick={() => call('/assign-default-language', undefined, __('Default language assigned.', 'translate-words'))}>{__('Set to default language', 'translate-words')}</button>
+        </div>}
         <section className='lmat-scan-summary-card'><div className='lmat-scan-page-header'>
             <div className='lmat-scan-summary-branding'><span className='lmat-scan-brand-mark' aria-hidden='true'><svg viewBox='0 0 40 48'><path fill='#1e293b' d='M20 2.5C14.2 6.4 8.6 8.4 2.5 9.2V24H20V2.5z' /><path fill='#fff' stroke='#1e293b' strokeWidth='.8' d='M20 2.5c5.8 3.9 11.4 5.9 17.5 6.7V24H20V2.5zM2.5 24C2.5 34.8 9.6 42.3 20 45.7V24H2.5z' /><path fill='#1e293b' d='M37.5 24C37.5 34.8 30.4 42.3 20 45.7V24h17.5z' /><path fill='none' stroke='#1e293b' strokeWidth='1.8' d='M20 2.5C14.2 6.4 8.6 8.4 2.5 9.2v14.6c0 10.8 7.1 18.3 17.5 21.7 10.4-3.4 17.5-10.9 17.5-21.7V9.2C31.4 8.4 25.8 6.4 20 2.5z' /></svg></span><div className='lmat-scan-summary-branding-text'><h1 className='lmat-scan-title'>{__('Translation Inspector', 'translate-words')}</h1><p className='lmat-scan-sub'>{__('Find and fix translation issues across your multilingual website.', 'translate-words')}</p></div></div>
-            <div className='lmat-scan-header-actions'><span className={`lmat-scan-cta${!report.has_scan ? ' is-prompt' : ''}`}><button className={`button button-primary lmat-scan-rescan-button${busy ? ' is-loading' : ''}`} disabled={busy} onClick={scan}>{busy ? <Icon name='update' /> : <img src={report.scan_icon_url} className='lmat-scan-icon lmat-scan-icon--button' alt='' width={16} height={16} />}{busy ? __('Scanning…', 'translate-words') : __('Scan Website', 'translate-words')}</button></span><p className='lmat-scan-last-scan'><Icon name='calendar-alt' />{sprintf(__('Last scan: %s', 'translate-words'), report.time_formatted || __('never', 'translate-words'))}</p></div>
+            <div className='lmat-scan-header-actions'><span className={`lmat-scan-cta${!report.has_scan ? ' is-prompt' : ''}`}><button className={`button button-primary lmat-scan-rescan-button${busy ? ' is-loading' : ''}`} disabled={busy || !!report.unassigned} title={report.unassigned ? __('Set the content without a language to the default language first, then scan.', 'translate-words') : undefined} onClick={scan}>{busy ? <Icon name='update' /> : <img src={report.scan_icon_url} className='lmat-scan-icon lmat-scan-icon--button' alt='' width={16} height={16} />}{busy ? __('Scanning…', 'translate-words') : __('Scan Website', 'translate-words')}</button></span><p className='lmat-scan-last-scan'><Icon name='calendar-alt' />{sprintf(__('Last scan: %s', 'translate-words'), report.time_formatted || __('never', 'translate-words'))}</p></div>
         </div><div className='lmat-scan-summary-body'><Score score={report.has_scan ? report.health.score : 0} scanned={report.has_scan} />{report.has_scan && <Summary report={report} groups={groups} />}</div></section>
         <div className='lmat-scan-report-stack'><nav className='lmat-scan-section-nav' aria-label={__('Report sections', 'translate-words')}><div className='lmat-scan-section-nav-list' role='tablist' aria-label={__('Report sections', 'translate-words')}>{tabs.map(item => <button key={item.key} id={`scan-tab-${item.key}`} type='button' role='tab' aria-selected={tab === item.key} aria-controls='scan-panel' tabIndex={tab === item.key ? 0 : -1} className={`lmat-scan-nav-tab${tab === item.key ? ' is-active' : ''}`} onKeyDown={selectTabByKey} onClick={() => setTab(item.key)}><Icon name={item.icon} /><span className='lmat-scan-nav-tab-label'>{item.label}</span></button>)}</div></nav>
             <div id='scan-panel' onPointerDownCapture={trackFix} role='tabpanel' aria-labelledby={`scan-tab-${tab}`} aria-busy={busy} className='lmat-scan-tab-panel' tabIndex={0}>

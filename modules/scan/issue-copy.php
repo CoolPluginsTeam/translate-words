@@ -126,15 +126,8 @@ class Issue_Copy {
 				__( 'A link to a missing, unpublished or wrong-language page sends visitors to an error or to text they cannot read.', 'translate-words' ),
 				__( 'Open the page that holds the link and replace it with the working page in the right language.', 'translate-words' ),
 			),
-			'content_no_language' => array(
-				__( 'Content with no language is hidden from translated pages and cannot be linked to translations.', 'translate-words' ),
-				__( 'Use Assign default language to give every untagged post, page and term the default language in one step.', 'translate-words' ),
-			),
 		);
 
-		if ( 'term_no_language' === $id ) {
-			$id = 'content_no_language';
-		}
 		if ( 0 === strpos( $id, 'content_identical_' ) ) {
 			$id = 'content_identical';
 		} elseif ( 0 === strpos( $id, 'content_link_' ) ) {

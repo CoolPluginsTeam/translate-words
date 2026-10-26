@@ -76,10 +76,8 @@ class Content extends Abstract_Check {
 			return array();
 		}
 
+		// Content with no language is a notice above the scan, not an issue: the scan waits until it is assigned.
 		$results = array();
-		if ( $this->wants( 'content_no_language' ) ) {
-			$results[] = $this->no_language_result( $types );
-		}
 
 		$default_lang = $this->model->get_language( $default );
 		if ( ! $default_lang ) {
@@ -121,72 +119,6 @@ class Content extends Abstract_Check {
 		}
 
 		return $results;
-	}
-
-	/**
-	 * Posts that belong to no language never appear on the front end of a multilingual site.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string[] $types Translated post types.
-	 * @return Result
-	 */
-	private function no_language_result( array $types ): Result {
-		$scoped = $this->scoped_ids( 'content_no_language' );
-		$limit  = self::DETAIL_LIMIT + 1;
-		$ids    = $scoped ? array_keys( $scoped ) : $this->model->get_posts_with_no_lang( $types, $limit );
-
-		// A scoped recheck asks about specific posts: they are fixed once they have a language.
-		if ( $scoped ) {
-			$ids = array_filter(
-				$ids,
-				function ( $id ) {
-					return ! $this->model->post->get_language( (int) $id );
-				}
-			);
-		}
-
-		// The model also returns objects of internal types (revisions, global styles); only report real content.
-		$ids = array_values(
-			array_filter(
-				(array) $ids,
-				static function ( $id ) use ( $types ) {
-					return in_array( get_post_type( (int) $id ), $types, true );
-				}
-			)
-		);
-
-		if ( empty( $ids ) ) {
-			return $this->result(
-				'content_no_language',
-				Result::PASS,
-				__( 'All content has a language', 'translate-words' ),
-				__( 'Every post and page is assigned to a language.', 'translate-words' )
-			);
-		}
-
-		$truncated = count( $ids ) > self::DETAIL_LIMIT;
-		$details   = array();
-
-		foreach ( array_slice( $ids, 0, self::DETAIL_LIMIT ) as $id ) {
-			$details[] = array(
-				'label'        => get_the_title( $id ) ? get_the_title( $id ) : __( '(no title)', 'translate-words' ),
-				'message'      => __( 'This item has no language assigned.', 'translate-words' ),
-				'action_url'   => (string) get_edit_post_link( $id, 'url' ),
-				'action_label' => __( 'Edit', 'translate-words' ),
-				'ignore_key'   => 'content_no_language:' . $id,
-				'post_type'    => (string) get_post_type( $id ),
-			);
-		}
-
-		return $this->result(
-			'content_no_language',
-			Result::WARNING,
-			__( 'Content without a language', 'translate-words' ),
-			__( 'Some content has no language and will not show on translated pages. Assign the default language to it.', 'translate-words' )
-		)
-			->with_action( 'assign_default_lang', __( 'Assign default language', 'translate-words' ) )
-			->with_details( $details, $truncated );
 	}
 
 	/**

@@ -32,7 +32,6 @@ require_once __DIR__ . '/checks/content-links.php';
 require_once __DIR__ . '/checks/content-placeholders.php';
 require_once __DIR__ . '/checks/content-fields.php';
 require_once __DIR__ . '/checks/content-terms.php';
-require_once __DIR__ . '/checks/terms-no-language.php';
 require_once __DIR__ . '/checks/untranslated-types.php';
 require_once __DIR__ . '/checks/menus.php';
 require_once __DIR__ . '/checks/menu-links.php';

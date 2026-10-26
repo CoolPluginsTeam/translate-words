@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Modules\Scan\Abstract_Check;
 use Linguator\Modules\Scan\Elementor_Fields;
 use Linguator\Modules\Scan\Freshness;
+use Linguator\Modules\Scan\Frontend_Inspector;
 use Linguator\Modules\Scan\Link_Tools;
 use Linguator\Modules\Scan\Result;
 
@@ -52,14 +53,14 @@ class Elementor extends Abstract_Check {
 	 *
 	 * @var array{checked:int,types:array<string,int>,sampled:bool}
 	 */
-	private $summary = array( 'checked' => 0, 'types' => array(), 'sampled' => false );
+	private $summary = array( 'checked' => 0, 'widgets' => 0, 'types' => array(), 'sampled' => false );
 
 	public function extra(): array {
 		return $this->summary['checked'] > 0 && ! $this->row_keys && null === $this->only ? array( 'elementor' => $this->summary ) : array();
 	}
 
 	public function run(): array {
-		$this->summary = array( 'checked' => 0, 'types' => array(), 'sampled' => false );
+		$this->summary = array( 'checked' => 0, 'widgets' => 0, 'types' => array(), 'sampled' => false );
 		if ( ! self::available() ) {
 			return array();
 		}
@@ -89,6 +90,7 @@ class Elementor extends Abstract_Check {
 			++$checked;
 			$label = '' !== $type ? $type : (string) $document->post_type;
 			$this->summary['types'][ $label ] = ( $this->summary['types'][ $label ] ?? 0 ) + 1;
+			$this->summary['widgets']        += Elementor_Fields::count_widgets( (int) $document->ID );
 			$language = $this->model->post->get_language( $document->ID );
 			$slug = $language ? $language->slug : '';
 			if ( ! $slug ) {
@@ -149,7 +151,7 @@ class Elementor extends Abstract_Check {
 			'layout' => array( __( 'Template Layout Issues', 'translate-words' ), __( 'Review empty or invalid Elementor layout data.', 'translate-words' ) ),
 			'type' => array( __( 'Template Type Mismatches', 'translate-words' ), __( 'Source templates and their translations should use the same document type.', 'translate-words' ) ),
 			'orphan' => array( __( 'Unlinked Template Translations', 'translate-words' ), __( 'Link these translations to their default-language source templates.', 'translate-words' ) ),
-			'untranslated' => array( __( 'Untranslated Template Text', 'translate-words' ), __( 'These widgets still show the original text. Open the translation in Elementor and translate them.', 'translate-words' ) ),
+			'untranslated' => array( __( 'Same texts as the original language', 'translate-words' ), __( 'These widgets still show the exact same words as the original language. Open each one in Elementor and translate the text — or ignore the warning if it should stay the same (for example a brand or product name).', 'translate-words' ) ),
 			'repeater' => array( __( 'Repeater Row Mismatches', 'translate-words' ), __( 'A list, tab or accordion has a different number of rows in the translation. Match the rows to the original.', 'translate-words' ) ),
 			'links' => array( __( 'Template Link Issues', 'translate-words' ), __( 'Links in the translated template go to a missing page or to a page in another language.', 'translate-words' ) ),
 			'empty' => array( __( 'Empty Template Translations', 'translate-words' ), __( 'Copy the layout from the original template, then translate its text.', 'translate-words' ) ),
@@ -210,12 +212,21 @@ class Elementor extends Abstract_Check {
 				continue;
 			}
 			$other  = $translation_map[ $element_id ];
-			$widget = Elementor_Fields::widget_label( $element['widget_type'] );
+			$widget      = Elementor_Fields::widget_label( $element['widget_type'] );
+			$widget_type = $element['widget_type'];
 
 			foreach ( $element['fields'] as $field_key => $original ) {
 				if ( Elementor_Fields::is_untranslated( $field_key, $original, $other['fields'][ $field_key ] ?? '', $target->slug ) ) {
-					$row = $this->detail( $translated, $target->slug, sprintf( /* translators: 1: widget name, 2: field name, 3: text */ __( '%1$s › %2$s still shows: "%3$s"', 'translate-words' ), $widget, Elementor_Fields::field_label( $field_key ), $this->short( $original ) ), 'untranslated' );
-					$row['ignore_key'] .= ':' . $element_id . ':' . md5( $field_key );
+					$row                       = Elementor_Fields::same_text_row(
+						$widget_type,
+						$field_key,
+						$original,
+						(string) get_the_title( $translated->ID ),
+						(string) $target->name,
+						$this->detail( $translated, $target->slug, '', 'untranslated' )
+					);
+					$row['ignore_key']        .= ':' . $element_id . ':' . md5( $field_key );
+					$row['action_url']         = '' !== $row['action_url'] ? add_query_arg( Frontend_Inspector::FOCUS_ARG, rawurlencode( (string) $element_id ), $row['action_url'] ) : '';
 					$buckets['untranslated'][] = $row;
 				}
 			}
@@ -289,6 +300,7 @@ class Elementor extends Abstract_Check {
 			'edit_url' => $editor, 'action_url' => $editor,
 			'action_label' => __( 'Edit in Elementor', 'translate-words' ),
 			'ignore_key' => 'elementor:' . $kind . ':' . $document->ID . ':' . $slug,
+			'template_type' => (string) ( get_post_meta( $document->ID, '_elementor_template_type', true ) ?: $document->post_type ),
 		);
 	}
 }

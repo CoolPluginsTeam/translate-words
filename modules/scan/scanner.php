@@ -136,6 +136,46 @@ class Scanner {
 		return $saved;
 	}
 
+	/**
+	 * Whether any post or term of a translated type still has no language.
+	 *
+	 * Such content is invisible to the scan's language comparisons, so the scan waits until it is assigned.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param Linguator_Model $model Linguator model.
+	 * @return bool
+	 */
+	public static function has_unassigned_content( Linguator_Model $model ): bool {
+		if ( ! $model->get_default_language() ) {
+			return false;
+		}
+
+		// The model also returns objects of internal types (revisions, global styles); only real content counts.
+		$types = array();
+		foreach ( (array) $model->get_translated_post_types() as $type ) {
+			$object = get_post_type_object( (string) $type );
+			if ( $object && ! empty( $object->public ) && ! empty( $object->show_ui ) && 'elementor_library' !== $type ) {
+				$types[] = (string) $type;
+			}
+		}
+		foreach ( $types ? (array) $model->get_posts_with_no_lang( $types, 50 ) : array() as $id ) {
+			if ( in_array( get_post_type( (int) $id ), $types, true ) && ! in_array( get_post_status( (int) $id ), array( 'trash', 'auto-draft' ), true ) ) {
+				return true;
+			}
+		}
+
+		$taxonomies = array_values( array_diff( (array) $model->get_translated_taxonomies(), array( 'nav_menu', 'link_category', 'post_format' ) ) );
+		foreach ( $taxonomies ? (array) $model->get_terms_with_no_lang( $taxonomies, 50 ) : array() as $id ) {
+			$term = get_term( (int) $id );
+			if ( $term instanceof \WP_Term && in_array( $term->taxonomy, $taxonomies, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/** Recheck explicit stored row keys without changing other rows or scan times. */
 	public function recheck_rows( string $section, array $keys ): ?array {
 		$saved = self::get_saved_report();
@@ -426,8 +466,6 @@ class Scanner {
 				$penalty     += 15;
 			} elseif ( 0 !== strpos( $id, 'content_' ) && 0 !== strpos( $id, 'menu_' ) && 0 !== strpos( $id, 'string_' ) && 0 !== strpos( $id, 'url_' ) ) {
 				$other += 'critical' === $result['status'] ? 10 : 5;
-			} elseif ( 'content_no_language' === $id ) {
-				$other += 5;
 			}
 		}
 
@@ -555,7 +593,6 @@ class Scanner {
 			new Checks\Content_Placeholders( $this->model ),
 			new Checks\Content_Fields( $this->model ),
 			new Checks\Content_Terms( $this->model ),
-			new Checks\Terms_No_Language( $this->model ),
 			new Checks\Untranslated_Types( $this->model ),
 			new Checks\Menus( $this->model ),
 			new Checks\Menu_Links( $this->model ),
