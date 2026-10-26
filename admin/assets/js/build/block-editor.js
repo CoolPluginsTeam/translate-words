@@ -26,9 +26,7 @@ var initializeConfirmationModal = function initializeConfirmationModal() {
 
   var dialogResult = new Promise(function (confirm, cancel) {
     var confirmDialog = function confirmDialog(what) {
-      // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
       switch (what) {
-        // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
         case 'yes':
           // Confirm the new language.
           languagesList.data('old-value', languagesList.children(':selected').first().val());
@@ -40,8 +38,8 @@ var initializeConfirmationModal = function initializeConfirmationModal() {
           cancel('Cancel');
           break;
       }
-      dialogContainer.dialog('close'); // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
-    }; // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
+      dialogContainer.dialog('close');
+    };
 
     // Initialize dialog box in the case a language is selected but not added in the list.
     var dialogOptions = {
@@ -253,7 +251,6 @@ jQuery(function ($) {
     }
     dialogResult.then(function () {
       var data = {
-        // phpcs:ignore PEAR.Functions.FunctionCallSignature.Indent
         action: 'lmat_post_lang_choice',
         lang: selectedOption.value,
         post_type: $('#post_type').val(),
