@@ -22,11 +22,6 @@ use Linguator\Modules\Scan\Result;
 class Content_Terms extends Abstract_Check {
 
 	/**
-	 * Detail rows kept per language.
-	 */
-	const DETAIL_LIMIT = 50;
-
-	/**
 	 * @var string
 	 */
 	protected $group = 'Content';

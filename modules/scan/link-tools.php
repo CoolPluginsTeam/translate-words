@@ -163,9 +163,7 @@ trait Link_Tools {
 	 * @return string
 	 */
 	private function readable( string $url ): string {
-		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-
-		return '' === $path ? '/' : $path;
+		return Http_Probe::path( $url );
 	}
 
 	/**
@@ -190,6 +188,19 @@ trait Link_Tools {
 			return $this->dead_result( 'missing', 0, $url );
 		}
 
+		return $this->dead_for_post( $post_id, $url );
+	}
+
+	/**
+	 * Why a link to a known post goes nowhere, or null when the post is public.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $url     Link URL.
+	 * @return array{kind:string,message:string,post_id:int,fix_url:string,fix_label:string}|null
+	 */
+	private function dead_for_post( int $post_id, string $url ): ?array {
 		$target = get_post( $post_id );
 		if ( ! $target instanceof \WP_Post ) {
 			return $this->dead_result( 'missing', 0, $url );

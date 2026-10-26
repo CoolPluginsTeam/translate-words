@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { __, _n, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 import DiffModal from './scan-diff'
-import { rowIdOf, STATUS, Icon, LanguageFlag, Pill, IssueCard, IgnoredPanel, PassedChecks, groupResults, useAccordion } from './scan-parts'
+import { STATUS, Icon, LanguageFlag, Pill, IssueCard, IgnoredPanel, PassedChecks, groupResults, useAccordion } from './scan-parts'
 
 const request = (path, method = 'GET', data) => apiFetch({ path: `lmat/v1/scan${path}`, method, headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': getNonce() }, ...(data ? { data } : {}) })
 const SECTIONS = [
@@ -224,7 +224,6 @@ const Scan = () => {
         onRecheck: result => result.members?.length > 1 ? call('/section', { section: result.section }, __('Issues rechecked.', 'translate-words')) : call('/recheck', { id: result.members?.[0]?.id || result.id, section: result.section }, __('Issue rechecked.', 'translate-words')),
         rowStatus, onRecheckRow: recheckRow,
         onDiff: row => setDiff(row),
-        onAction: action => action === 'assign_default_lang' && call('/assign-default-language', undefined, __('Default language assigned.', 'translate-words')),
     }
     const scan = () => call('/run', undefined, __('Scan complete.', 'translate-words'))
     const current = SECTIONS.find(section => section.key === tab)

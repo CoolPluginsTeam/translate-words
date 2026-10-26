@@ -22,11 +22,6 @@ use Linguator\Modules\Scan\Result;
 class Url_Slugs extends Abstract_Check {
 
 	/**
-	 * Slugs listed in detail.
-	 */
-	const DETAIL_LIMIT = 50;
-
-	/**
 	 * @var string
 	 */
 	protected $group = 'URLs & Routing';

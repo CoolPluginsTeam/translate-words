@@ -29,16 +29,6 @@ use Linguator\Modules\Scan\Result;
 class Content_Placeholders extends Abstract_Check {
 
 	/**
-	 * Default-language posts inspected per post type.
-	 */
-	const POST_LIMIT = 500;
-
-	/**
-	 * Detail rows kept per language.
-	 */
-	const DETAIL_LIMIT = 50;
-
-	/**
 	 * @var string
 	 */
 	protected $group = 'Content';
@@ -82,26 +72,7 @@ class Content_Placeholders extends Abstract_Check {
 		$found    = array_fill_keys( array_keys( $targets ), 0 );
 
 		foreach ( $types as $type ) {
-			$post_ids = get_posts(
-				array(
-					'post_type'        => $type,
-					'post_status'      => 'publish',
-					'fields'           => 'ids',
-					'posts_per_page'   => self::POST_LIMIT,
-					'orderby'          => 'ID',
-					'order'            => 'DESC',
-					'no_found_rows'    => true,
-					'suppress_filters' => true,
-					'lang'             => '',
-					'tax_query'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-						array(
-							'taxonomy' => 'lmat_language',
-							'field'    => 'term_id',
-							'terms'    => (int) $default_obj->term_id,
-						),
-					),
-				)
-			);
+			$post_ids = $this->default_language_post_ids( $type, $default_obj );
 
 			foreach ( $post_ids as $post_id ) {
 				$post_id = (int) $post_id;

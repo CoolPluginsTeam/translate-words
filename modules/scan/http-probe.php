@@ -128,6 +128,20 @@ class Http_Probe {
 	}
 
 	/**
+	 * Path of a URL for messages, or "/" for the home page.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	public static function path( string $url ): string {
+		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+		return '' === $path ? '/' : $path;
+	}
+
+	/**
 	 * Comparable form of a URL.
 	 *
 	 * @since 2.3.0

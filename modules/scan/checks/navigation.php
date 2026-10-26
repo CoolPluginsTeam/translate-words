@@ -221,7 +221,7 @@ class Navigation extends Abstract_Check {
 		$uses_other_language = array();
 
 		foreach ( $slugs as $slug ) {
-			$label     = $this->name_of( $slug, $languages );
+			$label     = $this->language_name( $slug );
 			$effective = $this->effective_headers( $slug, $default, $header_part, $with_nav );
 			$ref_issue = $this->ref_issues( $effective, $slug, $languages );
 			$name      = sprintf(
@@ -237,7 +237,7 @@ class Navigation extends Abstract_Check {
 					'message' => sprintf(
 						/* translators: %s: language name */
 						__( 'Uses %s navigation', 'translate-words' ),
-						$this->name_of( $ref_issue[0]['source_language'], $languages )
+						$this->language_name( $ref_issue[0]['source_language'] )
 					),
 				);
 				continue;
@@ -367,17 +367,13 @@ class Navigation extends Abstract_Check {
 		}
 
 		if ( $post_id > 0 ) {
-			$post = get_post( $post_id );
-			if ( ! $post instanceof \WP_Post || 'publish' !== $post->post_status || '' !== $post->post_password ) {
+			$dead = $this->dead_for_post( $post_id, $url );
+			if ( $dead ) {
 				return array(
 					'code'    => 'dead_link',
 					'label'   => $label,
 					'url'     => $url,
-					'message' => sprintf(
-						/* translators: %s: link path */
-						__( 'This link goes to "%s", which is not published or no longer exists.', 'translate-words' ),
-						$this->readable( $url )
-					),
+					'message' => $dead['message'],
 				);
 			}
 
@@ -390,7 +386,7 @@ class Navigation extends Abstract_Check {
 					'message' => sprintf(
 						/* translators: %s: language name */
 						__( 'Links to %s content', 'translate-words' ),
-						$this->name_of( $lang, $languages )
+						$this->language_name( $lang )
 					),
 				);
 			}
@@ -674,22 +670,4 @@ class Navigation extends Abstract_Check {
 		return $lang ? (string) $lang->slug : '';
 	}
 
-	/**
-	 * Language name for a slug.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string   $slug      Language slug.
-	 * @param object[] $languages Languages.
-	 * @return string
-	 */
-	private function name_of( string $slug, array $languages ): string {
-		foreach ( $languages as $lang ) {
-			if ( $lang->slug === $slug && ! empty( $lang->name ) ) {
-				return (string) $lang->name;
-			}
-		}
-
-		return strtoupper( $slug );
-	}
 }

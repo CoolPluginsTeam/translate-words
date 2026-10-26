@@ -120,7 +120,7 @@ class Url_Routing extends Abstract_Check {
 				continue;
 			}
 			$rows[ $slug ][] = array(
-				'label'        => $target['lang']->name . ' · ' . $this->readable( $target['url'] ),
+				'label'        => $target['lang']->name . ' · ' . Http_Probe::path( $target['url'] ),
 				'message'      => $verdict,
 				'action_url'   => $target['url'],
 				'action_label' => __( 'Open page', 'translate-words' ),
@@ -307,17 +307,4 @@ class Url_Routing extends Abstract_Check {
 		return $best;
 	}
 
-	/**
-	 * Path of a URL for display.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string $url URL.
-	 * @return string
-	 */
-	private function readable( string $url ): string {
-		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-
-		return '' === $path ? '/' : $path;
-	}
 }

@@ -44,16 +44,6 @@ class Result {
 	public $section = 'site';
 
 	/**
-	 * @var string Built-in one-click action, e.g. assign_default_lang.
-	 */
-	public $action = '';
-
-	/**
-	 * @var string Label of the built-in action button.
-	 */
-	public $action_label = '';
-
-	/**
 	 * @var string Human title.
 	 */
 	public $label;
@@ -118,21 +108,6 @@ class Result {
 	}
 
 	/**
-	 * Attaches a built-in one-click action handled by the REST API.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string $action Action slug.
-	 * @param string $label  Button label.
-	 * @return Result
-	 */
-	public function with_action( string $action, string $label ): Result {
-		$this->action       = $action;
-		$this->action_label = $label;
-		return $this;
-	}
-
-	/**
 	 * Attaches detail rows.
 	 *
 	 * Each row: label, message, action_url, action_label, ignore_key.
@@ -162,8 +137,6 @@ class Result {
 			'status'            => $this->status,
 			'group'             => $this->group,
 			'section'           => $this->section,
-			'action'            => $this->action,
-			'action_label'      => $this->action_label,
 			'label'             => $this->label,
 			'message'           => $this->message,
 			'fix_url'           => $this->fix_url,

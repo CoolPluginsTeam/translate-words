@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Linguator\Modules\Scan\Abstract_Check;
 use Linguator\Modules\Scan\Result;
+use Linguator\Modules\Scan\Untranslated_Collector;
 
 /**
  * Flags translations whose ACF or custom field text still matches the default language.
@@ -22,16 +23,6 @@ use Linguator\Modules\Scan\Result;
  * @since 2.3.0
  */
 class Content_Fields extends Abstract_Check {
-
-	/**
-	 * Default-language posts inspected per post type.
-	 */
-	const POST_LIMIT = 500;
-
-	/**
-	 * Detail rows kept per language.
-	 */
-	const DETAIL_LIMIT = 50;
 
 	/**
 	 * @var string
@@ -77,26 +68,7 @@ class Content_Fields extends Abstract_Check {
 		$compared = array_fill_keys( array_keys( $targets ), 0 );
 
 		foreach ( $types as $type ) {
-			$post_ids = get_posts(
-				array(
-					'post_type'        => $type,
-					'post_status'      => 'publish',
-					'fields'           => 'ids',
-					'posts_per_page'   => self::POST_LIMIT,
-					'orderby'          => 'ID',
-					'order'            => 'DESC',
-					'no_found_rows'    => true,
-					'suppress_filters' => true,
-					'lang'             => '',
-					'tax_query'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-						array(
-							'taxonomy' => 'lmat_language',
-							'field'    => 'term_id',
-							'terms'    => (int) $default_obj->term_id,
-						),
-					),
-				)
-			);
+			$post_ids = $this->default_language_post_ids( $type, $default_obj );
 
 			foreach ( $post_ids as $post_id ) {
 				$post_id = (int) $post_id;
@@ -128,7 +100,7 @@ class Content_Fields extends Abstract_Check {
 
 						++$compared[ $slug ];
 						$original   = $data['value'];
-						$translated = $this->normalize( $this->field_text( $translation_id, $field, $data['meta_key'] ) );
+						$translated = Untranslated_Collector::normalize_text( $this->field_text( $translation_id, $field, $data['meta_key'] ) );
 
 						if ( '' === $original || $original !== $translated ) {
 							continue;
@@ -154,7 +126,7 @@ class Content_Fields extends Abstract_Check {
 							'message'        => sprintf(
 								/* translators: %s: text that still matches the original language */
 								__( 'Not translated yet — still shows: "%s"', 'translate-words' ),
-								function_exists( 'mb_substr' ) ? mb_substr( $original, 0, 80 ) : substr( $original, 0, 80 )
+								Elementor_Fields::snippet( $original, 80 )
 							),
 							'action_url'     => (string) get_edit_post_link( $translation_id, 'url' ),
 							'action_label'   => __( 'Edit translation', 'translate-words' ),
@@ -204,22 +176,6 @@ class Content_Fields extends Abstract_Check {
 		}
 
 		return $results;
-	}
-
-	/**
-	 * Strips block markup and HTML, then collapses whitespace, so only the text is compared.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string $text Raw value.
-	 * @return string
-	 */
-	private function normalize( string $text ): string {
-		$text = (string) preg_replace( '/<!--\s*\/?wp:.*?-->/s', '', $text );
-		$text = wp_strip_all_tags( $text );
-		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-
-		return trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
 	}
 
 	/**
@@ -327,7 +283,7 @@ class Content_Fields extends Abstract_Check {
 				continue;
 			}
 
-			$normalized = $this->normalize( $value );
+			$normalized = Untranslated_Collector::normalize_text( $value );
 			if ( '' === $normalized ) {
 				continue;
 			}
@@ -441,7 +397,7 @@ class Content_Fields extends Abstract_Check {
 			$text = $value;
 		}
 
-		$normalized = $this->normalize( $text );
+		$normalized = Untranslated_Collector::normalize_text( $text );
 		if ( '' === $normalized ) {
 			return;
 		}

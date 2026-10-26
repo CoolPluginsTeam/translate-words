@@ -132,7 +132,7 @@ class Elementor extends Abstract_Check {
 				if ( 'publish' !== $translated->post_status ) {
 					continue;
 				}
-				if ( $this->has_widgets( $document->ID ) && ! $this->has_widgets( $translated->ID ) ) {
+				if ( Elementor_Fields::has_widgets( $document->ID ) && ! Elementor_Fields::has_widgets( $translated->ID ) ) {
 					$buckets['empty'][] = $this->detail( $translated, $target->slug, __( 'This translation has no Elementor widgets, but the original has. Visitors may see an empty template.', 'translate-words' ), 'empty' );
 				}
 				$this->compare_widgets( $document, $translated, $target, $buckets );
@@ -263,32 +263,6 @@ class Elementor extends Abstract_Check {
 				}
 			}
 		}
-	}
-
-	private function short( string $text ): string {
-		return function_exists( 'mb_substr' ) ? mb_substr( $text, 0, 80 ) : substr( $text, 0, 80 );
-	}
-
-	/** Whether an Elementor document holds at least one widget. */
-	private function has_widgets( int $post_id ): bool {
-		$raw  = get_post_meta( $post_id, '_elementor_data', true );
-		$data = is_array( $raw ) ? $raw : ( is_string( $raw ) ? json_decode( $raw, true, 128 ) : null );
-		return is_array( $data ) && $this->tree_has_widget( $data, 0 );
-	}
-
-	private function tree_has_widget( array $elements, int $depth ): bool {
-		if ( $depth > 50 ) {
-			return false;
-		}
-		foreach ( $elements as $element ) {
-			if ( ! is_array( $element ) ) {
-				continue;
-			}
-			if ( ! empty( $element['widgetType'] ) || ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) && $this->tree_has_widget( $element['elements'], $depth + 1 ) ) ) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private function detail( $document, string $slug, string $message, string $kind ): array {

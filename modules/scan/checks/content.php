@@ -23,16 +23,6 @@ use Linguator\Modules\Scan\Result;
 class Content extends Abstract_Check {
 
 	/**
-	 * Default-language posts inspected per post type.
-	 */
-	const POST_LIMIT = 500;
-
-	/**
-	 * Detail rows kept per result.
-	 */
-	const DETAIL_LIMIT = 50;
-
-	/**
 	 * @var string
 	 */
 	protected $group = 'Content';
@@ -142,26 +132,7 @@ class Content extends Abstract_Check {
 		$scoped   = $this->scoped_ids( 'content' );
 		$post_ids = $scoped ? array_values( array_filter( array_keys( $scoped ), static function ( $id ) use ( $type ) {
 			return get_post_type( $id ) === $type;
-		} ) ) : get_posts(
-			array(
-				'post_type'        => $type,
-				'post_status'      => 'publish',
-				'fields'           => 'ids',
-				'posts_per_page'   => self::POST_LIMIT,
-				'orderby'          => 'ID',
-				'order'            => 'DESC',
-				'no_found_rows'    => true,
-				'suppress_filters' => true,
-				'lang'             => '',
-				'tax_query'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-					array(
-						'taxonomy' => 'lmat_language',
-						'field'    => 'term_id',
-						'terms'    => (int) $default_lang->term_id,
-					),
-				),
-			)
-		);
+		} ) ) : $this->default_language_post_ids( $type, $default_lang );
 
 		$details          = array();
 		$drafts           = array();
@@ -332,26 +303,7 @@ class Content extends Abstract_Check {
 		foreach ( $types as $type ) {
 			$post_ids = $scoped ? array_values( array_filter( array_keys( $scoped ), static function ( $id ) use ( $type ) {
 				return get_post_type( $id ) === $type;
-			} ) ) : get_posts(
-				array(
-					'post_type'        => $type,
-					'post_status'      => 'publish',
-					'fields'           => 'ids',
-					'posts_per_page'   => self::POST_LIMIT,
-					'orderby'          => 'ID',
-					'order'            => 'DESC',
-					'no_found_rows'    => true,
-					'suppress_filters' => true,
-					'lang'             => '',
-					'tax_query'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-						array(
-							'taxonomy' => 'lmat_language',
-							'field'    => 'term_id',
-							'terms'    => (int) $default_lang->term_id,
-						),
-					),
-				)
-			);
+			} ) ) : $this->default_language_post_ids( $type, $default_lang );
 
 			foreach ( $post_ids as $post_id ) {
 				$post_id      = (int) $post_id;

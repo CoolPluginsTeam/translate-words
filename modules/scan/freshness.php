@@ -218,24 +218,6 @@ class Freshness {
 	}
 
 	/**
-	 * Whether a source/translation pair is still reported as outdated.
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param int    $root_id Default-language post ID.
-	 * @param string $lang    Translation language slug.
-	 * @return bool
-	 */
-	public function still_outdated( int $root_id, string $lang ): bool {
-		$translation_id = (int) $this->model->post->get_translation( $root_id, $lang );
-		if ( $translation_id <= 0 || 'publish' !== get_post_status( $translation_id ) || 'publish' !== get_post_status( $root_id ) ) {
-			return false;
-		}
-
-		return 'source_updated' === $this->classify( $root_id, $lang, $this->changed_at( $root_id ), $this->changed_at( $translation_id ) );
-	}
-
-	/**
 	 * Marks a translation as up to date with its source.
 	 *
 	 * The translation's change time moves to now (never before the source's) and the source text

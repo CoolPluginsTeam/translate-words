@@ -30,6 +30,11 @@ class Scanner {
 	const SECTIONS = array( 'content', 'urls', 'site', 'elementor' );
 
 	/**
+	 * Row keys that name a post, so one row can be rechecked without rerunning its issue.
+	 */
+	const ROW_KEY_PATTERN = '/^(?:elementor:[^:]+:|content_updated:|content:)(\d+)(?::|$)/';
+
+	/**
 	 * Linguator model.
 	 *
 	 * @var Linguator_Model
@@ -194,10 +199,9 @@ class Scanner {
 		if ( array_diff( $keys, $known ) ) return null;
 
 		// A row can be rebuilt on its own only when its key names a post; any other row reruns its whole issue.
-		$row_pattern = '/^(?:elementor:[^:]+:|content_updated:|content:|content_no_language:)(\d+)(?::|$)/';
 		$scoped_ok   = 'content' === $section || 'elementor' === $section;
 		foreach ( $keys as $key ) {
-			if ( ! $scoped_ok || ! preg_match( $row_pattern, $key ) ) {
+			if ( ! $scoped_ok || ! preg_match( self::ROW_KEY_PATTERN, $key ) ) {
 				$scoped_ok = false;
 				break;
 			}
@@ -216,7 +220,7 @@ class Scanner {
 			$scoped = array_values( array_intersect( $keys, array_column( $result['details'] ?? array(), 'ignore_key' ) ) );
 			if ( ! $scoped ) continue;
 			foreach ( $scoped as $key ) {
-				if ( ! preg_match( '/^(?:elementor:[^:]+:|content_updated:|content:|content_no_language:)(\d+)(?::|$)/', $key, $parts ) ) return null;
+				if ( ! preg_match( self::ROW_KEY_PATTERN, $key, $parts ) ) return null;
 				clean_post_cache( (int) $parts[1] );
 				foreach ( $this->model->post->get_translations( (int) $parts[1] ) as $linked ) clean_post_cache( (int) $linked );
 			}
@@ -376,8 +380,6 @@ class Scanner {
 				$result['status']       = Result::PASS;
 				$result['message']      = __( 'All items were dismissed.', 'translate-words' );
 				$result['fix_url']      = '';
-				$result['action']       = '';
-				$result['action_label'] = '';
 			}
 
 			$report['results'][ $i ] = $result;

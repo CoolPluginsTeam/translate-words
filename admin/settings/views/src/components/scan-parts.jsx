@@ -94,7 +94,7 @@ export const useAccordion = (keys) => {
     }
 }
 
-export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onIgnoreMany, onRecheck, onRecheckRow, onDiff, onAction, whyHow, languages = [], initialOpen = false, open: controlledOpen, onToggle }) => {
+export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onIgnoreMany, onRecheck, onRecheckRow, onDiff, whyHow, languages = [], initialOpen = false, open: controlledOpen, onToggle }) => {
     const [localOpen, setLocalOpen] = useState(initialOpen || !!whyHow)
     const controlled = controlledOpen !== undefined
     const open = controlled ? controlledOpen : localOpen
@@ -128,7 +128,6 @@ export const IssueCard = ({ rowStatus = {}, result, filters, busy, onIgnore, onI
         <div className='lmat-scan-issue-body'>
             {result.recently_fixed && <p className='lmat-inspector-fixed'>{__('Fixed since last scan', 'translate-words')}</p>}
             <div className={isSwitcher ? 'lmat-scan-card-actions' : 'lmat-inspector-actions'} data-track-id={result.members?.[0]?.id || result.id} data-track-section={result.section}>
-                {result.action && <button className='button button-primary' disabled={busy} onClick={() => onAction(result.action)}>{result.action_label}</button>}
                 {result.fix_url && !['content_missing', 'term_missing', 'url_configuration', 'navigation', 'lang_untranslated_types'].includes(result.id) && <a className={`button ${isSwitcher ? 'button-primary' : 'button-secondary'}`} href={result.fix_url} target='_blank' rel='noopener noreferrer'>{isSwitcher ? __('Set up Language Switcher', 'translate-words') : result.id === 'menu_assignments' ? __('Manage Menu Locations', 'translate-words') : result.id === 'strings_missing' ? __('Translate Strings', 'translate-words') : result.fix_label || __('Open settings', 'translate-words')}</a>}
                 {!isSwitcher && result.status !== 'pass' && !rows.length && <button className='button button-small' disabled={busy} onClick={() => onRecheck(result)}><Icon name='update' />{__('Rescan issue', 'translate-words')}</button>}
                 {!isSwitcher && result.status !== 'pass' && !rows.length && <button className='button button-small' disabled={busy} onClick={() => onIgnore(result.members?.[0]?.id || result.id)}>{__('Ignore', 'translate-words')}</button>}

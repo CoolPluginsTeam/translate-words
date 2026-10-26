@@ -40,10 +40,69 @@ abstract class Abstract_Check {
 	 * @var string|null
 	 */
 	protected $only = null;
+
+	/**
+	 * Default-language posts inspected per post type.
+	 */
+	const POST_LIMIT = 500;
+
+	/**
+	 * Detail rows kept per result.
+	 */
+	const DETAIL_LIMIT = 50;
 	protected $row_keys = array();
 
 	public function scope_rows( array $keys ): void {
 		$this->row_keys = $keys;
+	}
+
+	/**
+	 * Published default-language posts of one type, newest first, up to POST_LIMIT.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $type         Post type.
+	 * @param object $default_lang Default language.
+	 * @return int[]
+	 */
+	protected function default_language_post_ids( string $type, $default_lang ): array {
+		return array_map(
+			'intval',
+			get_posts(
+				array(
+					'post_type'        => $type,
+					'post_status'      => 'publish',
+					'fields'           => 'ids',
+					'posts_per_page'   => self::POST_LIMIT,
+					'orderby'          => 'ID',
+					'order'            => 'DESC',
+					'no_found_rows'    => true,
+					'suppress_filters' => true,
+					'lang'             => '',
+					'tax_query'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+						array(
+							'taxonomy' => 'lmat_language',
+							'field'    => 'term_id',
+							'terms'    => (int) $default_lang->term_id,
+						),
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Name of a language, or its slug in capitals when it is unknown.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $slug Language slug.
+	 * @return string
+	 */
+	protected function language_name( string $slug ): string {
+		$lang = $this->model->get_language( $slug );
+
+		return $lang && ! empty( $lang->name ) ? (string) $lang->name : strtoupper( $slug );
 	}
 
 	/**
