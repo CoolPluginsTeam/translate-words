@@ -62,6 +62,7 @@ class Scanner {
 				'summary'  => self::summarize( $run['results'] ),
 				'results'  => $run['results'],
 				'coverage' => $run['coverage'],
+				'elementor' => $run['elementor'],
 			)
 		);
 	}
@@ -121,6 +122,9 @@ class Scanner {
 		if ( ! empty( $run['coverage'] ) ) {
 			$saved['coverage'] = $run['coverage'];
 		}
+		if ( ! empty( $run['elementor'] ) ) {
+			$saved['elementor'] = $run['elementor'];
+		}
 
 		if ( null === $only ) {
 			$saved['partial_scans']             = isset( $saved['partial_scans'] ) && is_array( $saved['partial_scans'] ) ? $saved['partial_scans'] : array();
@@ -135,7 +139,7 @@ class Scanner {
 	/** Recheck explicit stored row keys without changing other rows or scan times. */
 	public function recheck_rows( string $section, array $keys ): ?array {
 		$saved = self::get_saved_report();
-		if ( ! $saved || ! $keys || ! in_array( $section, array( 'content', 'elementor' ), true ) ) {
+		if ( ! $saved || ! $keys || ! in_array( $section, self::SECTIONS, true ) ) {
 			return null;
 		}
 		if ( 'elementor' === $section && ! Checks\Elementor::available() ) return null;
@@ -148,6 +152,25 @@ class Scanner {
 			}
 		}
 		if ( array_diff( $keys, $known ) ) return null;
+
+		// A row can be rebuilt on its own only when its key names a post; any other row reruns its whole issue.
+		$row_pattern = '/^(?:elementor:[^:]+:|content_updated:|content:|content_no_language:)(\d+)(?::|$)/';
+		$scoped_ok   = 'content' === $section || 'elementor' === $section;
+		foreach ( $keys as $key ) {
+			if ( ! $scoped_ok || ! preg_match( $row_pattern, $key ) ) {
+				$scoped_ok = false;
+				break;
+			}
+		}
+		if ( ! $scoped_ok ) {
+			foreach ( $saved['results'] as $result ) {
+				if ( $result['section'] === $section && array_intersect( $keys, array_column( $result['details'] ?? array(), 'ignore_key' ) ) ) {
+					$this->scan_section( $section, (string) $result['id'] );
+				}
+			}
+			return self::get_saved_report();
+		}
+
 		foreach ( $saved['results'] as &$result ) {
 			if ( $result['section'] !== $section ) continue;
 			$scoped = array_values( array_intersect( $keys, array_column( $result['details'] ?? array(), 'ignore_key' ) ) );
@@ -437,8 +460,9 @@ class Scanner {
 	 * @return array{results:array[],coverage:array[]}
 	 */
 	private function run_checks( array $checks ): array {
-		$results  = array();
-		$coverage = array();
+		$results   = array();
+		$coverage  = array();
+		$elementor = array();
 
 		foreach ( $checks as $check ) {
 			try {
@@ -459,6 +483,9 @@ class Scanner {
 			if ( ! empty( $extra['coverage'] ) ) {
 				$coverage = $extra['coverage'];
 			}
+			if ( ! empty( $extra['elementor'] ) ) {
+				$elementor = $extra['elementor'];
+			}
 		}
 
 		/**
@@ -471,8 +498,9 @@ class Scanner {
 		$results = apply_filters( 'lmat_scan_results', $results );
 
 		return array(
-			'results'  => $this->reconcile_fixed( is_array( $results ) ? $results : array() ),
-			'coverage' => $coverage,
+			'results'   => $this->reconcile_fixed( is_array( $results ) ? $results : array() ),
+			'coverage'  => $coverage,
+			'elementor' => $elementor,
 		);
 	}
 
@@ -517,11 +545,26 @@ class Scanner {
 		$checks = array(
 			new Checks\Languages( $this->model ),
 			new Checks\Url_Config( $this->model ),
+			new Checks\Url_Settings( $this->model ),
+			new Checks\Url_Slugs( $this->model ),
+			new Checks\Url_Routing( $this->model ),
+			new Checks\Url_Permalinks( $this->model ),
 			new Checks\Content( $this->model ),
+			new Checks\Content_Identical( $this->model ),
+			new Checks\Content_Links( $this->model ),
+			new Checks\Content_Placeholders( $this->model ),
+			new Checks\Content_Fields( $this->model ),
+			new Checks\Content_Terms( $this->model ),
+			new Checks\Terms_No_Language( $this->model ),
+			new Checks\Untranslated_Types( $this->model ),
 			new Checks\Menus( $this->model ),
+			new Checks\Menu_Links( $this->model ),
+			new Checks\Navigation( $this->model ),
 			new Checks\Strings( $this->model ),
 			new Checks\Switcher( $this->model ),
 			new Checks\Elementor( $this->model ),
+			new Checks\Elementor_Headers( $this->model ),
+			new Checks\Elementor_Loops( $this->model ),
 		);
 
 		/**

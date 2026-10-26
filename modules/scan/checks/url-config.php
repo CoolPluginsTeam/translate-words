@@ -85,9 +85,28 @@ class Url_Config extends Abstract_Check {
 	private function domains_result( array $languages, string $fix_url ): Result {
 		$domains = (array) $this->option( 'domains', array() );
 		$details = array();
+		$hosts   = array();
 
 		foreach ( $languages as $lang ) {
-			if ( ! empty( $domains[ $lang->slug ] ) ) {
+			$host = strtolower( (string) wp_parse_url( (string) ( $domains[ $lang->slug ] ?? '' ), PHP_URL_HOST ) );
+
+			if ( '' !== $host && isset( $hosts[ $host ] ) ) {
+				$details[] = array(
+					'label'        => $this->lang_label( $lang ),
+					'message'      => sprintf(
+						/* translators: 1: domain, 2: other language name */
+						__( 'The domain %1$s is already used by %2$s. Each language needs its own domain.', 'translate-words' ),
+						$host,
+						$hosts[ $host ]
+					),
+					'action_url'   => admin_url( 'admin.php?page=lmat' ),
+					'action_label' => __( 'Edit language', 'translate-words' ),
+					'ignore_key'   => 'url_domains_shared:' . $lang->slug,
+				);
+				continue;
+			}
+			if ( '' !== $host ) {
+				$hosts[ $host ] = $this->lang_label( $lang );
 				continue;
 			}
 
@@ -112,8 +131,8 @@ class Url_Config extends Abstract_Check {
 		return $this->result(
 			'url_domains',
 			Result::CRITICAL,
-			__( 'Language domains missing', 'translate-words' ),
-			__( 'The site uses one domain per language, but some languages have none. Visitors cannot reach them.', 'translate-words' )
+			__( 'Language domains are incomplete', 'translate-words' ),
+			__( 'The site uses one domain per language, but some languages have none or share one. Languages without their own working domain will not load.', 'translate-words' )
 		)
 			->with_fix( $fix_url, __( 'URL settings', 'translate-words' ) )
 			->with_details( $details );

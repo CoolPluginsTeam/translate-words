@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import apiFetch from '@wordpress/api-fetch'
 import { toast } from 'sonner'
-import { __, sprintf } from '@wordpress/i18n'
+import { __, _n, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 import DiffModal from './scan-diff'
 import { rowIdOf, STATUS, Icon, LanguageFlag, Pill, IssueCard, IgnoredPanel, PassedChecks, groupResults } from './scan-parts'
@@ -75,6 +75,22 @@ const Overview = ({ report, groups, cardProps, onGoto, onScan }) => {
     </>
 }
 
+const DOCUMENT_TYPES = { header: __('Headers', 'translate-words'), footer: __('Footers', 'translate-words'), single: __('Single templates', 'translate-words'), archive: __('Archives', 'translate-words'), popup: __('Popups', 'translate-words'), 'loop-item': __('Loop items', 'translate-words'), section: __('Sections', 'translate-words'), container: __('Containers', 'translate-words'), page: __('Pages', 'translate-words'), 'wp-page': __('Pages', 'translate-words'), 'wp-post': __('Posts', 'translate-words'), 'error-404': __('404 pages', 'translate-words'), 'search-results': __('Search results', 'translate-words'), elementor_library: __('Templates', 'translate-words'), elementor_component: __('Components', 'translate-words') }
+const DOCUMENT_ORDER = ['header', 'footer', 'single', 'archive', 'popup', 'loop-item', 'section', 'container', 'page', 'wp-page', 'wp-post']
+
+// What was scanned, and which problems are worth fixing first.
+const ElementorInsights = ({ summary, problems }) => {
+    if (!summary?.checked) return null
+    const types = Object.entries(summary.types || {}).sort(([a], [b]) => (DOCUMENT_ORDER.indexOf(a) + 1 || 99) - (DOCUMENT_ORDER.indexOf(b) + 1 || 99))
+    const first = [...problems].sort((a, b) => (b.status === 'critical') - (a.status === 'critical') || (b.details?.length || 0) - (a.details?.length || 0)).slice(0, 3)
+    return <div className='lmat-scan-insights'>
+        <h3>{__('Elementor Translation Insights', 'translate-words')}</h3>
+        <p>{sprintf(_n('%d template or component scanned.', '%d templates and components scanned.', summary.checked, 'translate-words'), summary.checked)}{summary.sampled && ` ${__('Only the latest ones were scanned.', 'translate-words')}`}</p>
+        <div className='lmat-scan-insights-types'>{types.map(([key, count]) => <span key={key} className='lmat-scan-insights-type'>{DOCUMENT_TYPES[key] || key}<b>{count}</b></span>)}</div>
+        {first.length > 0 && <div className='lmat-scan-insights-first'><strong>{__('Fix these first', 'translate-words')}</strong><ul>{first.map(result => <li key={result.id}>{result.label} <span>({result.details?.length || 1})</span></li>)}</ul></div>}
+    </div>
+}
+
 const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRestore, onRestoreAll }) => {
     const [severity, setSeverity] = useState('all')
     const [search, setSearch] = useState('')
@@ -93,6 +109,7 @@ const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRe
     const visible = problems.filter(result => result.status !== 'critical' && (severity === 'all' || result.status === severity) && ((!type && !search) || (result.details || []).some(row => (!type || row.post_type === type) && (!search || String(row.label).toLowerCase().includes(search.toLowerCase())))))
     return <section className={`lmat-scan-card lmat-scan-grouped-section ${section.key === 'content' ? 'lmat-scan-content-section' : ''}`}>
         <div className='lmat-scan-section-heading'><div><h2><Icon name={section.icon} />{section.label}</h2><p>{section.blurb}</p></div><div className='lmat-scan-section-scan-bar'><button className='button button-secondary' disabled={cardProps.busy} onClick={() => onScan(section.key)}><Icon name='update' />{section.scanLabel}</button><p className='lmat-scan-section-scan-meta'><Icon name='clock' />{sprintf(__('Last checked: %s', 'translate-words'), needsElementorScan ? __('Not scanned yet', 'translate-words') : report.partial_scans?.[section.key] || report.time_formatted)}</p></div></div>
+        {section.key === 'elementor' && <ElementorInsights summary={report.elementor_summary} problems={problems} />}
         <div className='lmat-scan-section-filters'>
             {section.key === 'content' && <div className='lmat-scan-filter-search'><Icon name='search' /><input className='lmat-scan-filter-search-input' type='search' aria-label={__('Search by title', 'translate-words')} placeholder={__('Search by title...', 'translate-words')} value={search} onChange={event => setSearch(event.target.value)} /></div>}
             <div className='lmat-scan-filter-pills lmat-scan-filter-pills--severity' role='group' aria-label={__('Filter by severity', 'translate-words')}>

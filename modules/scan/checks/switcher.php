@@ -124,7 +124,7 @@ class Switcher extends Abstract_Check {
 				FROM {$wpdb->posts} p
 				INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = %s AND pm.meta_value = %s
 				WHERE p.post_type = 'nav_menu_item'
-					AND p.post_status IN ('publish', 'draft')
+					AND p.post_status = 'publish'
 				LIMIT 1",
 				'_menu_item_url',
 				'#lmat_switcher'
@@ -181,7 +181,7 @@ class Switcher extends Abstract_Check {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$found = (int) $wpdb->get_var(
 			"SELECT ID FROM {$wpdb->posts}
-			WHERE post_status IN ('publish', 'draft')
+			WHERE post_status = 'publish'
 				AND post_type IN ('wp_template', 'wp_template_part', 'wp_navigation', 'wp_block', 'post', 'page')
 				AND ( " . implode( ' OR ', $conditions ) . ' )
 			LIMIT 1'

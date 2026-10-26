@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Modules\Scan\Abstract_Check;
+use Linguator\Modules\Scan\Elementor_Fields;
 use Linguator\Modules\Scan\Result;
 
 /**
@@ -100,8 +101,32 @@ class Languages extends Abstract_Check {
 		$details      = array();
 		$names        = array();
 
+		$source_layout = Elementor_Fields::has_widgets( $front_id );
+		$empty_names   = array();
+
 		foreach ( $languages as $lang ) {
-			if ( ! empty( $translations[ $lang->slug ] ) ) {
+			$trans_id = (int) ( $translations[ $lang->slug ] ?? 0 );
+
+			if ( $trans_id > 0 ) {
+				if ( $source_layout && $trans_id !== $front_id && ! Elementor_Fields::has_widgets( $trans_id ) ) {
+					$empty_names[] = $lang->name;
+					$details[]     = array(
+						'label'        => sprintf(
+							/* translators: %s: language name */
+							__( '%s homepage has no Elementor layout', 'translate-words' ),
+							$lang->name
+						),
+						'message'      => __( 'A translation exists, but its Elementor layout is empty.', 'translate-words' ),
+						'action_url'   => (string) get_edit_post_link( $trans_id, 'url' ),
+						'action_label' => sprintf(
+							/* translators: %s: language name */
+							__( 'Translate %s', 'translate-words' ),
+							$lang->name
+						),
+						'ignore_key'   => 'lang_homepage_empty:' . $lang->slug,
+						'language'     => $lang->slug,
+					);
+				}
 				continue;
 			}
 
@@ -136,10 +161,16 @@ class Languages extends Abstract_Check {
 			'lang_homepage',
 			Result::CRITICAL,
 			__( 'Homepage not translated for all languages', 'translate-words' ),
-			sprintf(
-				/* translators: %s: comma separated language names */
-				__( 'Front page is missing a translation in: %s.', 'translate-words' ),
-				implode( ', ', $names )
+			trim(
+				( $names ? sprintf(
+					/* translators: %s: comma separated language names */
+					__( 'Front page is missing a translation in: %s.', 'translate-words' ),
+					implode( ', ', $names )
+				) : '' ) . ' ' . ( $empty_names ? sprintf(
+					/* translators: %s: comma separated language names */
+					__( 'Front page translation has no Elementor layout in: %s.', 'translate-words' ),
+					implode( ', ', $empty_names )
+				) : '' )
 			)
 		)
 			->with_fix( (string) get_edit_post_link( $front_id, 'url' ), __( 'Edit homepage', 'translate-words' ) )

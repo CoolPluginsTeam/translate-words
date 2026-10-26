@@ -107,8 +107,8 @@ class Content extends Abstract_Check {
 		}
 
 		foreach ( $types as $type ) {
-			if ( $this->wants( 'content_' . $type ) ) {
-				$results[] = $this->missing_translations_result( $type, $default_lang, $targets );
+			if ( $this->wants( 'content_' . $type ) || $this->wants( 'content_unpublished_' . $type ) ) {
+				$results = array_merge( $results, $this->missing_translations_results( $type, $default_lang, $targets ) );
 			}
 		}
 
@@ -190,19 +190,22 @@ class Content extends Abstract_Check {
 	}
 
 	/**
-	 * Lists default-language posts that lack a translation in an active language.
+	 * Lists default-language posts that lack a translation, or whose translation is unpublished.
+	 *
+	 * Missing and unpublished translations are reported as separate results.
 	 *
 	 * @since 2.3.0
 	 *
 	 * @param string   $type         Post type.
 	 * @param object   $default_lang Default language.
 	 * @param object[] $targets      Languages to translate into.
-	 * @return Result
+	 * @return Result[]
 	 */
-	private function missing_translations_result( string $type, $default_lang, array $targets ): Result {
+	private function missing_translations_results( string $type, $default_lang, array $targets ): array {
 		$object = get_post_type_object( $type );
 		$name   = $object ? $object->labels->name : $type;
 		$id     = 'content_' . $type;
+		$draft  = 'content_unpublished_' . $type;
 
 		$scoped   = $this->scoped_ids( 'content' );
 		$post_ids = $scoped ? array_values( array_filter( array_keys( $scoped ), static function ( $id ) use ( $type ) {
@@ -228,9 +231,12 @@ class Content extends Abstract_Check {
 			)
 		);
 
-		$details   = array();
-		$missing   = 0;
-		$truncated = ! $scoped && count( $post_ids ) >= self::POST_LIMIT;
+		$details          = array();
+		$drafts           = array();
+		$missing          = 0;
+		$unpub            = 0;
+		$truncated        = ! $scoped && count( $post_ids ) >= self::POST_LIMIT;
+		$truncated_drafts = $truncated;
 
 		foreach ( $post_ids as $post_id ) {
 			$translations = $this->model->post->get_translations( (int) $post_id );
@@ -246,63 +252,115 @@ class Content extends Abstract_Check {
 					$this->coverage[ $lang->slug ]['sampled'] = $truncated;
 				}
 
-				if ( ! empty( $translations[ $lang->slug ] ) ) {
+				$translation_id = (int) ( $translations[ $lang->slug ] ?? 0 );
+				$unpublished    = $translation_id > 0 && 'publish' !== get_post_status( $translation_id );
+
+				if ( $translation_id > 0 && ! $unpublished ) {
 					if ( ! $scoped ) {
 						++$this->coverage[ $lang->slug ]['translated'];
 					}
 					continue;
 				}
 
-				++$missing;
-				if ( ! $scoped && count( $details ) >= self::DETAIL_LIMIT ) {
-					$truncated = true;
+				if ( $unpublished ) {
+					++$unpub;
+				} else {
+					++$missing;
+				}
+				if ( ! $scoped && count( $unpublished ? $drafts : $details ) >= self::DETAIL_LIMIT ) {
+					if ( $unpublished ) {
+						$truncated_drafts = true;
+					} else {
+						$truncated = true;
+					}
 					continue;
 				}
 
-				$title     = get_the_title( $post_id );
-				$details[] = array(
-					'label'        => '' !== $title ? $title : __( '(no title)', 'translate-words' ),
-					'message'      => sprintf(
-						/* translators: %s: language name with code */
-						__( 'Not translated into %s.', 'translate-words' ),
-						$this->lang_label( $lang )
-					),
-					'action_url'   => $this->new_translation_url( (int) $post_id, $lang->slug ),
-					'action_label' => sprintf(
-						/* translators: %s: language name */
-						__( 'Translate %s', 'translate-words' ),
-						$lang->name
-					),
-					'ignore_key'   => 'content:' . $post_id . ':' . $lang->slug,
-					'post_type'    => $type,
-					'language'     => $lang->slug,
+				$title = get_the_title( $post_id );
+				$row   = array(
+					'label'      => '' !== $title ? $title : __( '(no title)', 'translate-words' ),
+					'ignore_key' => 'content:' . $post_id . ':' . $lang->slug,
+					'post_type'  => $type,
+					'language'   => $lang->slug,
 				);
+
+				if ( $unpublished ) {
+					$drafts[] = $row + array(
+						'message'      => sprintf(
+							/* translators: %s: language name with code */
+							__( 'The %s translation is not published.', 'translate-words' ),
+							$this->lang_label( $lang )
+						),
+						'action_url'   => (string) get_edit_post_link( $translation_id, 'url' ),
+						'action_label' => sprintf(
+							/* translators: %s: language name */
+							__( 'Edit %s', 'translate-words' ),
+							$lang->name
+						),
+					);
+				} else {
+					$details[] = $row + array(
+						'message'      => sprintf(
+							/* translators: %s: language name with code */
+							__( 'Not translated into %s.', 'translate-words' ),
+							$this->lang_label( $lang )
+						),
+						'action_url'   => $this->new_translation_url( (int) $post_id, $lang->slug ),
+						'action_label' => sprintf(
+							/* translators: %s: language name */
+							__( 'Translate %s', 'translate-words' ),
+							$lang->name
+						),
+					);
+				}
 			}
 		}
 
-		if ( 0 === $missing ) {
-			return $this->result(
-				$id,
-				Result::PASS,
-				/* translators: %s: post type plural label */
-				sprintf( __( '%s fully translated', 'translate-words' ), $name ),
-				__( 'Every published item has a translation in each language.', 'translate-words' )
-			);
+		$results = array();
+
+		if ( $this->wants( $id ) ) {
+			if ( 0 === $missing ) {
+				$results[] = $this->result(
+					$id,
+					Result::PASS,
+					/* translators: %s: post type plural label */
+					sprintf( __( '%s fully translated', 'translate-words' ), $name ),
+					__( 'Every published item has a translation in each language.', 'translate-words' )
+				);
+			} else {
+				$results[] = $this->result(
+					$id,
+					Result::WARNING,
+					/* translators: %s: post type plural label */
+					sprintf( __( '%s missing translations', 'translate-words' ), $name ),
+					sprintf(
+						/* translators: %d: number of missing translations */
+						_n( '%d translation is missing.', '%d translations are missing.', $missing, 'translate-words' ),
+						$missing
+					)
+				)
+					->with_fix( admin_url( 'edit.php?post_type=' . rawurlencode( $type ) ), __( 'Bulk translate', 'translate-words' ) )
+					->with_details( $details, $truncated );
+			}
 		}
 
-		return $this->result(
-			$id,
-			Result::WARNING,
-			/* translators: %s: post type plural label */
-			sprintf( __( '%s missing translations', 'translate-words' ), $name ),
-			sprintf(
-				/* translators: %d: number of missing translations */
-				_n( '%d translation is missing.', '%d translations are missing.', $missing, 'translate-words' ),
-				$missing
+		if ( $unpub > 0 && $this->wants( $draft ) ) {
+			$results[] = $this->result(
+				$draft,
+				Result::WARNING,
+				/* translators: %s: post type plural label */
+				sprintf( __( '%s with unpublished translations', 'translate-words' ), $name ),
+				sprintf(
+					/* translators: %d: number of unpublished translations */
+					_n( '%d translation exists but is not published yet (for example, still in draft).', '%d translations exist but are not published yet (for example, still in draft).', $unpub, 'translate-words' ),
+					$unpub
+				)
 			)
-		)
-			->with_fix( admin_url( 'edit.php?post_type=' . rawurlencode( $type ) ), __( 'Bulk translate', 'translate-words' ) )
-			->with_details( $details, $truncated );
+				->with_fix( admin_url( 'edit.php?post_type=' . rawurlencode( $type ) . '&post_status=draft' ), __( 'View drafts', 'translate-words' ) )
+				->with_details( $drafts, $truncated_drafts );
+		}
+
+		return $results;
 	}
 
 	/**
@@ -392,6 +450,7 @@ class Content extends Abstract_Check {
 							$this->lang_label( $lang )
 						),
 						'action_url'     => (string) get_edit_post_link( $translation_id, 'url' ),
+						'edit_url'       => (string) get_edit_post_link( $post_id, 'url' ),
 						'action_label'   => sprintf(
 							/* translators: %s: language name */
 							__( 'Edit %s', 'translate-words' ),

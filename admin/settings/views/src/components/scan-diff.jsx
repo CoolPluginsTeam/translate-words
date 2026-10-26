@@ -11,16 +11,18 @@ const DiffModal = ({ row, request, onClose, onSynced, onError }) => {
     const [message, setMessage] = useState('')
     const [saving, setSaving] = useState(false)
     const dialog = useRef(null)
+    const options = row.options || []
+    const [current, setCurrent] = useState(row)
 
     useEffect(() => {
         let cancelled = false
         setData(null)
         setMessage('')
-        request(`/diff?translation_id=${row.translation_id}&split=${split ? 'true' : 'false'}`)
+        request(`/diff?translation_id=${current.translation_id}&split=${split ? 'true' : 'false'}`)
             .then(result => { if (!cancelled) setData(result) })
             .catch(error => { if (!cancelled) setMessage(error?.message || __('The changes could not be loaded.', 'translate-words')) })
         return () => { cancelled = true }
-    }, [row.translation_id, split])
+    }, [current.translation_id, split])
 
     useEffect(() => {
         const previous = document.activeElement
@@ -50,7 +52,7 @@ const DiffModal = ({ row, request, onClose, onSynced, onError }) => {
     const markSynced = async () => {
         setSaving(true)
         try {
-            onSynced(await request('/mark-synced', 'POST', { translation_id: row.translation_id }))
+            onSynced(await request('/mark-synced', 'POST', { translation_id: current.translation_id }))
         } catch (error) {
             setMessage(error?.message || __('Could not update the translation.', 'translate-words'))
             onError?.(error)
@@ -70,6 +72,9 @@ const DiffModal = ({ row, request, onClose, onSynced, onError }) => {
                     <button type='button' className={split ? 'active' : ''} aria-pressed={split} onClick={() => setSplit(true)}>{__('Side by side', 'translate-words')}</button>
                     <button type='button' className={split ? '' : 'active'} aria-pressed={!split} onClick={() => setSplit(false)}>{__('Inline', 'translate-words')}</button>
                 </div>
+                {options.length > 1 && <div className='lmat-scan-diff-view-toggle' role='group' aria-label={__('Language', 'translate-words')}>
+                    {options.map(option => <button key={option.translation_id} type='button' className={option.translation_id === current.translation_id ? 'active' : ''} aria-pressed={option.translation_id === current.translation_id} onClick={() => setCurrent(option)}>{String(option.language || '').toUpperCase()}</button>)}
+                </div>}
             </div>
             <div className='lmat-scan-diff-modal-body' aria-live='polite'>
                 {!data && !message && <p className='lmat-scan-diff-modal-loading'><Icon name='update' /> {__('Loading changes…', 'translate-words')}</p>}

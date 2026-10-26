@@ -173,11 +173,17 @@ class Strings extends Abstract_Check {
 				continue;
 			}
 
-			$title = '' !== trim( $name ) ? $name : wp_html_excerpt( wp_strip_all_tags( $string ), 80, '…' );
+			$core_titles = array(
+				'blogname'        => __( 'Site Title', 'translate-words' ),
+				'blogdescription' => __( 'Tagline', 'translate-words' ),
+			);
+			$is_core     = 'WordPress' === $context && isset( $core_titles[ $name ] );
+			$excerpt     = wp_html_excerpt( wp_strip_all_tags( $string ), 80, '…' );
+			$title       = $is_core ? $core_titles[ $name ] : ( '' !== trim( $name ) ? $name . ' — ' . wp_html_excerpt( wp_strip_all_tags( $string ), 60, '…' ) : $excerpt );
 
 			$strings[] = array(
 				'key'    => md5( $context . '|' . $string ),
-				'title'  => $title . ' — ' . wp_html_excerpt( wp_strip_all_tags( $string ), 60, '…' ),
+				'title'  => $title,
 				'string' => $string,
 			);
 		}

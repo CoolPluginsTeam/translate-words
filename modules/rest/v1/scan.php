@@ -440,8 +440,8 @@ class Scan extends Abstract_Controller {
 	public function recheck( WP_REST_Request $request ) {
 		wp_raise_memory_limit( 'admin' );
 		$keys = $request->get_param( 'keys' );
-		// Only content and Elementor rows can be rechecked one by one; other sections recheck the whole issue.
-		if ( is_array( $keys ) && $keys && in_array( (string) $request->get_param( 'section' ), array( 'content', 'elementor' ), true ) ) {
+		// A row is rechecked on its own when it names a post, and otherwise its whole issue is rechecked.
+		if ( is_array( $keys ) && $keys ) {
 			$report = ( new Scanner( $this->model ) )->recheck_rows( (string) $request->get_param( 'section' ), $keys );
 			if ( null === $report ) {
 				return new WP_Error( 'lmat_scan_row_not_found', __( 'This row is no longer in the saved report. Refresh the results and try again.', 'translate-words' ), array( 'status' => 400 ) );
@@ -629,6 +629,7 @@ class Scan extends Abstract_Controller {
 			'ignored_items'  => $report['ignored_items'],
 			'summary'        => $report['summary'],
 			'coverage'       => $coverage,
+			'elementor_summary' => isset( $report['elementor'] ) && is_array( $report['elementor'] ) ? $report['elementor'] : null,
 			'health'         => Scanner::health( $report['results'], $coverage ),
 			'time_formatted' => wp_date( $format, (int) $report['time'] ),
 			'partial_scans'  => (object) $partial,
