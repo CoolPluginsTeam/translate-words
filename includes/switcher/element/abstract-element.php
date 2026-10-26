@@ -144,7 +144,7 @@ abstract class Abstract_Element {
 		$this->direction        = $language->is_rtl ? 'rtl' : 'ltr';
 		$this->order            = (int) $language->term_group;
 		$this->has_translations = true;
-		$this->is_empty         = $language->get_tax_prop( 'language', 'count' ) <= 0;
+		$this->is_empty         = $language->get_tax_prop( 'lmat_language', 'count' ) <= 0;
 		$this->is_current       = $this->get_current_language_slug() === $language->slug;
 		$this->item_classes     = array_merge(
 			array( 'linguator-item', 'lang-item', "lang-item-{$language->term_id}", "lang-item-{$language->slug}" ),
