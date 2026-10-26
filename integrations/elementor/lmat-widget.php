@@ -36,7 +36,7 @@ class Linguator_Widget extends Widget_Base
         parent::__construct($data, $args);
         wp_register_style(
             'lmat-style',
-            LINGUATOR_URL . '/admin/assets/css/build/language-switcher-style.css',
+            plugins_url( 'admin/assets/css/build/language-switcher-style.css', LINGUATOR_FILE ),
             [],
             LINGUATOR_VERSION
         );

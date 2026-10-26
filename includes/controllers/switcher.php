@@ -24,49 +24,10 @@ use Linguator\Admin\Controllers\Linguator_Admin_Links;
  *  
  */
 class Linguator_Switcher {
-	public const DEFAULTS = array(
-		'dropdown'               => 0, // Display as list and not as dropdown.
-		'echo'                   => 1, // Echoes the list.
-		'hide_if_empty'          => 1, // Hides languages with no posts (or pages).
-		'show_flags'             => 0, // Don't show flags.
-		'show_names'             => 1, // Show language names.
-		'display_names_as'       => 'name', // Display the language name.
-		'force_home'             => 0, // Tries to find a translation.
-		'hide_if_no_translation' => 0, // Don't hide the link if there is no translation.
-		'hide_current'           => 0, // Don't hide the current language.
-		'post_id'                => null, // Link to the translations of the current page.
-		'raw'                    => 0, // Build the language switcher.
-		'item_spacing'           => 'preserve', // Preserve whitespace between list items.
-		'admin_render'           => 0, // Make the switcher in a frontend context.
-		'admin_current_lang'     => null, // Use the global current language.
-	);
-
 	/**
 	 * @var Linguator_Links|null
 	 */
 	protected $links;
-
-	/**
-	 * Returns options available for the language switcher - menu or widget
-	 * either strings to display the options or default values
-	 *
-	 *  
-	 *
-	 * @param string $type optional either 'menu', 'widget' or 'block', defaults to 'widget'
-	 * @param string $key  optional either 'string' or 'default', defaults to 'string'
-	 * @return array list of switcher options strings or default values
-	 */
-	public static function get_switcher_options( $type = 'widget', $key = 'string' ) {
-		$options = array(
-			'dropdown'               => array( 'string' => __( 'Displays as a dropdown', 'translate-words' ), 'default' => 0 ),
-			'show_names'             => array( 'string' => __( 'Displays language names', 'translate-words' ), 'default' => 1 ),
-			'show_flags'             => array( 'string' => __( 'Display flags', 'translate-words' ), 'default' => 0 ),
-			'force_home'             => array( 'string' => __( 'Force link to front page', 'translate-words' ), 'default' => 0 ),
-			'hide_current'           => array( 'string' => __( 'Hide the current language', 'translate-words' ), 'default' => 0 ),
-			'hide_if_no_translation' => array( 'string' => __( 'Hide languages with no translation', 'translate-words' ), 'default' => 0 ),
-		);
-		return wp_list_pluck( $options, $key );
-	}
 
 	/**
 	 * Displays a language switcher

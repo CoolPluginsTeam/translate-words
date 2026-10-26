@@ -327,8 +327,6 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 			'lmat_'
 		);
 
-		wp_localize_script( $script_handle, 'lmat_block_editor_blocks_settings', \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'string' ) );
-
 		// Ensure the block editor script is enqueued in the editor context
 		add_action( 'enqueue_block_editor_assets', function() use ( $script_handle ) {
 			

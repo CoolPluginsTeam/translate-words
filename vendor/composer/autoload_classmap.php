@@ -150,7 +150,6 @@ return array(
     'Linguator\\Includes\\Services\\Translation\\Translation_Term_Model' => $baseDir . '/includes/services/translation/translation-term-translate.php',
     'Linguator\\Includes\\Walkers\\Linguator_Walker' => $baseDir . '/includes/walkers/walker.php',
     'Linguator\\Includes\\Walkers\\Linguator_Walker_Dropdown' => $baseDir . '/includes/walkers/walker-dropdown.php',
-    'Linguator\\Includes\\Walkers\\Linguator_Walker_List' => $baseDir . '/includes/walkers/walker-list.php',
     'Linguator\\Includes\\Widgets\\Linguator_Widget_Calendar' => $baseDir . '/includes/widgets/widget-calendar.php',
     'Linguator\\Includes\\Widgets\\Linguator_Widget_Languages' => $baseDir . '/includes/widgets/widget-languages.php',
     'Linguator\\Install\\Linguator_Abstract_Activable' => $baseDir . '/install/abstract-activable.php',

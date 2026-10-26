@@ -201,7 +201,6 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Includes\\Services\\Translation\\Translation_Term_Model' => __DIR__ . '/../..' . '/includes/services/translation/translation-term-translate.php',
         'Linguator\\Includes\\Walkers\\Linguator_Walker' => __DIR__ . '/../..' . '/includes/walkers/walker.php',
         'Linguator\\Includes\\Walkers\\Linguator_Walker_Dropdown' => __DIR__ . '/../..' . '/includes/walkers/walker-dropdown.php',
-        'Linguator\\Includes\\Walkers\\Linguator_Walker_List' => __DIR__ . '/../..' . '/includes/walkers/walker-list.php',
         'Linguator\\Includes\\Widgets\\Linguator_Widget_Calendar' => __DIR__ . '/../..' . '/includes/widgets/widget-calendar.php',
         'Linguator\\Includes\\Widgets\\Linguator_Widget_Languages' => __DIR__ . '/../..' . '/includes/widgets/widget-languages.php',
         'Linguator\\Install\\Linguator_Abstract_Activable' => __DIR__ . '/../..' . '/install/abstract-activable.php',
