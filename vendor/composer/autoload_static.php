@@ -208,6 +208,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Install\\Linguator_Abstract_Deactivate' => __DIR__ . '/../..' . '/install/abstract-deactivate.php',
         'Linguator\\Install\\Linguator_Activate' => __DIR__ . '/../..' . '/install/activate.php',
         'Linguator\\Install\\Linguator_Deactivate' => __DIR__ . '/../..' . '/install/deactivate.php',
+        'Linguator\\Install\\Linguator_Upgrade' => __DIR__ . '/../..' . '/install/upgrade.php',
         'Linguator\\Install\\Linguator_Usable' => __DIR__ . '/../..' . '/install/usable.php',
         'Linguator\\Integrations\\Linguator_Integrations' => __DIR__ . '/../..' . '/integrations/integrations.php',
         'Linguator\\Integrations\\RankMath\\Linguator_RankMath' => __DIR__ . '/../..' . '/integrations/rankmath-seo/rankmath-lmat.php',

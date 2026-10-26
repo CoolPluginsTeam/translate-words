@@ -25,6 +25,7 @@ use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Supported_Blocks\Custom_Block_Post;
 use Linguator\Custom_Fields\Custom_Fields;
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
+use Linguator\Install\Linguator_Upgrade;
 
 // Define directory safely
 if ( ! defined( 'LMAT_LOCAL_DIR' ) ) {
@@ -272,8 +273,6 @@ class Linguator {
 		add_action( 'lmat_init_options_for_blog', array( Options_Registry::class, 'register' ) );
 		$options = new Options();
 
-		// Set current version
-		$options['version'] = LINGUATOR_VERSION;
 		/**
 		 * Filter the model class to use
 		 * /!\ this filter is fired *before* the $linguator object is available
@@ -293,6 +292,13 @@ class Linguator {
 		
 		/** @var Linguator_Model $model */
 		$model = new $class( $options );
+
+		/*
+		 * Run pending data upgrades once the language taxonomy is registered by the model,
+		 * then store the current version so they never run again.
+		 */
+		( new Linguator_Upgrade( $options ) )->maybe_upgrade();
+		$options['version'] = LINGUATOR_VERSION;
 
 		if ( ! $model->has_languages() ) {
 			/**

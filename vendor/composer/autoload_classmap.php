@@ -157,6 +157,7 @@ return array(
     'Linguator\\Install\\Linguator_Abstract_Deactivate' => $baseDir . '/install/abstract-deactivate.php',
     'Linguator\\Install\\Linguator_Activate' => $baseDir . '/install/activate.php',
     'Linguator\\Install\\Linguator_Deactivate' => $baseDir . '/install/deactivate.php',
+    'Linguator\\Install\\Linguator_Upgrade' => $baseDir . '/install/upgrade.php',
     'Linguator\\Install\\Linguator_Usable' => $baseDir . '/install/usable.php',
     'Linguator\\Integrations\\Linguator_Integrations' => $baseDir . '/integrations/integrations.php',
     'Linguator\\Integrations\\RankMath\\Linguator_RankMath' => $baseDir . '/integrations/rankmath-seo/rankmath-lmat.php',
