@@ -120,6 +120,89 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	}
 
 	/**
+	 * Returns the block attributes, by default the legacy switcher options.
+	 *
+	 * @return array
+	 */
+	protected function get_attributes() {
+		$attributes = array(
+			'className' => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'lmatLang'  => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+		);
+
+		foreach ( \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
+			$attributes[ $option ] = array(
+				'type'    => 'boolean',
+				'default' => $default,
+			);
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * Returns additional block type arguments such as supports and styles.
+	 *
+	 * @return array
+	 */
+	protected function get_block_args() {
+		return array();
+	}
+
+	/**
+	 * Adds the flag size, shape and label spacing CSS variables to the switcher markup.
+	 *
+	 * @param string $html       Switcher HTML.
+	 * @param array  $attributes Block attributes.
+	 * @return string
+	 */
+	protected function apply_flag_styles_to_markup( string $html, array $attributes ): string {
+		if ( empty( $attributes['show_flags'] ) || ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
+			return $html;
+		}
+
+		$border_radius = max( 0, min( 100, (int) ( $attributes['flag_border_radius'] ?? 0 ) ) );
+		$flag_width    = $attributes['flag_width'] ?? '18px';
+		$flag_style    = safecss_filter_attr(
+			sprintf(
+				'--lmat-flag-border-radius:%1$d;--lmat-flag-width:%2$s',
+				$border_radius,
+				$flag_width
+			)
+		);
+
+		$label_style = '';
+		if ( ! empty( $attributes['show_labels'] ) ) {
+			$label_style = safecss_filter_attr(
+				sprintf(
+					'--lmat-flag-label-spacing:%1$s',
+					$attributes['flag_label_spacing'] ?? '0.3em'
+				)
+			);
+		}
+
+		$processor = new \WP_HTML_Tag_Processor( $html );
+
+		while ( $processor->next_tag( array( 'tag_name' => 'SPAN', 'class_name' => 'lmat-switcher-flag' ) ) ) {
+			$style = $processor->get_attribute( 'style' ) ?? '';
+			$processor->set_attribute( 'style', '' === $style ? $flag_style : rtrim( $style, ';' ) . ';' . $flag_style );
+
+			if ( '' !== $label_style && $processor->next_tag( array( 'tag_name' => 'SPAN', 'class_name' => 'lmat-switcher-label' ) ) ) {
+				$style = $processor->get_attribute( 'style' ) ?? '';
+				$processor->set_attribute( 'style', '' === $style ? $label_style : rtrim( $style, ';' ) . ';' . $label_style );
+			}
+		}
+
+		return $processor->get_updated_html();
+	}
+
+	/**
 	 * Registers the Linguator's block.
 	 *
 	 *  Renamed and now handle any type of block registration based on a dynamic name.
@@ -142,6 +225,8 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 				'wp-components',
 				'wp-element',
 				'wp-i18n',
+				'wp-data',
+				'wp-notices',
 				'wp-hooks',
 				'wp-server-side-render',
 				'lodash',
@@ -160,34 +245,18 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 			}
 		}, 20 );
 
-		$attributes = array(
-			'className' => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-			'lmatLang' => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-		);
-		foreach ( \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
-			$attributes[ $option ] = array(
-				'type'    => 'boolean',
-				'default' => $default,
-			);
-		}
-
-		
 		$block_registration = register_block_type(
 			$this->get_block_name(),
-			array(
-				'editor_script'   => $script_handle,
-				'attributes'      => $attributes,
-				'render_callback' => array( $this, 'render' ),
-				'uses_context'    => $this->get_context(),
+			array_merge(
+				array(
+					'editor_script'   => $script_handle,
+					'attributes'      => $this->get_attributes(),
+					'render_callback' => array( $this, 'render' ),
+					'uses_context'    => $this->get_context(),
+				),
+				$this->get_block_args()
 			)
 		);
-		
 
 		// Translated strings used in JS code
 		wp_set_script_translations( $script_handle, 'translate-words' );

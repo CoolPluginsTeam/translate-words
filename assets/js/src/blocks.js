@@ -1,17 +1,26 @@
 /* global wp */
 (function () {
-    const { __ } = wp.i18n;
+    const { __, _x } = wp.i18n;
     const { registerBlockType, createBlock } = wp.blocks;
     const { Fragment } = wp.element;
     const {
       InspectorControls,
+      BlockControls,
       useBlockProps,
     } = wp.blockEditor || wp.editor; // fallback for older WP
     const {
       PanelBody,
       ToggleControl,
+      SelectControl,
+      RadioControl,
+      RangeControl,
+      ToolbarGroup,
+      ToolbarButton,
+      ToolbarDropdownMenu,
       Disabled,
     } = wp.components;
+    const UnitControl = wp.components.UnitControl || wp.components.__experimentalUnitControl;
+    const el = wp.element.createElement;
     const ServerSideRender = (wp.serverSideRender && wp.serverSideRender.default) || wp.serverSideRender;
     const { addFilter } = wp.hooks;
 
@@ -126,36 +135,310 @@
     // ---------------------------------------------------------------------------
     // Regular block: linguator/language-switcher
     // ---------------------------------------------------------------------------
+    const CSS_LENGTH_UNITS = [
+      { value: 'px', label: 'px' },
+      { value: 'em', label: 'em' },
+      { value: 'rem', label: 'rem' },
+      { value: 'vh', label: 'vh' },
+      { value: 'vw', label: 'vw' },
+    ];
+    const LABEL_SPACING_DEFAULT_VALUE = '0.3em';
+
+    const switcherAttributes = {
+      layout: { type: 'string', enum: ['vertical', 'horizontal', 'dropdown', 'select'], default: 'vertical' },
+      show_labels: { type: 'string', enum: ['names', 'codes', ''], default: 'names' },
+      show_flags: { type: 'boolean', default: false },
+      force_home: { type: 'boolean', default: false },
+      hide_current: { type: 'boolean', default: false },
+      hide_if_no_translation: { type: 'boolean', default: false },
+      flag_aspect_ratio: { type: 'string', enum: ['3:2', '1:1'], default: '3:2' },
+      flag_border_radius: { type: 'number', default: 0 },
+      flag_width: { type: 'string', default: '18px' },
+      flag_label_spacing: { type: 'string', default: LABEL_SPACING_DEFAULT_VALUE },
+      className: { type: 'string', default: '' },
+    };
+
+    const switcherDefaults = Object.keys(switcherAttributes).reduce((defaults, key) => {
+      defaults[key] = switcherAttributes[key].default;
+      return defaults;
+    }, {});
+
+    // Converts blocks saved with the `dropdown` and `show_names` attributes.
+    const deprecated = [
+      {
+        attributes: {
+          dropdown: { type: 'boolean', default: false },
+          show_names: { type: 'boolean', default: true },
+          show_flags: { type: 'boolean', default: false },
+          force_home: { type: 'boolean', default: false },
+          hide_current: { type: 'boolean', default: false },
+          hide_if_no_translation: { type: 'boolean', default: false },
+          className: { type: 'string', default: '' },
+        },
+        isEligible: (attributes) => 'dropdown' in attributes || 'show_names' in attributes,
+        migrate: (attributes) => {
+          const { dropdown, show_names, show_flags, force_home, hide_current, hide_if_no_translation, className } = attributes;
+          return {
+            ...switcherDefaults,
+            layout: dropdown ? 'select' : 'vertical',
+            show_labels: show_names ? 'names' : '',
+            show_flags: show_names ? !!show_flags : true,
+            force_home: !!force_home,
+            hide_current: !!hide_current,
+            hide_if_no_translation: !!hide_if_no_translation,
+            className: className || '',
+          };
+        },
+        save: () => null,
+      },
+    ];
+
+    // Toolbar and inspector controls of the language switcher block.
+    function SwitcherControls({ attributes, setAttributes }) {
+      const {
+        layout,
+        show_labels,
+        show_flags,
+        force_home,
+        hide_current,
+        flag_aspect_ratio,
+        flag_border_radius,
+        flag_width,
+        flag_label_spacing,
+        hide_if_no_translation,
+      } = attributes;
+
+      const warn = (message) => {
+        if (wp.data && wp.notices) {
+          wp.data.dispatch(wp.notices.store || 'core/notices').createWarningNotice(message);
+        }
+      };
+      const noLabelsWarning = __('Labels cannot be hidden if flags are not shown.', 'translate-words');
+      const noFlagsWarning = __('Flags cannot be hidden if labels are not displayed.', 'translate-words');
+
+      const layoutOptions = [
+        { label: _x('Horizontal', 'layout', 'translate-words'), value: 'horizontal' },
+        { label: _x('Vertical', 'layout', 'translate-words'), value: 'vertical' },
+        { label: __('Dropdown', 'translate-words'), value: 'dropdown' },
+        { label: __('Selector', 'translate-words'), value: 'select' },
+      ];
+      const layoutToolbarControls = layoutOptions
+        .filter((option) => 'select' !== option.value)
+        .map((option) => ({ title: option.label, onClick: () => setAttributes({ layout: option.value }) }));
+
+      const labelOptions = [
+        { label: __('Language names', 'translate-words'), value: 'names' },
+        { label: __('Language codes', 'translate-words'), value: 'codes' },
+      ];
+      const toolbarLabelControls = [
+        { title: __('Language names', 'translate-words'), onClick: () => setAttributes({ show_labels: 'names' }) },
+        { title: __('Language codes', 'translate-words'), onClick: () => setAttributes({ show_labels: 'codes' }) },
+      ];
+      if (show_flags) {
+        labelOptions.push({ label: _x('None', 'Labels', 'translate-words'), value: '' });
+        toolbarLabelControls.push({
+          title: _x('None', 'Labels', 'translate-words'),
+          onClick: () => setAttributes({ show_labels: '', flag_label_spacing: LABEL_SPACING_DEFAULT_VALUE }),
+        });
+      }
+
+      const onLayoutChange = (value) => {
+        const patch = { layout: value };
+        if ('select' === value) {
+          patch.show_flags = false;
+          if ('' === show_labels) {
+            patch.show_labels = 'names';
+          }
+        }
+        setAttributes(patch);
+      };
+
+      const onLabelsChange = (value) => {
+        if ('' === value) {
+          if (!show_flags) {
+            warn(noLabelsWarning);
+            return;
+          }
+          setAttributes({ show_labels: value, flag_label_spacing: LABEL_SPACING_DEFAULT_VALUE });
+          return;
+        }
+        setAttributes({ show_labels: value });
+      };
+
+      const onFlagsChange = (value) => {
+        if ('' === show_labels && !value) {
+          warn(noFlagsWarning);
+          return;
+        }
+        setAttributes({ show_flags: !!value });
+      };
+
+      const flagControls = show_flags && [
+        el(RadioControl, {
+          key: 'aspect',
+          label: __('Aspect', 'translate-words'),
+          selected: flag_aspect_ratio,
+          options: [
+            { label: __('Landscape (3:2)', 'translate-words'), value: '3:2' },
+            { label: __('Square (1:1)', 'translate-words'), value: '1:1' },
+          ],
+          onChange: (value) => setAttributes({ flag_aspect_ratio: value }),
+        }),
+        el(RangeControl, {
+          key: 'radius',
+          label: __('Border radius', 'translate-words'),
+          initialPosition: 0,
+          value: flag_border_radius,
+          min: 0,
+          max: 100,
+          step: 1,
+          allowReset: true,
+          resetFallbackValue: 0,
+          onChange: (value) => setAttributes({ flag_border_radius: value || 0 }),
+          __next40pxDefaultSize: true,
+        }),
+        UnitControl &&
+          el(UnitControl, {
+            key: 'width',
+            __next40pxDefaultSize: true,
+            label: __('Size', 'translate-words'),
+            value: flag_width,
+            units: CSS_LENGTH_UNITS,
+            onChange: (value) => setAttributes({ flag_width: value }),
+          }),
+        UnitControl &&
+          '' !== show_labels &&
+          el(UnitControl, {
+            key: 'spacing',
+            __next40pxDefaultSize: true,
+            label: __('Label spacing', 'translate-words'),
+            value: flag_label_spacing,
+            units: CSS_LENGTH_UNITS,
+            onChange: (value) => setAttributes({ flag_label_spacing: value }),
+          }),
+      ];
+
+      return el(
+        Fragment,
+        {},
+        el(
+          InspectorControls,
+          {},
+          el(
+            PanelBody,
+            { title: __('Display', 'translate-words') },
+            el(SelectControl, {
+              label: __('Layout', 'translate-words'),
+              value: layout,
+              options: layoutOptions,
+              onChange: onLayoutChange,
+              __next40pxDefaultSize: true,
+            }),
+            'select' !== layout &&
+              el(SelectControl, {
+                label: __('Labels', 'translate-words'),
+                value: show_labels,
+                options: labelOptions,
+                onChange: onLabelsChange,
+                __next40pxDefaultSize: true,
+              })
+          ),
+          'select' !== layout &&
+            el(
+              PanelBody,
+              { title: __('Flags Settings', 'translate-words') },
+              el(ToggleControl, {
+                label: __('Display flags', 'translate-words'),
+                checked: !!show_flags,
+                onChange: onFlagsChange,
+              }),
+              flagControls
+            ),
+          el(
+            PanelBody,
+            { title: __('Behavior', 'translate-words') },
+            el(ToggleControl, {
+              label: __('Force link to front page', 'translate-words'),
+              checked: !!force_home,
+              onChange: (value) => setAttributes({ force_home: !!value }),
+            }),
+            el(ToggleControl, {
+              label: __('Hide the current language', 'translate-words'),
+              checked: !!hide_current,
+              onChange: (value) => setAttributes({ hide_current: !!value }),
+            }),
+            el(ToggleControl, {
+              label: __('Hide languages with no translation', 'translate-words'),
+              checked: !!hide_if_no_translation,
+              onChange: (value) => setAttributes({ hide_if_no_translation: !!value }),
+            })
+          )
+        ),
+        el(
+          BlockControls,
+          {},
+          el(
+            ToolbarGroup,
+            {},
+            el(ToolbarDropdownMenu, {
+              icon: 'layout',
+              label: __('Layout', 'translate-words'),
+              controls: layoutToolbarControls,
+            }),
+            'select' !== layout &&
+              el(ToolbarButton, {
+                icon: el('span', { className: 'dashicons dashicons-flag' }),
+                label: show_flags ? __('Hide flags', 'translate-words') : __('Display flags', 'translate-words'),
+                onClick: () => onFlagsChange(!show_flags),
+              }),
+            'select' !== layout &&
+              el(ToolbarDropdownMenu, {
+                icon: el('span', { className: 'dashicons dashicons-editor-textcolor' }),
+                label: __('Labels', 'translate-words'),
+                controls: toolbarLabelControls,
+              })
+          )
+        )
+      );
+    }
+
     registerBlockType('linguator/language-switcher', {
+      apiVersion: 3,
       title: __('Language switcher', 'translate-words'),
       description: __('Add a language switcher so visitors can select their preferred language.', 'translate-words'),
       icon: TranslationIcon,
       category: 'widgets',
-      attributes: { ...sharedAttributes },
+      attributes: switcherAttributes,
       supports: {
         html: false,
+        spacing: { margin: true, padding: true, blockGap: true },
+        align: true,
+        color: { background: true },
+        typography: { fontSize: true, lineHeight: true, textAlign: true },
       },
+      deprecated,
       edit: (props) => {
         const blockProps = useBlockProps ? useBlockProps() : {};
-        return wp.element.createElement(
-          Fragment,
-          {},
-          wp.element.createElement(SwitcherInspector, { attributes: props.attributes, setAttributes: props.setAttributes }),
-          wp.element.createElement(
+        return el(
+          'div',
+          blockProps,
+          el(SwitcherControls, { attributes: props.attributes, setAttributes: props.setAttributes }),
+          el(
             Disabled,
             {},
             ServerSideRender
-              ? wp.element.createElement(ServerSideRender, {
+              ? el(ServerSideRender, {
                   block: 'linguator/language-switcher',
                   attributes: props.attributes,
+                  skipBlockSupportAttributes: true,
                 })
-              : wp.element.createElement('div', blockProps, __('Language Switcher preview (SSR not available).', 'translate-words'))
+              : el('div', {}, __('Language Switcher preview (SSR not available).', 'translate-words'))
           )
         );
       },
       save: () => null, // Rendered via PHP
     });
-  
+
     // ---------------------------------------------------------------------------
     // Navigation child block: linguator/navigation-language-switcher
     // ---------------------------------------------------------------------------

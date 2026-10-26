@@ -2,7 +2,7 @@
  * Allows to open/close the language switcher's submenus on click when the "dropdown" layout is used.
  */
 
-import Dropdown from './frontend-dropdown';
+import Dropdown from './frontend-dropdown.js';
 
 const lmatSwitcher = {
 	/**
