@@ -672,11 +672,16 @@ class Linguator_Settings extends Linguator_Admin_Base {
 				}, $translation_providers);
 			}
 
+			// Built-in AI (Chrome/Edge) setup card and provider list used by the AI Translation tab.
+			wp_enqueue_style( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/css/chrome-ai-setup-framework.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
+			wp_enqueue_style( 'lmat-provider-list', plugins_url( 'admin/assets/css/lmat-provider-list.css', LINGUATOR_ROOT_FILE ), array( 'lmat-chrome-ai-setup' ), LINGUATOR_VERSION );
+			wp_enqueue_script( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/js/chrome-ai-setup-framework.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
+
 			// Enqueue React-based settings script
 			wp_enqueue_script(
 				'lmat_settings',
 				plugins_url( 'admin/assets/frontend/settings/settings.js', LINGUATOR_ROOT_FILE ),
-				$asset['dependencies'],
+				array_merge( $asset['dependencies'], array( 'lmat-chrome-ai-setup' ) ),
 				$asset['version'],
 				true
 			);
@@ -702,6 +707,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'translations_data' => $translations_data,
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
+					'chrome_ai_setup'           => $this->get_chrome_ai_setup_data(),
 				)
 			);
 			wp_localize_script(
@@ -834,6 +840,68 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		$to_remove = array( 'lang', 'module', 'lmat_action', 'noheader', '_wpnonce' );
 		wp_safe_redirect( add_query_arg( $args, remove_query_arg( $to_remove, wp_get_referer() ) ) );
 		exit;
+	}
+
+	/**
+	 * Data the Chrome/Edge AI setup card needs on the AI Translation settings tab.
+	 *
+	 * @return array<string,mixed>
+	 */
+	protected function get_chrome_ai_setup_data() {
+		$languages        = array();
+		$source_language  = 'en';
+		$source_label     = 'English';
+		$default_language = $this->model->get_default_language();
+
+		foreach ( $this->model->get_languages_list() as $language ) {
+			$languages[ $language->slug ] = array( 'name' => $language->name );
+		}
+
+		if ( ! empty( $default_language->slug ) ) {
+			$source_language = $default_language->slug;
+			$source_label    = $default_language->name;
+		}
+
+		return array(
+			'source_language'       => $source_language,
+			'source_language_label' => $source_label,
+			'all_languages'         => $languages,
+			'chrome_icon_url'       => esc_url( plugins_url( 'admin/assets/images/chrome.png', LINGUATOR_ROOT_FILE ) ),
+			'edge_icon_url'         => esc_url( plugins_url( 'admin/assets/images/edge.png', LINGUATOR_ROOT_FILE ) ),
+			'alternative_url'       => esc_url( admin_url( 'admin.php?page=lmat_settings&tab=translation' ) ),
+			'texts'                 => array(
+				'cardTitle'                   => esc_html__( 'Chrome AI Setup', 'translate-words' ),
+				'cardDescription'             => esc_html__( 'Free on-device translation. We detect what your browser needs - usually just one click.', 'translate-words' ),
+				'statusChecking'              => esc_html__( 'Checking your browser...', 'translate-words' ),
+				'statusCheckingDesc'          => esc_html__( 'Give us a second while we detect Chrome AI support.', 'translate-words' ),
+				'statusReady'                 => esc_html__( 'Chrome AI is Ready', 'translate-words' ),
+				'statusReadyDesc'             => esc_html__( 'On-device translation is set up. No API key, no cost.', 'translate-words' ),
+				'statusDownloadable'          => esc_html__( 'Language pack required', 'translate-words' ),
+				'statusDownloadableDesc'      => esc_html__( 'Add the target translation language in your browser settings to download the translation model.', 'translate-words' ),
+				'statusDownloading'           => esc_html__( 'Downloading language model...', 'translate-words' ),
+				'statusDownloadingDesc'       => esc_html__( 'Keep this tab open. This happens once.', 'translate-words' ),
+				'statusError'                 => esc_html__( 'Chrome AI is currently unavailable', 'translate-words' ),
+				'statusErrorDesc'             => esc_html__( 'Something blocked the check. See advanced steps or use alternative options.', 'translate-words' ),
+				'statusHttpError'             => esc_html__( 'Chrome AI needs a secure (HTTPS) connection', 'translate-words' ),
+				'statusHttpErrorDesc'         => esc_html__( 'Serving wp-admin over HTTP prevents Chrome AI from launching. Serve pages over HTTPS or use an alternative engine.', 'translate-words' ),
+				'btnEnable'                   => esc_html__( 'Enable Chrome AI', 'translate-words' ),
+				'btnRetry'                    => esc_html__( 'Retry', 'translate-words' ),
+				'btnAlternative'              => esc_html__( 'Use Another Provider', 'translate-words' ),
+				'previewTitle'                => esc_html__( 'Try a real translation', 'translate-words' ),
+				'previewDesc'                 => esc_html__( 'Type anything and see the exact on-device result - no page needed.', 'translate-words' ),
+				'previewInputLabel'           => esc_html__( 'Your text', 'translate-words' ),
+				'previewOutputLabel'          => esc_html__( 'Translation', 'translate-words' ),
+				'previewPlaceholder'          => esc_html__( 'Type or paste text to translate...', 'translate-words' ),
+				'previewOutPlaceholder'       => esc_html__( 'Translation will appear here.', 'translate-words' ),
+				'btnTranslate'                => esc_html__( 'Translate preview', 'translate-words' ),
+				'translatingText'             => esc_html__( 'Translating...', 'translate-words' ),
+				'translationDone'             => esc_html__( 'Done in {ms} ms - on-device - no data left your browser', 'translate-words' ),
+				'translationFailed'           => esc_html__( 'Translation failed. This pair may need its own model, or see advanced steps below.', 'translate-words' ),
+				'advancedTitle'               => esc_html__( 'Still not working? Advanced steps', 'translate-words' ),
+				'advancedBrowserRequirements' => esc_html__( 'Chrome AI translation needs Chrome or Edge on desktop (version 138+). It does not run on mobile phones or tablets.', 'translate-words' ),
+				'openSetupGuide'              => esc_html__( 'Open Official Setup Guide', 'translate-words' ),
+			),
+		);
 	}
 
 	/**

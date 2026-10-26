@@ -276,29 +276,41 @@ const createMessagePopup = () => {
   const targetLang = window.lmatPageTranslationGlobal.target_lang;
   const targetLangName =
     lmatPageTranslationGlobal.languageObject[targetLang]["name"];
+  const magicWandUrl =
+    window.lmatPageTranslationGlobal.lmat_url + "admin/assets/images/magic-wand.svg";
 
   const messagePopup = document.createElement("div");
   messagePopup.id = "lmat-page-translation-modal-open-warning-wrapper";
   messagePopup.innerHTML = `
     <div class="modal-container" style="display: flex">
       <div class="modal-content">
-        <p>${wp.i18n.sprintf(
-          wp.i18n.__(
-            "Would you like to duplicate your original %s content and have it automatically translated into %s?",
+        <div class="modal-header">
+          <div class="lmat-page-translation-modal-header-left">
+            <img src="${magicWandUrl}" style="width: 20px; height: 20px; margin-right: 5px;" alt="" aria-hidden="true">
+            <h3>${wp.i18n.__("AI Translation", "translate-words")}</h3>
+          </div>
+          <button type="button" class="lmat-page-translation-modal-close modal-close" data-value="no" title="${wp.i18n.__("Close", "translate-words")}" aria-label="${wp.i18n.__("Close", "translate-words")}">&times;</button>
+        </div>
+        <div class="lmat-page-translation-modal-body">
+          <p>${wp.i18n.sprintf(
+            wp.i18n.__(
+              "Would you like to duplicate your original %s content and have it automatically translated into %s?",
+              "translate-words"
+            ),
+            postType,
+            targetLangName
+          )}</p>
+          <button type="button" class="lmat-page-translation-translate-button button" data-value="yes" id="lmat-page-translation-translate-button">
+            <img src="${magicWandUrl}" style="width: 20px; height: 20px; margin-right: 5px; filter: brightness(0) invert(1);" alt="" aria-hidden="true">
+            ${wp.i18n.__("Translate Now", "translate-words")}
+          </button>
+        </div>
+        <div class="modal-footer-notice">
+          <span class="dashicons dashicons-warning"></span>
+          <p><em>${wp.i18n.__(
+            "Note: close this popup if you do not want AI translation.",
             "translate-words"
-          ),
-          postType,
-          targetLangName
-        )}</p>
-        <div>
-          <div data-value="yes">${wp.i18n.__(
-            "Yes",
-            "translate-words"
-          )}</div>
-          <div data-value="no">${wp.i18n.__(
-            "No",
-            "translate-words"
-          )}</div>
+          )}</em></p>
         </div>
       </div>
     </div>`;

@@ -1,6 +1,7 @@
 import CopyClipboard from "../copy-clipboard/index.js";
 import { useEffect } from "@wordpress/element";
 import DOMPurify from 'dompurify';
+import { __ } from "@wordpress/i18n";
 
 const ErrorModalBox = ({ message, onClose, Title }) => {
 
@@ -52,14 +53,14 @@ const ErrorModalBox = ({ message, onClose, Title }) => {
         <div className="lmat-page-translation-error-modal-box-container">
             <div className="lmat-page-translation-error-modal-box">
                 <div className="lmat-page-translation-error-modal-box-header">
-                    <span className="lmat-page-translation-error-modal-box-close" onClick={onClose}>×</span>
                     {Title && <h3>{Title}</h3>}
+                    <button type="button" aria-label={__('Close', 'translate-words')} className="lmat-page-translation-error-modal-box-close" onClick={onClose}>&times;</button>
                 </div>
                 <div className="lmat-page-translation-error-modal-box-body">
                     <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stringifiedMessage) }} />
                 </div>
                 <div className="lmat-page-translation-error-modal-box-footer">
-                    <button className="lmat-page-translation-error-modal-box-close button button-primary" onClick={onClose}>Close</button>
+                    <button type="button" className="lmat-page-translation-error-modal-box-close button button-primary" onClick={onClose}>&#8592; {__('Back', 'translate-words')}</button>
                 </div>
             </div>
         </div>
