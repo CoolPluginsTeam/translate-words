@@ -46,15 +46,17 @@ class Switcher extends Abstract_Check {
 			return array();
 		}
 
-		$found = array();
+		$found   = array();
+		$enabled = (array) $this->option( 'lmat_language_switcher_options', array( 'default' ) );
 
 		if ( $this->has_menu_switcher() ) {
 			$found[] = __( 'Menus', 'translate-words' );
 		}
-		if ( $this->has_widget_switcher() ) {
+		// Widgets and blocks only render when their switcher type is enabled in settings.
+		if ( in_array( 'default', $enabled, true ) && $this->has_widget_switcher() ) {
 			$found[] = __( 'Widgets', 'translate-words' );
 		}
-		if ( $this->has_block_switcher() ) {
+		if ( in_array( 'block', $enabled, true ) && $this->has_block_switcher() ) {
 			$found[] = __( 'Blocks / templates', 'translate-words' );
 		}
 		if ( $this->has_elementor_switcher() ) {
@@ -85,13 +87,22 @@ class Switcher extends Abstract_Check {
 			);
 		}
 
+		// The settings tab only enables switcher types; placing one happens in the menu or site editor.
+		if ( wp_is_block_theme() ) {
+			$fix_url   = admin_url( 'site-editor.php?path=%2Fpatterns' );
+			$fix_label = __( 'Add to header', 'translate-words' );
+		} else {
+			$fix_url   = admin_url( 'nav-menus.php' );
+			$fix_label = __( 'Add to menu', 'translate-words' );
+		}
+
 		return array(
 			$this->result(
 				'lang_switcher',
 				Result::WARNING,
 				__( 'No language switcher detected', 'translate-words' ),
-				__( 'Visitors may have no way to change language. Add the language switcher to a menu, widget area or block template.', 'translate-words' )
-			)->with_fix( admin_url( 'admin.php?page=lmat_settings&tab=switcher' ), __( 'Switcher settings', 'translate-words' ) ),
+				__( 'Enabling a switcher type in settings does not display it. Add the language switcher to your header menu, a widget area or a block template so visitors can change language.', 'translate-words' )
+			)->with_fix( $fix_url, $fix_label ),
 		);
 	}
 
