@@ -6,6 +6,8 @@
 namespace Linguator\Modules\Blocks;
 
 use Linguator\Includes\Switcher\Assets;
+use Linguator\Includes\Switcher\Settings\Settings;
+use Linguator\Includes\Switcher\Switcher;
 
 /**
  * Language switcher block.
@@ -180,8 +182,6 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 		$attributes = $this->migrate_legacy_attributes( (array) $attributes );
 		$attributes = $this->set_attributes_for_block( $attributes );
 
-		$attributes['raw']          = false;
-		$attributes['echo']         = false;
 		$attributes['show_wrapper'] = true;
 		$attributes['unique_id']    = 'select' === $attributes['layout'] ? 'lang_choice_' . $block_id : 'lmat-switcher-block-' . $block_id;
 
@@ -189,8 +189,12 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 			$attributes['alignment'] = $attributes['style']['typography']['textAlign'];
 		}
 
-		$switcher        = new \Linguator\Includes\Controllers\Linguator_Switcher();
-		$switcher_output = $switcher->the_languages( $this->links, $attributes );
+		if ( empty( $this->links ) ) {
+			return '';
+		}
+
+		$settings        = new Settings( $attributes );
+		$switcher_output = ( new Switcher( $settings, $this->links ) )->get();
 
 		if ( empty( $switcher_output ) ) {
 			return '';

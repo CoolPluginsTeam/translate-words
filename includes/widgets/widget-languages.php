@@ -9,10 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use Linguator\Includes\Controllers\Linguator_Switcher;
 use Linguator\Includes\Switcher\Assets;
 use Linguator\Includes\Switcher\Fields\Widget as Fields;
 use Linguator\Includes\Switcher\Settings\Settings;
+use Linguator\Includes\Switcher\Switcher;
 use WP_Widget;
 
 /**
@@ -50,8 +50,6 @@ class Linguator_Widget_Languages extends WP_Widget {
 
 		$instance['unique_id']    = "lmat-switcher-widget-{$this->number}";
 		$instance['show_wrapper'] = true;
-		$instance['echo']         = 0;
-		$instance['raw']          = 0;
 
 		// Legacy instances without `layout` are converted from their `dropdown` and `show_names` keys.
 		if ( ! isset( $instance['layout'] ) ) {
@@ -64,7 +62,8 @@ class Linguator_Widget_Languages extends WP_Widget {
 			return;
 		}
 
-		$list = ( new Linguator_Switcher() )->the_languages( $linguator->links, $instance );
+		$settings = new Settings( $instance );
+		$list     = ( new Switcher( $settings, $linguator->links ) )->get();
 
 		if ( empty( $list ) ) {
 			return;
