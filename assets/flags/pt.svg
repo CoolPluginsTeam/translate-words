@@ -1,1 +1,18 @@
-<svg width="21" height="15" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="a"><stop stop-color="#FFF" offset="0%"/><stop stop-color="#F0F0F0" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="b"><stop stop-color="#FF2936" offset="0%"/><stop stop-color="#FD0D1B" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="c"><stop stop-color="#128415" offset="0%"/><stop stop-color="#0A650C" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="d"><stop stop-color="#FAF94F" offset="0%"/><stop stop-color="#F8F736" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="e"><stop stop-color="#1D50B5" offset="0%"/><stop stop-color="#15439D" offset="100%"/></linearGradient></defs><g fill="none" fill-rule="evenodd"><path fill="url(#a)" d="M0 0h21v15H0z"/><path fill="url(#b)" d="M0 0h21v15H0z"/><path fill="url(#c)" d="M0 0h8v15H0z"/><path d="M8 9.5a2 2 0 100-4 2 2 0 000 4zm0 1a3 3 0 110-6 3 3 0 010 6z" fill="url(#d)" fill-rule="nonzero"/><path d="M7 6.256A.25.25 0 017.245 6h1.51A.25.25 0 019 6.256V8a.997.997 0 01-1 1c-.552 0-1-.443-1-.999V6.256z" fill="url(#a)"/><path d="M8 8c.276 0 .5-.724.5-1a.5.5 0 00-1 0c0 .276.224 1 .5 1z" fill="url(#e)"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#ff0" viewBox="0 0 900 600">
+<path fill="red" d="M360 0h540v600H360"/>
+<path fill="#060" d="M0 0h360v600H0"/>
+<path d="M360 148a153 153 0 1 1 0 306 153 153 0 0 1 0-306M249 375l62 12-17-23zm-21-57q3 22 13 42c11-6 39-11 39-11l-6-22zm266-18-51-13-1 26s39-7 52-11zm-24-74-24-5-7 13s24-4 32-7zm-243 74 47 12-1-24c-4 1-36 8-46 12m6-41-5 24q11-5 27-8zm250 94q7-15 9-34-15 5-40 8l-1 1zM352 167c-44 0-78 32-78 32l78-1zm16 31 79 1s-32-32-79-32zm124 85q-3-22-12-41l-37 8v21zM266 395q35 34 86 39v-28q-51-2-86-11m102 39q51-4 86-39c-8 2-62 11-86 11"/>
+<path fill="#fff" d="M271 316a89 89 0 1 0 178 0V198H271v118"/>
+<path fill="red" d="M274 316a86 86 0 1 0 172 0V201H274v115m35 0v-80h102v80a51 51 0 0 1-102 0"/>
+<g id="c">
+<path id="a" fill="#039" d="M348 303a12 12 0 0 0 24 0v-15h-24"/>
+<use y="-38" href="#a"/>
+<use x="30" href="#a"/>
+<use y="38" href="#a"/>
+<path id="b" d="M356 203v3h1v11h-2v-6h1v-3h-8v3h1v6h-2v2h1v2h1v9h-2v2h26v-2h-2v-9h1v-2h1v-2h-2v-6h1v-3h-8v3h1v6h-2v-11h1v-3"/>
+<use x="68" href="#b"/>
+<use x="68" y="64" href="#b"/>
+<use href="#b" transform="rotate(45 230 357)"/>
+</g>
+<use href="#c" transform="matrix(-1 0 0 1 720 0)"/>
+</svg>

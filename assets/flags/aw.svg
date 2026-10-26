@@ -1,1 +1,6 @@
-<svg width="21" height="15" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="a"><stop stop-color="#FFF" offset="0%"/><stop stop-color="#F0F0F0" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="b"><stop stop-color="#5098EA" offset="0%"/><stop stop-color="#458BDB" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="c"><stop stop-color="#E82045" offset="0%"/><stop stop-color="#D01739" offset="100%"/></linearGradient></defs><g fill="none" fill-rule="evenodd"><path fill="url(#a)" d="M0 0h21v15H0z"/><path fill="url(#b)" d="M0 0h21v15H0z"/><path d="M1.803 4.96a.5.5 0 010-.92l1.566-.67.671-1.567a.5.5 0 01.92 0l.67 1.566 1.567.671a.5.5 0 010 .92l-1.566.67-.671 1.567a.5.5 0 01-.92 0l-.67-1.566-1.567-.671z" fill="url(#a)" fill-rule="nonzero"/><path fill="url(#c)" d="M3.75 5.25L2 4.5l1.75-.75L4.5 2l.75 1.75L7 4.5l-1.75.75L4.5 7z"/><path fill="#F9D536" d="M0 11h21v1H0zm0-2h21v1H0z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+<path fill="#418fde" d="M0 0h900v600H0"/>
+<path fill="#ffd100" d="M0 400h900v33H0v33h900v33H0"/>
+<path fill="#fff" d="m133 33-24 76-76 24 76 24 24 76 24-76 76-24-76-24"/>
+<path fill="#ef3340" d="m133 56 18 59 60 18-59 18-19 60-18-59-59-19 59-18"/>
+</svg>

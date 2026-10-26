@@ -80,7 +80,7 @@ return array(
 		'name'     => 'العربية',
 		'label'    => 'Arabic',
 		'dir'      => 'rtl',
-		'flag'     => 'arab',
+		'flag'     => 'ar.lang',
 		'facebook' => 'ar_AR',
 		'deepl'    => 'AR',
 	),
@@ -90,7 +90,7 @@ return array(
 		'name'     => 'Aragonés',
 		'label'    => 'Aragonese',
 		'dir'      => 'ltr',
-		'flag'     => 'es',
+		'flag'     => 'es-ar',
 	),
 	'arq' => array(
 		'code'     => 'ar',
@@ -181,7 +181,7 @@ return array(
 		'name'     => 'བོད་ཡིག',
 		'label'    => 'Tibetan',
 		'dir'      => 'ltr',
-		'flag'     => 'tibet',
+		'flag'     => 'bo.lang',
 	),
 	'bre' => array(
 		'w3c'      => 'br',
@@ -203,7 +203,7 @@ return array(
 		'name'     => 'Català',
 		'label'    => 'Catalan',
 		'dir'      => 'ltr',
-		'flag'     => 'catalonia',
+		'flag'     => 'es-ct',
 		'facebook' => 'ca_ES',
 	),
 	'ceb' => array(
@@ -221,7 +221,7 @@ return array(
 		'name'     => 'کوردی',
 		'label'    => 'Kurdish (Sorani)',
 		'dir'      => 'rtl',
-		'flag'     => 'kurdistan',
+		'flag'     => 'iq-kr',
 		'facebook' => 'cb_IQ',
 	),
 	'co' => array(
@@ -258,7 +258,7 @@ return array(
 		'name'     => 'Cymraeg',
 		'label'    => 'Welsh',
 		'dir'      => 'ltr',
-		'flag'     => 'wales',
+		'flag'     => 'gb-wls',
 		'facebook' => 'cy_GB',
 	),
 	'da_DK' => array(
@@ -424,7 +424,7 @@ return array(
 		'name'     => 'Esperanto',
 		'label'    => 'Esperanto',
 		'dir'      => 'ltr',
-		'flag'     => 'esperanto',
+		'flag'     => 'eo.lang',
 		'facebook' => 'eo_EO',
 	),
 	'es_AR' => array(
@@ -583,7 +583,7 @@ return array(
 		'name'     => 'Euskara',
 		'label'    => 'Basque',
 		'dir'      => 'ltr',
-		'flag'     => 'basque',
+		'flag'     => 'es-pv',
 		'facebook' => 'eu_ES',
 	),
 	'fa_AF' => array(
@@ -647,7 +647,7 @@ return array(
 		'name'     => 'Français',
 		'label'    => 'French',
 		'dir'      => 'ltr',
-		'flag'     => 'quebec',
+		'flag'     => 'ca-qc',
 		'facebook' => 'fr_CA',
 		'deepl'    => 'FR',
 	),
@@ -677,7 +677,7 @@ return array(
 		'name'     => 'Furlan',
 		'label'    => 'Friulian',
 		'dir'      => 'ltr',
-		'flag'     => 'it',
+		'flag'     => 'it-36',
 	),
 	'fy' => array(
 		'code'     => 'fy',
@@ -709,7 +709,7 @@ return array(
 		'name'     => 'Gàidhlig',
 		'label'    => 'Scottish Gaelic',
 		'dir'      => 'ltr',
-		'flag'     => 'scotland',
+		'flag'     => 'gb-sct',
 	),
 	'gl_ES' => array(
 		'code'     => 'gl',
@@ -717,7 +717,7 @@ return array(
 		'name'     => 'Galego',
 		'label'    => 'Galician',
 		'dir'      => 'ltr',
-		'flag'     => 'galicia',
+		'flag'     => 'es-ga',
 		'facebook' => 'gl_ES',
 	),
 	'gu' => array(
@@ -743,7 +743,7 @@ return array(
 		'name'     => 'هزاره گی',
 		'label'    => 'Hazaragi',
 		'dir'      => 'rtl',
-		'flag'     => 'af',
+		'flag'     => 'haz.lang',
 	),
 	'he_IL' => array(
 		'code'     => 'he',
@@ -816,7 +816,7 @@ return array(
 		'name'   => 'Ido',
 		'label'  => 'Ido',
 		'dir'    => 'ltr',
-		'flag'   => 'io',
+		'flag'   => 'io.lang',
 		'w3c'    => 'io',
 	),
 	'is_IS' => array(
@@ -872,7 +872,7 @@ return array(
 		'name'   => 'Qaraqalpaq tili',
 		'label'  => 'Karakalpak',
 		'dir'    => 'ltr',
-		'flag'   => 'uz',
+		'flag'   => 'uz-qr',
 	),
 	'kab' => array(
 		'code'     => 'kab',
@@ -1153,7 +1153,7 @@ return array(
 		'name'     => 'Occitan',
 		'label'    => 'Occitan',
 		'dir'      => 'ltr',
-		'flag'     => 'occitania',
+		'flag'     => 'oci.lang',
 		'w3c'      => 'oc',
 	),
 	'ory' => array(
@@ -1172,7 +1172,7 @@ return array(
 		'name'   => 'ирон ӕвзаг',
 		'label'  => 'Ossetic',
 		'dir'    => 'ltr',
-		'flag'   => 'ru',
+		'flag'   => 'ru-se',
 	),
 	'pa_IN' => array(
 		'code'     => 'pa',
@@ -1298,7 +1298,7 @@ return array(
 		'name'     => 'Сахалыы',
 		'label'    => 'Sakha',
 		'dir'      => 'ltr',
-		'flag'     => 'ru',
+		'flag'     => 'ru-sa',
 	),
 	'si_LK' => array(
 		'code'     => 'si',
@@ -1496,7 +1496,7 @@ return array(
 		'name'     => 'Татар теле',
 		'label'    => 'Tatar',
 		'dir'      => 'ltr',
-		'flag'     => 'ru',
+		'flag'     => 'ru-ta',
 		'facebook' => 'tt_RU',
 	),
 	'tuk' => array(
@@ -1550,7 +1550,7 @@ return array(
 		'name'     => 'Vèneto',
 		'label'    => 'Venetian',
 		'dir'      => 'ltr',
-		'flag'     => 'veneto',
+		'flag'     => 'it-34',
 	),
 	'vi' => array(
 		'code'     => 'vi',

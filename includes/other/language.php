@@ -362,19 +362,34 @@ class Linguator_Language {
 			'src' => '',
 		);
 
-		// Linguator builtin flags.
-		if ( ! empty( $code ) && is_readable( LINGUATOR_DIR . '/assets/flags/' . $code . '.svg' ) ) {
-			$default_flag['url'] = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE );
+		// Maps former flag file names to their ISO based replacements.
+		$legacy_codes = array(
+			'arab'      => 'ar.lang',
+			'basque'    => 'es-pv',
+			'catalonia' => 'es-ct',
+			'england'   => 'gb-eng',
+			'esperanto' => 'eo.lang',
+			'galicia'   => 'es-ga',
+			'kurdistan' => 'iq-kr',
+			'occitania' => 'oci.lang',
+			'quebec'    => 'ca-qc',
+			'scotland'  => 'gb-sct',
+			'tibet'     => 'bo.lang',
+			'veneto'    => 'it-34',
+			'wales'     => 'gb-wls',
+		);
+		if ( isset( $legacy_codes[ $code ] ) ) {
+			$code = $legacy_codes[ $code ];
+		}
 
-			// If base64 encoded flags are preferred.
+		// Linguator builtin flags, displayed at 18x12 pixels.
+		if ( ! empty( $code ) && is_readable( LINGUATOR_DIR . '/assets/flags/' . $code . '.svg' ) ) {
+			$default_flag['url']    = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE );
+			$default_flag['width']  = 18;
+			$default_flag['height'] = 12;
+
 			if ( linguator_get_constant( 'LINGUATOR_ENCODED_FLAGS', true ) ) {
-				$file_path = LINGUATOR_DIR . '/assets/flags/' . $code . '.svg';
-				$imagesize = getimagesize( $file_path );
-				if ( is_array( $imagesize ) ) {
-					list( $default_flag['width'], $default_flag['height'] ) = $imagesize;
-				}
-				$file_contents       = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-				$default_flag['src'] = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				$default_flag['src'] = $default_flag['url'];
 			}
 		}
 

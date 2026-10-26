@@ -1,1 +1,12 @@
-<svg width="21" height="15" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="a"><stop stop-color="#FFF" offset="0%"/><stop stop-color="#F0F0F0" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="b"><stop stop-color="#FFE547" offset="0%"/><stop stop-color="#FCE032" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="c"><stop stop-color="#118C81" offset="0%"/><stop stop-color="#0D7168" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="d"><stop stop-color="#262626" offset="0%"/><stop stop-color="#0D0D0D" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="e"><stop stop-color="#EF2147" offset="0%"/><stop stop-color="#D01739" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="f"><stop stop-color="#FDE444" offset="0%"/><stop stop-color="#FCE032" offset="100%"/></linearGradient></defs><g fill="none" fill-rule="evenodd"><path fill="url(#a)" d="M0 0h21v15H0z"/><path fill="url(#b)" d="M0 11h21v4H0z"/><path fill="url(#c)" d="M0 0h21v4H0z"/><path fill="url(#a)" d="M0 4h21v7H0z"/><path fill="url(#d)" d="M0 5h21v5H0z"/><path fill="url(#e)" d="M0 0l10 7.5L0 15z"/><path fill="url(#f)" d="M3.5 8.456L2.03 9.523l.561-1.728-1.469-1.068h1.816L3.5 5l.562 1.727h1.816l-1.47 1.068.561 1.728z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+<path fill="#fce100" d="M0 0h900v600H0"/>
+<path fill="#fff" d="M0 0h900v412H0"/>
+<path fill="#007168" d="M0 0h900v188H0"/>
+<path d="M0 206h900v188H0"/>
+<path fill="#d21034" d="M394 300 0 600V0"/>
+<path fill="#fce100" d="m58 412 73-225 73 225L12 273h238"/>
+<g stroke="#000" stroke-width="1.6">
+<path fill="#fff" d="M68 352h124l6-6-15-51-6-5-34-5-30-1-26 5-6 6z"/>
+<path d="m33 358 13 15h4l26-32 1-4 5-5 11 19 6-4-4-15 9-9-4-5 2-3s31 19 43 14v-14s-31-3-32-10c-1-6 5-7 10-7l13-11 73 84 5-6-72-83 6-6 1-4 9-7 5 4 23-19h4l38-37-41 30-14-8v7l-11 10h-8l-22 19-20-23 1-4-12-14c-5-1-12-1-14 9-2 3-2-2-15 1l-29 41 16 20 33-42 1-12 7 8 6-1 20 22-5 1-47 39-2 12-11 11-8 2"/>
+</g>
+</svg>
