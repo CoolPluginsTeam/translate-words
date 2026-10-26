@@ -509,8 +509,12 @@ $prefix: lmat-bulk-translate;
                         &:nth-child(1){
                             min-width: 120px;
 
+                            // Language flag in the status table, sized to match admin flags (18x12).
                             img{
+                                width: 18px;
+                                height: 12px;
                                 margin-right: 6px;
+                                vertical-align: middle;
                             }
                         }
                         &:not(:nth-child(1)){
@@ -849,6 +853,13 @@ $prefix: lmat-bulk-translate;
                 .#{$prefix}-language {
                     display: flex;
                     padding-right: .5rem;
+
+                    // Language flag next to each target language checkbox, sized to match admin flags (18x12).
+                    .#{$prefix}-language-label img {
+                        width: 18px;
+                        height: 12px;
+                        vertical-align: middle;
+                    }
 
                     input[name="languages"]:disabled {
                         &~img {
