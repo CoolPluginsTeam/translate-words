@@ -30,6 +30,11 @@ class Dropdown {
 			'keydown',
 			this.closeOnListKeydown.bind( this )
 		);
+		// Escape also closes the submenu while focus is on the toggle button.
+		button.addEventListener(
+			'keydown',
+			this.closeOnListKeydown.bind( this )
+		);
 		button.nextElementSibling
 			.querySelector( 'li:last-child > a' )
 			.addEventListener( 'blur', this.closeOnLastLinkBlur.bind( this ) );

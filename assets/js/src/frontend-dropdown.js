@@ -27,6 +27,11 @@ export default class Dropdown {
 			'keydown',
 			this.closeOnListKeydown.bind( this )
 		);
+		// Escape also closes the submenu while focus is on the toggle button.
+		button.addEventListener(
+			'keydown',
+			this.closeOnListKeydown.bind( this )
+		);
 		button.nextElementSibling
 			.querySelector( 'li:last-child > a' )
 			.addEventListener( 'blur', this.closeOnLastLinkBlur.bind( this ) );
@@ -61,7 +66,7 @@ export default class Dropdown {
 	}
 
 	/**
-	 * Event callback that closes the submenu when pressing the Escape key while in the list.
+	 * Event callback that closes the submenu when pressing the Escape key while in the list or on the toggle button.
 	 *
 	 * @param {Event} event The event.
 	 */
