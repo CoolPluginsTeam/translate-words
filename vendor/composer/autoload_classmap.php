@@ -61,6 +61,7 @@ return array(
     'Linguator\\Includes\\Switcher\\Element\\Nav' => $baseDir . '/includes/switcher/element/nav.php',
     'Linguator\\Includes\\Switcher\\Element\\Select' => $baseDir . '/includes/switcher/element/select.php',
     'Linguator\\Includes\\Switcher\\Fields\\Abstract_Fields' => $baseDir . '/includes/switcher/fields/abstract-fields.php',
+    'Linguator\\Includes\\Switcher\\Fields\\Menu' => $baseDir . '/includes/switcher/fields/menu.php',
     'Linguator\\Includes\\Switcher\\Fields\\Widget' => $baseDir . '/includes/switcher/fields/widget.php',
     'Linguator\\Includes\\Switcher\\Layout\\Abstract_Layout' => $baseDir . '/includes/switcher/layout/abstract-layout.php',
     'Linguator\\Includes\\Switcher\\Layout\\Dropdown' => $baseDir . '/includes/switcher/layout/dropdown.php',

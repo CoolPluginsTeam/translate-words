@@ -112,6 +112,7 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Includes\\Switcher\\Element\\Nav' => __DIR__ . '/../..' . '/includes/switcher/element/nav.php',
         'Linguator\\Includes\\Switcher\\Element\\Select' => __DIR__ . '/../..' . '/includes/switcher/element/select.php',
         'Linguator\\Includes\\Switcher\\Fields\\Abstract_Fields' => __DIR__ . '/../..' . '/includes/switcher/fields/abstract-fields.php',
+        'Linguator\\Includes\\Switcher\\Fields\\Menu' => __DIR__ . '/../..' . '/includes/switcher/fields/menu.php',
         'Linguator\\Includes\\Switcher\\Fields\\Widget' => __DIR__ . '/../..' . '/includes/switcher/fields/widget.php',
         'Linguator\\Includes\\Switcher\\Layout\\Abstract_Layout' => __DIR__ . '/../..' . '/includes/switcher/layout/abstract-layout.php',
         'Linguator\\Includes\\Switcher\\Layout\\Dropdown' => __DIR__ . '/../..' . '/includes/switcher/layout/dropdown.php',

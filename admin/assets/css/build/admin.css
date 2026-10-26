@@ -582,3 +582,13 @@ body.rtl .lmat-language-switcher-widget-content th {
 	margin: 1em -15px; /* Makes the separator full width. */
 }
 
+.lmat-language-switcher-menu-content fieldset {
+	padding: 0 10px .67em;
+	border-bottom: 1px solid #c3c4c7;
+	margin: 0 -10px;
+}
+
+.lmat-language-switcher-menu-content legend {
+	padding: .67em 10px;
+	margin: 0 -10px;
+}
