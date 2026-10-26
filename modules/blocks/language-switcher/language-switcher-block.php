@@ -31,38 +31,30 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 	 * @return string Returns the language switcher.
 	 */
 	public function render( $attributes, $content, $block ) { //phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-		static $dropdown_id = 0;
-		++$dropdown_id;
-		// Sets a unique id for dropdown in Linguator_Switcher::the_language().
-		// Only set dropdown ID if dropdown is actually enabled (truthy value)
-		if ( ! empty( $attributes['dropdown'] ) ) {
-			$attributes['dropdown'] = $dropdown_id;
-		}
+		static $block_id = 0;
+		++$block_id;
 
 		$attributes = $this->set_attributes_for_block( $attributes );
 
-		$attributes['raw'] = false;
-		$switcher = new \Linguator\Includes\Controllers\Linguator_Switcher();
+		$attributes['raw']          = false;
+		$attributes['echo']         = false;
+		$attributes['show_wrapper'] = true;
+		$attributes['unique_id']    = 'lmat-switcher-block-' . $block_id;
+
+		// Legacy block attributes are converted from their `dropdown` key.
+		if ( ! isset( $attributes['layout'] ) ) {
+			$attributes['layout'] = empty( $attributes['dropdown'] ) ? 'vertical' : 'select';
+		}
+
+		$switcher        = new \Linguator\Includes\Controllers\Linguator_Switcher();
 		$switcher_output = $switcher->the_languages( $this->links, $attributes );
 
 		if ( empty( $switcher_output ) ) {
 			return '';
 		}
 
-		$switcher_output = wp_kses( $switcher_output, $this->get_allowed_switcher_html() );
-
-		$aria_label = __( 'Choose a language', 'translate-words' );
-		if ( $attributes['dropdown'] ) {
-			$switcher_output = '<label class="screen-reader-text" for="' . esc_attr( 'lang_choice_' . $attributes['dropdown'] ) . '">' . esc_html( $aria_label ) . '</label>' . $switcher_output;
-
-			$wrap_tag = '<div %1$s>%2$s</div>';
-		} else {
-			$wrap_tag = '<nav role="navigation" aria-label="' . esc_attr( $aria_label ) . '"><ul %1$s>%2$s</ul></nav>';
-		}
-
-		$wrap_attributes = get_block_wrapper_attributes();
-
-		return wp_kses( sprintf( $wrap_tag, $wrap_attributes, $switcher_output ), $this->get_allowed_switcher_html() );
+		// The switcher markup is escaped by its elements.
+		return sprintf( '<div %1$s>%2$s</div>', get_block_wrapper_attributes(), $switcher_output );
 	}
 }
 

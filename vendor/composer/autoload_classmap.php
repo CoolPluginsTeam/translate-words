@@ -60,6 +60,8 @@ return array(
     'Linguator\\Includes\\Switcher\\Element\\Abstract_Element' => $baseDir . '/includes/switcher/element/abstract-element.php',
     'Linguator\\Includes\\Switcher\\Element\\Nav' => $baseDir . '/includes/switcher/element/nav.php',
     'Linguator\\Includes\\Switcher\\Element\\Select' => $baseDir . '/includes/switcher/element/select.php',
+    'Linguator\\Includes\\Switcher\\Fields\\Abstract_Fields' => $baseDir . '/includes/switcher/fields/abstract-fields.php',
+    'Linguator\\Includes\\Switcher\\Fields\\Widget' => $baseDir . '/includes/switcher/fields/widget.php',
     'Linguator\\Includes\\Switcher\\Layout\\Abstract_Layout' => $baseDir . '/includes/switcher/layout/abstract-layout.php',
     'Linguator\\Includes\\Switcher\\Layout\\Dropdown' => $baseDir . '/includes/switcher/layout/dropdown.php',
     'Linguator\\Includes\\Switcher\\Layout\\Nav' => $baseDir . '/includes/switcher/layout/nav.php',

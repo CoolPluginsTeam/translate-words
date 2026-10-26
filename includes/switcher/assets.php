@@ -32,9 +32,31 @@ class Assets {
 	 * @return void
 	 */
 	public static function enqueue_frontend_scripts(): void {
-		if ( wp_script_is( self::FRONTEND_ASSET_HANDLE, 'registered' ) ) {
-			wp_enqueue_script( self::FRONTEND_ASSET_HANDLE );
+		if ( wp_script_is( self::FRONTEND_ASSET_HANDLE, 'enqueued' ) ) {
+			return;
 		}
+
+		if ( ! wp_script_is( self::FRONTEND_ASSET_HANDLE, 'registered' ) ) {
+			self::register_scripts();
+		}
+
+		if ( ! wp_script_is( self::FRONTEND_ASSET_HANDLE, 'registered' ) ) {
+			// No built file: fall back to an inline script handling the select and dropdown layouts.
+			wp_register_script( self::FRONTEND_ASSET_HANDLE, '', array(), LINGUATOR_VERSION, array( 'in_footer' => true ) );
+			wp_add_inline_script( self::FRONTEND_ASSET_HANDLE, self::get_inline_script() );
+		}
+
+		wp_enqueue_script( self::FRONTEND_ASSET_HANDLE );
+	}
+
+	/**
+	 * Returns the inline script navigating on `<select>` change and toggling dropdown submenus.
+	 *
+	 * @return string
+	 */
+	private static function get_inline_script(): string {
+		return 'document.addEventListener("change",function(e){if(e.target.matches("select.lmat-switcher-select")&&e.target.value){location.href=e.target.value;}});'
+			. 'document.addEventListener("click",function(e){var b=e.target.closest(".lmat-submenu-toggle");if(!b){return;}e.preventDefault();var w=b.closest(".lmat-switcher-inner");var o=w.classList.toggle("lmat-open");b.setAttribute("aria-expanded",o?"true":"false");});';
 	}
 
 	/**

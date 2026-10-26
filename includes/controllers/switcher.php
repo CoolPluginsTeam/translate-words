@@ -11,11 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-use Linguator\Includes\Walkers\Linguator_Walker_Dropdown;
-use Linguator\Includes\Walkers\Linguator_Walker_List;
-use Linguator\Frontend\Services\Linguator_Frontend_Links;
+use Linguator\Includes\Other\Linguator_Language;
+use Linguator\Includes\Switcher\Switcher;
+use Linguator\Includes\Switcher\Settings\Settings;
 use Linguator\Admin\Controllers\Linguator_Admin_Links;
-use WP_Post;
 
 
 
@@ -70,144 +69,6 @@ class Linguator_Switcher {
 	}
 
 	/**
-	 * Returns the current language code.
-	 *
-	 *  
-	 *
-	 * @param array $args Arguments passed to {@see Linguator_Switcher::the_languages()}.
-	 * @return string
-	 */
-	protected function get_current_language( $args ) {
-		if ( $args['admin_current_lang'] ) {
-			return $args['admin_current_lang'];
-		}
-
-		if ( isset( $this->links->curlang ) ) {
-			return $this->links->curlang->slug;
-		}
-
-		return $this->links->options['default_lang'];
-	}
-
-	/**
-	 * Returns the link for a given language.
-	 *
-	 *  
-	 *
-	 * @param Linguator_Language $language Language.
-	 * @param array        $args     Arguments passed to {@see Linguator_Switcher::the_languages()}.
-	 * @return string|null
-	 */
-	protected function get_link( $language, $args ) {
-		global $post;
-
-		// Priority to the post passed in parameters.
-		if ( null !== $args['post_id'] ) {
-			$tr_id = $this->links->model->post->get( $args['post_id'], $language );
-			if ( $tr_id && $this->links->model->post->current_user_can_read( $tr_id ) ) {
-				return get_permalink( $tr_id );
-			}
-		}
-
-		// If we are on frontend.
-		if ( $this->links instanceof Linguator_Frontend_Links ) {
-			return $this->links->get_translation_url( $language );
-		}
-
-		// For blocks in posts in REST requests.
-		if ( $post instanceof WP_Post ) {
-			$tr_id = $this->links->model->post->get( $post->ID, $language );
-			if ( $tr_id && $this->links->model->post->current_user_can_read( $tr_id ) ) {
-				return get_permalink( $tr_id );
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Get the language elements for use in a walker
-	 *
-	 *  
-	 *
-	 * @param array $args  Arguments passed to {@see Linguator_Switcher::the_languages()}.
-	 * @return array Language switcher elements.
-	 */
-	protected function get_elements( $args ) {
-		$first = true;
-		$out   = array();
-
-		$filter = $args['hide_if_empty'] ? 'hide_empty' : '';
-		foreach ( $this->links->model->languages->filter( $filter )->get_list() as $language ) {
-			$id           = (int) $language->term_id;
-			$order        = (int) $language->term_group;
-			$slug         = $language->slug;
-			$locale       = $language->get_locale( 'display' );
-			$is_rtl       = $language->is_rtl;
-			$item_classes = array( 'lang-item', 'lang-item-' . $id, 'lang-item-' . esc_attr( $slug ) );
-			$classes      = isset( $args['classes'] ) && is_array( $args['classes'] ) ?
-				array_merge(
-					$item_classes,
-					$args['classes']
-				) :
-				$item_classes;
-			$link_classes = $args['link_classes'] ?? array();
-			$current_lang = $this->get_current_language( $args ) === $slug;
-
-			if ( $current_lang ) {
-				if ( $args['hide_current'] && ! ( $args['dropdown'] && ! $args['raw'] ) ) {
-					continue; // Hide current language except for dropdown
-				} else {
-					$classes[] = 'current-lang';
-				}
-			}
-
-			$url = $this->get_link( $language, $args );
-
-			if ( $no_translation = empty( $url ) ) {
-				$classes[] = 'no-translation';
-			}
-
-			/**
-			 * Filter the link in the language switcher
-			 *
-			 *  
-			 *
-			 * @param string|null $url    The link, null if no translation was found.
-			 * @param string      $slug   The language code.
-			 * @param string      $locale The language locale
-			 */
-			$url = apply_filters( 'lmat_the_language_link', $url, $slug, $language->locale );
-
-			// Hide if no translation exists
-			if ( empty( $url ) && $args['hide_if_no_translation'] ) {
-				continue;
-			}
-
-			$url = empty( $url ) || $args['force_home'] ? $this->links->get_home_url( $language ) : $url; // If the page is not translated, link to the home page
-
-			$name = $args['show_names'] || ! $args['show_flags'] || $args['raw'] ? ( 'slug' == $args['display_names_as'] ? $slug : $language->name ) : '';
-
-			if ( $args['raw'] && ! $args['show_flags'] ) {
-				$flag = $language->get_display_flag_url();
-			} elseif ( $args['show_flags'] ) {
-				$flag = $language->get_display_flag( empty( $args['show_names'] ) ? 'alt' : 'no-alt' );
-			} else {
-				$flag = '';
-			}
-
-			if ( $first ) {
-				$classes[] = 'lang-item-first';
-				$first = false;
-			}
-
-			$out[ $slug ] = compact( 'id', 'order', 'slug', 'locale', 'is_rtl', 'name', 'url', 'flag', 'current_lang', 'no_translation', 'classes', 'link_classes' );
-		}
-
-		return $out;
-	}
-
-	/**
 	 * Displays a language switcher
 	 * or returns the raw elements to build a custom language switcher.
 	 *
@@ -233,93 +94,113 @@ class Linguator_Switcher {
 	 *   @type string   $admin_current_lang     The current language code in an admin context. Need to set the admin_render to 1, defaults not set.
 	 *   @type string[] $classes                A list of CSS classes to set to each elements outputted.
 	 *   @type string[] $link_classes           A list of CSS classes to set to each link outputted.
+	 *   @type string   $layout                 Switcher layout: 'horizontal', 'vertical', 'dropdown' or 'select'. Overrides `dropdown`.
+	 *   @type bool     $show_wrapper           Wraps the switcher in a navigation element, defaults to false when `layout` is not set.
+	 *   @type string   $unique_id              Id of the wrapper or `<select>` element.
 	 * }
 	 * @return string|array either the html markup of the switcher or the raw elements to build a custom language switcher
 	 */
 	public function the_languages( $links, $args = array() ) {
-
 		$this->links = $links;
-		$args = wp_parse_args( $args, self::DEFAULTS );
+		$args        = (array) $args;
+		$raw         = ! empty( $args['raw'] );
 
-		/**
-		 * Filter the arguments of the 'lmat_the_languages' template tag
-		 *
-		 *  
-		 *
-		 * @param array $args
-		 */
-		$args = apply_filters( 'lmat_the_languages_args', $args );
+		if ( empty( $links ) ) {
+			return $raw ? array() : '';
+		}
+
+		// Legacy calls had no outer wrapper.
+		if ( ! $raw && ! isset( $args['show_wrapper'] ) && ! isset( $args['layout'] ) ) {
+			$args['show_wrapper'] = false;
+		}
+
+		// Keep the legacy `<select>` id so existing labels still target it.
+		if ( ! $raw && ! empty( $args['dropdown'] ) && empty( $args['unique_id'] ) ) {
+			$args['unique_id'] = 'lang_choice_' . $args['dropdown'];
+		}
 
 		// Force not to hide the language for the widget preview even if the option is checked.
-		if ( $this->links instanceof Linguator_Admin_Links ) {
+		if ( $links instanceof Linguator_Admin_Links ) {
 			$args['hide_if_no_translation'] = 0;
 		}
 
-		// Prevents showing empty options in `<select>`.
-		if ( $args['dropdown'] && ! $args['raw'] ) {
-			$args['show_names'] = 1;
-		}
+		$settings = new Settings( $args );
 
-		$elements = $this->get_elements( $args );
+		// Legacy dropdown switchers ignored `hide_current` unless `raw` was set.
+		$settings->hide_current = ! empty( $args['hide_current'] ) && ! ( ! empty( $args['dropdown'] ) && ! $raw );
 
-		if ( $args['raw'] ) {
-			return $elements;
-		}
+		$previous_lang = $this->maybe_set_admin_language( $args );
+		$switcher      = new Switcher( $settings, $links );
 
-		if ( $args['dropdown'] ) {
-			$args['name'] = 'lang_choice_' . $args['dropdown'];
-			$args['class'] = 'lmat-switcher-select';
-			$args['value'] = 'url';
-			$args['selected'] = $this->get_link( $this->links->model->get_language( $this->get_current_language( $args ) ), $args );
-			$walker = new Linguator_Walker_Dropdown();
+		if ( $raw ) {
+			$out = $this->get_raw_elements( $switcher, $settings );
 		} else {
-			$walker = new Linguator_Walker_List();
+			$out = $switcher->get();
 		}
 
-		// Cast each element to stdClass because $walker::walk() expects an array of objects.
-		foreach ( $elements as $i => $element ) {
-			$elements[ $i ] = (object) $element;
+		if ( false !== $previous_lang ) {
+			$links->curlang = $previous_lang;
 		}
 
-		/**
-		 * Filter the whole html markup returned by the 'linguator_the_languages' template tag
-		 *
-		 *  
-		 *
-		 * @param string $html html returned/outputted by the template tag
-		 * @param array  $args arguments passed to the template tag
-		 */
-		$out = apply_filters( 'lmat_the_languages', $walker->walk( $elements, -1, $args ), $args );
-
-		// Javascript to switch the language when using a dropdown list.
-		if ( $args['dropdown'] && 0 === $args['admin_render'] ) {
-			// Enqueue an empty script handle and attach the inline behavior to comply with WP standards.
-			if ( ! wp_script_is( 'lmat_switcher', 'registered' ) ) {
-				wp_register_script( 'lmat_switcher', '', array(), LINGUATOR_VERSION, true );
-			}
-			wp_enqueue_script( 'lmat_switcher' );
-			wp_add_inline_script( 'lmat_switcher', sprintf(
-				'document.getElementById(%s)?.addEventListener("change",function(e){location.href=e.currentTarget.value});',
-				wp_json_encode( $args['name'] )
-			) );
+		if ( ! $raw && ( ! isset( $args['echo'] ) || ! empty( $args['echo'] ) ) ) {
+			echo $out; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by the switcher elements.
 		}
 
-		if ( $args['echo'] ) {
-			echo wp_kses(
-				$out,
-				array(
-					'nav'    => array( 'aria-label' => true, 'class' => true ),
-					'ul'     => array( 'class' => true ),
-					'li'     => array( 'class' => true ),
-					'a'      => array( 'href' => true, 'class' => true, 'title' => true, 'hreflang' => true, 'lang' => true ),
-					'span'   => array( 'class' => true, 'style' => true ),
-					'img'    => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true ),
-					'label'  => array( 'for' => true, 'class' => true ),
-					'select' => array( 'id' => true, 'name' => true, 'class' => true, 'aria-label' => true ),
-					'option' => array( 'value' => true, 'selected' => true ),
-				)
-			);
-		}
 		return $out;
+	}
+
+	/**
+	 * Temporarily sets the current language for switchers rendered in an admin context.
+	 *
+	 * @param array $args Arguments passed to {@see Linguator_Switcher::the_languages()}.
+	 * @return Linguator_Language|null|false Previous current language, false if unchanged.
+	 */
+	protected function maybe_set_admin_language( $args ) {
+		if ( empty( $args['admin_render'] ) || empty( $args['admin_current_lang'] ) ) {
+			return false;
+		}
+
+		$language = $this->links->model->get_language( $args['admin_current_lang'] );
+
+		if ( empty( $language ) ) {
+			return false;
+		}
+
+		$previous             = $this->links->curlang;
+		$this->links->curlang = $language;
+
+		return $previous;
+	}
+
+	/**
+	 * Returns the switcher elements as arrays, using the legacy raw format.
+	 *
+	 * @param Switcher $switcher Switcher instance.
+	 * @param Settings $settings Switcher settings.
+	 * @return array
+	 */
+	protected function get_raw_elements( Switcher $switcher, Settings $settings ) {
+		$elements = array();
+
+		foreach ( $switcher->get_elements() as $slug => $element ) {
+			$language = $this->links->model->languages->get( $slug );
+
+			if ( empty( $language ) ) {
+				continue;
+			}
+
+			$element = get_object_vars( $element );
+
+			$element['is_rtl']         = 'rtl' === $element['direction'];
+			$element['name']           = 'codes' === $settings->show_labels ? $element['slug'] : $language->name;
+			$element['flag']           = $settings->show_flags ? $element['flag'] : $language->get_display_flag_url();
+			$element['current_lang']   = $element['is_current'];
+			$element['no_translation'] = ! $element['has_translations'];
+			$element['classes']        = $element['item_classes'];
+
+			$elements[ $slug ] = $element;
+		}
+
+		return $elements;
 	}
 }
