@@ -53,6 +53,8 @@ class Linguator_Language_Switcher_Block extends Linguator_Abstract_Language_Swit
 			return '';
 		}
 
+		\Linguator\Includes\Switcher\Assets::enqueue_frontend_styles();
+
 		// The switcher markup is escaped by its elements.
 		return sprintf( '<div %1$s>%2$s</div>', get_block_wrapper_attributes(), $switcher_output );
 	}
