@@ -390,6 +390,35 @@ function linguator_is_ai_provider_allowed( $provider ) {
 }
 
 /**
+ * Provider the translation popups pre-select, as the service key the popup scripts use.
+ *
+ * Reads the default saved in the translation settings (Google when none was saved) and
+ * returns an empty string when that provider is not among the enabled ones.
+ *
+ * @param string[] $active_providers Service keys of the enabled providers (google, localAiTranslator, edgeLocalAiTranslator, gemini).
+ * @return string Service key, or an empty string when nothing can be pre-selected.
+ */
+function linguator_get_default_ai_provider_service( array $active_providers ) {
+	$services = array(
+		'google'          => 'google',
+		'chrome_local_ai' => 'localAiTranslator',
+		'edge_local_ai'   => 'edgeLocalAiTranslator',
+		'gemini'          => 'gemini',
+	);
+	$setting  = 'google';
+
+	if ( function_exists( 'LMAT' ) && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['default_provider'] ) ) {
+		$setting = (string) LMAT()->options['ai_translation_configuration']['default_provider'];
+	}
+
+	if ( isset( $services[ $setting ] ) && in_array( $services[ $setting ], $active_providers, true ) ) {
+		return $services[ $setting ];
+	}
+
+	return '';
+}
+
+/**
  * Shared Cool Plugins CPFM opt-in choice (same category as LocoAI / AutoPoly).
  *
  * Falls back to the legacy `cpfm_opt_in_choice_lmat` option and migrates it once.

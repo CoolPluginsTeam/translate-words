@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Button, Checkbox, Container, Input, Label, RadioButton, Switch, Badge } from '@bsf/force-ui'
+import { Button, Checkbox, Container, Input, Label, RadioButton, Badge } from '@bsf/force-ui'
 import { Languages, Link } from 'lucide-react';
 import { RiDraftLine } from "react-icons/ri";
 import { __, sprintf } from '@wordpress/i18n'
 import apiFetch from "@wordpress/api-fetch"
 import { getNonce } from '../utils'
 import { toast } from 'sonner'
-import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
-import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
-import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
-import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ApiKey from './api-key';
-import { ChromeLocalAINotice } from './chrome-local-ai-notice.jsx';
+import ProviderList from './provider-list.jsx';
 
 const TranslationConfig = ({ data, setData }) => {
 
@@ -20,13 +16,14 @@ const TranslationConfig = ({ data, setData }) => {
     const browserType = (() => {
         let type = 'Other';
         if (navigator && navigator.userAgentData && navigator.userAgentData.brands) {
-            navigator.userAgentData.brands.forEach(data => {
-                if (data.brand === 'Google Chrome') {
-                    type = 'Chrome';
-                } else if (data.brand === 'Microsoft Edge') {
-                    type = 'Edge';
-                }
-            });
+            // Edge is Chromium-based, so its brands list holds both "Microsoft Edge" and
+            // "Google Chrome"; check Edge first so it is not mistaken for Chrome.
+            const brands = navigator.userAgentData.brands;
+            if (brands.some(data => data.brand === 'Microsoft Edge')) {
+                type = 'Edge';
+            } else if (brands.some(data => data.brand === 'Google Chrome')) {
+                type = 'Chrome';
+            }
         } else {
             if (navigator.userAgent && navigator.userAgent.includes('Edg')) {
                 type = 'Edge';
@@ -37,8 +34,6 @@ const TranslationConfig = ({ data, setData }) => {
         return type;
     })();
 
-    const showChromeRow = browserType !== 'Edge';
-    const showEdgeRow = browserType !== 'Chrome';
     const allowedProviders = Array.isArray(window?.lmat_settings?.allowed_providers)
         ? window.lmat_settings.allowed_providers
         : ['chrome_local_ai', 'google'];
@@ -47,7 +42,13 @@ const TranslationConfig = ({ data, setData }) => {
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
     const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation })
+    // Provider the translation popups pre-select. Older installs have no saved value, which means Google.
+    // A default that is switched off cannot be pre-selected, so it counts as no default.
+    const savedDefaultSetting = aiTranslation?.default_provider ?? 'google'
+    const savedDefaultProvider = (savedDefaultSetting && provider?.[savedDefaultSetting]) ? savedDefaultSetting : ''
+    const [defaultProvider, setDefaultProvider] = useState(savedDefaultProvider)
+    const geminiConfigured = Boolean(data?.api_keys_configuration?.keys?.gemini)
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, defaultProvider })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
@@ -66,6 +67,7 @@ const TranslationConfig = ({ data, setData }) => {
             chromeLocalAITranslation !== provider?.chrome_local_ai ||
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            defaultProvider !== savedDefaultProvider ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
     };
@@ -73,8 +75,20 @@ const TranslationConfig = ({ data, setData }) => {
     useEffect(() => {
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
         setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
+    const providerStates = {
+        google: [googleMachineTranslation, setGoogleMachineTranslation],
+        chrome_local_ai: [chromeLocalAITranslation, setChromeLocalAITranslation],
+        edge_local_ai: [edgeLocalAITranslation, setEdgeLocalAITranslation],
+        gemini: [geminiTranslation, setGeminiTranslation],
+    }
+
+    // The default provider has to stay enabled, so picking one switches it on.
+    const handleDefaultProviderChange = (providerKey) => {
+        setDefaultProvider(providerKey)
+        providerStates[providerKey]?.[1](true)
+    }
 
     //Save Setting Function 
     async function SaveSettings() {
@@ -106,6 +120,7 @@ const TranslationConfig = ({ data, setData }) => {
                             gemini: geminiTranslation,
                         } : {}),
                     },
+                    default_provider: defaultProvider,
                     bulk_translation_post_status: bulkTranslationPostStatus,
                     slug_translation_option: slugTranslationOption
                 }
@@ -117,12 +132,13 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
                 lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                lastUpdatedValue.defaultProvider !== defaultProvider ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
             )) {
@@ -240,129 +256,30 @@ const TranslationConfig = ({ data, setData }) => {
                 <Label variant='help'>
                     {__('Select at least one translation service provider below. You can enable multiple providers and choose the one that best fits your needs.', 'translate-words')}
                 </Label>
-                <div className='flex flex-col gap-2' style={{ marginTop: "20px" }}>
-                    <div style={{ backgroundColor: "#fbfbfb" }}>
-                        <div className='switcher p-6 rounded-lg'>
-                            <Container.Item>
-                                <h3 className='flex items-center gap-2'>
-                                    <GoogleIcon className='w-5 h-5' />
-                                    {__('Google Machine Translation', 'translate-words')}
-                                </h3>
-                                <p>
-                                    {__('Google Machine Translation uses the Google Translate API to translate text.', 'translate-words')}
-                                </p>
-                            </Container.Item>
-                            <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
-                                <Switch
-                                    aria-label="Switch Element"
-                                    id="google-machine-translation"
-                                    onChange={() => {
-                                        setGoogleMachineTranslation(!googleMachineTranslation)
-                                    }}
-                                    value={googleMachineTranslation}
-                                    size="sm"
-                                />
-                            </Container.Item>
-                        </div>
-                    </div>
-                    {showChromeRow && (
-                        <div style={{ backgroundColor: "#fbfbfb" }}>
-                            <div className='switcher p-6 rounded-lg'>
-                                <Container.Item >
-                                    <h3 className='flex items-center gap-2'>
-                                        <ChromeIcon className="w-5 h-5" />
-                                        {__('Chrome Local AI Translation', 'translate-words')}
-                                    </h3>
-                                    <p>
-                                        {__('Chrome Local AI Translation uses Chrome Local AI API to translate text.', 'translate-words')}
-                                    </p>
-                                </Container.Item>
-                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
-                                    <Switch
-                                        aria-label="Switch Element"
-                                        id="chrome-local-ai-translation"
-                                        onChange={() => {
-                                            setChromeLocalAITranslation(!chromeLocalAITranslation)
-                                        }}
-                                        value={chromeLocalAITranslation}
-                                        size="sm"
-                                    />
-                                </Container.Item>
-                            </div>
-                            {chromeLocalAITranslation && (
-                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} />
-                            )}
+                <ProviderList
+                    browserType={browserType}
+                    defaultProvider={defaultProvider}
+                    providers={{
+                        google: { enabled: googleMachineTranslation, setEnabled: setGoogleMachineTranslation },
+                        chrome_local_ai: { enabled: chromeLocalAITranslation, setEnabled: setChromeLocalAITranslation },
+                        edge_local_ai: { enabled: edgeLocalAITranslation, setEnabled: setEdgeLocalAITranslation },
+                        gemini: { enabled: geminiTranslation, setEnabled: setGeminiTranslation },
+                    }}
+                    geminiAvailable={wpAiClientAvailable}
+                    geminiConfigured={geminiConfigured}
+                    onDefaultChange={handleDefaultProviderChange}
+                    geminiExtra={(
+                        <div className="pt-0">
+                            <ApiKey
+                                ref={geminiApiKeyRef}
+                                data={data}
+                                setData={setData}
+                                embedded
+                                onPendingChange={setApiKeyDirty}
+                            />
                         </div>
                     )}
-                    {showEdgeRow && (
-                        <div style={{ backgroundColor: "#fbfbfb" }}>
-                            <div className='switcher p-6 rounded-lg'>
-                                <Container.Item >
-                                    <h3 className='flex items-center gap-2'>
-                                        <EdgeIcon className="w-5 h-5" />
-                                        {__('Edge Local AI Translation', 'translate-words')}
-                                    </h3>
-                                    <p>
-                                        {__('Edge Local AI Translation uses Edge Local AI API to translate text.', 'translate-words')}
-                                    </p>
-                                </Container.Item>
-                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
-                                    <Switch
-                                        aria-label="Switch Element"
-                                        id="edge-local-ai-translation"
-                                        onChange={() => {
-                                            setEdgeLocalAITranslation(!edgeLocalAITranslation)
-                                        }}
-                                        value={edgeLocalAITranslation}
-                                        size="sm"
-                                    />
-                                </Container.Item>
-                            </div>
-                            {edgeLocalAITranslation && (
-                                <ChromeLocalAINotice style={{ margin: '0 1.5rem 1.5rem 1.5rem' }} isEdge={true} />
-                            )}
-                        </div>
-                    )}
-                    {wpAiClientAvailable && (
-                        <div style={{ backgroundColor: "#fbfbfb" }}>
-                            <div className='switcher p-6 rounded-lg'>
-                                <Container.Item>
-                                    <h3 className='flex items-center gap-2'>
-                                        <GeminiIcon className='w-5 h-5' />
-                                        {__('Google Gemini AI', 'translate-words')}
-                                    </h3>
-                                    <p className="m-0">
-                                        {__('Google Gemini AI uses Google Gemini API to translate your content.', 'translate-words')}
-                                    </p>
-                                </Container.Item>
-                                <Container.Item className='flex items-center justify-end pr-0 lg:pr-[30%]'>
-                                    <Switch
-                                        aria-label="Switch Element"
-                                        id="gemini-translation"
-                                        onChange={() => {
-                                            setGeminiTranslation(!geminiTranslation)
-                                        }}
-                                        value={geminiTranslation}
-                                        size="sm"
-                                    />
-                                </Container.Item>
-                            </div>
-                            {geminiTranslation && (
-                                <div
-                                    className="px-6 pb-6 pt-0"
-                                >
-                                    <ApiKey
-                                        ref={geminiApiKeyRef}
-                                        data={data}
-                                        setData={setData}
-                                        embedded
-                                        onPendingChange={setApiKeyDirty}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                />
             </Container.Item>
             <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />
             <Container.Item>
