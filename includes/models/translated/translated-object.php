@@ -423,9 +423,8 @@ abstract class Linguator_Translated_Object extends Linguator_Translatable_Object
 	 * @phpstan-param array<non-empty-string, positive-int> $translations
 	 */
 	protected function should_update_translation_group( $id, $translations ) {
-		// Don't do anything if no translations have been added to the group.
-		$old_translations = $this->get_translations( $id ); // Includes at least $id itself.
-		return ! empty( array_diff_assoc( $translations, $old_translations ) );
+		// Always sync the group when it holds more than one object, so orphan or stale groups get repaired.
+		return count( $translations ) > 1;
 	}
 
 	/**
