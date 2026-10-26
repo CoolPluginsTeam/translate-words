@@ -418,7 +418,6 @@ class Linguator_Language {
 	 *  
 	 *
 	 * @param array  $flag  Flag properties: src, width and height.
-	 * @param string $title Optional title attribute.
 	 * @param string $alt   Optional alt attribute.
 	 * @return string
 	 *
@@ -428,7 +427,7 @@ class Linguator_Language {
 	 *     height?: int|numeric-string
 	 * } $flag
 	 */
-	public static function get_flag_html( $flag, $title = '', $alt = '' ) {
+	public static function get_flag_html( $flag, $alt = '' ) {
 		if ( empty( $flag['src'] ) ) {
 			return '';
 		}

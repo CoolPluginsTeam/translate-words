@@ -283,17 +283,6 @@ class Linguator_Language_Factory {
 			unset( $flags['custom_flag'] );
 		}
 
-		/**
-		 * Filters the flag title attribute.
-		 * Defaults to the language name.
-		 *
-		 *  
-		 *
-		 * @param string $title  The flag title attribute.
-		 * @param string $slug   The language code.
-		 * @param string $locale The language locale.
-		 */
-		$title  = apply_filters( 'lmat_flag_title', $name, $slug, $locale );
 		$return = array();
 
 		/**
@@ -325,7 +314,7 @@ class Linguator_Language_Factory {
 			 */
 			$return[ $key ] = apply_filters(
 				'lmat_get_flag',
-				Linguator_Language::get_flag_html( $flag, $title, $name ),
+				Linguator_Language::get_flag_html( $flag, $name ),
 				$slug
 			);
 		}
