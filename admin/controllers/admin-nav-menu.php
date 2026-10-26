@@ -488,7 +488,8 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 					if ( ! empty( $lang_url ) ) {
 						$lang_url = wp_nonce_url( $lang_url, 'lmat_set_admin_filter_lang', '_lmat_lang_nonce' );
 					}
-					$flag_url = isset( $lang->flag_url ) ? $lang->flag_url : '';
+					// The language name follows the flag, so the flag is hidden from assistive technology.
+					$flag_html = ! empty( $lang->flag ) ? (string) preg_replace( '/^<img\b/i', '<img aria-hidden="true"', (string) $lang->flag, 1 ) : '';
 					
 					$menu_count = 0;
 					$nav_menus = $this->options->get( 'nav_menus' );
@@ -503,8 +504,8 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 					?>
 					<li class='lmat_lang_<?php echo esc_attr( $lang->slug ); ?>'>
 						<a href="<?php echo esc_url( $lang_url ); ?>" class="<?php echo esc_attr( $lang_class ); ?>">
-							<?php if ( ! empty( $flag_url ) ) : ?>
-								<img src="<?php echo esc_url( $flag_url ); ?>" alt="<?php echo esc_attr( $lang->name ); ?>" width="16" style="margin-right: 5px;">
+							<?php if ( ! empty( $flag_html ) ) : ?>
+								<span class="lmat-view-flag" style="margin-right: 5px;"><?php echo wp_kses( $flag_html, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'aria-hidden' => true ) ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ); ?></span>
 							<?php endif; ?>
                             <?php echo esc_html( $lang->name ); ?>
                             <?php if ( ! empty( $lang->is_default ) ) : ?> <span class="icon-default-lang" aria-hidden="true"></span><?php endif; ?><span class="count">(<?php echo esc_html( $menu_count ); ?>)</span>
