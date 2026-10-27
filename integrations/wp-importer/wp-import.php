@@ -92,7 +92,7 @@ class Linguator_WP_Import extends WP_Import {
 		foreach ( $menu_items as $item ) {
 			foreach ( $item['postmeta'] as $meta ) {
 				if ( '_lmat_menu_item' == $meta['key'] ) {
-					update_post_meta( $this->processed_menu_items[ $item['post_id'] ], '_lmat_menu_item', maybe_unserialize( $meta['value'] ) );
+					update_post_meta( $this->processed_menu_items[ $item['post_id'] ], '_lmat_menu_item', linguator_maybe_unserialize( $meta['value'] ) );
 				}
 			}
 		}
@@ -102,7 +102,7 @@ class Linguator_WP_Import extends WP_Import {
 			$lang_id = (int) substr( $post['post_title'], 12 );
 
 			if ( ! empty( $this->processed_terms[ $lang_id ] ) ) {
-				if ( $strings = maybe_unserialize( $post['post_content'] ) ) {
+				if ( $strings = linguator_maybe_unserialize( $post['post_content'] ) ) {
 					$mo = new Linguator_MO();
 					$mo->import_from_db( $this->processed_terms[ $lang_id ] );
 					foreach ( $strings as $msg ) {
@@ -127,7 +127,7 @@ class Linguator_WP_Import extends WP_Import {
 		$term_relationships = array();
 
 		foreach ( $terms as $term ) {
-			$translations = maybe_unserialize( $term['term_description'] );
+			$translations = linguator_maybe_unserialize( $term['term_description'] );
 			if ( ! is_array( $translations ) ) {
 				continue;
 			}
@@ -178,7 +178,7 @@ class Linguator_WP_Import extends WP_Import {
 		$u         = array();
 
 		foreach ( $terms as $term ) {
-			$translations = maybe_unserialize( $term['term_description'] );
+			$translations = linguator_maybe_unserialize( $term['term_description'] );
 			if ( ! is_array( $translations ) ) {
 				continue;
 			}

@@ -30,6 +30,15 @@
     position: relative;
 }
 
+.lmat_subsubsub .lmat_subsubsub_list img{
+    display: inline-block;
+    /* Flag markup includes inline dimensions from the original image. */
+    width: 16px !important;
+    height: 11px !important;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
 .lmat_subsubsub_list li a[href=""]{
     cursor: default;
     pointer-events: none;

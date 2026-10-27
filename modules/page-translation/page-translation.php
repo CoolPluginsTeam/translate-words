@@ -460,6 +460,9 @@ class Linguator_Page_Translation {
 			}
 		}
 
+		// Provider the popup pre-selects; empty when the saved default is not enabled.
+		$default_provider = linguator_get_default_ai_provider_service( $active_providers );
+
 		$languages = LMAT()->model->get_languages_list();
 
 		$lang_object = array();
@@ -521,6 +524,7 @@ class Linguator_Page_Translation {
 				'editor_type'              => $editor_type,
 				'current_post_id'          => $post_id,
 				'providers'                => $active_providers,
+				'default_provider'         => $default_provider,
 				'api_keys_status'          => $api_keys_status,
 				'ai_models'               => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
 				'get_meta_fields'          => 'lmat_fetch_post_meta_fields',

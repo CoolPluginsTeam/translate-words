@@ -12,7 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Linguator\Includes\Controllers\Linguator_Nav_Menu;
-use Linguator\Includes\Controllers\Linguator_Switcher;
+use Linguator\Includes\Switcher\Fields\Menu as Fields;
+use Linguator\Includes\Switcher\Settings\Menu as Settings;
 
 
 
@@ -149,19 +150,40 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 		wp_localize_script( 'lmat_nav_menu_filter_js', 'lmat_nav_menu_filter', array(
 			'current_lang' => $current_filter_lang
 		) );
+		$fields   = Fields::get();
+		$defaults = new Settings( array() );
+
+		foreach ( $fields as $key => $field ) {
+			$fields[ $key ]['default'] = $defaults->$key;
+		}
+
 		$data = array(
-			'strings' => Linguator_Switcher::get_switcher_options( 'menu', 'string' ), // The strings for the options
-			'title'   => __( 'Languages', 'translate-words' ), // The title
-			'val'     => array(),
+			'data'  => $fields,
+			'title' => __( 'Languages', 'translate-words' ),
+			'val'   => array(),
 		);
 
-		// Get all language switcher menu items
-		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This query is intentionally using meta_key to fetch all nav_menu_item posts with our custom meta for language switcher options. This is required to gather all relevant menu items for admin JS config.
-		$items = get_posts( array('numberposts' => -1, 'nopaging'  => true, 'post_type' => 'nav_menu_item', 'fields' => 'ids', 'meta_key' => '_lmat_menu_item'));
+		// Get all language switcher menu items.
+		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Fetches all nav menu items holding language switcher settings.
+		$items = get_posts(
+			array(
+				'numberposts' => -1,
+				'nopaging'    => true,
+				'post_type'   => 'nav_menu_item',
+				'fields'      => 'ids',
+				'meta_key'    => '_lmat_menu_item',
+			)
+		);
 
-		// The options values for the language switcher
+		// The settings values for each language switcher.
 		foreach ( $items as $item ) {
-			$data['val'][ $item ] = get_post_meta( $item, '_lmat_menu_item', true );
+			$meta = get_post_meta( $item, '_lmat_menu_item', true );
+
+			if ( ! is_array( $meta ) ) {
+				continue;
+			}
+
+			$data['val'][ $item ] = Fields::filter( new Settings( Fields::remove_legacy_settings( $meta ) ) );
 		}
 
 		// Send all these data to javascript
@@ -186,33 +208,44 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 			return;
 		}
 
-		// Security check as 'wp_update_nav_menu_item' can be called from outside WP admin
-		if ( current_user_can( 'edit_theme_options' ) ) {
-			check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
+		// Security check as 'wp_update_nav_menu_item' can be called from outside WP admin.
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			return;
+		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification
-		$menu_item_urls = ! empty( $_POST['menu-item-url'] )
-			? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['menu-item-url'] ) )
-			: array();
-		$item_url = $menu_item_urls[ $menu_item_db_id ] ?? '';
-		if ( empty( $menu_item_urls ) || '#lmat_switcher' !== $item_url ) {
-					return;
-			}
-			$options = array( 'hide_if_no_translation' => 0, 'hide_current' => 0, 'force_home' => 0, 'show_flags' => 0, 'show_names' => 1, 'dropdown' => 0 ); // Default values
-			// Our jQuery form has not been displayed
-			if ( empty( $_POST['menu-item-lmat-detect'][ $menu_item_db_id ] ) ) {
-				if ( ! get_post_meta( $menu_item_db_id, '_lmat_menu_item', true ) ) { // Our options were never saved
-					update_post_meta( $menu_item_db_id, '_lmat_menu_item', $options );
-				}
+		check_admin_referer( 'update-nav_menu', 'update-nav-menu-nonce' );
 
+		// The settings form has not been displayed.
+		if ( empty( $_POST['menu-item-lmat-detect'][ $menu_item_db_id ] ) ) {
+			if ( ! get_post_meta( $menu_item_db_id, '_lmat_menu_item', true ) ) { // Settings were never saved.
+				$this->update_menu_meta( $menu_item_db_id, array() );
 			}
-			else {
-				foreach ( array_keys( $options ) as $opt ) {
-					$options[ $opt ] = ! empty( $_POST[ 'menu-item-' . $opt ][ $menu_item_db_id ] ) ? 1 : 0;
-				}
-				update_post_meta( $menu_item_db_id, '_lmat_menu_item', $options ); // Allow us to easily identify our nav menu item
+			return;
+		}
+
+		$meta = array();
+
+		foreach ( array_keys( Fields::get() ) as $name ) {
+			if ( isset( $_POST[ "menu-item-{$name}" ][ $menu_item_db_id ] ) ) {
+				$meta[ $name ] = sanitize_text_field( wp_unslash( $_POST[ "menu-item-{$name}" ][ $menu_item_db_id ] ) );
 			}
 		}
+
+		$this->update_menu_meta( $menu_item_db_id, $meta );
+	}
+
+	/**
+	 * Validates and saves the language switcher settings of a menu item.
+	 * Legacy keys are stored alongside the new ones.
+	 *
+	 * @param int   $menu_item_db_id ID of the menu item.
+	 * @param array $data            Raw settings.
+	 * @return void
+	 */
+	private function update_menu_meta( int $menu_item_db_id, array $data ): void {
+		$validated = Fields::filter( new Settings( $data ) );
+		$validated = Fields::add_legacy_settings( $validated );
+		update_post_meta( $menu_item_db_id, '_lmat_menu_item', $validated );
 	}
 
 	/**
@@ -455,7 +488,8 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 					if ( ! empty( $lang_url ) ) {
 						$lang_url = wp_nonce_url( $lang_url, 'lmat_set_admin_filter_lang', '_lmat_lang_nonce' );
 					}
-					$flag_url = isset( $lang->flag_url ) ? $lang->flag_url : '';
+					// The language name follows the flag, so the flag is hidden from assistive technology.
+					$flag_html = ! empty( $lang->flag ) ? (string) preg_replace( '/^<img\b/i', '<img aria-hidden="true"', (string) $lang->flag, 1 ) : '';
 					
 					$menu_count = 0;
 					$nav_menus = $this->options->get( 'nav_menus' );
@@ -470,8 +504,8 @@ class Linguator_Admin_Nav_Menu extends Linguator_Nav_Menu {
 					?>
 					<li class='lmat_lang_<?php echo esc_attr( $lang->slug ); ?>'>
 						<a href="<?php echo esc_url( $lang_url ); ?>" class="<?php echo esc_attr( $lang_class ); ?>">
-							<?php if ( ! empty( $flag_url ) ) : ?>
-								<img src="<?php echo esc_url( $flag_url ); ?>" alt="<?php echo esc_attr( $lang->name ); ?>" width="16" style="margin-right: 5px;">
+							<?php if ( ! empty( $flag_html ) ) : ?>
+								<span class="lmat-view-flag" style="margin-right: 5px;"><?php echo wp_kses( $flag_html, array( 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'aria-hidden' => true ) ), array_merge( wp_allowed_protocols(), array( 'data' ) ) ); ?></span>
 							<?php endif; ?>
                             <?php echo esc_html( $lang->name ); ?>
                             <?php if ( ! empty( $lang->is_default ) ) : ?> <span class="icon-default-lang" aria-hidden="true"></span><?php endif; ?><span class="count">(<?php echo esc_html( $menu_count ); ?>)</span>

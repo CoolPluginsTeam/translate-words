@@ -621,7 +621,7 @@ if (!class_exists('Glossary')) {
                 $lmat_languages_serialized = get_option('_transient_lmat_languages_list');
 
                 if($lmat_languages_serialized){
-                    $lmat_languages = maybe_unserialize($lmat_languages_serialized);
+                    $lmat_languages = linguator_maybe_unserialize($lmat_languages_serialized);
                 }
             }
 

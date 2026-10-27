@@ -78,17 +78,33 @@ const ErrorModalBox = ({ message, onClose, Title, prefix, children, beforeClose 
     return (
         <div className={`${prefix}-error-modal-box-container`}>
             <div className={`${prefix}-error-modal-box`}>
-                <div className={`${prefix}-error-modal-box-header`}>
-                    <span className={`${prefix}-error-modal-box-close`} onClick={onClose}>×</span>
-                    {Title && <h3>{Title}</h3>}
+                <div className={`${prefix}-header`}>
+                    <div className={`${prefix}-modal-header-inner`}>
+                        {Title && <h2>{Title}</h2>}
+                    </div>
+                    <button
+                        type="button"
+                        className={`${prefix}-modal-close`}
+                        onClick={onClose}
+                        title={__('Close', 'translate-words')}
+                        aria-label={__('Close', 'translate-words')}
+                    >
+                        &times;
+                    </button>
                 </div>
                 <div className={`${prefix}-error-modal-box-body`}>
                     <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stringifiedMessage, PURIFY_OPTS) }} />
                     {children}
                 </div>
-                <div className={`${prefix}-error-modal-box-footer`}>
+                <div className={`${prefix}-footer`}>
                     {beforeClose}
-                    <button className={`${prefix}-error-modal-box-close button button-primary`} onClick={onClose}>{__('Back', 'translate-words')}</button>
+                    <button
+                        type="button"
+                        className={`${prefix}-footer-button button button-primary`}
+                        onClick={onClose}
+                    >
+                        {__('Back', 'translate-words')}
+                    </button>
                 </div>
             </div>
         </div>

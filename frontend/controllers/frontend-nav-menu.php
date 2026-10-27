@@ -9,7 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Linguator\Includes\Controllers\Linguator_Nav_Menu;
-use Linguator\Includes\Controllers\Linguator_Switcher;
+use Linguator\Includes\Switcher\Switcher;
+use Linguator\Includes\Switcher\Element\Nav;
+use Linguator\Includes\Switcher\Fields\Menu as Fields;
+use Linguator\Includes\Switcher\Settings\Menu as Settings;
 
 
 
@@ -68,37 +71,6 @@ class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 	}
 
 	/**
-	 * Format a language switcher menu item title based on options
-	 *
-	 *  
-	 *
-	 * @param string $flag    Formatted flag
-	 * @param string $name    Language name
-	 * @param array  $options Language switcher options
-	 * @return string Formatted menu item title
-	 */
-	protected function linguator_get_item_title( $flag, $name, $options ) {
-		$flag = wp_kses(
-			(string) $flag,
-			array(
-				'span' => array( 'class' => true, 'style' => true ),
-				'img'  => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'loading' => true, 'title' => true ),
-			)
-		);
-
-		if ( $options['show_flags'] ) {
-			if ( $options['show_names'] ) {
-				$title = sprintf( '%1$s<span style="margin-%2$s:0.3em;">%3$s</span>', $flag, is_rtl() ? 'right' : 'left', esc_html( $name ) );
-			} else {
-				$title = $flag;
-			}
-		} else {
-			$title = esc_html( $name );
-		}
-		return $title;
-	}
-
-	/**
 	 * Splits the one language switcher menu item of backend in several menu items on frontend.
 	 * Takes care to menu_order as it is used later in wp_nav_menu().
 	 *
@@ -108,73 +80,84 @@ class Linguator_Frontend_Nav_Menu extends Linguator_Nav_Menu {
 	 * @return stdClass[] Modified menu items.
 	 */
 	public function wp_get_nav_menu_items( $items ) {
-		if ( empty( $this->curlang ) ) {
+		if ( empty( $this->curlang ) || empty( LMAT()->links ) ) {
 			return $items;
 		}
 
-		if ( doing_action( 'customize_register' ) ) { // needed since WP 4.3, doing_action available since WP 3.9
+		if ( doing_action( 'customize_register' ) ) {
 			return $items;
 		}
 
-		// The customizer menus does not sort the items and we need them to be sorted before splitting the language switcher
+		// The customizer menus does not sort the items and they must be sorted before splitting the language switcher.
 		usort( $items, array( $this, 'linguator_usort_menu_items' ) );
 
+		$links     = LMAT()->links;
 		$new_items = array();
-
-		$offset = 0;
+		$offset    = 0;
 
 		foreach ( $items as $item ) {
-			if ( $options = get_post_meta( $item->ID, '_lmat_menu_item', true ) ) {
-				/** This filter is documented in include/switcher.php */
-				$options = apply_filters( 'lmat_the_languages_args', $options ); // Honor the filter here for 'show_flags', 'show_names' and 'dropdown'.
+			$options = get_post_meta( $item->ID, '_lmat_menu_item', true );
 
-				$switcher = new Linguator_Switcher();
-				$args = array_merge( array( 'raw' => 1 ), $options );
-
-				/** @var array */
-				$the_languages = $switcher->the_languages( LMAT()->links, $args );
-
-				// parent item for dropdown
-				if ( ! empty( $options['dropdown'] ) ) {
-					$name = isset( $options['display_names_as'] ) && 'slug' === $options['display_names_as'] ? $this->curlang->slug : $this->curlang->name;
-					$item->title = $this->linguator_get_item_title( $this->curlang->get_display_flag( empty( $options['show_names'] ) ? 'alt' : 'no-alt' ), $name, $options );
-					$item->attr_title = '';
-					$item->classes = array( 'lmat-parent-menu-item' );
-					$item->menu_order += $offset;
-					$new_items[] = $item;
-					++$offset;
-				}
-
-				$i = 0; // for incrementation of menu order only in case of dropdown
-				foreach ( $the_languages as $lang ) {
-					// In a dropdown, the parent item is the current language, so we don't need it in the submenu list.
-					if ( ! empty( $options['dropdown'] ) && $lang['current_lang'] ) {
-						continue;
-					}
-					++$i;
-					$lang_item = clone $item;
-					$lang_item->ID = $lang_item->ID . '-' . $lang['slug']; // A unique ID
-					$lang_item->title = $this->linguator_get_item_title( $lang['flag'], $lang['name'], $options );
-					$lang_item->attr_title = '';
-					$lang_item->url = esc_url_raw( (string) $lang['url'] );
-					$lang_item->lang = sanitize_text_field( (string) $lang['locale'] ); // Save this for use in linguator_nav_menu_link_attributes
-					$lang_item->classes = array_map( 'sanitize_html_class', (array) $lang['classes'] );
-					if ( ! empty( $options['dropdown'] ) ) {
-						$lang_item->menu_order = $item->menu_order + $i;
-						$lang_item->menu_item_parent = $item->db_id;
-						$lang_item->db_id = 0; // to avoid recursion
-					} else {
-						$lang_item->menu_order += $offset;
-					}
-					$new_items[] = $lang_item;
-					++$offset;
-				}
-				--$offset;
-			} else {
+			if ( empty( $options ) || ! is_array( $options ) ) {
 				$item->menu_order += $offset;
-				$new_items[] = $item;
+				$new_items[]       = $item;
+				continue;
 			}
+
+			$settings = new Settings( Fields::remove_legacy_settings( $options ) );
+			$elements = ( new Switcher( $settings, $links ) )->get_elements();
+
+			if ( empty( $elements ) ) {
+				continue;
+			}
+
+			if ( 'dropdown' === $settings->layout ) {
+				// Parent item for the dropdown.
+				$element = new Nav( $this->curlang, $settings, $links );
+
+				$item->title       = $element->get_label();
+				$item->attr_title  = '';
+				$item->url         = $element->url;
+				$item->classes     = array_merge( (array) $item->classes, $element->item_classes, array( 'lmat-parent-menu-item' ) );
+				$item->menu_order += $offset;
+
+				if ( $settings->show_flags ) {
+					// Added to the parent item only, the child items inherit it.
+					$item->classes[] = 'lmat-aspect-ratio-' . str_replace( ':', '', $settings->flag_aspect_ratio );
+				}
+
+				$new_items[] = $item;
+				++$offset;
+			}
+
+			$i = 0; // Menu order increment for dropdown child items.
+			foreach ( $elements as $element ) {
+				++$i;
+				$lang_item = clone $item;
+
+				$lang_item->ID         = "{$lang_item->ID}-{$element->slug}"; // A unique ID.
+				$lang_item->title      = $element->get_label();
+				$lang_item->attr_title = '';
+				$lang_item->url        = $element->url;
+				$lang_item->lang       = $element->locale; // Used by linguator_nav_menu_link_attributes().
+				$lang_item->classes    = $element->item_classes;
+
+				if ( 'dropdown' === $settings->layout ) {
+					$lang_item->menu_order       = $item->menu_order + $i;
+					$lang_item->menu_item_parent = $item->db_id;
+					$lang_item->db_id            = 0; // Avoids recursion.
+				} else {
+					$lang_item->classes     = array_diff( $lang_item->classes, array( 'lang-item-first' ) );
+					$lang_item->classes[]   = 'lmat-aspect-ratio-' . str_replace( ':', '', $settings->flag_aspect_ratio );
+					$lang_item->menu_order += $offset;
+				}
+
+				$new_items[] = $lang_item;
+				++$offset;
+			}
+			--$offset;
 		}
+
 		return $new_items;
 	}
 

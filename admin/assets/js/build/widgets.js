@@ -1,120 +1,169 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 /**
- * Adds a flag to the widgets filtered by a language.
- *
- * @package Linguator
+ * Handles the options in the language switcher widget.
  */
-
-jQuery(function ($) {
-  var widgets_container,
-    widgets_selector,
-    flags,
-    isBlockEditor = 'undefined' !== typeof wp.blockEditor;
-  if ('undefined' !== typeof lmat_widgets && lmat_widgets.hasOwnProperty('flags')) {
-    flags = lmat_widgets.flags;
-  }
-
+var lmatWidget = {
   /**
-   * Prepend widget titles with a flag once a language is selected.
-   *
-   * @param {object} widget The widget element.
-   * @return {void} Nothing.
+   * Init.
    */
-  function add_flag(widget) {
-    if (!flags) {
-      return;
-    }
-    widget = $(widget);
-    var title = isBlockEditor ? widget.prev('h3') : $('.widget-top .widget-title h3', widget),
-      locale = $('.lmat-lang-choice option:selected', widget).val(),
-      // Icon is HTML built and come from server side and is well escaped when necessary
-      icon = locale && flags.hasOwnProperty(locale) ? flags[locale] : null;
-    if (icon) {
-      icon += ' &nbsp; ';
-      var current = $('.lmat-lang', title);
-      if (current.length) {
-        current.html(icon); // phpcs:ignore WordPressVIPMinimum.JS.HTMLExecutingFunctions.html
-      } else {
-        flag = $('<span />').addClass('lmat-lang').html(icon); // phpcs:ignore WordPressVIPMinimum.JS.HTMLExecutingFunctions.html
-        // See the comment above about the icon which is safe. So it is also safe to prepend flag which uses icon.
-        title.prepend(flag); // phpcs:ignore WordPressVIPMinimum.JS.HTMLExecutingFunctions.prepend
-      }
+  init: function init() {
+    if (document.readyState !== 'loading') {
+      lmatWidget.ready();
     } else {
-      $('.lmat-lang', title).remove();
+      document.addEventListener('DOMContentLoaded', lmatWidget.ready);
     }
-  }
-  if (isBlockEditor) {
-    widgets_container = $('.edit-widgets-main-block-list');
-    widgets_selector = '.widget';
-
-    // Update flags when we click on the legacy widget to display its form.
-    widgets_container.on('click', '.wp-block-legacy-widget', function () {
-      add_flag($(this).find('.widget'));
-    });
-  } else {
-    if ('undefined' !== typeof wp.customize) {
-      /**
-       * WP Customizer add control listener.
-       *
-       * @link https://wordpress.stackexchange.com/questions/256536/callback-after-wordpress-customizer-complete-loading
-       *
-       * @param {object} control The control type.
-       * @return {void} Nothing.
-       */
-      var customize_add_flag = function customize_add_flag(control) {
-        if (!control.extended(wp.customize.Widgets.WidgetControl)) {
+  },
+  /**
+   * Called when the DOM is ready. Attaches the events to the wrapper.
+   */
+  ready: function ready() {
+    var _window$lmat_widgets;
+    if ((_window$lmat_widgets = window.lmat_widgets) !== null && _window$lmat_widgets !== void 0 && _window$lmat_widgets.flags && 'object' === _typeof(window.lmat_widgets.flags)) {
+      lmatWidget.displayFlags.flags = window.lmat_widgets.flags;
+    }
+    document.querySelectorAll(
+    // Widgets page without Classic Widgets, Widgets page with Classic Widgets, Customizer page.
+    '#widgets-editor, .widget-liquid-right #widgets-right, #customize-theme-controls').forEach(function (wrapper) {
+      wrapper.addEventListener('change', function (event) {
+        if (event.target.closest('.lmat-language-switcher-widget-content select, .lmat-language-switcher-widget-content input')) {
+          lmatWidget.manageRowsAndValues.handleEvent(event);
           return;
         }
-
-        /*
-        * Make sure the widget's contents are embedded; normally this is done
-        * when the control is expanded, for DOM performance reasons.
-        */
-        control.embedWidgetContent();
-
-        // Now we know for sure the widget is fully embedded.
-        add_flag(control.container.find('.widget'));
-      };
-      widgets_container = $('#customize-controls');
-      widgets_selector = '.customize-control .widget';
-      wp.customize.control.each(customize_add_flag);
-      wp.customize.control.bind('add', customize_add_flag);
-    } else {
-      widgets_container = $('#widgets-right');
-      widgets_selector = '.widget';
-    }
-
-    // Add flags on load.
-    $(widgets_selector, widgets_container).each(function () {
-      add_flag(this);
-    });
-  }
-
-  // Update flags.
-  widgets_container.on('change', '.lmat-lang-choice', function () {
-    add_flag($(this).parents('.widget'));
-  });
-  function lmat_toggle(a, test) {
-    test ? a.show() : a.hide();
-  }
-
-  // Remove all options if dropdown is checked.
-  $('.widgets-sortables,.control-section-sidebar,.edit-widgets-main-block-list').on('change', '.lmat-dropdown', function () {
-    var this_id = $(this).parent().parent().parent().children('.widget-id').attr('value');
-    lmat_toggle($('.no-dropdown-' + this_id), true != $(this).prop('checked'));
-  });
-
-  // Disallow unchecking both show names and show flags.
-  var options = ['-show_flags', '-show_names'];
-  $.each(options, function (i, v) {
-    $('.widgets-sortables,.control-section-sidebar,.edit-widgets-main-block-list').on('change', '.lmat' + v, function () {
-      var this_id = $(this).parent().parent().parent().children('.widget-id').attr('value');
-      if (true != $(this).prop('checked')) {
-        $('#widget-' + this_id + options[1 - i]).prop('checked', true);
+        if (!lmatWidget.displayFlags.flags.length || 'customize-theme-controls' === wrapper.id) {
+          // No flags for the customizer.
+          return;
+        }
+        if (event.target.closest('.wp-block-legacy-widget__edit-form .lmat-lang-choice')) {
+          // Without Classic Widgets.
+          lmatWidget.displayFlags.handleEvent(event, '.wp-block-legacy-widget__edit-form', '.wp-block-legacy-widget__edit-form-title');
+        } else if (event.target.closest('.widget .lmat-lang-choice')) {
+          // With Classic Widgets.
+          lmatWidget.displayFlags.handleEvent(event, '.widget', '.widget-top .widget-title h3');
+        }
+      });
+      if ('customize-theme-controls' !== wrapper.id) {
+        // No flags for the customizer.
+        if (wrapper.classList.contains('blocks-widgets-container')) {
+          // Without Classic Widgets: wait a second that everything is inserted into the page by WP.
+          setTimeout(function () {
+            lmatWidget.displayFlags.triggerChange(wrapper);
+          }, 1000);
+        } else {
+          lmatWidget.displayFlags.triggerChange(wrapper);
+        }
       }
     });
-  });
-});
+  },
+  /**
+   * Display or hide rows, depending on the value of other settings.
+   */
+  manageRowsAndValues: {
+    /**
+     * Event callback that hides rows and forbids disabling both flag and name/code.
+     *
+     * @param {Event} event The event.
+     */
+    handleEvent: function handleEvent(event) {
+      var value = '';
+      if ('SELECT' === event.target.nodeName) {
+        value = event.target.value;
+      } else if ('INPUT' === event.target.nodeName && 'checkbox' === event.target.type) {
+        value = event.target.checked;
+      } else {
+        return;
+      }
+      var wrapper = event.target.closest('.lmat-language-switcher-widget-content');
+      if (!wrapper) {
+        return;
+      }
+      var key = event.target.getAttribute('data-key');
+
+      // Show/Hide rows.
+      wrapper.querySelectorAll(":scope [class*=\"lmat-hidden-if-".concat(key, "-\"]:not(.lmat-hidden-if-").concat(key, "-").concat(value, ")")).forEach(function (row) {
+        row.classList.remove("lmat-hidden-by-".concat(key));
+      });
+      wrapper.querySelectorAll(":scope .lmat-hidden-if-".concat(key, "-").concat(value)).forEach(function (row) {
+        row.classList.add("lmat-hidden-by-".concat(key));
+      });
+
+      // Forbid disabling both flag and name/code.
+      if ('show_labels' === key && '' === value) {
+        var otherInput = wrapper.querySelector('[data-key="show_flags"]');
+        if (true !== otherInput.checked) {
+          otherInput.checked = true;
+          otherInput.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+      } else if ('show_flags' === key && false === value) {
+        var _otherInput = wrapper.querySelector('[data-key="show_labels"]');
+        if ('' === _otherInput.value) {
+          _otherInput.value = 'names';
+          _otherInput.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+      }
+    }
+  },
+  /**
+   * Display a flag in front of a widget title, depending on the language the widget should be displayed for.
+   */
+  displayFlags: {
+    /**
+     * Flags (markup), with language slug as property names.
+     *
+     * @member {Object}
+     */
+    flags: {},
+    /**
+     * Event callback that adds or removes the flag.
+     *
+     * @param {Event}  event          The event.
+     * @param {string} widgetSelector Selector for the widget wrapper, relative to the event target.
+     * @param {string} titleSelector  Selector for the title, relative to the wrapper.
+     */
+    handleEvent: function handleEvent(event, widgetSelector, titleSelector) {
+      var wrapper = event.target.closest(widgetSelector);
+      if (!wrapper) {
+        return;
+      }
+      var title = wrapper.querySelector(titleSelector);
+      if (!title) {
+        return;
+      }
+      var langSlug = event.target.value;
+      var icon = langSlug && lmatWidget.displayFlags.flags.hasOwnProperty(langSlug) ? lmatWidget.displayFlags.flags[langSlug] : null;
+      var currentFlag = title.querySelector('.lmat-lang');
+      if (icon) {
+        if (currentFlag) {
+          currentFlag.innerHTML = "".concat(icon, " &nbsp; "); // `icon` comes from `the admin base inline scripts`.
+        } else {
+          var newFlag = document.createElement('span');
+          newFlag.classList.add('lmat-lang');
+          newFlag.innerHTML = "".concat(icon, " &nbsp; "); // `icon` comes from `the admin base inline scripts`.
+          title.prepend(newFlag); // `newFlag` is a new element we just created with safe data.
+        }
+      } else if (currentFlag) {
+        currentFlag.remove();
+      }
+    },
+    /**
+     * Triggers a language selection.
+     *
+     * @param {HTMLElement} wrapper Wrapper.
+     */
+    triggerChange: function triggerChange(wrapper) {
+      wrapper.querySelectorAll(':scope .lmat-lang-choice').forEach(function (select) {
+        select.dispatchEvent(new Event('change', {
+          bubbles: true
+        }));
+      });
+    }
+  }
+};
+lmatWidget.init();
 /******/ })()
 ;

@@ -120,6 +120,181 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 	}
 
 	/**
+	 * Returns the block attributes.
+	 *
+	 * @return array
+	 */
+	protected function get_attributes() {
+		return array(
+			'layout'                 => array(
+				'type'    => 'string',
+				'enum'    => array( 'vertical', 'horizontal', 'dropdown', 'select' ),
+				'default' => 'vertical',
+			),
+			'show_labels'            => array(
+				'type'    => 'string',
+				'enum'    => array( 'names', 'codes', '' ),
+				'default' => 'names',
+			),
+			'show_flags'             => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'force_home'             => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'hide_current'           => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'hide_if_no_translation' => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'flag_aspect_ratio'      => array(
+				'type'    => 'string',
+				'enum'    => array( '3:2', '1:1' ),
+				'default' => '3:2',
+			),
+			'flag_border_radius'     => array(
+				'type'    => 'number',
+				'default' => 0,
+			),
+			'flag_width'             => array(
+				'type'    => 'string',
+				'default' => '18px',
+			),
+			'flag_label_spacing'     => array(
+				'type'    => 'string',
+				'default' => '0.3em',
+			),
+			'className'              => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'lmatLang'               => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+		);
+	}
+
+	/**
+	 * Converts the attributes of blocks saved before the layout settings, when not migrated in the editor yet.
+	 *
+	 * @param array  $attributes      The block attributes.
+	 * @param string $default_layout  Layout used for legacy blocks not displayed as dropdown.
+	 * @param string $dropdown_layout Layout used for legacy blocks displayed as dropdown.
+	 * @return array
+	 */
+	protected function migrate_legacy_attributes( array $attributes, string $default_layout = 'vertical', string $dropdown_layout = 'select' ): array {
+		if ( ! array_key_exists( 'dropdown', $attributes ) && ! array_key_exists( 'show_names', $attributes ) ) {
+			return $attributes;
+		}
+
+		$show_names = ! isset( $attributes['show_names'] ) || ! empty( $attributes['show_names'] );
+
+		$attributes['layout']      = empty( $attributes['dropdown'] ) ? $default_layout : $dropdown_layout;
+		$attributes['show_labels'] = $show_names ? 'names' : '';
+		$attributes['show_flags']  = $show_names ? ! empty( $attributes['show_flags'] ) : true;
+
+		unset( $attributes['dropdown'], $attributes['show_names'] );
+
+		return $attributes;
+	}
+
+	/**
+	 * Sets the language chosen in the editor as current language while rendering a preview.
+	 *
+	 * @return mixed Previous current language, false if unchanged.
+	 */
+	protected function switch_to_edit_language() {
+		if ( ! $this->is_edit_context || empty( $this->admin_current_lang ) || empty( $this->links ) ) {
+			return false;
+		}
+
+		$language = $this->model->get_language( $this->admin_current_lang );
+
+		if ( empty( $language ) ) {
+			return false;
+		}
+
+		$previous             = $this->links->curlang;
+		$this->links->curlang = $language;
+
+		return $previous;
+	}
+
+	/**
+	 * Restores the current language changed by {@see self::switch_to_edit_language()}.
+	 *
+	 * @param mixed $previous Previous current language, false if unchanged.
+	 * @return void
+	 */
+	protected function restore_language( $previous ) {
+		if ( false !== $previous ) {
+			$this->links->curlang = $previous;
+		}
+	}
+
+	/**
+	 * Returns additional block type arguments such as supports and styles.
+	 *
+	 * @return array
+	 */
+	protected function get_block_args() {
+		return array();
+	}
+
+	/**
+	 * Adds the flag size, shape and label spacing CSS variables to the switcher markup.
+	 *
+	 * @param string $html       Switcher HTML.
+	 * @param array  $attributes Block attributes.
+	 * @return string
+	 */
+	protected function apply_flag_styles_to_markup( string $html, array $attributes ): string {
+		if ( empty( $attributes['show_flags'] ) || ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
+			return $html;
+		}
+
+		$border_radius = max( 0, min( 100, (int) ( $attributes['flag_border_radius'] ?? 0 ) ) );
+		$flag_width    = $attributes['flag_width'] ?? '18px';
+		$flag_style    = safecss_filter_attr(
+			sprintf(
+				'--lmat-flag-border-radius:%1$d;--lmat-flag-width:%2$s',
+				$border_radius,
+				$flag_width
+			)
+		);
+
+		$label_style = '';
+		if ( ! empty( $attributes['show_labels'] ) ) {
+			$label_style = safecss_filter_attr(
+				sprintf(
+					'--lmat-flag-label-spacing:%1$s',
+					$attributes['flag_label_spacing'] ?? '0.3em'
+				)
+			);
+		}
+
+		$processor = new \WP_HTML_Tag_Processor( $html );
+
+		while ( $processor->next_tag( array( 'tag_name' => 'SPAN', 'class_name' => 'lmat-switcher-flag' ) ) ) {
+			$style = $processor->get_attribute( 'style' ) ?? '';
+			$processor->set_attribute( 'style', '' === $style ? $flag_style : rtrim( $style, ';' ) . ';' . $flag_style );
+
+			if ( '' !== $label_style && $processor->next_tag( array( 'tag_name' => 'SPAN', 'class_name' => 'lmat-switcher-label' ) ) ) {
+				$style = $processor->get_attribute( 'style' ) ?? '';
+				$processor->set_attribute( 'style', '' === $style ? $label_style : rtrim( $style, ';' ) . ';' . $label_style );
+			}
+		}
+
+		return $processor->get_updated_html();
+	}
+
+	/**
 	 * Registers the Linguator's block.
 	 *
 	 *  Renamed and now handle any type of block registration based on a dynamic name.
@@ -142,6 +317,8 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 				'wp-components',
 				'wp-element',
 				'wp-i18n',
+				'wp-data',
+				'wp-notices',
 				'wp-hooks',
 				'wp-server-side-render',
 				'lodash',
@@ -149,8 +326,6 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 			array( 'in_footer' => true ),
 			'lmat_'
 		);
-
-		wp_localize_script( $script_handle, 'lmat_block_editor_blocks_settings', \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'string' ) );
 
 		// Ensure the block editor script is enqueued in the editor context
 		add_action( 'enqueue_block_editor_assets', function() use ( $script_handle ) {
@@ -160,34 +335,18 @@ abstract class Linguator_Abstract_Language_Switcher_Block {
 			}
 		}, 20 );
 
-		$attributes = array(
-			'className' => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-			'lmatLang' => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-		);
-		foreach ( \Linguator\Includes\Controllers\Linguator_Switcher::get_switcher_options( 'block', 'default' ) as $option => $default ) {
-			$attributes[ $option ] = array(
-				'type'    => 'boolean',
-				'default' => $default,
-			);
-		}
-
-		
 		$block_registration = register_block_type(
 			$this->get_block_name(),
-			array(
-				'editor_script'   => $script_handle,
-				'attributes'      => $attributes,
-				'render_callback' => array( $this, 'render' ),
-				'uses_context'    => $this->get_context(),
+			array_merge(
+				array(
+					'editor_script'   => $script_handle,
+					'attributes'      => $this->get_attributes(),
+					'render_callback' => array( $this, 'render' ),
+					'uses_context'    => $this->get_context(),
+				),
+				$this->get_block_args()
 			)
 		);
-		
 
 		// Translated strings used in JS code
 		wp_set_script_translations( $script_handle, 'translate-words' );

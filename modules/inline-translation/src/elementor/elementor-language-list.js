@@ -1,5 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import * as styles from './style.modules.css';
 
 /**
  * Add language list button to Elementor top menu
@@ -34,7 +35,7 @@ const addLanguageListButton = () => {
           const $button = jQuery('.lmat-language-list-button');
           if ( $button.length > 0 && targetFlagUrl ) {
             $button.empty().append(
-              jQuery('<img/>', { src: targetFlagUrl, alt: targetLang })
+              jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, width: 18, height: 12 })
             );
           }
         } )
@@ -50,8 +51,9 @@ const addLanguageListButton = () => {
   const buttonElement = jQuery(
     '<button type="button" class="lmat-language-list-button elementor-button" title="Open Language List"></button>'
   );
+  buttonElement.addClass(styles.lmatLanguageListButton);
   if ( targetFlagUrl ) {
-    buttonElement.append(jQuery('<img/>', { src: targetFlagUrl, alt: targetLang }));
+    buttonElement.append(jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, width: 18, height: 12 }));
   } else {
     buttonElement.append(jQuery(document.createTextNode('Languages')));
   }
@@ -59,6 +61,7 @@ const addLanguageListButton = () => {
   // Find Elementor top bar and add button
   const topBar = jQuery('.MuiButtonGroup-root.MuiButtonGroup-contained').parent();
   if (topBar.length > 0) {
+    topBar.addClass(styles.lmatLanguageToolbar);
     topBar.prepend(buttonElement);
     
     // Add click handler to open language panel

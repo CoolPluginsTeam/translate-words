@@ -256,7 +256,7 @@ if(!class_exists('Custom_Fields')) {
 						continue;
 					}
 
-					$serialized_value=maybe_unserialize($result['meta_value']);
+					$serialized_value=linguator_maybe_unserialize($result['meta_value']);
 					$value_type=json_decode($result['meta_value'], true) ? 'array' : (is_array($serialized_value) ? 'array' : 'string');
 					
 					$type=isset($allowed_fields[$result['meta_key']]) && true === $allowed_fields[$result['meta_key']]['status'] ? $allowed_fields[$result['meta_key']]['type'] : $value_type;

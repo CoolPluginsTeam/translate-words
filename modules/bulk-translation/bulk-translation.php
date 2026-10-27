@@ -275,6 +275,9 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			}
 		}
 
+			// Provider the modal pre-selects; empty when the saved default is not enabled.
+			$default_provider = linguator_get_default_ai_provider_service( $active_providers );
+
 		$slug_translation_option = 'title_translate';
 
 		if(property_exists(LMAT(), 'options') && isset(LMAT()->options['ai_translation_configuration']['slug_translation_option'])){
@@ -309,6 +312,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 'slug_translation_option' => $slug_translation_option,
                 'taxonomy_page' => $taxonomy_page,
 				'providers'                => $active_providers,
+				'default_provider'        => $default_provider,
 				'api_keys_status'          => $api_keys_status,
 				'default_language_slug' => $default_language_slug,
 				'mediaSupport'          => ! empty( LMAT()->options['media_support'] ),

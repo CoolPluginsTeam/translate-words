@@ -295,6 +295,10 @@ td.column-default_lang .icon-default-lang:before,
 
 /* admin bar */
 #wpadminbar #wp-admin-bar-languages .ab-item img {
+	width: 16px !important;
+	height: 11px !important;
+	object-fit: contain;
+	vertical-align: middle;
 	margin: 0 8px 0 2px;
 }
 
@@ -406,4 +410,48 @@ td.column-default_lang .icon-default-lang:before,
 		font-size: 20px !important;
 		line-height: 20px !important;
 	}
+}
+
+/* Widgets */
+.lmat-language-switcher-widget-content {
+	width: 100%;
+	border-collapse: collapse;
+}
+.lmat-language-switcher-widget-content h4 {
+	padding: 1em 15px .33em;
+	border-top: 1px solid #c3c4c7; /* Acts as a separator. */
+	margin: 0 -15px; /* Makes the separator full widget width. */
+}
+.lmat-language-switcher-widget-content th {
+	width: 10em;
+	padding: 0 10px 10px 0;
+	text-align: start;
+}
+body.rtl .lmat-language-switcher-widget-content th {
+	padding: 0 0 10px 10px;
+}
+.lmat-language-switcher-widget-content td {
+	padding: 0 0 10px 0;
+}
+[class*="lmat-hidden-by-"] {
+	display: none;
+}
+.lmat-language-switcher-widget-content label {
+	font-weight: normal;
+}
+.lmat-language-switcher-widget-content + p {
+	padding: 1em 15px .33em;
+	border-top: 1px solid #c3c4c7; /* Acts as a separator. */
+	margin: 1em -15px; /* Makes the separator full width. */
+}
+
+.lmat-language-switcher-menu-content fieldset {
+	padding: 0 10px .67em;
+	border-bottom: 1px solid #c3c4c7;
+	margin: 0 -10px;
+}
+
+.lmat-language-switcher-menu-content legend {
+	padding: .67em 10px;
+	margin: 0 -10px;
 }

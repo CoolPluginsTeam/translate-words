@@ -1,1 +1,12 @@
-<svg width="21" height="15" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="a"><stop stop-color="#FFF" offset="0%"/><stop stop-color="#F0F0F0" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="b"><stop stop-color="#064DAE" offset="0%"/><stop stop-color="#003D91" offset="100%"/></linearGradient><linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="c"><stop stop-color="#F18D36" offset="0%"/><stop stop-color="#DB761E" offset="100%"/></linearGradient></defs><g fill="none" fill-rule="evenodd"><path fill="url(#a)" d="M0 0h21v15H0z"/><path fill="url(#b)" d="M0 0h21v15H0z"/><path fill="url(#c)" d="M21 0v4L0 15z"/><path fill="url(#a)" d="M21 8V4L0 15zM4.839 4.372L4.5 2l-.339 2.372-.911-1.037.468 1.383-1.383-.468 1.037.911L1 5.5l2.372.339-1.037.911 1.383-.468-.468 1.383.911-1.037L4.5 9l.339-2.372.911 1.037-.468-1.383 1.383.468-1.037-.911L8 5.5l-2.372-.339 1.037-.911-1.383.468.468-1.383-.911 1.037z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#fff" viewBox="0 0 900 600">
+<path fill="#003893" d="M0 0h900v600H0"/>
+<path d="M0 590v-14L900 70v174"/>
+<path fill="#dd7500" d="M0 580v-10L900 10v118"/>
+<g transform="translate(194 219)">
+<g id="b">
+<path id="a" d="M0-186 11 0h-22Zm32 58L11 3l-22-6Zm35 13L10 6-10-6Zm27 21L8 8-8-8Zm21 27L6 10-6-10Zm13 33L3 11l-6-22"/>
+<use href="#a" transform="rotate(90)"/>
+</g>
+<use href="#b" transform="rotate(180)"/>
+</g>
+</svg>

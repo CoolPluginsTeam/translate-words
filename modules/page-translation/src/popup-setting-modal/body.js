@@ -10,28 +10,15 @@ const SettingModalBody = (props) => {
     return (
         <div className="lmat-page-translation-setting-modal-body">
             {hasProviders ? (
-                <>
-                    <div className="lmat-page-translation-setting-modal-notice-wrapper">
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Translate</th>
-                                <th>Docs</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Object.keys(ServiceProviders).map((provider) => (
-                                <Providers
-                                    key={provider}
-                                    {...props}
-                                    Service={provider}
-                                />
-                            ))}
-                        </tbody>
-                    </table>
-                </>
+                <div className="lmat-page-translation-provider-cards">
+                    {Object.keys(ServiceProviders).map((provider) => (
+                        <Providers
+                            key={provider}
+                            {...props}
+                            Service={provider}
+                        />
+                    ))}
+                </div>
             ) : (
                 <div className="lmat-page-translation-no-provider-message">
                     <p className="lmat-page-translation-no-provider-text">

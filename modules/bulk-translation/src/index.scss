@@ -1,5 +1,9 @@
 $prefix: lmat-bulk-translate;
 
+// One width for the combined setup screen: languages and providers sit side by side.
+$modal-width: clamp(320px, 1040px, 94vw);
+$empty-modal-width: clamp(320px, 420px, 94vw);
+
 .#{$prefix}-btn {
     background: #3db63d !important;
     color: #fff !important;
@@ -57,22 +61,21 @@ $prefix: lmat-bulk-translate;
     display: none;
 
     &.#{$prefix}-active {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        background-color: #000000d4;
-        border: 1px solid #ccc;
-        border-radius: 5px;
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 9999;
-        flex-direction: column;
-        display: flex;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(2px);
+        z-index: 100000;
         justify-content: center;
         align-items: center;
+        transition: all 0.3s ease;
+        display: flex !important;
+        opacity: 1;
+        visibility: visible;
+        flex-direction: column;
     }
 
     ##{$prefix}-container {
@@ -83,36 +86,33 @@ $prefix: lmat-bulk-translate;
         max-width: 100vw;
 
         &.#{$prefix}-status-modal-active {
-            width: clamp(200px, 800px, 90%);
+            width: $modal-width;
             height: auto;
             max-height: 70vh;
 
             &.#{$prefix}-empty-posts {
                 height: auto;
 
-                h2 {
-                    border-bottom: 1px solid #c3c3c3;
-                    padding-bottom: 1.5rem !important;
+                .#{$prefix}-modal-desc {
+                    margin-bottom: 10px;
                 }
 
                 p {
-                    font-size: 1.2rem;
-                    color: red;
-                    font-weight: 600;
+                    font-size: 1rem;
+                    color: #1d2327;
+                    font-weight: 500;
                     text-align: center;
-                    margin: 0;
                     padding: 0;
-                    margin-top: 0;
+                    margin-inline: 22px;
+                    margin-block: 15px;
                 }
             }
 
             .#{$prefix}-progress-skeleton {
-                background: linear-gradient(
-                    90deg,
-                    #e0e0e0 25%,
-                    #f5f5f5 50%,
-                    #e0e0e0 75%
-                  );
+                background: linear-gradient(90deg,
+                        #e0e0e0 25%,
+                        #f5f5f5 50%,
+                        #e0e0e0 75%);
                 background-size: 200% 100%;
                 height: 19px;
                 padding: 9px;
@@ -129,8 +129,48 @@ $prefix: lmat-bulk-translate;
             max-height: 90vh;
         }
 
-        & .#{$prefix}-language-container {
-            max-width: 500px;
+        &.#{$prefix}-empty-modal-active {
+            width: $empty-modal-width;
+        }
+
+        // The combined setup screen shows languages and providers side by side,
+        // so it needs more room than the single column screens.
+        &.#{$prefix}-setup-modal-active {
+            width: $modal-width;
+        }
+
+        /*
+         * Stands in for the status screen while the browser support check runs,
+         * so the modal never opens as a zero height white box.
+         */
+        .#{$prefix}-skeleton-loader {
+            padding: 24px;
+            box-sizing: border-box;
+            width: clamp(320px, 800px, 90vw);
+
+            &::before,
+            &::after {
+                content: '';
+                display: block;
+                background: linear-gradient(90deg,
+                        #e0e0e0 25%,
+                        #f5f5f5 50%,
+                        #e0e0e0 75%);
+                background-size: 200% 100%;
+                animation: shimmer 1.2s infinite linear;
+                border-radius: 4px;
+            }
+
+            &::before {
+                height: 26px;
+                width: 45%;
+                margin-bottom: 20px;
+            }
+
+            &::after {
+                height: 160px;
+                width: 100%;
+            }
         }
 
         /* Setting Modal CSS Start */
@@ -143,191 +183,242 @@ $prefix: lmat-bulk-translate;
                 display: flex;
                 flex-direction: column;
                 height: 100%;
+                max-height: 90vh;
 
-                .#{$prefix}-setting-modal-header {
-                    h2 {
-                        height: unset;
-                        padding: 8px 36px 8px 25px;
-                        border: none;
-                        background: 0 0;
-                        border-bottom: 1px solid #dcdcde;
-                        font-size: 18px;
-                        font-weight: 600;
-                        line-height: 2;
-                        margin: 0;
-                    }
-
-                    .#{$prefix}-setting-modal-close {
-                        right: 15px;
-                        top: 13px;
-                        border-radius: 0 !important;
-                        height: 30px !important;
-                        width: 20px !important;
-                        position: absolute;
-                        font-size: 32px;
-                        font-weight: bold;
-                        color: #646970;
-                        cursor: pointer;
-                    }
-                }
-
-                .#{$prefix}-setting-modal-body{
+                .#{$prefix}-setting-modal-body {
                     max-width: 100vw;
                     overflow-x: auto;
-                    
-                    table{
-                        width: 100%;
-                        border-collapse: collapse;
-                    }
-        
-                    thead{
-                        background: #f3f3f3;
-        
-                        th{
-                            text-align: left;
-                            font-weight: 500;
-                            font-size: 14px;
-                            color: #555;
-                            padding-block: 1rem;
-        
-                            &:nth-child(1){
-                                padding-left: 28px;
-                            }
-        
-                            &:nth-child(2){
-                                padding-left: 90px;
-                            }
-        
-                            &:nth-child(3){
-                                padding-right: 25px;
-                                text-align: center;
-                            }
-                        }
-                    }
-        
-        
-                    tbody{
-                        tr{
-                            border-top: 1px solid #eee;
-                            height: 64px;
-                        }
-                        td{
-                            &.#{$prefix}-provider-name{
-                                display: flex;
-                                align-items: center;
-                                font-size: 1rem;
-                                font-weight: 600;
-                                margin-block: .5rem;
-            
-                                &>svg{
-                                    width: 45px;
-                                    height: auto;
-                                    margin-right: 15px;
-                                }
-                            }
-        
-                            &:nth-child(1){
-                                padding-left: 25px;
-                            }
-        
-                            &:nth-child(2){
-                                padding-left: 90px;
-                                padding-right: 20px;
-                                // text-align: center;
-                            }
-        
-                            &:nth-child(3){
-                                padding-right: 25px;
-                                text-align: center;
-                            }
-                        }
-        
-                        .button{
-                            width: 123px;
-        
-                            &.#{$prefix}-service-btn{
-                                padding: 2px 11px;
-                                white-space: nowrap;
-                                background: #3db63d;
-                                border-color: #33a133;
-                                color: #fff;
-        
-                                &:hover{
-                                    background: #37a737;
-                                    border-color: #238b23;
-                                }
+                    overflow-y: auto;
+                    flex: 1;
 
-                                &.#{$prefix}-btn-downloading,
-                                &.#{$prefix}-btn-downloading:hover,
-                                &.#{$prefix}-btn-downloading:disabled {
-                                    background: #ee4237;
-                                    border-color: #dd362b;
-                                    color: #fff;
-                                    cursor: default;
-                                    opacity: 1;
-                                }
-                            }
-        
-                            &.#{$prefix}-provider-error{
-                                background: #ee4237;
-                                border-color: #dd362b;
-                                color: #fff;
-                                padding: 2px 11px;
-                                display: inline-flex;
-                                align-items: center;
-        
-                                img{
-                                    display: inline-flex;
-                                    margin-bottom: 0px;
-                                    margin-top: 0px;
-                                    filter: invert(1) brightness(2);
-                                    height: 22px;
-                                    margin-right: 3px;
-                                }
-        
-                                &:hover{
-                                    background: #dd382e;
-                                    border-color: #c72a20;
-                                }
+                    /* Combined setup layout: languages (step 1) and providers (step 2). */
+                    .#{$prefix}-setup-layout {
+                        display: flex;
+                        align-items: stretch;
+                        gap: 0;
+                        padding: 20px 24px;
+                        box-sizing: border-box;
+
+                        .#{$prefix}-setup-column {
+                            display: flex;
+                            flex-direction: column;
+                            flex: 1 1 50%;
+                            min-width: 0;
+                        }
+
+                        .#{$prefix}-setup-column-head {
+                            align-items: center;
+                            display: flex;
+                            gap: 8px;
+
+                            h3 {
+                                color: #1d2327;
+                                font-size: 15px;
+                                font-weight: 600;
+                                margin: 0;
+                                padding: 0;
                             }
                         }
-        
-                        .#{$prefix}-doc-icon {
+
+                        .#{$prefix}-setup-step-badge {
+                            align-items: center;
+                            background: var(--wp-admin-theme-color, #2271b1);
+                            border-radius: 50%;
+                            box-sizing: border-box;
+                            color: #fff;
                             display: inline-flex;
-                            width: 20px;
-                            height: 26px;
-                            
-                            &:focus{
-                                outline: none;
-                                box-shadow: unset;
-                            }
-                
-                            svg{
-                                width: 20px;
-                                height: 28px;
-                            }
-                          }
-                        
+                            flex-shrink: 0;
+                            font-size: 12px;
+                            font-weight: 700;
+                            height: 22px;
+                            justify-content: center;
+                            line-height: 1;
+                            width: 22px;
+                        }
+
+                        .#{$prefix}-setup-column-desc {
+                            color: #888;
+                            font-size: 12px;
+                            font-weight: 500;
+                            margin: 6px 0 12px;
+                            padding: 0;
+                        }
+
+                        .#{$prefix}-setup-divider {
+                            background: #00000012;
+                            flex: 0 0 1px;
+                            margin-inline: 28px;
+                            position: relative;
+                            width: 1px;
+                        }
+
+                        .#{$prefix}-setup-divider-arrow {
+                            align-items: center;
+                            background: #fff;
+                            border: 1px solid #00000012;
+                            border-radius: 50%;
+                            color: #64748b;
+                            display: inline-flex;
+                            font-size: 14px;
+                            height: 32px;
+                            justify-content: center;
+                            left: 50%;
+                            line-height: 1;
+                            position: absolute;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 32px;
+                        }
+
+                        .#{$prefix}-provider-cards {
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 12px;
+                            padding: 0;
+                        }
+                    }
+
+                    .#{$prefix}-bulk-translate-empty {
+                        padding: 20px;
+                        background: #fff1f2;
+                        border: 1px solid #fecdd3;
+                        color: #be123c;
+                        border-radius: 8px;
+                        font-size: 0.9rem;
+                        text-align: center;
+                        grid-column: 1 / -1;
+
+                        .#{$prefix}-provider-empty-actions a {
+                            font-weight: 700;
+                            text-decoration: underline;
+                        }
                     }
                 }
 
-                .#{$prefix}-setting-modal-footer {
-                    background: 0 0;
-                    border: none;
-                    border-top: 1px solid #dcdcde;
-                    margin-top: 0;
-                    padding: 16px 22.4px 16px;
-                    text-align: end;
+                .#{$prefix}-provider-card {
+                    position: relative;
+                    padding: 12px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 10px;
+                    background: #fff;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    text-align: left;
+                    cursor: pointer;
 
-                    .#{$prefix}-setting-close {
-                       background: #f6f7f7;
-                        border: 1px solid #c3c4c7;
-                        color: #50575e;
+                    &:hover {
+                        border-color: #cbd5e1;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                    }
 
-                        &:hover{
-                            background-color: #e1e1e1;
-                            border-color: #c9c9c9;
+                    &-disabled {
+                        opacity: 0.7;
+                        cursor: not-allowed;
+
+                        // A built-in AI card stays actionable so its setup error can be opened,
+                        // except on browsers that have no built-in AI at all.
+                        &##{$prefix}-provider-card-localAiTranslator:not(.#{$prefix}-provider-browser-other),
+                        &##{$prefix}-provider-card-edgeLocalAiTranslator:not(.#{$prefix}-provider-browser-other) {
+                            opacity: 1;
+                            cursor: pointer;
                         }
+
+                        .#{$prefix}-provider-error {
+                            color: var(--wp-admin-theme-color, #2271b1);
+                            display: inline-flex;
+                            cursor: pointer;
+
+                            &:hover {
+                                color: var(--wp-admin-theme-color-darker-20, #1c5788);
+                            }
+                        }
+                    }
+
+                    &-selected {
+                        border-color: var(--wp-admin-theme-color, #2271b1) !important;
+                        background: #eff6ff;
+
+                        .#{$prefix}-provider-card-check {
+                            border-color: var(--wp-admin-theme-color, #2271b1);
+                            background: var(--wp-admin-theme-color, #2271b1);
+
+                            &::after {
+                                content: '';
+                                position: absolute;
+                                left: 6px;
+                                top: 1px;
+                                width: 6px;
+                                height: 11px;
+                                border: solid #fff;
+                                border-width: 0 2px 2px 0;
+                                transform: rotate(45deg);
+                            }
+                        }
+                    }
+
+                    &-body {
+                        align-items: center;
+                        display: flex;
+                        gap: 10px;
+                        width: 100%;
+                    }
+
+                    &-icon {
+                        width: 25px;
+                        height: 25px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+
+                        svg,
+                        img {
+                            width: 24px;
+                            height: 24px;
+                            object-fit: contain;
+                        }
+                    }
+
+                    &-name {
+                        font-weight: 700;
+                        font-size: 14px;
+                        color: #0f172a;
+                        display: block;
+                    }
+
+                    &-actions {
+                        display: flex;
+                        align-items: center;
+                        margin-top: 7px;
+                        flex-wrap: wrap;
+                        width: 100%;
+                    }
+
+                    &-docs {
+                        color: var(--wp-admin-theme-color, #2271b1);
+                        display: inline-flex;
+                        margin-right: auto;
+
+                        &:hover {
+                            color: var(--wp-admin-theme-color-darker-20, #1c5788);
+                        }
+                    }
+
+                    &-check {
+                        position: relative;
+                        display: block;
+                        width: 22px;
+                        height: 22px;
+                        border: 2px solid #cbd5e1;
+                        border-radius: 50%;
+                        box-sizing: border-box;
+                        margin-left: auto;
+                    }
+
+                    &-error {
+                        font-size: 0.8125rem;
                     }
                 }
             }
@@ -335,39 +426,33 @@ $prefix: lmat-bulk-translate;
         // Setting Modal CSS End
 
         ##{$prefix}-status-modal-container {
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            max-width: 900px;
-            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            height: 100%;
             justify-content: center;
-            border-radius: 8px;
+            max-width: 100%;
+            width: 100%;
+            position: relative;
+            z-index: 2;
 
-            .#{$prefix}-status-modal-close {
-                position: absolute;
-                right: 1rem;
-                top: .8rem;
-                cursor: pointer;
-                font-size: 2rem;
+            .#{$prefix}-header + div {
+                margin-top: 16px;
             }
 
             h2 {
-                font-size: 22px;
-                padding: 0px;
-                margin: 0px;
-                margin-bottom: 15px;
-                text-align: center;
+                margin: 0;
+                padding: 0;
 
-                &.running{
+                &.running {
                     span {
                         width: 18px;
                         aspect-ratio: 3;
                         background: radial-gradient(circle closest-side, #1d2327 50%, #0000 80%) 0/calc(100%/3) 100% space;
                         clip-path: inset(0 100% 0 0);
-                        animation: blink 1s steps(4) infinite;
+                        animation: #{$prefix}-blink 1s steps(4) infinite;
                         display: inline-flex;
                         line-height: 1;
                         padding: 0px;
@@ -375,17 +460,19 @@ $prefix: lmat-bulk-translate;
                         margin-bottom: -1px;
                         margin-left: 1px;
                     }
-
-                    @keyframes blink {
-                        to {
-                            clip-path: inset(0 -34% 0 0)
-                        }
-                    }  
                 }
             }
 
+            .#{$prefix}-modal-desc {
+                font-size: 12px !important;
+                font-weight: 500;
+                margin-top: 0 !important;
+                color: #888;
+            }
+
             .#{$prefix}-overall-progress .#{$prefix}-progress-bar {
-                width: 100%;
+                width: calc(100% - 48px);
+                margin-inline: 24px;
                 background: #ddd;
                 height: 19px;
                 border-radius: 5px;
@@ -408,7 +495,7 @@ $prefix: lmat-bulk-translate;
 
                 .#{$prefix}-progress {
                     height: 100%;
-                    background: #3db63d;
+                    background: #2271b1;
                     width: 0%;
                     transition: width 0.3s ease;
                     max-width: 100%;
@@ -427,99 +514,126 @@ $prefix: lmat-bulk-translate;
             }
 
             .#{$prefix}-translator-strings-count {
-                color: #4caf50;
                 text-align: center;
                 font-size: 1rem;
                 margin-bottom: 10px;
                 margin-top: 5px;
+                margin-inline: 24px;
             }
 
             .#{$prefix}-count-container {
                 display: grid;
                 grid-template-columns: auto auto auto;
                 gap: .8rem .3rem;
-                border: 1px solid #c9c9c9;
-                padding: .5rem;
-                border-radius: 8px 8px 0 0;
+                padding: .7rem 1rem;
                 font-size: 1rem;
-                margin-top: 8px;
-                border-bottom: 0px;
                 justify-content: space-between;
+                margin-inline: 24px;
+                border-radius: 13px;
+                margin-bottom: 15px;
+                background: #00000008;
+                border: 1px solid #00000012;
 
                 .#{$prefix}-count-text-heading {
-                    font-weight: 600;
-                }
+                    color: #8c8585;
+                    font-size: 12px;
+                    font-weight: 500;
 
-                ~.#{$prefix}-status-table-container {
-                    border-radius: 0 0 8px 8px;
-                    margin-top: 0;
+                    ~span {
+                        font-weight: 700;
+                    }
                 }
             }
 
+            .#{$prefix}-status-header-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+                padding: .8rem 1rem;
+                background: #0000000a;
+                border-radius: 13px 13px 0 0;
+                border: 1px solid #00000012;
+                font-weight: 600;
+                text-transform: uppercase;
+                border-bottom: 0px;
+
+                .#{$prefix}-status-flag-th,
+                .#{$prefix}-status-status-th,
+                .#{$prefix}-status-title-th,
+                .#{$prefix}-status-actions-th {
+                    grid-column: span 1;
+                }
+
+                .#{$prefix}-status-status-th {
+                    text-align: center;
+                    display: flex;
+                    justify-content: center;
+                }
+
+                .#{$prefix}-status-title-th {
+                    grid-column: span 2;
+                    text-align: center;
+                    display: flex;
+                    justify-content: center;
+                }
+
+                .#{$prefix}-status-actions-th {
+                    text-align: right;
+                    padding-right: 5px;
+                    display: flex;
+                    justify-content: flex-end;
+
+                    .#{$prefix}-progress-skeleton {
+                        width: 172px;
+                        margin-right: -5px;
+                    }
+                }
+            }
+
+            // WordPress buttons default to a 3px radius; round the review action
+            // so it matches the rest of the modal.
+            .#{$prefix}-review-btn {
+                border-radius: 6px;
+                padding: 2px 14px;
+            }
+
             .#{$prefix}-status-table-container {
-                // height: calc(100% - 41.2px);
                 height: 100%;
-                border: 1px solid #c9c9c9;
                 overflow: hidden;
-                border-radius: 8px;
                 margin-top: 8px;
+                margin-inline: 22px;
+                margin-bottom: 16px;
 
                 &>div {
                     height: 100%;
                     overflow-y: auto;
                 }
-            }
 
-            .#{$prefix}-status-table {
-                width: 100%;
-                border-collapse: collapse;
+                .#{$prefix}-status-inner-item {
+                    border: 1px solid #00000012;
+                    border-bottom-width: 0px;
+                    border-top-color: #00000017;
 
-                tr {
+                    &:last-child {
+                        border-bottom-width: 1px;
+                        border-radius: 0 0 13px 13px;
+                    }
+
                     &.#{$prefix}-td-error {
                         background: #ff000014;
+                    }
 
-                        td:nth-child(2) {
-                            color: red;
-                            font-size: .8rem;
-                            font-weight: bold;
-                            text-align: center;
-                        }
+                    &.#{$prefix}-td-needs-pack {
+                        background: #fff8e5;
                     }
                 }
 
-                th,
-                td {
-                    text-align: left;
-                    padding: 10px;
-                    // border-bottom: 1px solid #ddd;
-                }
-
-                tbody{
-                    td{
-                        &:nth-child(2){
-                            height: 44.2px;
-                            padding: 0px;
-
-                            span.#{$prefix}-status.running{
-                                display: inline-block;
-                                height: 0px;
-                                background-color: transparent !important;
-                            }
-                        }
-                        &:nth-child(1){
-                            min-width: 120px;
-
-                            img{
-                                margin-right: 6px;
-                            }
-                        }
-                        &:not(:nth-child(1)){
-                            width: 23%;
-                        }
-                        &:nth-child(3){
-                            width: 33%;
-                        }
-                    }
+                .#{$prefix}-status-target-post-error,
+                .#{$prefix}-status-inner-item.#{$prefix}-error-message {
+                    color: #1d2327;
+                    font-size: .8rem;
+                    font-weight: 500;
+                    padding: .6rem 0;
+                    text-align: center;
                 }
 
                 .#{$prefix}-progress-bar-circular {
@@ -542,7 +656,7 @@ $prefix: lmat-bulk-translate;
 
                     .#{$prefix}-progress {
                         fill: none;
-                        stroke: #4caf50;
+                        stroke: #2271b1;
                         stroke-width: 3;
                         stroke-linecap: round;
                         transition: stroke-dasharray 0.6s ease;
@@ -557,7 +671,6 @@ $prefix: lmat-bulk-translate;
                         font-weight: bold;
                         color: #333;
                     }
-
                 }
 
                 .#{$prefix}-language-loading {
@@ -587,12 +700,9 @@ $prefix: lmat-bulk-translate;
 
                 .#{$prefix}-group-title {
                     border-block: 1px solid #ebebeb;
-
-                    td {
-                        font-weight: bold;
-                        background: #f7f7f7;
-                        padding-top: 15px;
-                    }
+                    font-weight: bold;
+                    background: #f7f7f7;
+                    padding: 15px 1rem 8px;
                 }
 
                 .#{$prefix}-status-error-button {
@@ -611,13 +721,9 @@ $prefix: lmat-bulk-translate;
                     }
                 }
 
-                &.#{$prefix}-td-needs-pack {
-                    background: #fff8e5;
-
-                    td.#{$prefix}-status-pack-actions {
-                        text-align: left;
-                        vertical-align: middle;
-                    }
+                .#{$prefix}-status-pack-actions {
+                    text-align: left;
+                    padding-block: .6rem;
                 }
 
                 .#{$prefix}-status-install-pack-button {
@@ -661,42 +767,104 @@ $prefix: lmat-bulk-translate;
                     }
                 }
 
-                .#{$prefix}-status {
-                    padding: 4px 8px;
-                    border-radius: 5px;
-                    font-size: 12px;
-                    color: #fff;
-                    border: 1px solid transparent;
+                .#{$prefix}-status-parent-post-title {
+                    font-weight: 600;
+                    font-size: 14px;
+                    padding: .8rem 1rem;
+                    background: #00000008;
+                }
 
-                    &.success {
-                        background: #3db63d;
-                        border-color: #33a133;
+                .#{$prefix}-status-target-post {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+                    align-items: center;
+                    padding-inline: 1rem;
+
+                    &-flag {
+                        display: flex;
+                        align-items: center;
+                        white-space: nowrap;
+
+                        img {
+                            width: 20px;
+                            height: 14px;
+                            object-fit: contain;
+                            flex-shrink: 0;
+                            margin-right: 8px;
+                        }
                     }
 
-                    &.error {
-                        background: #ee4237;
-                        border-color: #dd362b;
+                    &-status {
+                        span {
+                            padding: 4px 8px;
+                            font-size: 12px;
+                            color: #fff;
+                            border-radius: 30px;
+                            font-weight: 600;
+
+                            &:empty {
+                                display: none;
+                            }
+
+                            &.success {
+                                color: #3db63d;
+                                background: #3db63d26;
+                            }
+
+                            &.error {
+                                color: #ee4237;
+                                background: #ee423726;
+                            }
+
+                            &.warning {
+                                color: #6e6e6e;
+                                background: #fff297ab;
+                            }
+
+                            &.primary {
+                                color: #2271b1;
+                                background: #2271b126;
+                            }
+                        }
                     }
 
-                    &.warning {
-                        background: #fff297;
-                        color: #000000;
-                        border-color: #f7e241;
+                    &-title {
+                        text-align: center;
+
+                        a {
+                            width: 100%;
+                            overflow: hidden;
+                            display: inline-block;
+                            white-space: nowrap;
+                            text-overflow: ellipsis;
+                        }
                     }
 
-                    &.primary {
-                        background: #2271b1;
-                        border-color: #2271b1;
+                    &-actions,
+                    &-error-button {
+                        text-align: right;
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                    }
+
+                    &>div {
+                        grid-column: span 1;
+
+                        &:nth-child(2) {
+                            height: 55px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
                     }
                 }
 
                 .#{$prefix}-progress-skeleton {
-                    background: linear-gradient(
-                        90deg,
-                        #e0e0e0 25%,
-                        #f5f5f5 50%,
-                        #e0e0e0 75%
-                      );
+                    background: linear-gradient(90deg,
+                            #e0e0e0 25%,
+                            #f5f5f5 50%,
+                            #e0e0e0 75%);
                     background-size: 200% 100%;
                     height: 10px;
                     border-radius: 3px;
@@ -708,45 +876,37 @@ $prefix: lmat-bulk-translate;
                     }
                 }
 
-                .#{$prefix}-td-in-progress {
-                    .#{$prefix}-in-progress-text {
-                        background-color: #3db63d;
-                        border-color: #33a133;
-                        color: #fff;
+                .#{$prefix}-in-progress-text {
+                    color: #2271b1;
+                    background: #2271b126;
+                    border-color: #2271b1;
+                    display: inline-flex;
+                    align-items: end;
+                    font-weight: 500;
+                    width: auto;
+                    padding: .1rem .5rem;
+                    border-radius: 27px;
+                    white-space: nowrap;
+
+                    span {
+                        width: 15px;
+                        aspect-ratio: 3;
+                        background: radial-gradient(circle closest-side, #2271b1 40%, #0000 90%) 0/calc(100%/3) 100% space;
+                        clip-path: inset(0 100% 0 0);
+                        animation: #{$prefix}-blink 1s steps(4) infinite;
                         display: inline-flex;
-                        align-items: end;
-                        font-weight: 600;
-                        width: auto;
-                        padding: .1rem .5rem;
-                        border-radius: 27px;
-                        white-space: nowrap;
-
-                        span {
-                            width: 15px;
-                            aspect-ratio: 3;
-                            background: radial-gradient(circle closest-side, #fff 40%, #0000 90%) 0/calc(100%/3) 100% space;
-                            clip-path: inset(0 100% 0 0);
-                            animation: blink 1s steps(4) infinite;
-                            display: inline-flex;
-                            line-height: 1;
-                            padding: 0px;
-                            margin: 0px;
-                            margin-bottom: 3px;
-                            margin-left: 1px;
-                        }
-
-                        @keyframes blink {
-                            to {
-                                clip-path: inset(0 -34% 0 0)
-                            }
-                        }
+                        line-height: 1;
+                        padding: 0px;
+                        margin: 0px;
+                        margin-bottom: 3px;
+                        margin-left: 1px;
                     }
                 }
-
             }
 
             .#{$prefix}-progress-footer {
                 text-align: center;
+                padding-bottom: 16px;
 
                 a {
                     padding: 2px 11px;
@@ -755,30 +915,98 @@ $prefix: lmat-bulk-translate;
             }
         }
 
-        .#{$prefix}-header {
-            .close {
-                border-radius: 0!important;
-                color: #646970;
-                cursor: pointer;
-                font-size: 32px;
-                font-weight: 700;
-                height: 30px!important;
-                position: absolute;
-                right: 15px;
-                top: 13px;
-                width: 20px!important;
+        @keyframes #{$prefix}-blink {
+            to {
+                clip-path: inset(0 -34% 0 0)
             }
+        }
+
+        // Narrow screens: no table header, each translation becomes a compact two column card.
+        @media (max-width: 700px) {
+            ##{$prefix}-status-modal-container {
+                .#{$prefix}-status-header-container {
+                    display: none;
+                }
+
+                .#{$prefix}-count-container {
+                    grid-template-columns: 1fr 1fr;
+                }
+
+                .#{$prefix}-status-table-container {
+                    margin-inline: 12px;
+
+                    .#{$prefix}-status-target-post {
+                        grid-template-columns: 1fr 1fr;
+                        gap: 6px 8px;
+                        padding-block: 10px;
+
+                        &>div {
+                            grid-column: span 1 !important;
+
+                            &:nth-child(2) {
+                                height: auto;
+                                justify-content: flex-end;
+                            }
+                        }
+
+                        &>.#{$prefix}-status-target-post-title,
+                        &>.#{$prefix}-status-target-post-actions,
+                        &>.#{$prefix}-status-target-post-error,
+                        &>.#{$prefix}-status-target-post-error-button,
+                        &>.#{$prefix}-status-pack-actions {
+                            grid-column: 1 / -1 !important;
+                            justify-content: flex-start;
+                            text-align: left;
+                        }
+                    }
+                }
+            }
+        }
+
+        .#{$prefix}-header {
+            align-items: flex-start;
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            padding: 10px 24px 8px;
+            border-bottom: 2px solid #00000012;
 
             h2 {
                 background: 0 0;
                 border: none;
-                border-bottom: 1px solid #dcdcde;
                 font-size: 18px;
                 font-weight: 600;
                 height: unset;
                 line-height: 2;
                 margin: 0;
-                padding: 8px 36px 8px 25px;
+                padding: 0;
+            }
+
+            .#{$prefix}-modal-header-inner {
+                .#{$prefix}-step-label {
+                    font-size: 10px;
+                    font-weight: 600;
+                    color: #3737e7;
+                }
+
+                .#{$prefix}-modal-desc {
+                    font-size: 12px !important;
+                    font-weight: 500;
+                    margin: 0;
+                    margin-bottom: 4px;
+                    color: #888;
+                }
+            }
+
+            .#{$prefix}-modal-close {
+                border: none;
+                background: none;
+                cursor: pointer;
+                font-size: 24px;
+                padding: 0;
+                margin: 0;
+                width: 24px;
+                height: 24px;
             }
         }
 
@@ -827,85 +1055,219 @@ $prefix: lmat-bulk-translate;
             }
         }
 
-        .#{$prefix}-body {
+        .#{$prefix}-setup-languages {
 
             .#{$prefix}-notice {
-                margin-top: 1rem;
-                margin-inline: 25px;
-            }
-
-            .#{$prefix}-loading {
-                color: #000;
-                padding: 1rem;
+                margin-top: 0;
+                margin-bottom: 12px;
             }
 
             .#{$prefix}-languages {
                 display: grid;
-                grid-template-columns: auto auto auto;
-                gap: 1rem;
-                padding: 1rem 25px;
-                padding-bottom: 0;
+                gap: 10px;
+                grid-template-columns: repeat(2, 1fr);
+                padding: 0;
+                max-height: 320px;
+                overflow-y: auto;
 
+                // A 2px border in both states keeps the outline crisp and the chip
+                // size stable, matching how the provider cards are drawn.
                 .#{$prefix}-language {
-                    display: flex;
-                    padding-right: .5rem;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    box-sizing: border-box;
+                    display: inline-flex;
+                    min-width: 0;
+                    padding: 7px;
 
-                    input[name="languages"]:disabled {
-                        &~img {
-                            opacity: 0.5;
+                    &.language-selected {
+                        background-color: #f0f6ff;
+                        border-color: var(--wp-admin-theme-color, #2271b1);
+
+                        .#{$prefix}-language-check-visual {
+                            background-color: var(--wp-admin-theme-color, #2271b1);
+                            border-color: var(--wp-admin-theme-color, #2271b1);
                         }
+                    }
 
-                        &~span {
-                            opacity: 0.5;
+                    &-item {
+                        align-items: center;
+                        display: flex;
+                        gap: 8px;
+                        min-height: 22px;
+                        min-width: 0;
+                        position: relative;
+                        width: 100%;
+                    }
+
+                    &-check-visual {
+                        background: #fff;
+                        border: 2px solid #cbd5e1;
+                        border-radius: 50%;
+                        box-sizing: border-box;
+                        display: inline-block;
+                        flex-shrink: 0;
+                        height: 22px;
+                        min-width: 22px;
+                        pointer-events: none;
+                        position: relative;
+                        width: 22px;
+
+                        &:before {
+                            border: solid #fff;
+                            border-width: 0 2px 2px 0;
+                            box-sizing: border-box;
+                            content: "";
+                            height: 12px;
+                            left: 6px;
+                            position: absolute;
+                            top: 2px;
+                            transform: rotate(45deg);
+                            width: 6px;
+                        }
+                    }
+
+                    &-label {
+                        align-items: center;
+                        display: inline-flex;
+                        margin-left: 7px;
+                        min-width: 0;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+
+                        img {
+                            flex-shrink: 0;
+                            // Flags can be dimensionless SVGs; pin a consistent size (also fits legacy 16x11 PNGs).
+                            width: 18px;
+                            height: 12px;
+                            object-fit: contain;
+                        }
+                    }
+
+                    input[type="checkbox"] {
+                        -webkit-appearance: none;
+                        -moz-appearance: none;
+                        appearance: none;
+                        background: transparent;
+                        border: none;
+                        border-radius: 0;
+                        cursor: pointer;
+                        height: 22px;
+                        left: 7px;
+                        margin: 0;
+                        opacity: 0;
+                        position: absolute;
+                        width: 22px;
+                        z-index: 2;
+
+                        &:disabled {
+                            cursor: not-allowed;
                         }
                     }
                 }
             }
 
+            // Sits above the grid, aligned to the right edge of the column.
             .#{$prefix}-select-all-languages {
-                padding: 1rem 25px;
+                display: flex;
+                justify-content: flex-end;
+                padding: 0 0 12px;
 
+                // Keep the toggle as a compact pill instead of a full width bar.
                 label {
-                    margin-left: 2px;
+                    display: inline-block;
+                }
+
+                &.all-languages-selected {
+                    .#{$prefix}-select-all-languages-inner {
+                        background-color: #f0f6ff;
+                        border-color: var(--wp-admin-theme-color, #2271b1);
+                    }
+                }
+
+                &-inner {
+                    align-items: center;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    box-sizing: border-box;
+                    display: inline-flex;
+                    gap: 8px;
+                    min-height: 22px;
+                    padding: 7px 12px 7px 7px;
+                    position: relative;
+                }
+
+                input[type="checkbox"] {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    background: transparent;
+                    border: none;
+                    border-radius: 0;
+                    cursor: pointer;
+                    height: 22px;
+                    left: 7px;
+                    margin: 0;
+                    opacity: 0;
+                    position: absolute;
+                    width: 22px;
+                    z-index: 2;
+
+                    &:checked+.#{$prefix}-select-all-languages-check-visual {
+                        background-color: var(--wp-admin-theme-color, #2271b1);
+                        border-color: var(--wp-admin-theme-color, #2271b1);
+                    }
+                }
+
+                &-check-visual {
+                    background: #fff;
+                    border: 2px solid #cbd5e1;
+                    border-radius: 50%;
+                    box-sizing: border-box;
+                    display: inline-block;
+                    flex-shrink: 0;
+                    height: 22px;
+                    min-width: 22px;
+                    pointer-events: none;
+                    position: relative;
+                    width: 22px;
+
+                    &:before {
+                        border: solid #fff;
+                        border-width: 0 2px 2px 0;
+                        box-sizing: border-box;
+                        content: "";
+                        height: 12px;
+                        left: 6px;
+                        position: absolute;
+                        top: 2px;
+                        transform: rotate(45deg);
+                        width: 6px;
+                    }
+                }
+
+                span.#{$prefix}-language-label {
+                    color: var(--wp-admin-theme-color, #2271b1);
+                    font-weight: 500;
+                    margin-left: 7px;
                 }
             }
         }
 
         .#{$prefix}-footer {
-            background: 0 0;
+            align-items: center;
+            background: #f8fafc;
             border: none;
-            border-top: 1px solid #dcdcde;
+            display: flex;
+            justify-content: flex-end;
             margin-top: 0;
-            padding: 16px 22.4px 16px;
-            text-align: end;
+            padding: 16px 22.4px;
+            border-top: 2px solid #00000012;
 
-            .#{$prefix}-footer-button:nth-of-type(1) {
-                background: #f6f7f7;
-                border: 1px solid #c3c4c7;
-                color: #50575e;
-                margin-right: 10px;
-            }
-
-            .#{$prefix}-footer-button:nth-of-type(2) {
-                background: #2271b1;
-                border: 1px solid #2271b1;
-                color: #fff;
-
-                &:disabled {
-                    background: #5493c5 !important;
-                    border: 1px solid #3f8dcf !important;
-                    color: white !important;
-                }
-            }
-
-            .#{$prefix}-footer-button:nth-child(1):hover {
-                background-color: #e1e1e1;
-                border-color: #c9c9c9;
-            }
-
-            .#{$prefix}-footer-button:not(:disabled):nth-child(2):hover {
-                background-color: #135e96;
-                border-color: #135e96;
+            .#{$prefix}-footer-button:disabled {
+                cursor: not-allowed;
+                opacity: .6;
             }
         }
 
@@ -924,11 +1286,7 @@ $prefix: lmat-bulk-translate;
             z-index: 99999;
 
             .#{$prefix}-error-reload-btn {
-                background: #0073aa;
-                color: #fff;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 20px;
+                margin-top: 10px;
             }
 
             .#{$prefix}-tooltip-element {
@@ -936,12 +1294,17 @@ $prefix: lmat-bulk-translate;
                 overflow: visible;
                 cursor: pointer;
                 white-space: nowrap;
+                color: #2271b1;
+
+                svg {
+                    color: #3c434a;
+                }
 
                 .#{$prefix}-tooltip {
                     display: block;
                     font-size: 12.8px;
                     position: absolute;
-                    background: #5cb85c;
+                    background: #0073aa;
                     color: #fff !important;
                     padding: 3.2px 8px;
                     border-radius: 4px;
@@ -961,7 +1324,7 @@ $prefix: lmat-bulk-translate;
                         margin-left: -8px;
                         width: 0;
                         height: 0;
-                        border-top: 8px solid #5cb85c;
+                        border-top: 8px solid #0073aa;
                         border-right: 8px solid transparent;
                         border-left: 8px solid transparent;
                     }
@@ -979,43 +1342,18 @@ $prefix: lmat-bulk-translate;
                 height: auto;
                 box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
                 border-radius: 8px;
-            }
+                overflow: hidden;
 
-            .#{$prefix}-error-modal-box-header {
-                position: relative;
-            }
-
-            .#{$prefix}-error-modal-box-header h3 {
-                height: unset;
-                padding: 8px 36px 8px 25px;
-                border: none;
-                background: 0 0;
-                border-bottom: 1px solid #dcdcde;
-                font-size: 18px;
-                font-weight: 600;
-                line-height: 2;
-                margin: 0;
-                color: black;
-            }
-
-            .#{$prefix}-error-modal-box-header .#{$prefix}-error-modal-box-close {
-                right: 15px;
-                top: 13px;
-                border-radius: 0 !important;
-                height: 30px !important;
-                width: 20px !important;
-                position: absolute;
-                font-size: 32px;
-                font-weight: bold;
-                color: #646970;
-                cursor: pointer;
+                .#{$prefix}-footer {
+                    gap: 10px;
+                }
             }
 
             .#{$prefix}-error-modal-box-body {
                 min-height: 0px;
                 max-height: 65vh;
                 height: auto;
-                padding: 22px;
+                padding: 15px 24px;
                 overflow: auto;
 
                 h4 {
@@ -1047,8 +1385,7 @@ $prefix: lmat-bulk-translate;
                     padding: 0;
 
                     * {
-                        color: red !important;
-                        font-size: 16px;
+                        font-size: 15px;
                         box-shadow: unset;
                         outline: unset;
                         border: unset;
@@ -1104,26 +1441,6 @@ $prefix: lmat-bulk-translate;
                                 border-color: #004466 !important;
                             }
                         }
-                    }
-                }
-            }
-
-            .#{$prefix}-error-modal-box-footer {
-                background: 0 0;
-                border: none;
-                border-top: 1px solid #dcdcde;
-                margin-top: 0;
-                padding: 16px 22.4px 16px;
-                text-align: end;
-
-                .#{$prefix}-error-modal-box-close {
-                    background: #f6f7f7;
-                    border: 1px solid #c3c4c7;
-                    color: #50575e;
-
-                    &:hover{
-                        background-color: #e1e1e1;
-                        border-color: #c9c9c9;  
                     }
                 }
             }
@@ -1196,6 +1513,83 @@ $prefix: lmat-bulk-translate;
                 width: clamp(200px, 800px, 80%);
             }
         }
+
+        // Stack the two setup steps once there is no room for two columns.
+        @media (max-width: 900px) {
+            ##{$prefix}-setting-modal-container {
+                .#{$prefix}-setting-modal-content {
+                    .#{$prefix}-setting-modal-body {
+                        .#{$prefix}-setup-layout {
+                            display: block;
+                            padding: 16px;
+
+                            .#{$prefix}-setup-divider {
+                                height: 1px;
+                                margin: 20px 0;
+                                width: auto;
+                            }
+
+                            // The flow reads top to bottom once the columns stack.
+                            .#{$prefix}-setup-divider-arrow {
+                                transform: translate(-50%, -50%) rotate(90deg);
+                            }
+
+                            .#{$prefix}-provider-cards {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .#{$prefix}-setup-languages {
+                .#{$prefix}-languages {
+                    grid-template-columns: 1fr;
+                }
+            }
+        }
+    }
+}
+
+// The empty selection screen can render before the full setup flow is mounted.
+##{$prefix}-setting-modal-container {
+    .#{$prefix}-empty-state {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        padding: 34px 24px 38px;
+        text-align: center;
+
+        h3 {
+            color: #1d2327;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 20px 0 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        p {
+            color: #646970;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 8px auto 0;
+            max-width: 42ch;
+            padding: 0;
+            text-align: center;
+        }
+    }
+
+    .#{$prefix}-empty-state-art {
+        align-items: center;
+        background: #f6f7f7;
+        border: 2px dashed #c3c4c7;
+        border-radius: 16px;
+        color: #8c8f94;
+        display: inline-flex;
+        height: 120px;
+        justify-content: center;
+        width: 120px;
     }
 }
 
