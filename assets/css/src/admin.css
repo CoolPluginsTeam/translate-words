@@ -295,6 +295,10 @@ td.column-default_lang .icon-default-lang:before,
 
 /* admin bar */
 #wpadminbar #wp-admin-bar-languages .ab-item img {
+	width: 16px !important;
+	height: 11px !important;
+	object-fit: contain;
+	vertical-align: middle;
 	margin: 0 8px 0 2px;
 }
 
