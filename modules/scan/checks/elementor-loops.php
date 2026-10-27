@@ -65,7 +65,7 @@ class Elementor_Loops extends Abstract_Check {
 			}
 		);
 
-		$ids = get_posts(
+		$ids = $this->posts_in_batches(
 			array(
 				'post_type'        => 'any',
 				'post_status'      => 'publish',

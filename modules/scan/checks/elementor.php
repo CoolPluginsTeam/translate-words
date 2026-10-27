@@ -64,25 +64,40 @@ class Elementor extends Abstract_Check {
 		if ( ! self::available() ) {
 			return array();
 		}
-		$types = array_values( array_filter( array( 'elementor_library', 'elementor_component' ), 'post_type_exists' ) );
+		$template_types = array_values( array_filter( array( 'elementor_library', 'elementor_component' ), 'post_type_exists' ) );
+		$types = array_values( array_unique( array_merge( $template_types, $this->translated_post_types() ) ) );
 		if ( ! $types ) {
 			return array();
 		}
-		$documents = get_posts( array(
-			'post_type' => $types,
+		$query = array(
+			'post_type' => $template_types,
 			'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ),
-			'posts_per_page' => self::DOCUMENT_LIMIT + 1,
+			'posts_per_page' => self::DOCUMENT_LIMIT,
 			'orderby' => 'ID', 'order' => 'DESC', 'suppress_filters' => true,
 			'post__in' => $this->scoped_document_ids(),
-		) );
-		$sampled = count( $documents ) > self::DOCUMENT_LIMIT;
-		$documents = array_slice( $documents, 0, self::DOCUMENT_LIMIT );
-		$buckets = array_fill_keys( array( 'missing', 'unpublished', 'language', 'layout', 'type', 'orphan', 'empty', 'outdated', 'untranslated', 'repeater', 'links' ), array() );
+			'lang' => '',
+		);
+		$documents = $template_types ? $this->posts_in_batches( $query ) : array();
+		$content_types = array_values( array_diff( $types, $template_types ) );
+		if ( $content_types ) {
+			$builder_query = $query;
+			$builder_query['post_type'] = $content_types;
+			$builder_query['meta_query'] = array( 'relation' => 'OR', array( 'key' => '_elementor_edit_mode', 'value' => 'builder' ), array( 'key' => '_elementor_data', 'compare' => 'EXISTS' ) );
+			$documents = array_merge( $documents, $this->posts_in_batches( $builder_query ) );
+		}
+		$documents = array_values( array_column( $documents, null, 'ID' ) );
+		usort( $documents, static function ( $a, $b ) { return $b->ID <=> $a->ID; } );
+		$sampled = false;
+		$buckets = array_fill_keys( array( 'missing', 'unpublished', 'language', 'layout', 'type', 'orphan', 'empty', 'fields', 'outdated', 'untranslated', 'repeater', 'links' ), array() );
 		$default = $this->default_lang();
 		$languages = $this->active_languages();
 		$active_slugs = array_map( static function ( $language ) { return $language->slug; }, $languages );
 		$checked = 0;
 		foreach ( $documents as $document ) {
+			$is_template = in_array( $document->post_type, $template_types, true );
+			if ( ! $is_template && ! Elementor_Fields::is_built( (int) $document->ID ) && 'builder' !== get_post_meta( $document->ID, '_elementor_edit_mode', true ) ) {
+				continue;
+			}
 			$type = (string) get_post_meta( $document->ID, '_elementor_template_type', true );
 			if ( 'kit' === $type ) {
 				continue;
@@ -116,6 +131,8 @@ class Elementor extends Abstract_Check {
 				}
 				$translated = ! empty( $translations[ $target->slug ] ) ? get_post( (int) $translations[ $target->slug ] ) : null;
 				if ( ! $translated || in_array( $translated->post_status, array( 'trash', 'auto-draft' ), true ) ) {
+					// Missing page/post translations are already owned by the Content scan.
+					if ( ! $is_template ) continue;
 					$row = $this->detail( $document, $target->slug, sprintf( __( 'No template translation exists for %s.', 'translate-words' ), $this->lang_label( $target ) ), 'missing' );
 					$row['action_url'] = $this->new_translation_url( $document->ID, $target->slug );
 					$row['action_label'] = sprintf( __( 'Translate %s', 'translate-words' ), $target->name );
@@ -123,7 +140,7 @@ class Elementor extends Abstract_Check {
 					continue;
 				}
 				if ( 'publish' !== $translated->post_status ) {
-					$buckets['unpublished'][] = $this->detail( $translated, $target->slug, __( 'The linked template translation is not published.', 'translate-words' ), 'unpublished' );
+					$buckets['unpublished'][] = $this->detail( $translated, $target->slug, __( 'The linked Elementor translation is not published.', 'translate-words' ), 'unpublished' );
 				}
 				$translated_type = (string) get_post_meta( $translated->ID, '_elementor_template_type', true );
 				if ( $translated->post_type !== $document->post_type || ( $type && $type !== $translated_type ) ) {
@@ -135,7 +152,7 @@ class Elementor extends Abstract_Check {
 				if ( Elementor_Fields::has_widgets( $document->ID ) && ! Elementor_Fields::has_widgets( $translated->ID ) ) {
 					$buckets['empty'][] = $this->detail( $translated, $target->slug, __( 'This translation has no Elementor widgets, but the original has. Visitors may see an empty template.', 'translate-words' ), 'empty' );
 				}
-				$this->compare_widgets( $document, $translated, $target, $buckets );
+				$this->compare_widgets( $document, $translated, $target, $buckets, $is_template );
 				$fresh = $fresh ?? new Freshness( $this->model );
 				if ( 'source_updated' === $fresh->classify( $document->ID, $target->slug, $fresh->changed_at( $document->ID ), $fresh->changed_at( $translated->ID ) ) ) {
 					$buckets['outdated'][] = $this->detail( $translated, $target->slug, __( 'The original was updated after this translation. Review the changes and update the translated template.', 'translate-words' ), 'outdated' );
@@ -145,8 +162,9 @@ class Elementor extends Abstract_Check {
 		$this->summary['checked'] = $checked;
 		$this->summary['sampled'] = $sampled;
 		$labels = array(
+			'fields' => array( __( 'Empty translated Elementor fields', 'translate-words' ), __( 'The original widget has text, but the matching translated field is empty.', 'translate-words' ) ),
 			'missing' => array( __( 'Missing Template Translations', 'translate-words' ), __( 'Published source templates need a translation in each active language.', 'translate-words' ) ),
-			'unpublished' => array( __( 'Unpublished Template Translations', 'translate-words' ), __( 'Publish linked translations so visitors can use the translated templates.', 'translate-words' ) ),
+			'unpublished' => array( __( 'Unpublished Elementor Translations', 'translate-words' ), __( 'Publish linked translations so visitors can use the translated pages and templates.', 'translate-words' ) ),
 			'language' => array( __( 'Templates Without a Language', 'translate-words' ), __( 'Assign a language before linking or translating these templates.', 'translate-words' ) ),
 			'layout' => array( __( 'Template Layout Issues', 'translate-words' ), __( 'Review empty or invalid Elementor layout data.', 'translate-words' ) ),
 			'type' => array( __( 'Template Type Mismatches', 'translate-words' ), __( 'Source templates and their translations should use the same document type.', 'translate-words' ) ),
@@ -167,7 +185,10 @@ class Elementor extends Abstract_Check {
 				continue;
 			}
 			$result = $this->result( $id, $details ? Result::WARNING : Result::PASS, $labels[ $key ][0], $details ? $labels[ $key ][1] : __( 'No issues found in the scanned Elementor templates.', 'translate-words' ) );
-			$results[] = $result->with_details( array_slice( $details, 0, self::DETAIL_LIMIT ), count( $details ) > self::DETAIL_LIMIT )->with_fix( admin_url( 'edit.php?post_type=elementor_library' ), __( 'Manage templates', 'translate-words' ) );
+			$result->with_details( array_slice( $details, 0, self::DETAIL_LIMIT ), count( $details ) > self::DETAIL_LIMIT );
+			$has_content_rows = array_filter( $details, static function ( $detail ) { return ! in_array( $detail['post_type'] ?? '', array( 'elementor_library', 'elementor_component' ), true ); } );
+			if ( ! $has_content_rows ) $result->with_fix( admin_url( 'edit.php?post_type=elementor_library' ), __( 'Manage templates', 'translate-words' ) );
+			$results[] = $result;
 		}
 		if ( ! $checked && $this->wants( 'elementor_none' ) ) {
 			$results[] = $this->result( 'elementor_none', Result::INFO, __( 'No Elementor templates found', 'translate-words' ), __( 'No saved Elementor templates or components were found to scan.', 'translate-words' ) );
@@ -189,7 +210,7 @@ class Elementor extends Abstract_Check {
 			}
 			$id = (int) $parts[2];
 			$ids[] = $id;
-			if ( in_array( $parts[1], array( 'missing', 'unpublished', 'type', 'empty', 'outdated', 'untranslated', 'repeater', 'links' ), true ) ) {
+			if ( in_array( $parts[1], array( 'missing', 'unpublished', 'type', 'empty', 'fields', 'outdated', 'untranslated', 'repeater', 'links' ), true ) ) {
 				$translations = $this->model->post->get_translations( $id );
 				if ( ! empty( $translations[ $this->default_lang() ] ) ) {
 					$ids[] = (int) $translations[ $this->default_lang() ];
@@ -203,7 +224,7 @@ class Elementor extends Abstract_Check {
 	 * Widget-level differences between a template and one translation: text still in the original language,
 	 * different repeater row counts, and links that lead nowhere or to another language.
 	 */
-	private function compare_widgets( $source, $translated, $target, array &$buckets ): void {
+	private function compare_widgets( $source, $translated, $target, array &$buckets, bool $report_same_text = true ): void {
 		$source_map      = Elementor_Fields::element_map( Elementor_Fields::tree( $source->ID ) );
 		$translation_map = Elementor_Fields::element_map( Elementor_Fields::tree( $translated->ID ) );
 
@@ -216,7 +237,16 @@ class Elementor extends Abstract_Check {
 			$widget_type = $element['widget_type'];
 
 			foreach ( $element['fields'] as $field_key => $original ) {
-				if ( Elementor_Fields::is_untranslated( $field_key, $original, $other['fields'][ $field_key ] ?? '', $target->slug ) ) {
+				$translated_text = $other['fields'][ $field_key ] ?? '';
+				if ( '' !== trim( wp_strip_all_tags( (string) $original ) ) && '' === trim( wp_strip_all_tags( (string) $translated_text ) ) ) {
+					$row = $this->detail( $translated, $target->slug, sprintf( __( 'The original contains "%1$s", but the translated %2$s field is empty.', 'translate-words' ), Elementor_Fields::snippet( (string) $original, 80 ), Elementor_Fields::field_label( $field_key ) ), 'fields' );
+					$row['layout'] = 'widget';
+					$row['label'] = $widget . ' — ' . $row['label'] . ' (' . $this->lang_label( $target ) . ')';
+					$row['ignore_key'] .= ':' . $element_id . ':' . md5( $field_key );
+					$row['action_url'] = add_query_arg( Frontend_Inspector::FOCUS_ARG, rawurlencode( (string) $element_id ), $row['action_url'] );
+					$buckets['fields'][] = $row;
+				}
+				if ( $report_same_text && Elementor_Fields::is_untranslated( $field_key, $original, $translated_text, $target->slug ) ) {
 					$row                       = Elementor_Fields::same_text_row(
 						$widget_type,
 						$field_key,
@@ -236,6 +266,7 @@ class Elementor extends Abstract_Check {
 				if ( $count !== $other_count ) {
 					$row = $this->detail( $translated, $target->slug, sprintf( /* translators: 1: widget name, 2: repeater name, 3: rows in the original, 4: rows in the translation */ __( '%1$s › "%2$s" has %3$d rows in the original but %4$d in the translation.', 'translate-words' ), $widget, $repeater, $count, $other_count ), 'repeater' );
 					$row['ignore_key'] .= ':' . $element_id . ':' . md5( $repeater );
+					$row['layout'] = 'widget';
 					$buckets['repeater'][] = $row;
 				}
 			}
@@ -259,6 +290,7 @@ class Elementor extends Abstract_Check {
 				if ( '' !== $message ) {
 					$row = $this->detail( $translated, $target->slug, $widget . ' › ' . Elementor_Fields::field_label( $field_key ) . ': ' . $message, 'links' );
 					$row['ignore_key'] .= ':' . $element_id . ':' . md5( $url );
+					$row['layout'] = 'widget';
 					$buckets['links'][] = $row;
 				}
 			}

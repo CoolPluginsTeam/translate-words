@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import apiFetch from '@wordpress/api-fetch'
 import { toast } from 'sonner'
 import { __, _n, sprintf } from '@wordpress/i18n'
@@ -180,14 +180,26 @@ const Scan = () => {
         try { setReport(await request(path, 'POST', data)); if (success) toast.success(success) } catch (error) { fail(error) } finally { setBusy(false) }
     }, [])
     const [rescanning, setRescanning] = useState(false)
+    const pendingBusy = useRef(false)
     const runPending = useCallback(async () => {
+        if (pendingBusy.current) return
         const items = readPending()
         if (!items.length) return
         writePending([])
         setRescanning(true)
         for (const item of items) {
             if (item.keys?.length) { setTab(item.section); await checkKeys(item.id, item.section, item.keys); continue }
-            try { setReport(await request('/recheck', 'POST', { id: item.id, section: item.section })); toast.success(__('Your changes were checked. Results are up to date.', 'translate-words')) } catch (error) { toast.error(__('The changed item could not be rechecked. Use Rescan on the item.', 'translate-words')) }
+            const statusId = 'issue:' + item.id
+            setStatus(statusId, { state: 'checking', message: __('Checking…', 'translate-words') })
+            try {
+                const next = await request('/recheck', 'POST', { id: item.id, section: item.section })
+                const present = next.results?.some(result => result.id === item.id && result.status !== 'pass')
+                setStatus(statusId, { state: present ? 'present' : 'resolved', message: present ? __('This issue is still present.', 'translate-words') : __('This issue is now resolved.', 'translate-words') })
+                if (!present) await new Promise(resolve => setTimeout(resolve, 1100))
+                setReport(next)
+            } catch (error) {
+                setStatus(statusId, { state: 'present', message: __('Could not check', 'translate-words') })
+            }
         }
         setRescanning(false)
     }, [checkKeys])

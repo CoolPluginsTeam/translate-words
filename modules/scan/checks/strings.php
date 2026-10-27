@@ -75,7 +75,8 @@ class Strings extends Abstract_Check {
 				}
 
 				$details[] = array(
-					'label'        => $item['title'],
+					'label'        => wp_html_excerpt( wp_strip_all_tags( $item['string'] ), 160, '…' ),
+                    'subtitle' => $item['title'],
 					'message'      => sprintf(
 						/* translators: 1: string title, 2: language name with code */
 						__( '"%1$s" has no translation in "%2$s".', 'translate-words' ),

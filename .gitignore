@@ -19,3 +19,5 @@ node_modules
 *.js*LICENSE.txt 
 fix-issues-files.txt
 fix-issues.csv
+# Local scan simulation fixtures and preview helpers
+/dev/simulation/

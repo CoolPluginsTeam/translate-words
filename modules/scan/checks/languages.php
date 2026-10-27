@@ -148,6 +148,13 @@ class Languages extends Abstract_Check {
 			);
 		}
 
+		foreach ( $details as &$detail ) {
+            $detail['source_title'] = get_the_title( $front_id );
+            $detail['post_type'] = 'page';
+            $detail['edit_url'] = (string) get_edit_post_link( $front_id, 'url' );
+        }
+        unset( $detail );
+
 		if ( empty( $details ) ) {
 			return $this->result(
 				'lang_homepage',

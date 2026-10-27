@@ -27,6 +27,24 @@ class Issue_Copy {
 	 * @return array{why:string,how:string}
 	 */
 	public static function for_id( string $id ): array {
+        $key = array( 'lang_homepage' => 'homepage_translations', 'translated_permalink_review' => 'translated_permalinks' )[ $id ] ?? $id;
+        $families = array(
+            'content_unpublished_' => 'content_draft', 'content_draft_' => 'content_draft',
+            'content_identical_' => 'content_identical', 'content_link_' => 'content_links',
+            'content_placeholder_' => 'content_placeholder', 'content_acf_' => 'content_acf',
+            'term_missing_' => 'term_missing', 'string_' => 'strings_missing',
+            'url_config_' => 'url_configuration', 'url_route_' => 'routing_health', 'nav_' => 'navigation',
+        );
+        foreach ( $families as $prefix => $family ) {
+            if ( 0 === strpos( $id, $prefix ) ) { $key = $family; break; }
+        }
+        if ( 0 === strpos( $id, 'menu_' ) && 'menu_dead_links' !== $id && 'menu_none' !== $id ) $key = 'menu_assignments';
+        if ( preg_match( '/^content_(?:page|post)(?:_|$)/', $id ) ) $key = 'content_missing';
+        if ( class_exists( Toolkit_Copy::class ) ) {
+            $shared = Toolkit_Copy::for_key( $key );
+            if ( null !== $shared ) return $shared;
+        }
+
 		if ( 0 === strpos( $id, 'url_route_' ) ) {
 			return array(
 				'why' => __( 'A language URL that returns an error or redirects to another language cannot be reached by visitors or search engines.', 'translate-words' ),
@@ -113,6 +131,10 @@ class Issue_Copy {
 			'url_dupe_slugs' => array(
 				__( 'When posts in different languages share a slug, visitors and search engines can land on the wrong language or a 404.', 'translate-words' ),
 				__( 'Open each post listed in the row and give one of them a different slug.', 'translate-words' ),
+			),
+			'url_numbered_copies' => array(
+				__( 'WordPress can append -2 or another number when a slug is already taken. Matching titles or content in the same language can indicate an accidental copy.', 'translate-words' ),
+				__( 'Compare the linked items and their URLs. Keep both if intentional and ignore this warning; otherwise review links before removing an unwanted copy.', 'translate-words' ),
 			),
 			'content_acf' => array(
 				__( 'A custom field that still holds the original text shows visitors untranslated text, such as a subtitle or button label.', 'translate-words' ),

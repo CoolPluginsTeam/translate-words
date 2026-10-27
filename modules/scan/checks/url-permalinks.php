@@ -92,6 +92,12 @@ class Url_Permalinks extends Abstract_Check {
 				'action_label' => __( 'Review permalink', 'translate-words' ),
 				'ignore_key'   => 'url:slug_suffix:' . $row['language'] . ':' . $row['id'],
 				'language'     => $row['language'],
+				'url'          => $row['permalink'],
+				'source_url'   => $row['source_url'],
+				'current_slug' => $row['slug'],
+				'base_slug'    => $row['base'],
+				'http_status'  => $code,
+				'status_label' => $loads ? __( 'Page loads correctly', 'translate-words' ) : $status,
 			);
 		}
 
@@ -183,6 +189,7 @@ class Url_Permalinks extends Abstract_Check {
 				'language_name'   => (string) $lang->name,
 				'source_language' => (string) $source_lang->name,
 				'permalink'       => (string) get_permalink( (int) $candidate->ID ),
+				'source_url'      => (string) get_permalink( (int) $source[0] ),
 				'edit'            => (string) get_edit_post_link( (int) $candidate->ID, 'url' ),
 			);
 		}

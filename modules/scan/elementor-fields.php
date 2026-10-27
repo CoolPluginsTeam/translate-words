@@ -243,9 +243,8 @@ class Elementor_Fields {
 			$widget = (string) ( $element['widgetType'] ?? '' );
 			if ( '' !== $widget && ! empty( $element['id'] ) ) {
 				$extracted = self::extract( $element );
-				if ( $extracted['fields'] || $extracted['links'] || $extracted['repeaters'] || $extracted['loops'] ) {
-					$map[ (string) $element['id'] ] = array( 'widget_type' => $widget ) + $extracted;
-				}
+				// Retain empty widgets so the scanner can compare missing translated text.
+				$map[ (string) $element['id'] ] = array( 'widget_type' => $widget ) + $extracted;
 			}
 			if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
 				self::element_map( $element['elements'], $map, $depth + 1 );

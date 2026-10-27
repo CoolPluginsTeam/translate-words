@@ -47,7 +47,7 @@ class Elementor_Headers extends Abstract_Check {
 			return array();
 		}
 
-		$header_ids = get_posts(
+		$header_ids = $this->posts_in_batches(
 			array(
 				'post_type'        => 'elementor_library',
 				'post_status'      => 'publish',

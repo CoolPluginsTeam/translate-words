@@ -106,6 +106,11 @@ class Menu_Links extends Abstract_Check {
 					$details[] = array(
 						'label'        => $lang_name . ' → ' . ( '' !== $title ? $title : __( 'Menu item', 'translate-words' ) ),
 						'message'      => $dead['message'],
+                        'url' => $url,
+                        'code' => 'dead_link',
+                        'kind' => $dead['kind'],
+                        'page_fix_url' => $dead['fix_url'],
+                        'page_fix_label' => $dead['fix_label'],
 						'action_url'   => admin_url( 'nav-menus.php?action=edit&menu=' . $menu_id ),
 						'action_label' => __( 'Edit menu', 'translate-words' ),
 						'ignore_key'   => 'menu_dead:' . $menu_id . ':' . md5( $this->normalize_url( $url ) ),

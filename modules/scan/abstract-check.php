@@ -42,7 +42,7 @@ abstract class Abstract_Check {
 	protected $only = null;
 
 	/**
-	 * Default-language posts inspected per post type.
+	 * Post query batch size. Full checks continue through every batch.
 	 */
 	const POST_LIMIT = 500;
 
@@ -57,7 +57,7 @@ abstract class Abstract_Check {
 	}
 
 	/**
-	 * Published default-language posts of one type, newest first, up to POST_LIMIT.
+	 * All published default-language posts of one type, newest first.
 	 *
 	 * @since 2.3.0
 	 *
@@ -68,7 +68,7 @@ abstract class Abstract_Check {
 	protected function default_language_post_ids( string $type, $default_lang ): array {
 		return array_map(
 			'intval',
-			get_posts(
+			$this->posts_in_batches(
 				array(
 					'post_type'        => $type,
 					'post_status'      => 'publish',
@@ -89,6 +89,20 @@ abstract class Abstract_Check {
 				)
 			)
 		);
+	}
+
+	/** Read all matching posts in bounded queries rather than skipping older documents. */
+	protected function posts_in_batches( array $args ): array {
+		$size = max( 1, (int) ( $args['posts_per_page'] ?? self::POST_LIMIT ) );
+		$args['posts_per_page'] = $size;
+		$args['paged'] = 1;
+		$all = array();
+		do {
+			$batch = get_posts( $args );
+			$all = array_merge( $all, $batch );
+			++$args['paged'];
+		} while ( count( $batch ) === $size );
+		return $all;
 	}
 
 	/**

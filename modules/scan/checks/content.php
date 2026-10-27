@@ -138,7 +138,7 @@ class Content extends Abstract_Check {
 		$drafts           = array();
 		$missing          = 0;
 		$unpub            = 0;
-		$truncated        = ! $scoped && count( $post_ids ) >= self::POST_LIMIT;
+		$truncated        = false;
 		$truncated_drafts = $truncated;
 
 		foreach ( $post_ids as $post_id ) {

@@ -587,6 +587,7 @@ class Scanner {
 			new Checks\Url_Config( $this->model ),
 			new Checks\Url_Settings( $this->model ),
 			new Checks\Url_Slugs( $this->model ),
+			new Checks\Url_Numbered_Copies( $this->model ),
 			new Checks\Url_Routing( $this->model ),
 			new Checks\Url_Permalinks( $this->model ),
 			new Checks\Content( $this->model ),
