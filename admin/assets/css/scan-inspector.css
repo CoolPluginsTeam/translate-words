@@ -108,9 +108,7 @@
 	font-size: var(--lmat-scan-fs-micro);
 	font-weight: var(--lmat-scan-fw-semibold);
 }
-@keyframes lmat-scan-rotate {
-	to { transform: rotate(360deg); }
-}
+
 .lmat-styles .lmat-inspector .lmat-scan-issue-check-status {
 	display: inline-flex;
 	align-items: center;
@@ -1395,11 +1393,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 	text-align: right;
 }
 
-.lmat-styles .lmat-inspector .lmat-scan-badge-pass {
-	border-color: #86efac;
-	color: #15803d;
-}
-
 .lmat-styles .lmat-inspector .lmat-scan-badge-ignored {
 	border-color: #c3c4c7;
 	color: #646970;
@@ -1935,11 +1928,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 
 /* Passed checks use the toolkit card grid. */
 
-
-.lmat-styles .lmat-inspector .lmat-scan-ignored-panel .lmat-scan-passed-icon {
-	color: #646970;
-}
-
 .lmat-styles .lmat-inspector .lmat-scan-passed-icon {
 	display: inline-flex;
 	align-items: center;
@@ -2183,7 +2171,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 	color: #9b1c1c;
 }
 
-}
 
 /* ==========================================================================
    "What changed" dialog (Block Editor & Classic)
@@ -2382,7 +2369,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 	inset-inline-start: 0.5em;
 	width: 1em;
 	height: 1em;
-	height: 1em;
 	font-size: 1em;
 	line-height: 1;
 }
@@ -2407,8 +2393,7 @@ a.lmat-scan-content-lang-chip-link:focus {
 }
 
 /* Detail rows used by the identical content and content link cards. */
-.lmat-styles .lmat-inspector .lmat-scan-detail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-.lmat-styles .lmat-inspector .lmat-scan-detail-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr) auto; align-items: center; gap: 16px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.lmat-styles .lmat-inspector .lmat-scan-detail-list { margin-top: 12px; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-title p { margin: 4px 0 0; color: #64748b; font-size: 12px; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-message { color: #475569; font-size: 13px; overflow-wrap: anywhere; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-row .lmat-scan-content-actions { justify-content: flex-end; }
@@ -2427,8 +2412,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 .lmat-styles .lmat-inspector .lmat-scan-nolang-notice .dashicons { color: #d97706; }
 
 /* One Elementor widget whose text still matches the original language. */
-.lmat-styles .lmat-inspector .lmat-scan-detail-row--card { grid-template-columns: auto minmax(0, 1fr) auto; background: #fff; border-radius: 12px; padding: 14px 16px; }
-.lmat-styles .lmat-inspector .lmat-scan-detail-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #fff1e6; color: #ea580c; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-row--card .lmat-scan-detail-title strong { font-size: 14px; color: #0f172a; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-row--card .lmat-scan-detail-text { margin: 4px 0 0; color: #64748b; font-size: 13px; }
 .lmat-styles .lmat-inspector .lmat-scan-detail-row--card .button .dashicons { width: 14px; height: 14px; font-size: 14px; margin-right: 4px; vertical-align: text-bottom; }
@@ -2494,9 +2477,6 @@ a.lmat-scan-content-lang-chip-link:focus {
 }
 .lmat-styles .lmat-inspector .lmat-scan-content-pending-intro {
 	margin: 0 0 12px;
-}
-.lmat-styles .lmat-inspector .lmat-scan-content-pending-intro p {
-	margin: 0 0 6px;
 }
 .lmat-styles .lmat-inspector .lmat-scan-card-actions,
 .lmat-styles .lmat-inspector .lmat-scan-strings-top-actions,

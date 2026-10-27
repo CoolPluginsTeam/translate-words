@@ -84,7 +84,7 @@ const Overview = ({ report, groups, cardProps, onGoto, onScan }) => {
 
 const DOCUMENT_TYPES = { header: __('Headers', 'translate-words'), footer: __('Footers', 'translate-words'), single: __('Single templates', 'translate-words'), archive: __('Archives', 'translate-words'), popup: __('Popups', 'translate-words'), 'loop-item': __('Loop items', 'translate-words'), section: __('Sections', 'translate-words'), container: __('Containers', 'translate-words'), page: __('Pages', 'translate-words'), 'wp-page': __('Pages', 'translate-words'), 'wp-post': __('Posts', 'translate-words'), 'error-404': __('404 pages', 'translate-words'), 'search-results': __('Search results', 'translate-words'), elementor_library: __('Templates', 'translate-words'), elementor_component: __('Components', 'translate-words') }
 
-const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRestore, onRestoreAll }) => {
+const SectionPanel = ({ section, report, groups, cardProps, onScan, onGoto, onRestore }) => {
     const [severity, setSeverity] = useState('all')
     const [search, setSearch] = useState('')
     const [type, setType] = useState('')
@@ -179,14 +179,12 @@ const Scan = () => {
         setBusy(true)
         try { setReport(await request(path, 'POST', data)); if (success) toast.success(success) } catch (error) { fail(error) } finally { setBusy(false) }
     }, [])
-    const [rescanning, setRescanning] = useState(false)
     const pendingBusy = useRef(false)
     const runPending = useCallback(async () => {
         if (pendingBusy.current) return
         const items = readPending()
         if (!items.length) return
         writePending([])
-        setRescanning(true)
         for (const item of items) {
             if (item.keys?.length) { setTab(item.section); await checkKeys(item.id, item.section, item.keys); continue }
             const statusId = 'issue:' + item.id
@@ -201,7 +199,6 @@ const Scan = () => {
                 setStatus(statusId, { state: 'present', message: __('Could not check', 'translate-words') })
             }
         }
-        setRescanning(false)
     }, [checkKeys])
     useEffect(() => {
         if (loading || !report) return
@@ -262,7 +259,7 @@ const Scan = () => {
         <div className='lmat-scan-report-stack'><nav className='lmat-scan-section-nav' aria-label={__('Report sections', 'translate-words')}><div className='lmat-scan-section-nav-list' role='tablist' aria-label={__('Report sections', 'translate-words')}>{tabs.map(item => <button key={item.key} id={`scan-tab-${item.key}`} type='button' role='tab' aria-selected={tab === item.key} aria-controls='scan-panel' tabIndex={tab === item.key ? 0 : -1} className={`lmat-scan-nav-tab${tab === item.key ? ' is-active' : ''}`} onKeyDown={selectTabByKey} onClick={() => setTab(item.key)}><Icon name={item.icon} /><span className='lmat-scan-nav-tab-label'>{item.label}</span></button>)}</div></nav>
             <div id='scan-panel' onPointerDownCapture={trackFix} role='tabpanel' aria-labelledby={`scan-tab-${tab}`} aria-busy={busy} className='lmat-scan-tab-panel' tabIndex={0}>
                 {tab === 'overview' && <Overview report={report} groups={groups} cardProps={cardProps} onGoto={setTab} onScan={scan} />}
-                {current && <SectionPanel key={current.key} section={current} report={report} groups={groups} cardProps={cardProps} onGoto={setTab} onScan={section => call('/section', { section }, __('Scan finished. Results are up to date.', 'translate-words'))} onRestore={key => call('/ignore', { key, ignore: false })} onRestoreAll={() => call('/ignore', { key: '__all__', ignore: false })} />}
+                {current && <SectionPanel key={current.key} section={current} report={report} groups={groups} cardProps={cardProps} onGoto={setTab} onScan={section => call('/section', { section }, __('Scan finished. Results are up to date.', 'translate-words'))} onRestore={key => call('/ignore', { key, ignore: false })} />}
                 {tab === 'coverage' && <Coverage report={report} />}
             </div>
         </div>

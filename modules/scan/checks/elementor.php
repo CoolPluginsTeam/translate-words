@@ -87,7 +87,6 @@ class Elementor extends Abstract_Check {
 		}
 		$documents = array_values( array_column( $documents, null, 'ID' ) );
 		usort( $documents, static function ( $a, $b ) { return $b->ID <=> $a->ID; } );
-		$sampled = false;
 		$buckets = array_fill_keys( array( 'missing', 'unpublished', 'language', 'layout', 'type', 'orphan', 'empty', 'fields', 'outdated', 'untranslated', 'repeater', 'links' ), array() );
 		$default = $this->default_lang();
 		$languages = $this->active_languages();
@@ -160,7 +159,6 @@ class Elementor extends Abstract_Check {
 			}
 		}
 		$this->summary['checked'] = $checked;
-		$this->summary['sampled'] = $sampled;
 		$labels = array(
 			'fields' => array( __( 'Empty translated Elementor fields', 'translate-words' ), __( 'The original widget has text, but the matching translated field is empty.', 'translate-words' ) ),
 			'missing' => array( __( 'Missing Template Translations', 'translate-words' ), __( 'Published source templates need a translation in each active language.', 'translate-words' ) ),
@@ -192,9 +190,6 @@ class Elementor extends Abstract_Check {
 		}
 		if ( ! $checked && $this->wants( 'elementor_none' ) ) {
 			$results[] = $this->result( 'elementor_none', Result::INFO, __( 'No Elementor templates found', 'translate-words' ), __( 'No saved Elementor templates or components were found to scan.', 'translate-words' ) );
-		}
-		if ( $sampled && $this->wants( 'elementor_sampled' ) ) {
-			$results[] = $this->result( 'elementor_sampled', Result::INFO, __( 'Elementor scan limit reached', 'translate-words' ), sprintf( __( 'Only the latest %d templates and components were scanned. Older documents have not been checked.', 'translate-words' ), self::DOCUMENT_LIMIT ) );
 		}
 		return $results;
 	}
