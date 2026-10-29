@@ -380,6 +380,47 @@
 	min-width: 0;
 }
 
+/* Gemini API key + model sit side-by-side when space allows. */
+.lmat-api-key-row {
+	align-items: flex-start;
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	width: 100%;
+}
+
+.lmat-api-key-field,
+.lmat-api-key-model {
+	min-width: 0;
+}
+
+.lmat-api-key-field {
+	flex: 1 1 auto;
+}
+
+.lmat-api-key-model {
+	flex: 0 1 320px;
+	max-width: 340px;
+	width: 100%;
+}
+
+.lmat-api-key-model-select {
+	box-sizing: border-box;
+	min-height: 40px;
+	width: 100%;
+}
+
+@media (min-width: 720px) {
+	.lmat-api-key-row {
+		flex-direction: row;
+		gap: 1.5rem;
+	}
+
+	.lmat-api-key-row.is-embedded .lmat-api-key-model {
+		padding-top: 0.75rem;
+	}
+}
+
 /* A provider the current browser cannot run: only the message and badge remain. */
 .lmat-engines li.lmat-engine-row.is-unsupported .lmat-engine-default,
 .lmat-engines li.lmat-engine-row.is-unsupported .lmat-engine-actions {
