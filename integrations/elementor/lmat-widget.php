@@ -24,6 +24,12 @@ if (! defined('ABSPATH')) {
  */
 class Linguator_Widget extends Widget_Base
 {
+    /**
+     * Whether the footer print backup was hooked.
+     *
+     * @var bool
+     */
+    private static $dropdown_footer_hooked = false;
 
     /**
      * Constructor for the widget.
@@ -40,6 +46,17 @@ class Linguator_Widget extends Widget_Base
             [],
             LINGUATOR_VERSION
         );
+
+        // Ensure script is registered even if wp_enqueue_scripts already fired.
+        if ( ! wp_script_is( 'lmat-elementor-dropdown', 'registered' ) ) {
+            wp_register_script(
+                'lmat-elementor-dropdown',
+                plugins_url( 'integrations/elementor/js/dropdown.js', LINGUATOR_FILE ),
+                array(),
+                LINGUATOR_VERSION,
+                true
+            );
+        }
 
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'linguator_language_switcher_icon_css']);
     }
@@ -111,6 +128,16 @@ class Linguator_Widget extends Widget_Base
     public function get_style_depends()
     {
         return ['lmat-style'];
+    }
+
+    /**
+     * Get widget script dependencies.
+     *
+     * @return array Widget script dependencies.
+     */
+    public function get_script_depends()
+    {
+        return array( 'lmat-elementor-dropdown' );
     }
 
     /**
@@ -378,7 +405,7 @@ class Linguator_Widget extends Widget_Base
             [
                 'name'     => 'lmat_language_switcher_typography',
                 'label'    => __('Typography', 'translate-words'),
-                'selector' => '{{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.dropdown .lmat-active-language a div:not(.lmat-lang-image), {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.dropdown .lmat-lang-item a, {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.horizontal .lmat-lang-item a, {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.vertical .lmat-lang-item a',
+                'selector' => '{{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.dropdown .lmat-active-language .lmat-dropdown-trigger div:not(.lmat-lang-image), {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.dropdown .lmat-lang-item a, {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.horizontal .lmat-lang-item a, {{WRAPPER}} .lmat-main-wrapper .lmat-wrapper.vertical .lmat-lang-item a',
             ]
         );
         $this->add_control(
@@ -730,6 +757,24 @@ class Linguator_Widget extends Widget_Base
         $switcher_html = '';
         $switcher_html .= '<div class="lmat-main-wrapper">';
         if ($settings['lmat_language_switcher_type'] == 'dropdown') {
+            // Enqueue for footer; also print as backup if Elementor asset loading skipped it.
+            wp_enqueue_script( 'lmat-elementor-dropdown' );
+            if ( ! self::$dropdown_footer_hooked ) {
+                self::$dropdown_footer_hooked = true;
+                add_action(
+                    'wp_footer',
+                    static function () {
+                        if ( wp_script_is( 'lmat-elementor-dropdown', 'done' ) ) {
+                            return;
+                        }
+                        if ( ! wp_script_is( 'lmat-elementor-dropdown', 'registered' ) ) {
+                            return;
+                        }
+                        wp_scripts()->do_items( array( 'lmat-elementor-dropdown' ) );
+                    },
+                    5
+                );
+            }
             $switcher_html .= '<div class="lmat-wrapper dropdown">';
             $switcher_html .= $this->lmat_render_dropdown_switcher($settings, $lmat_data);
             $switcher_html .= '</div>';
@@ -746,9 +791,15 @@ class Linguator_Widget extends Widget_Base
                 'ul' => array( 'class' => true ),
                 'li' => array( 'class' => true ),
                 'a' => array( 'href' => true, 'class' => true, 'lang' => true, 'hreflang' => true, 'aria-current' => true ),
+                'button' => array(
+                    'type'          => true,
+                    'class'         => true,
+                    'aria-expanded' => true,
+                    'aria-haspopup' => true,
+                ),
                 'span' => array( 'class' => true ),
                 'img' => array( 'src' => true, 'alt' => true, 'class' => true, 'width' => true, 'height' => true, 'style' => true, 'decoding' => true, 'title' => true ),
-                'i' => array( 'class' => true )
+                'i' => array( 'class' => true, 'aria-hidden' => true ),
             ), 
             array_merge( wp_allowed_protocols(), array( 'data' ) ) 
         );
@@ -824,8 +875,9 @@ class Linguator_Widget extends Widget_Base
      */
     public static function lmat_get_active_language_html($language, $settings)
     {
+        // Button (not a link): click/focus opens the list; language links stay in the <ul>.
         $html = '<span class="lmat-active-language">';
-        $html .= '<a href="' . esc_url($language['url']) . '">';
+        $html .= '<button type="button" class="lmat-dropdown-trigger" aria-expanded="false" aria-haspopup="listbox">';
         if (! empty($settings['lmat_language_switcher_show_flags']) && $settings['lmat_language_switcher_show_flags'] === 'yes') {
             $html .= '<div class="lmat-lang-image">' . $language['flag'] . '</div>';
         }
@@ -836,9 +888,9 @@ class Linguator_Widget extends Widget_Base
             $html .= '<div class="lmat-lang-code">' . esc_html($language['slug']) . '</div>';
         }
         if (! empty($settings['lmat_language_switcher_icon'])) {
-            $html .= '<i class="lmat-dropdown-icon ' . esc_attr($settings['lmat_language_switcher_icon']['value']) . '"></i>';
+            $html .= '<i class="lmat-dropdown-icon ' . esc_attr($settings['lmat_language_switcher_icon']['value']) . '" aria-hidden="true"></i>';
         }
-        $html .= '</a></span>';
+        $html .= '</button></span>';
         return $html;
     }
 
