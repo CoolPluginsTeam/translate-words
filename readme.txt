@@ -1,4 +1,4 @@
-=== Linguator AI – Auto Translate & Create Multilingual Sites  ===
+=== Linguator – AI Auto Translate & Create Multilingual Sites  ===
 
 Contributors: narinder-singh,satindersingh,coolplugins
 Tags: automatic translation, google translate,elementor translation, multilingual, ai translator
