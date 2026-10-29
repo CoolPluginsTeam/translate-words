@@ -499,13 +499,16 @@ class Linguator {
 						'dismiss_link'  => __( 'No thanks', 'translate-words' ),
 						'later_link'    => __( 'Ask me later', 'translate-words' ),
 						'submit_button' => __( 'Submit review', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'like_question' => __( 'Do you like the %s plugin?', 'translate-words' ),
 						'yes_button'    => __( 'Yes, I like it', 'translate-words' ),
 						'close_label'   => __( 'Close', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'direct_line'   => __( 'Enjoying %s? A short review really helps.', 'translate-words' ),
 						'thanks_line'   => __( 'Great to hear! A quick review on WordPress.org would really help us.', 'translate-words' ),
 						'no_link'       => __( 'I do not like it, dismiss', 'translate-words' ),
 						'row_question'  => __( 'Do you like this plugin?', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'inline_title'  => __( 'Enjoying %s?', 'translate-words' ),
 						'inline_text'   => __( 'A short review on WordPress.org helps other people find it.', 'translate-words' ),
 					),
