@@ -191,7 +191,7 @@ class ChromeAiTranslator {
         // Browser check (same copy as page translation)
         if (isEdge) {
             if (browserType !== 'Edge') {
-                const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+                const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                     <strong>Important Notice:</strong>
                     <ol>
                         <li>The Translator API, which leverages Edge local AI models, is designed specifically for use with the Microsoft Edge browser.</li>
@@ -202,7 +202,7 @@ class ChromeAiTranslator {
                 return asError(message, 'Browser not supported', 'browser-not-supported');
             }
         } else if (browserType !== 'Chrome') {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <strong>Important Notice:</strong>
                 <ol>
                     <li>The Translator API, which leverages Chrome local AI models, is designed specifically for use with the Chrome browser.</li>
@@ -214,7 +214,7 @@ class ChromeAiTranslator {
         }
 
         if (!('translation' in self && 'createTranslator' in self.translation) && !('ai' in self && 'translator' in self.ai) && !("Translator" in self && "create" in self.Translator) && !safeBrowser && !browserContentSecure) {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <strong>Important Notice:</strong>
                 <ol>
                     <li>
@@ -233,7 +233,7 @@ class ChromeAiTranslator {
         }
 
         if (!('translation' in self && 'createTranslator' in self.translation) && !('ai' in self && 'translator' in self.ai) && !("Translator" in self && "create" in self.Translator)) {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <h4>Steps to Enable the Translator AI Modal:</h4>
                 <ol>
                     <li>Open this URL in a new ${browserName} tab: <strong><span data-clipboard-text="${scheme}://flags/#translation-api" target="_blank" class="chrome-ai-translator-flags">${scheme}://flags/#translation-api ${ChromeAiTranslator.svgIcons('copy')}</span></strong>. Click on the URL to copy it, then open a new window and paste this URL to access the settings.</li>
@@ -249,10 +249,10 @@ class ChromeAiTranslator {
         }
 
         if (!targetLanguage || typeof targetLanguage !== 'string') {
-            return asError(jQuery('<span style="color: #ff4646;">Invalid target language.</span>'), 'Invalid target language', 'language-not-supported');
+            return asError(jQuery('<span style="color: #1d2327;">Invalid target language.</span>'), 'Invalid target language', 'language-not-supported');
         }
         if (!sourceLanguage || typeof sourceLanguage !== 'string') {
-            return asError(jQuery('<span style="color: #ff4646;">Invalid source language.</span>'), 'Invalid source language', 'language-not-supported');
+            return asError(jQuery('<span style="color: #1d2327;">Invalid source language.</span>'), 'Invalid source language', 'language-not-supported');
         }
 
         const sourceApi = ChromeAiTranslator.resolveApiLanguageCode(sourceLanguage);
@@ -260,7 +260,7 @@ class ChromeAiTranslator {
 
         // Language support check (same order/copy as page translation)
         if (!supportedLanguages.includes(String(targetApi).toLowerCase()) && !supportedLanguages.includes(String(targetApi).split('-')[0].toLowerCase())) {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <strong>Language Support Information:</strong>
                 <ol>
                     <li>The current version of ${browserName} AI Translator does not support the Target Language <strong>${targetLanguageLabel} (${targetApi})</strong></li>
@@ -272,7 +272,7 @@ class ChromeAiTranslator {
         }
 
         if (!supportedLanguages.includes(String(sourceApi).toLowerCase()) && !supportedLanguages.includes(String(sourceApi).split('-')[0].toLowerCase())) {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <strong>Language Support Information:</strong>
                 <ol>
                     <li>The current version of ${browserName} AI Translator does not support the Source Language <strong>${sourceLanguageLabel} (${sourceApi})</strong></li>
@@ -307,7 +307,7 @@ class ChromeAiTranslator {
         }
 
         if (status === 'unavailable' || status === 'no') {
-            const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+            const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
                 <h4>Installation Instructions for Language Packs:</h4>
                 <ol>
                     <li>
@@ -339,7 +339,7 @@ class ChromeAiTranslator {
             return makePending(true);
         }
 
-        const message = jQuery(`<span style="color: #ff4646; display: inline-block;">
+        const message = jQuery(`<span style="color: #1d2327; display: inline-block;">
             <h4>Language Pack Installation Required</h4>
             <ol>
                 <li>Please ensure that the language pack for <strong>${targetLanguageLabel} (${targetApi})</strong> or <strong>${sourceLanguageLabel} (${sourceApi})</strong> is installed and set as a preferred language in your browser.</li>

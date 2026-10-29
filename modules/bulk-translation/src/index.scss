@@ -629,7 +629,7 @@ $empty-modal-width: clamp(320px, 420px, 94vw);
 
                 .#{$prefix}-status-target-post-error,
                 .#{$prefix}-status-inner-item.#{$prefix}-error-message {
-                    color: #1d2327;
+                    color: red;
                     font-size: .8rem;
                     font-weight: 500;
                     padding: .6rem 0;
@@ -1011,7 +1011,7 @@ $empty-modal-width: clamp(320px, 420px, 94vw);
         }
 
         .#{$prefix}-error-message {
-            color: red;
+            color: #1d2327;
             padding: 1rem;
             font-weight: 600;
             font-size: 16px;
@@ -1039,7 +1039,7 @@ $empty-modal-width: clamp(320px, 420px, 94vw);
                     padding: 0;
 
                     * {
-                        color: red !important;
+                        color: #1d2327 !important;
                         font-size: 16px;
                         box-shadow: unset;
                         outline: unset;
@@ -1350,6 +1350,7 @@ $empty-modal-width: clamp(320px, 420px, 94vw);
             }
 
             .#{$prefix}-error-modal-box-body {
+                color: #1d2327;
                 min-height: 0px;
                 max-height: 65vh;
                 height: auto;

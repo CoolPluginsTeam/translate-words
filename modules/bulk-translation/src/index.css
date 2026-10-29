@@ -602,7 +602,7 @@
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-target-post-error,
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-inner-item.lmat-bulk-translate-error-message {
-  color: #1d2327;
+  color: red;
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.6rem 0;
@@ -973,7 +973,7 @@
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-error-message {
-  color: red;
+  color: #1d2327;
   padding: 1rem;
   font-weight: 600;
   font-size: 16px;
@@ -1004,7 +1004,7 @@
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-error-message span p * {
-  color: red !important;
+  color: #1d2327 !important;
   font-size: 16px;
   box-shadow: unset;
   outline: unset;
@@ -1302,6 +1302,7 @@
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container .lmat-bulk-translate-error-modal-box-container .lmat-bulk-translate-error-modal-box-body {
+  color: #1d2327;
   min-height: 0px;
   max-height: 65vh;
   height: auto;
