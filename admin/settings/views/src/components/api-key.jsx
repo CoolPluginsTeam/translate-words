@@ -6,7 +6,7 @@ import { __, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 
 const providerKeyLinks = {
-  gemini: 'https://aistudio.google.com/app/api-keys',
+  gemini: 'https://linguator.com/docs/automatic-translation-via-googe-gemini/generate-google-gemini-ai-api-key/',
 }
 
 const providerKeyLabels = {
