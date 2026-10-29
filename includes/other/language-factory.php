@@ -56,7 +56,20 @@ class Linguator_Language_Factory {
 	 * @phpstan-param LanguageData $language_data
 	 */
 	public function get( $language_data ) {
-		return new Linguator_Language( $this->sanitize_data( $language_data ) );
+		$data = $this->sanitize_data( $language_data );
+
+		// Rebuild flag markup on hydrate so SVG sizing/class changes are not stuck in the transient.
+		if ( ! empty( $data['flag_code'] ) ) {
+			$flag_props = $this->get_flag(
+				$data['flag_code'],
+				isset( $data['name'] ) ? $data['name'] : '',
+				isset( $data['slug'] ) ? $data['slug'] : '',
+				isset( $data['locale'] ) ? $data['locale'] : ''
+			);
+			$data = array_merge( $data, $flag_props );
+		}
+
+		return new Linguator_Language( $data );
 	}
 
 	/**
@@ -279,6 +292,14 @@ class Linguator_Language_Factory {
 			}
 
 			$flags['custom_flag']['url'] = sanitize_url( $flags['custom_flag']['url'] );
+
+			// Custom SVGs need explicit dimensions (same default as builtin flags).
+			if ( empty( $flags['custom_flag']['width'] ) ) {
+				$flags['custom_flag']['width'] = 18;
+			}
+			if ( empty( $flags['custom_flag']['height'] ) ) {
+				$flags['custom_flag']['height'] = 12;
+			}
 		} else {
 			unset( $flags['custom_flag'] );
 		}

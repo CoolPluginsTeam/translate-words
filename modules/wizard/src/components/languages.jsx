@@ -19,11 +19,11 @@ const DropdownRenderLangauage = ({ flagUrl }) => {
     {
       flagUrl ?
         <span>
-          <img width={16} height={11} style={setupFlagStyle} src={selectedLanguage?.flag.split(`"`)[1]} alt="" />
+          <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={selectedLanguage?.flag.split(`"`)[1]} alt="" />
           {" " + selectedLanguage?.name}
         </span> :
         <span>
-          <img width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${selectedLanguage?.flag}.svg`} alt="" />
+          <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${selectedLanguage?.flag}.svg`} alt="" />
           {" " + selectedLanguage?.name + " - " + selectedLanguage?.locale}</span>
     }
   </>)
@@ -39,11 +39,11 @@ export const RenderedLanguage = ({ languageName, languageFlag, flagUrl, language
       {
         flagUrl && languageFlag?.length > 12 ?
           <span>
-            <img width={16} height={11} style={setupFlagStyle} src={languageFlag?.split(`"`)[1]} alt="" />
+            <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={languageFlag?.split(`"`)[1]} alt="" />
             {" " + languageName + " - " + languageLocale}
           </span> :
           <span>
-            <img width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${languageFlag}.svg`} alt="" />
+            <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${languageFlag}.svg`} alt="" />
             {" " + languageName + " - " + languageLocale}</span>
       }
     </>

@@ -74,7 +74,7 @@ const SettingModalLanguages = ({
                                 />
                                 <span className={`${prefix}-language-check-visual`} aria-hidden="true"></span>
                                 <span className={`${prefix}-language-label`} title={language.name}>
-                                    <img src={language.flag} alt="" aria-hidden="true" />
+                                    <img className="lmat-flag" src={language.flag} alt="" aria-hidden="true" width="18" height="12" />
                                     &nbsp;{language.name}
                                 </span>
                             </div>

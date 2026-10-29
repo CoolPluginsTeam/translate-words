@@ -512,7 +512,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                             }
                                             <div className={`${prefix}-status-target-post`}>
                                                 <div className={`${prefix}-status-target-post-flag`}>
-                                                    {info.flagUrl && <img src={info.flagUrl} width="20" alt={info.targetLanguage} />}
+                                                    {info.flagUrl && <img className="lmat-flag" src={info.flagUrl} width="20" height="14" alt={info.targetLanguage} />}
                                                     {info.languageName || info.targetLanguage}
                                                 </div>
                                                 {info.status === 'error' ?

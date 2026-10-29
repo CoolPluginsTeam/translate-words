@@ -452,28 +452,22 @@ class Linguator_Language {
 			return '';
 		}
 
+		// SVG flags have large viewBoxes and no intrinsic size; always constrain display size.
+		$width  = ! empty( $flag['width'] ) ? (int) $flag['width'] : 18;
+		$height = ! empty( $flag['height'] ) ? (int) $flag['height'] : 12;
+
 		$alt_attr    = empty( $alt ) ? '' : sprintf( ' alt="%s"', esc_attr( $alt ) );
-		$width_attr  = empty( $flag['width'] ) ? '' : sprintf( ' width="%s"', (int) $flag['width'] );
-		$height_attr = empty( $flag['height'] ) ? '' : sprintf( ' height="%s"', (int) $flag['height'] );
-
-		$style = '';
-		$sizes = array_intersect_key( $flag, array_flip( array( 'width', 'height' ) ) );
-
-		if ( ! empty( $sizes ) ) {
-			array_walk(
-				$sizes,
-				function ( &$value, $key ) {
-					$value = sprintf( '%s: %dpx;', esc_attr( $key ), (int) $value );
-				}
-			);
-			$style = sprintf( ' style="%s"', implode( ' ', $sizes ) );
-		}
+		$width_attr  = sprintf( ' width="%s"', $width );
+		$height_attr = sprintf( ' height="%s"', $height );
+		$class_attr  = ' class="lmat-flag"';
+		$style       = sprintf( ' style="width: %dpx; height: %dpx;"', $width, $height );
 
 		$html = sprintf(
 			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- Rendering plugin-specific SVG image via <img>, not applicable to attachment-based functions like wp_get_attachment_image().
-			'<img src="%s"%s%s%s%s />',
+			'<img src="%s"%s%s%s%s%s />',
 			$src,
 			$alt_attr,
+			$class_attr,
 			$width_attr,
 			$height_attr,
 			$style

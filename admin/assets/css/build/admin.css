@@ -1,3 +1,15 @@
+/*
+ * SVG flags use large viewBoxes without intrinsic size.
+ * Constrain every flag img emitted by get_flag_html().
+ */
+img.lmat-flag {
+	width: 18px !important;
+	height: 12px !important;
+	object-fit: contain;
+	vertical-align: middle;
+	display: inline-block;
+}
+
 /* languages admin panel */
 #add-lang select {
 	width: 95%;

@@ -35,7 +35,7 @@ const addLanguageListButton = () => {
           const $button = jQuery('.lmat-language-list-button');
           if ( $button.length > 0 && targetFlagUrl ) {
             $button.empty().append(
-              jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, width: 18, height: 12 })
+              jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, class: 'lmat-flag', width: 18, height: 12 })
             );
           }
         } )
@@ -53,7 +53,7 @@ const addLanguageListButton = () => {
   );
   buttonElement.addClass(styles.lmatLanguageListButton);
   if ( targetFlagUrl ) {
-    buttonElement.append(jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, width: 18, height: 12 }));
+    buttonElement.append(jQuery('<img/>', { src: targetFlagUrl, alt: targetLang, class: 'lmat-flag', width: 18, height: 12 }));
   } else {
     buttonElement.append(jQuery(document.createTextNode('Languages')));
   }
