@@ -127,8 +127,11 @@
 	white-space: nowrap;
 }
 
-.lmat-engines li.lmat-engine-row.is-default .lmat-engine-status {
-	background: #fff;
+/* Default row: drop the Ready pill so the label sits on the row green. */
+.lmat-engines li.lmat-engine-row.is-default .lmat-engine-status:not(.is-setup):not(.is-checking):not(.is-unsupported) {
+	background: transparent;
+	color: var(--lmat-engine-primary-dark);
+	padding-inline: 0;
 }
 
 .lmat-engines .lmat-engine-status.is-setup {
