@@ -593,7 +593,7 @@
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-inner-item.lmat-bulk-translate-td-error {
-  background: rgba(255, 0, 0, 0.0784313725);
+  background: #fff;
 }
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-inner-item.lmat-bulk-translate-td-needs-pack {

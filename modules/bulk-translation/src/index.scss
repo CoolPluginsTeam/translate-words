@@ -619,7 +619,7 @@ $empty-modal-width: clamp(320px, 420px, 94vw);
                     }
 
                     &.#{$prefix}-td-error {
-                        background: #ff000014;
+                        background: #fff;
                     }
 
                     &.#{$prefix}-td-needs-pack {
