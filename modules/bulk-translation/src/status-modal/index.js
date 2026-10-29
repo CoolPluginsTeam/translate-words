@@ -13,6 +13,19 @@ import { installLanguagePackFromStatus } from '../components/translate-provider/
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
 const PURIFY_ERROR_HTML = { ADD_ATTR: ['target', 'rel'] };
 
+const formatTimeTaken = (ms) => {
+    const totalSeconds = Math.max(0, Number(ms) || 0) / 1000;
+
+    if (totalSeconds < 60) {
+        return `${totalSeconds.toFixed(1)}s`;
+    }
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.round(totalSeconds % 60);
+
+    return `${minutes}m ${seconds}s`;
+};
+
 const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     const storeDispatch = useDispatch();
@@ -41,6 +54,10 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     let progressStatus = useSelector(selectProgressStatus);
     progressStatus=progressStatus.toFixed(1);
     progressStatus=Math.min(progressStatus, 100);
+    const totalTimeTakenMs = Object.values(translatePostInfo || {}).reduce(
+        (total, info) => total + (Number(info?.duration) || 0),
+        0
+    );
 
     const destroyHandlersRef = useRef([]);
     const abortControllerRef = useRef(null);
@@ -417,12 +434,12 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                     <span className={`${prefix}-post-translated-post`}>{countInfo.postsTranslated}/{countInfo.totalPosts}</span>
                                 </div>
                                 <div className={`${prefix}-string-count`}>
-                                    <span className={`${prefix}-count-text-heading`}>{__('Strings', 'translate-words')} </span><br />
-                                    <span className={`${prefix}-string-number`}>{countInfo.stringsTranslated}</span>
+                                    <span className={`${prefix}-count-text-heading`}>{__('No. of characters', 'translate-words')} </span><br />
+                                    <span className={`${prefix}-string-number`}>{countInfo.charactersTranslated}</span>
                                 </div>
                                 <div className={`${prefix}-char-count`}>
-                                    <span className={`${prefix}-count-text-heading`}>{__('Characters', 'translate-words')} </span><br />
-                                    <span className={`${prefix}-char-number`}>{countInfo.charactersTranslated}</span>
+                                    <span className={`${prefix}-count-text-heading`}>{__('Time taken', 'translate-words')} </span><br />
+                                    <span className={`${prefix}-char-number`}>{formatTimeTaken(totalTimeTakenMs)}</span>
                                 </div>
                             </div>
                         )
@@ -476,7 +493,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                             <span className={`${prefix}-status-header-label`}>{__('Status', 'translate-words')}</span>
                                         </div>
                                         <div className={`${prefix}-status-title-th`}>
-                                            <span className={`${prefix}-status-header-label`}>{__('Title', 'translate-words')}</span>
+                                            <span className={`${prefix}-status-header-label`}>{__('Preview', 'translate-words')}</span>
                                         </div>
                                         <div className={`${prefix}-status-actions-th`}>
                                             <span className={`${prefix}-status-header-label`}>{__('Actions', 'translate-words')}</span>
