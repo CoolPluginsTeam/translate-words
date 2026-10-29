@@ -31,11 +31,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Linguator Pro is loaded (it sorts before this plugin). It shares options, hooks and routes with
-if ( defined( 'LINGUATOR_PRO_VERSION' ) ) {
-	return;
-}
-
 use Linguator\Includes\Core\Linguator;
 use Linguator\Install\Linguator_Activate;
 use Linguator\Install\Linguator_Deactivate;
