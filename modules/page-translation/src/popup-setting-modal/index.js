@@ -187,7 +187,7 @@ const SettingModal = (props) => {
                 errors.google = {
 
 
-                    message: "<p style={{ fontSize: '1rem', color: '#ff4646' }}>" + sprintf(
+                    message: "<p style='color:#000000;font-size:1rem'>" + sprintf(
                         __("Google Translate does not support the target language: %s.", 'translate-words'),
                         "<strong>" + targetLangName + "</strong>"
                     ) + "</p>",

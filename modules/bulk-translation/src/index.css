@@ -602,7 +602,7 @@
 
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-target-post-error,
 #lmat-bulk-translate-wrapper #lmat-bulk-translate-container #lmat-bulk-translate-status-modal-container .lmat-bulk-translate-status-table-container .lmat-bulk-translate-status-inner-item.lmat-bulk-translate-error-message {
-  color: red;
+  color: #000000;
   font-size: 0.8rem;
   font-weight: 500;
   padding: 0.6rem 0;
