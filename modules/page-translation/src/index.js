@@ -329,6 +329,32 @@ const insertMessagePopup = () => {
 };
 
 /**
+ * Whether Elementor page data is ready for single-page translation.
+ */
+const hasElementorTranslateData = () => {
+  const data = window.lmatPageTranslationGlobal?.elementorData;
+  if (!data || "" === data || data.length < 1) {
+    return false;
+  }
+  return !!(window.elementor && elementor.elements && elementor.elements.length > 0);
+};
+
+/**
+ * Mount the page-translation React app once for Elementor.
+ */
+const mountElementorTranslateApp = () => {
+  if (window.lmatElementorTranslateAppMounted) {
+    return;
+  }
+  window.lmatElementorTranslateAppMounted = true;
+  init();
+  const root = ReactDOM.createRoot(
+    document.getElementById("lmat-page-translation-setting-modal")
+  );
+  root.render(<App />);
+};
+
+/**
  * Elementor translate button append
  */
 const appendElementorTranslateBtn = () => {
@@ -342,49 +368,40 @@ const appendElementorTranslateBtn = () => {
     const buttonHtml =
       '<button class="elementor-button lmat-page-translation-button" name="lmat_page_translation_meta_box_translate">Translate</button>';
     const buttonElement = jQuery(buttonHtml);
-    let confirmBox = false;
-    const postId = window.lmatPageTranslationGlobal.current_post_id;
-    const targetLang = window.lmatPageTranslationGlobal.target_lang;
-    const oldData = localStorage.getItem("lmatElementorConfirmBox");
-    if (oldData && "string" === typeof oldData && "" !== oldData) {
-      confirmBox = JSON.parse(oldData);
-    }
 
     translateButtonGroup.prepend(buttonElement);
 
-    if (
-      !window.lmatPageTranslationGlobal.elementorData ||
-      "" === window.lmatPageTranslationGlobal.elementorData ||
-      window.lmatPageTranslationGlobal.elementorData.length < 1 ||
-      elementor.elements.length < 1
-    ) {
-      if (confirmBox && confirmBox[postId + "_" + targetLang]) {
-        delete confirmBox[postId + "_" + targetLang];
-        if (Object.keys(confirmBox).length === 0) {
-          localStorage.removeItem("lmatElementorConfirmBox");
-        } else {
-          localStorage.setItem(
-            "lmatElementorConfirmBox",
-            JSON.stringify(confirmBox)
-          );
-        }
-      }
+    const enableTranslateButton = () => {
+      buttonElement.removeAttr("disabled");
+      buttonElement.removeAttr("title");
+      mountElementorTranslateApp();
+    };
 
+    if (!hasElementorTranslateData()) {
+      // Keep lmatElementorConfirmBox intent; data may still be loading.
       buttonElement.attr("disabled", "disabled");
       buttonElement.attr(
         "title",
         "Translation is not available because there is no Elementor data."
       );
+
+      let tries = 0;
+      const maxTries = 40; // ~10s at 250ms
+      const retryId = setInterval(() => {
+        tries += 1;
+        if (hasElementorTranslateData()) {
+          clearInterval(retryId);
+          enableTranslateButton();
+          return;
+        }
+        if (tries >= maxTries) {
+          clearInterval(retryId);
+        }
+      }, 250);
       return;
     }
-    // Append app root wrapper in body
-    init();
 
-    const root = ReactDOM.createRoot(
-      document.getElementById("lmat-page-translation-setting-modal")
-    );
-    root.render(<App />);
-
+    enableTranslateButton();
   }
 };
 
