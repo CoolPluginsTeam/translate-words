@@ -57,7 +57,7 @@
   
   .lmat-wrapper.horizontal .lmat-lang-item a,
   .lmat-wrapper.vertical .lmat-lang-item a{
-    background-color: var(--lmat-normal-bg-color);
+    background-color: transparent;
   }
   
   
@@ -119,9 +119,30 @@
       text-align: inherit;
   }
 
-  .lmat-active-language .lmat-dropdown-trigger:focus {
-      outline: 1px dotted currentColor;
-      outline-offset: 2px;
+      .lmat-active-language .lmat-dropdown-trigger:focus,
+  .lmat-active-language .lmat-dropdown-trigger:focus-visible {
+      outline: none;
+      box-shadow: none;
+  }
+
+  .lmat-lang-item a:focus,
+  .lmat-lang-item a:focus-visible,
+  .lmat-lang-item a:active,
+  .lmat-wrapper.dropdown li a:focus,
+  .lmat-wrapper.dropdown li a:focus-visible,
+  .lmat-wrapper.dropdown li a:active,
+  .lmat-active-language a:focus,
+  .lmat-active-language a:focus-visible,
+  .lmat-active-language a:active {
+      outline: none;
+      box-shadow: none;
+  }
+
+  /* Keep list links looking like plain items, not buttons, unless Elementor sets a border. */
+  .lmat-wrapper.horizontal .lmat-lang-item a,
+  .lmat-wrapper.vertical .lmat-lang-item a {
+      background-color: transparent;
+      box-shadow: none;
   }
   
   /* DROPDOWN STYLING */
