@@ -133,10 +133,9 @@ const SettingModal = (props) => {
             metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
             metaFieldBtn.addEventListener('click', handleMetaFieldBtnClick);
 
-            // Open provider modal once the listener exists (Elementor confirm-box flow).
-            if (consumeElementorConfirmIntent()) {
-                metaFieldBtn.click();
-            }
+            // Clear the one-shot translate intent once listeners exist. The provider
+            // modal opens from the "Translate Now" popup click, not automatically.
+            consumeElementorConfirmIntent();
         }
 
         firstRenderBtns.forEach(ele => {

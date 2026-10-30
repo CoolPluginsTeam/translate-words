@@ -340,6 +340,23 @@ const hasElementorTranslateData = () => {
 };
 
 /**
+ * Whether a pending translate intent exists for this Elementor post/language.
+ * Read-only: the setting modal clears the flag once its listeners are attached.
+ */
+const hasElementorConfirmIntent = () => {
+  const postId = window.lmatPageTranslationGlobal?.current_post_id;
+  const targetLang = window.lmatPageTranslationGlobal?.target_lang;
+  if (!postId || !targetLang) {
+    return false;
+  }
+  try {
+    const confirmBox = JSON.parse(localStorage.getItem("lmatElementorConfirmBox") || "{}");
+    return !!(confirmBox && confirmBox[postId + "_" + targetLang]);
+  } catch (e) {
+    return false;
+  }
+};
+/**
  * Mount the page-translation React app once for Elementor.
  */
 const mountElementorTranslateApp = () => {
@@ -348,6 +365,14 @@ const mountElementorTranslateApp = () => {
   }
   window.lmatElementorTranslateAppMounted = true;
   init();
+
+  // Show the "Translate Now" welcome popup first when the user arrived here
+  // intending to translate; the strings modal opens only after they click it.
+  const sourceLang = window.lmatPageTranslationGlobal.source_lang;
+  const providers = window.lmatPageTranslationGlobal.providers || [];
+  if (sourceLang && "" !== sourceLang && providers.length > 0 && hasElementorConfirmIntent()) {
+    insertMessagePopup();
+  }
   const root = ReactDOM.createRoot(
     document.getElementById("lmat-page-translation-setting-modal")
   );
