@@ -351,7 +351,6 @@ const appendElementorTranslateBtn = () => {
     }
 
     translateButtonGroup.prepend(buttonElement);
-    $e.internal("document/save/set-is-modified", { status: true });
 
     if (
       !window.lmatPageTranslationGlobal.elementorData ||
