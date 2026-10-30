@@ -470,7 +470,11 @@
     transition: background 0.15s;
     overflow: visible;
     max-width: 100%;
+    text-decoration: none;
+    border-bottom: none;
+    box-shadow: none;
 }
+
 
 .cais-copyable-link:hover {
     background: #e2e8f0;
@@ -491,10 +495,10 @@
     color: #64748b;
 }
 
-/* Tooltip for Copy confirmation â€” centered over the chip. */
+/* Tooltip for Copy confirmation — centered over the chip. */
 .cais-copyable-link > .cais-tooltip {
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 4px);
     left: 50%;
     transform: translate(-50%, 4px);
     background: #0f172a;
@@ -510,6 +514,8 @@
     transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     z-index: 20;
+    text-decoration: none;
+    border: none;
 }
 
 .cais-copyable-link > .cais-tooltip.active {
@@ -519,15 +525,10 @@
 }
 
 .cais-copyable-link > .cais-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 4px;
-    border-style: solid;
-    border-color: #0f172a transparent transparent transparent;
+    content: none;
 }
+
+
 
 
 
