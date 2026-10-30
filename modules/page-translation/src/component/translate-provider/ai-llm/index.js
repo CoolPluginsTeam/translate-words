@@ -7,7 +7,7 @@ import AddProgressBar from "../../progress-bar/index.js";
 import ShowStringCount from "../../progress-bar/show-string-count.js";
 
 /**
- * @param {string} providerId gemini
+ * @param {string} providerId gemini | chatgpt
  * @returns {(props: Object) => Promise<void>}
  */
 export default function createAiLlmPageTranslator(providerId) {
@@ -52,6 +52,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            chatgpt: __("Translate with ChatGPT", "translate-words"),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -204,7 +205,8 @@ export default function createAiLlmPageTranslator(providerId) {
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = "gemini_model";
+                // Each AI provider stores its model as "<provider>_model" (gemini_model, chatgpt_model).
+                const modelKey = `${providerId}_model`;
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])

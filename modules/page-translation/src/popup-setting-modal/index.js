@@ -304,6 +304,7 @@ const SettingModal = (props) => {
             localAiTranslator: chromeAiBtnDisabled || !!chromeAiDownload,
             edgeLocalAiTranslator: edgeAiBtnDisabled || !!edgeAiDownload,
             gemini: !lmatPageTranslationGlobal?.api_keys_status?.gemini,
+            chatgpt: !lmatPageTranslationGlobal?.api_keys_status?.chatgpt,
         };
 
         if (selectedProvider && unavailableProviders[selectedProvider]) {

@@ -6,6 +6,7 @@ import { ChromeIcon } from "../../../../../assets/js/src/icons/chrome.js";
 import { EdgeIcon } from "../../../../../assets/js/src/icons/edge.js";
 import { GoogleIcon } from "../../../../../assets/js/src/icons/google.js";
 import { GeminiIcon } from "../../../../../assets/js/src/icons/gemini.js";
+import { Bot } from "lucide-react";
 
 // Browser that ships each built-in AI provider.
 const BROWSER_AI_OWNER = Object.freeze({
@@ -60,7 +61,7 @@ export const resolveDefaultService = () => {
 };
 
 /**
- * Provides translation services (Google Translate, built-in AI and Gemini).
+ * Provides translation services (Google Translate, built-in AI, Gemini and ChatGPT).
  */
 const TranslateService = (props) => {
     props=props || {};
@@ -115,6 +116,18 @@ const TranslateService = (props) => {
             ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.gemini,
             ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.gemini ? <a href={`${window.lmatPageTranslationGlobal.admin_url}admin.php?page=lmat_settings&tab=translation`} target="_blank" rel="noopener noreferrer" className="lmat-page-translation-provider-error">{__('Add API Key', 'translate-words')}</a> : <></>,
             Logo: <GeminiIcon className="icon-size" />
+        },
+        chatgpt: {
+            Provider: createAiLlmPageTranslator("chatgpt"),
+            title: "ChatGPT",
+            SettingBtnText: window.lmatPageTranslationGlobal.api_keys_status?.chatgpt ? "Translate" : "Connect ChatGPT",
+            serviceLabel: "ChatGPT",
+            heading: __("Translate Using ChatGPT", "translate-words"),
+            Docs: window.lmatPageTranslationGlobal.chatgpt_status?.settings_url || `${window.lmatPageTranslationGlobal.admin_url}options-general.php?page=ai-provider-for-chatgpt`,
+            BetaEnabled: false,
+            ButtonDisabled: !window.lmatPageTranslationGlobal.api_keys_status?.chatgpt,
+            ErrorMessage: !window.lmatPageTranslationGlobal.api_keys_status?.chatgpt ? <a href={window.lmatPageTranslationGlobal.chatgpt_status?.settings_url || `${window.lmatPageTranslationGlobal.admin_url}options-general.php?page=ai-provider-for-chatgpt`} target="_blank" rel="noopener noreferrer" className="lmat-page-translation-provider-error">{__('Connect ChatGPT', 'translate-words')}</a> : <></>,
+            Logo: <Bot className="icon-size" />
         }
     };
 
