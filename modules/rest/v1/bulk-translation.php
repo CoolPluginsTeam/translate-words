@@ -319,7 +319,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
 			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
-			if ( 'gemini' !== $provider ) {
+			if (
+				! in_array( $provider, array( 'gemini', 'chatgpt' ), true ) ||
+				! function_exists( 'linguator_is_ai_provider_allowed' ) ||
+				! linguator_is_ai_provider_allowed( $provider )
+			) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
@@ -342,10 +346,17 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_google_api_key';
-			$api_key    = (string) get_option( $key_option, '' );
-			if ( '' === trim( $api_key ) ) {
-				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
+			$api_key = '';
+			if ( 'gemini' === $provider ) {
+				$api_key = (string) get_option( 'connectors_ai_google_api_key', '' );
+				if ( '' === trim( $api_key ) ) {
+					return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
+				}
+			} elseif ( 'chatgpt' === $provider ) {
+				// ChatGPT signs in through the "AI Provider for ChatGPT" plugin; no API key is stored here.
+				if ( ! function_exists( 'linguator_is_chatgpt_provider_registered' ) || ! linguator_is_chatgpt_provider_registered() ) {
+					return new WP_Error( 'lmat_ai_provider_unavailable', __( 'ChatGPT is not available. Activate the AI Provider for ChatGPT plugin and sign in under Settings > ChatGPT.', 'translate-words' ), array( 'status' => 400 ) );
+				}
 			}
 
 			$sanitized_strings = array();
@@ -415,14 +426,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * @param string               $provider    gemini.
+		 * @param string               $provider    gemini|chatgpt.
 		 * @param string               $source_lang Slug
 		 * @param string               $target_lang Slug
 		 * @param array<string,string> $strings     Key => source text.
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
-			$model_id = $this->ai_translate_resolve_llm_model_id( $model_override );
+			$model_id = $this->ai_translate_resolve_llm_model_id( $provider, $model_override );
 
 			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
 			if ( is_wp_error( $provider_setup ) ) {
@@ -455,12 +466,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Resolve Gemini model id from override, options, or default.
+		 * Resolve the provider's model id from override, options, or default.
 		 *
+		 * @param string $provider       Provider slug (gemini|chatgpt).
 		 * @param string $model_override Optional model override.
 		 * @return string
 		 */
-		private function ai_translate_resolve_llm_model_id( string $model_override = '' ): string {
+		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ): string {
 			$models = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
 				$m = LMAT()->model->options->get( 'api_keys' );
@@ -469,9 +481,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			}
 
-			$model_key      = 'gemini_model';
+			$model_key      = ( 'chatgpt' === $provider ) ? 'chatgpt_model' : 'gemini_model';
 			$model_defaults = array(
-				'gemini_model' => 'gemini-2.5-flash',
+				'gemini_model'  => 'gemini-2.5-flash',
+				'chatgpt_model' => 'gpt-5.6-luna',
 			);
 			$model_id = trim( $model_override );
 			if ( '' === $model_id ) {
@@ -487,12 +500,19 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		/**
 		 * Validate AI client/provider and inject API key authentication.
 		 *
-		 * @param string $provider Provider slug (gemini maps to google).
-		 * @param string $api_key  API key.
+		 * @param string $provider Provider slug (gemini maps to google, chatgpt to chatgpt).
+		 * @param string $api_key  API key (unused for chatgpt).
 		 * @return array{registry: object, provider_id: string}|\WP_Error
 		 */
 		private function ai_translate_prepare_llm_provider( string $provider, string $api_key ) {
-			$provider_id = ( 'gemini' === $provider ) ? 'google' : $provider;
+			$provider_id = function_exists( 'linguator_get_ai_client_provider_id' ) ? linguator_get_ai_client_provider_id( $provider ) : '';
+			if ( '' === $provider_id ) {
+				return new WP_Error(
+					'lmat_ai_provider_invalid',
+					__( 'Invalid AI provider.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
 			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
 				return new WP_Error(
 					'lmat_ai_client_missing',
@@ -507,6 +527,14 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					'lmat_ai_provider_invalid',
 					__( 'Invalid AI provider.', 'translate-words' ),
 					array( 'status' => 400 )
+				);
+			}
+
+			// ChatGPT authenticates with the connected account; keep the provider plugin's placeholder auth.
+			if ( 'chatgpt' === $provider_id ) {
+				return array(
+					'registry'    => $registry,
+					'provider_id' => $provider_id,
 				);
 			}
 
@@ -695,6 +723,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 			try {
 				if ( method_exists( $registry, 'isProviderConfigured' ) && ! $registry->isProviderConfigured( $provider_id ) ) {
+					if ( 'chatgpt' === $provider_id ) {
+						return new WP_Error(
+							'lmat_ai_not_connected',
+							__( 'ChatGPT is not connected. Sign in under Settings > ChatGPT, then try again.', 'translate-words' ),
+							array( 'status' => 400 )
+						);
+					}
 					return new WP_Error(
 						'lmat_ai_no_key',
 						__( 'Please provide a valid API key for the selected provider.', 'translate-words' ),
@@ -738,7 +773,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 							->with_text( $instruction )
 							->generate_text();
 					} catch ( \Throwable $e ) {
-						return $this->ai_translate_map_generate_text_exception( $e );
+						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
@@ -758,7 +793,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					try {
 						$text = $builder->generate_text();
 					} catch ( \Throwable $e ) {
-						return $this->ai_translate_map_generate_text_exception( $e );
+						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
 					}
 				}
 			} finally {
@@ -950,11 +985,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		/**
 		 * Map generate_text() failures to WP_Error
 		 *
-		 * @param \Throwable $e Thrown error.
+		 * @param \Throwable $e           Thrown error.
+		 * @param string     $provider_id AI Client provider id (google|chatgpt).
 		 * @return \WP_Error
 		 */
-		private function ai_translate_map_generate_text_exception( \Throwable $e ): WP_Error {
-			$msg = (string) $e->getMessage();
+		private function ai_translate_map_generate_text_exception( \Throwable $e, string $provider_id = '' ): WP_Error {
+			$msg        = (string) $e->getMessage();
+			$is_chatgpt = ( 'chatgpt' === $provider_id );
+			if (
+				$is_chatgpt && (
+					false !== stripos( $msg, 'session ended' ) ||
+					false !== stripos( $msg, 'not connected' ) ||
+					false !== stripos( $msg, 'sign in again' )
+				)
+			) {
+				return new WP_Error(
+					'lmat_ai_not_connected',
+					__( 'ChatGPT sign-in has expired or is missing. Sign in again under Settings > ChatGPT, then retry.', 'translate-words' ),
+					array( 'status' => 401 )
+				);
+			}
 			if ( false !== stripos( $msg, 'No models found' ) ) {
 				return new WP_Error(
 					'lmat_ai_no_models',
@@ -970,7 +1020,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			) {
 				return new WP_Error(
 					'lmat_ai_rate_limited',
-					__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+					$is_chatgpt
+						? __( 'ChatGPT usage limit reached for your plan. Check your usage at chatgpt.com, then retry later or with smaller batches.', 'translate-words' )
+						: __( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
 					array( 'status' => 429 )
 				);
 			}
