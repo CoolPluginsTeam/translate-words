@@ -353,6 +353,8 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                 return 'Edge AI Translator';
             case 'gemini':
                 return 'Google Gemini';
+            case 'chatgpt':
+                return 'ChatGPT';
             default:
                 return 'Google Translate';
         }

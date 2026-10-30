@@ -277,7 +277,8 @@ class AiLlmBulkTranslator {
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
             const chunks = chunkStringMap(stringsToTranslate, { maxTokens });
-            const modelKey = "gemini_model";
+            // Each AI provider stores its model as "<provider>_model" (gemini_model, chatgpt_model).
+            const modelKey = `${this.serviceProvider}_model`;
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])

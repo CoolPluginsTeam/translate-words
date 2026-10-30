@@ -18,6 +18,7 @@ const SettingModal = (props) => {
             localAiTranslator: !!localAiModalError,
             edgeLocalAiTranslator: !!edgeLocalAiModalError,
             gemini: !lmatBulkTranslationGlobal?.api_keys_status?.gemini,
+            chatgpt: !lmatBulkTranslationGlobal?.api_keys_status?.chatgpt,
         };
 
         if (activeProvider && disabledProviders[activeProvider]) {

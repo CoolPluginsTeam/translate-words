@@ -259,12 +259,40 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 				$active_providers[] = $provider;
+			} elseif (
+				'chatgpt' === $provider &&
+				function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'chatgpt' ) &&
+				function_exists( 'linguator_is_chatgpt_provider_registered' ) && linguator_is_chatgpt_provider_registered()
+			) {
+				$active_providers[] = $provider;
 			}
 		}
 
 		$api_keys_status = array(
 			'gemini' => false,
 		);
+
+		// ChatGPT has no API key: report whether its account is signed in (AI Provider for ChatGPT plugin).
+		$chatgpt_status = array(
+			'registered'   => false,
+			'connected'    => false,
+			'settings_url' => admin_url( 'options-general.php?page=ai-provider-for-chatgpt' ),
+		);
+		if ( in_array( 'chatgpt', $active_providers, true ) ) {
+			$chatgpt_status['registered'] = true;
+			$token_store                  = '\Halawa\ChatGptAiProvider\Authentication\TokenStore';
+			try {
+				if ( class_exists( $token_store ) && method_exists( $token_store, 'is_connected' ) ) {
+					$chatgpt_status['connected'] = (bool) ( new $token_store() )->is_connected();
+				} elseif ( class_exists( '\WordPress\AiClient\AiClient' ) ) {
+					$registry                    = \WordPress\AiClient\AiClient::defaultRegistry();
+					$chatgpt_status['connected'] = $registry && method_exists( $registry, 'isProviderConfigured' ) && $registry->isProviderConfigured( 'chatgpt' );
+				}
+			} catch ( \Throwable $e ) {
+				$chatgpt_status['connected'] = false;
+			}
+			$api_keys_status['chatgpt'] = $chatgpt_status['connected'];
+		}
 
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
 			foreach ( $api_keys_status as $key => $status ) {
@@ -314,6 +342,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'providers'                => $active_providers,
 				'default_provider'        => $default_provider,
 				'api_keys_status'          => $api_keys_status,
+				'chatgpt_status'           => $chatgpt_status,
 				'default_language_slug' => $default_language_slug,
 				'mediaSupport'          => ! empty( LMAT()->options['media_support'] ),
 				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
