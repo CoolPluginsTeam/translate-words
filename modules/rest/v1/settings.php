@@ -540,15 +540,99 @@ class Settings extends Abstract_Controller {
 
 		$this->ai_gemini_model_refresh_needed = false;
 
+		// ChatGPT signs in through the "AI Provider for ChatGPT" plugin: report its connection status instead of a key.
+		$chatgpt_status                = $this->get_chatgpt_connection_status();
+		$available_models['chatgpt']   = $chatgpt_status['connected'] ? $this->get_chatgpt_models() : array();
+		if ( ! isset( $models['chatgpt_model'] ) || '' === (string) $models['chatgpt_model'] ) {
+			$models['chatgpt_model'] = 'gpt-5.6-luna';
+		}
+
 		$response['api_keys_configuration'] = array(
 			'keys'             => array(
 				'gemini' => $gemini_masked,
+			),
+			'connections'      => array(
+				'chatgpt' => $chatgpt_status,
 			),
 			'models'           => $models,
 			'available_models' => $available_models,
 		);
 		
 		return $response;
+	}
+
+	/**
+	 * ChatGPT provider status from the WP AI Client and the "AI Provider for ChatGPT" plugin.
+	 *
+	 * @return array{registered: bool, connected: bool, settings_url: string}
+	 */
+	private function get_chatgpt_connection_status(): array {
+		$registered = function_exists( 'linguator_is_chatgpt_provider_registered' ) && linguator_is_chatgpt_provider_registered();
+		$connected  = false;
+
+		if ( $registered ) {
+			$token_store = '\Halawa\ChatGptAiProvider\Authentication\TokenStore';
+			try {
+				if ( class_exists( $token_store ) && method_exists( $token_store, 'is_connected' ) ) {
+					$connected = (bool) ( new $token_store() )->is_connected();
+				} else {
+					$registry  = \WordPress\AiClient\AiClient::defaultRegistry();
+					$connected = $registry && method_exists( $registry, 'isProviderConfigured' ) && $registry->isProviderConfigured( 'chatgpt' );
+				}
+			} catch ( \Throwable $e ) {
+				$connected = false;
+			}
+		}
+
+		return array(
+			'registered'   => $registered,
+			'connected'    => $connected,
+			'settings_url' => admin_url( 'options-general.php?page=ai-provider-for-chatgpt' ),
+		);
+	}
+
+	/**
+	 * Text-generation model ids the ChatGPT provider reports through the WP AI Client.
+	 *
+	 * Falls back to the provider plugin's bundled list when discovery returns nothing.
+	 *
+	 * @return string[]
+	 */
+	private function get_chatgpt_models(): array {
+		$ids = array();
+
+		try {
+			if (
+				class_exists( '\WordPress\AiClient\AiClient' ) &&
+				class_exists( '\WordPress\AiClient\Providers\Models\DTO\ModelRequirements' ) &&
+				class_exists( '\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum' )
+			) {
+				$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+				if ( $registry && method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
+					$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+						array( \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration() ),
+						array()
+					);
+					$metadata = $registry->findProviderModelsMetadataForSupport( 'chatgpt', $requirements );
+					if ( is_array( $metadata ) ) {
+						foreach ( $metadata as $model ) {
+							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
+								$ids[] = (string) $model->getId();
+							}
+						}
+					}
+				}
+			}
+		} catch ( \Throwable $e ) {
+			$ids = array();
+		}
+
+		$bundled = '\Halawa\ChatGptAiProvider\Metadata\ChatGptModelMetadataDirectory::BUNDLED_MODELS';
+		if ( empty( $ids ) && defined( $bundled ) ) {
+			$ids = (array) constant( $bundled );
+		}
+
+		return array_values( array_unique( array_filter( array_map( 'strval', $ids ) ) ) );
 	}
 
 	/**
@@ -807,6 +891,12 @@ class Settings extends Abstract_Controller {
 				$options['api_keys'] = array();
 			}
 			$options['api_keys']['gemini_model'] = sanitize_text_field( (string) $incoming_models['gemini_model'] );
+		}
+		if ( ! empty( $incoming_models ) && isset( $incoming_models['chatgpt_model'] ) ) {
+			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
+				$options['api_keys'] = array();
+			}
+			$options['api_keys']['chatgpt_model'] = sanitize_text_field( (string) $incoming_models['chatgpt_model'] );
 		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)
