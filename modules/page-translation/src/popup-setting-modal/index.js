@@ -81,6 +81,50 @@ const SettingModal = (props) => {
      * useEffect hook to set settingVisibility.
      * Triggers the setSettingVisibility only when user click on meta field Button.
     */
+
+    /**
+     * Elementor: user chose "Translate with Elementor" on the edit screen.
+     * Consume that one-shot localStorage flag so we can open the provider modal
+     * only after this component has attached its click listener (avoids the old 100ms race).
+     */
+    const consumeElementorConfirmIntent = () => {
+        if (window.lmatPageTranslationGlobal?.editor_type !== 'elementor') {
+            return false;
+        }
+
+        const postId = window.lmatPageTranslationGlobal.current_post_id;
+        const targetLang = window.lmatPageTranslationGlobal.target_lang;
+        if (!postId || !targetLang) {
+            return false;
+        }
+
+        const raw = localStorage.getItem('lmatElementorConfirmBox');
+        if (!raw || 'string' !== typeof raw || '' === raw) {
+            return false;
+        }
+
+        let confirmBox;
+        try {
+            confirmBox = JSON.parse(raw);
+        } catch (e) {
+            return false;
+        }
+
+        const key = postId + '_' + targetLang;
+        if (!confirmBox || !confirmBox[key]) {
+            return false;
+        }
+
+        delete confirmBox[key];
+        if (Object.keys(confirmBox).length === 0) {
+            localStorage.removeItem('lmatElementorConfirmBox');
+        } else {
+            localStorage.setItem('lmatElementorConfirmBox', JSON.stringify(confirmBox));
+        }
+
+        return true;
+    };
+
     useEffect(() => {
         const firstRenderBtns = document.querySelectorAll('#lmat-page-translation-modal-open-warning-wrapper .modal-content [data-value]');
         const metaFieldBtn = document.querySelector(props.translateWrpSelector);
@@ -88,6 +132,11 @@ const SettingModal = (props) => {
         if (metaFieldBtn) {
             metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
             metaFieldBtn.addEventListener('click', handleMetaFieldBtnClick);
+
+            // Open provider modal once the listener exists (Elementor confirm-box flow).
+            if (consumeElementorConfirmIntent()) {
+                metaFieldBtn.click();
+            }
         }
 
         firstRenderBtns.forEach(ele => {

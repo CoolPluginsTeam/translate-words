@@ -385,22 +385,6 @@ const appendElementorTranslateBtn = () => {
     );
     root.render(<App />);
 
-    if (confirmBox && confirmBox[postId + "_" + targetLang]) {
-      setTimeout(() => {
-        buttonElement.trigger("click");
-
-        delete confirmBox[postId + "_" + targetLang];
-
-        if (Object.keys(confirmBox).length === 0) {
-          localStorage.removeItem("lmatElementorConfirmBox");
-        } else {
-          localStorage.setItem(
-            "lmatElementorConfirmBox",
-            JSON.stringify(confirmBox)
-          );
-        }
-      }, 100);
-    }
   }
 };
 
