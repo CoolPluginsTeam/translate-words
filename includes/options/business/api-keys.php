@@ -66,11 +66,12 @@ class Api_Keys extends Abstract_Option {
 	 * Stores provider models only. Provider keys are stored in dedicated WP options:
 	 * connectors_ai_google_api_key.
 	 *
-	 * @return array{gemini_model:string}
+	 * @return array{gemini_model:string, chatgpt_model:string}
 	 */
 	protected function get_default() {
 		return array(
-			'gemini_model' => 'gemini-2.5-flash',
+			'gemini_model'  => 'gemini-2.5-flash',
+			'chatgpt_model' => 'gpt-5.6-luna',
 		);
 	}
 
@@ -83,13 +84,14 @@ class Api_Keys extends Abstract_Option {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'gemini_model' => array( 'type' => 'string' ),
+				'gemini_model'  => array( 'type' => 'string' ),
+				'chatgpt_model' => array( 'type' => 'string' ),
 			),
 		);
 	}
 
 	/**
-	 * Sanitizes stored Gemini model id.
+	 * Sanitizes stored Gemini and ChatGPT model ids.
 	 *
 	 * @param mixed   $value   Incoming value.
 	 * @param Options $options Options registry instance.
@@ -105,6 +107,9 @@ class Api_Keys extends Abstract_Option {
 		$gemini  = isset( $current['gemini_model'] ) && is_scalar( $current['gemini_model'] )
 			? sanitize_text_field( (string) $current['gemini_model'] )
 			: $default['gemini_model'];
+		$chatgpt = isset( $current['chatgpt_model'] ) && is_scalar( $current['chatgpt_model'] )
+			? sanitize_text_field( (string) $current['chatgpt_model'] )
+			: $default['chatgpt_model'];
 
 		if ( is_array( $value ) && array_key_exists( 'gemini_model', $value ) ) {
 			$v = $value['gemini_model'];
@@ -117,8 +122,20 @@ class Api_Keys extends Abstract_Option {
 			}
 		}
 
+		if ( is_array( $value ) && array_key_exists( 'chatgpt_model', $value ) ) {
+			$v = $value['chatgpt_model'];
+			if ( null === $v ) {
+				$chatgpt = '';
+			} elseif ( is_scalar( $v ) ) {
+				$chatgpt = sanitize_text_field( (string) $v );
+			} else {
+				$chatgpt = '';
+			}
+		}
+
 		return array(
-			'gemini_model' => $gemini,
+			'gemini_model'  => $gemini,
+			'chatgpt_model' => $chatgpt,
 		);
 	}
 

@@ -45,6 +45,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                 'edge_local_ai' => false,
                 'google' => true,
                 'gemini' => false,
+                'chatgpt' => false,
             ),
 			'default_provider'             => 'google',
             'bulk_translation_post_status' => 'draft',
@@ -72,11 +73,12 @@ class Ai_Translation_Configuration extends Abstract_Option {
                         'edge_local_ai' => array('type' => 'boolean'),
                         'google' => array('type' => 'boolean'),
                         'gemini' => array('type' => 'boolean'),
+                        'chatgpt' => array('type' => 'boolean'),
                     )
                 ),
 				'default_provider'             => array(
 					'type' => 'string',
-					'enum' => array( '', 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini' ),
+					'enum' => array( '', 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini', 'chatgpt' ),
 				),
                 'bulk_translation_post_status' => array('type' => 'string', 'enum' => array('draft', 'publish')),
                 'slug_translation_option' => array('type' => 'string', 'enum' => array('title_translate', 'slug_translate', 'slug_keep')),
