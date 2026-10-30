@@ -360,6 +360,8 @@ function linguator_content_path_to_url( $file ) {
  *
  * WP &lt; 7.0: Google + Chrome only.
  * WP 7.0+: Google + Chrome + Gemini.
+ * ChatGPT: only when the `chatgpt` provider is registered with the WP AI Client
+ * (e.g. by the "AI Provider for ChatGPT" plugin).
  *
  * @return string[]
  */
@@ -369,6 +371,10 @@ function linguator_get_allowed_ai_providers() {
 	global $wp_version;
 	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {
 		$allowed[] = 'gemini';
+	}
+
+	if ( linguator_is_chatgpt_provider_registered() ) {
+		$allowed[] = 'chatgpt';
 	}
 
 	/**
@@ -382,7 +388,7 @@ function linguator_get_allowed_ai_providers() {
 /**
  * Whether a given AI translation provider is currently allowed.
  *
- * @param string $provider Provider key (google|chrome_local_ai|gemini).
+ * @param string $provider Provider key (google|chrome_local_ai|edge_local_ai|gemini|chatgpt).
  * @return bool
  */
 function linguator_is_ai_provider_allowed( $provider ) {
@@ -395,7 +401,7 @@ function linguator_is_ai_provider_allowed( $provider ) {
  * Reads the default saved in the translation settings (Google when none was saved) and
  * returns an empty string when that provider is not among the enabled ones.
  *
- * @param string[] $active_providers Service keys of the enabled providers (google, localAiTranslator, edgeLocalAiTranslator, gemini).
+ * @param string[] $active_providers Service keys of the enabled providers (google, localAiTranslator, edgeLocalAiTranslator, gemini, chatgpt).
  * @return string Service key, or an empty string when nothing can be pre-selected.
  */
 function linguator_get_default_ai_provider_service( array $active_providers ) {
@@ -404,6 +410,7 @@ function linguator_get_default_ai_provider_service( array $active_providers ) {
 		'chrome_local_ai' => 'localAiTranslator',
 		'edge_local_ai'   => 'edgeLocalAiTranslator',
 		'gemini'          => 'gemini',
+		'chatgpt'         => 'chatgpt',
 	);
 	$setting  = 'google';
 
@@ -416,6 +423,51 @@ function linguator_get_default_ai_provider_service( array $active_providers ) {
 	}
 
 	return '';
+}
+
+/**
+ * Whether the ChatGPT provider is registered with the WordPress AI Client.
+ *
+ * The "AI Provider for ChatGPT" plugin registers it on `init` (priority 5), so this
+ * returns false when called earlier in the request.
+ *
+ * @return bool
+ */
+function linguator_is_chatgpt_provider_registered() {
+	if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+		return false;
+	}
+
+	try {
+		$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+	} catch ( \Throwable $e ) {
+		return false;
+	}
+
+	if ( ! $registry || ! method_exists( $registry, 'hasProvider' ) ) {
+		return false;
+	}
+
+	return (bool) $registry->hasProvider( 'chatgpt' );
+}
+
+/**
+ * Map a Linguator provider key to its WordPress AI Client provider id.
+ *
+ * Only server-side LLM providers have an AI Client id (gemini => google, chatgpt => chatgpt).
+ *
+ * @param string $provider Linguator provider key.
+ * @return string AI Client provider id, or an empty string when the provider does not use the AI Client.
+ */
+function linguator_get_ai_client_provider_id( $provider ) {
+	$map = array(
+		'gemini'  => 'google',
+		'chatgpt' => 'chatgpt',
+	);
+
+	$provider = (string) $provider;
+
+	return isset( $map[ $provider ] ) ? $map[ $provider ] : '';
 }
 
 /**
