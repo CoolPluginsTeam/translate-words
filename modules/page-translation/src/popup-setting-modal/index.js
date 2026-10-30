@@ -8,10 +8,12 @@ import SettingModalBody from "./body.js";
 import SettingModalFooter from "./footer.js";
 import { __, sprintf } from "@wordpress/i18n";   
 import ErrorModalBox from "../component/error-modal-box/index.js";
-import TranslateService from "../component/translate-provider/index.js";
+import TranslateService, { resolveDefaultService } from "../component/translate-provider/index.js";
 
 const SettingModal = (props) => {
     const [activeService, setActiveService] = useState({});
+    // Provider card ticked in the popup; starts on the default saved in the translation settings.
+    const [selectedProvider, setSelectedProvider] = useState(resolveDefaultService);
     const [modalRender, setModalRender] = useState(0);
     const [settingVisibility, setSettingVisibility] = useState(false);
     const [noValidProvider, setNoValidProvider] = useState(false);
@@ -40,7 +42,7 @@ const SettingModal = (props) => {
 
     const openModalOnLoadHandler = (e) => {
         e.preventDefault();
-        const btnElement = e.target;
+        const btnElement = e.currentTarget;
         const visibility = btnElement.dataset.value;
 
         if (visibility === 'yes') {
@@ -52,20 +54,13 @@ const SettingModal = (props) => {
 
     const closeErrorModal = () => {
         setErrorModalVisibility(false);
+        // The provider list was hidden while the error was open; bring it back.
+        setSettingVisibility(true);
     }
 
     const openErrorModalHandler = (service) => {
         setSettingVisibility(false);
         setErrorModalVisibility(service);
-    }
-
-    const openModelHandler = (activeService) => {
-        if (serviceModalErrors && serviceModalErrors[activeService]) {
-            openErrorModalHandler(activeService);
-        } else {
-            setActiveService(activeService);
-            setModalRender(prev => prev + 1);
-        }
     }
 
     const handleMetaFieldBtnClick = async (e) => {
@@ -77,51 +72,80 @@ const SettingModal = (props) => {
             return;
         }
 
-        if (validProviders.length > 1) {
-            // Perform language check upfront when modal is opened with multiple providers
-            const errors = await providerErrors();
-
-            if (errors && (errors.chromeAiDownloadPending || errors.edgeAiDownloadPending)) {
-                setSettingVisibility(true);
-                return;
-            }
-
-            // Show provider selection modal - errors will be shown as error messages on provider buttons
-            setSettingVisibility(prev => !prev);
-        } else {
-            // Single compatible provider
-            const errors = await providerErrors();
-            const providerId = validProviders[0];
-
-            // Check for download pending
-            if (errors && (errors.chromeAiDownloadPending || errors.edgeAiDownloadPending)) {
-                setSettingVisibility(true);
-                return;
-            }
-
-            // Check for language support errors - open the provider modal to show error on provider button
-            if (errors && errors[providerId]) {
-                // Don't open error modal, let the provider modal show the error inline
-                setSettingVisibility(true);
-                return;
-            }
-
-            // All good, open the provider modal
-            openModelHandler(providerId);
-        }
+        // Check the target language per provider first, so the cards open with their real state.
+        await providerErrors();
+        setSettingVisibility(true);
     }
 
     /**
      * useEffect hook to set settingVisibility.
      * Triggers the setSettingVisibility only when user click on meta field Button.
     */
+
+    /**
+     * Elementor: user chose "Translate with Elementor" on the edit screen.
+     * Consume that one-shot localStorage flag so we can open the provider modal
+     * only after this component has attached its click listener (avoids the old 100ms race).
+     */
+    const consumeElementorConfirmIntent = () => {
+        if (window.lmatPageTranslationGlobal?.editor_type !== 'elementor') {
+            return false;
+        }
+
+        const postId = window.lmatPageTranslationGlobal.current_post_id;
+        const targetLang = window.lmatPageTranslationGlobal.target_lang;
+        if (!postId || !targetLang) {
+            return false;
+        }
+
+        const raw = localStorage.getItem('lmatElementorConfirmBox');
+        if (!raw || 'string' !== typeof raw || '' === raw) {
+            return false;
+        }
+
+        let confirmBox;
+        try {
+            confirmBox = JSON.parse(raw);
+        } catch (e) {
+            return false;
+        }
+
+        const key = postId + '_' + targetLang;
+        if (!confirmBox || !confirmBox[key]) {
+            return false;
+        }
+
+        delete confirmBox[key];
+        if (Object.keys(confirmBox).length === 0) {
+            localStorage.removeItem('lmatElementorConfirmBox');
+        } else {
+            localStorage.setItem('lmatElementorConfirmBox', JSON.stringify(confirmBox));
+        }
+
+        return true;
+    };
+
     useEffect(() => {
-        const firstRenderBtns = document.querySelectorAll('#lmat-page-translation-modal-open-warning-wrapper .modal-content div[data-value]');
+        const firstRenderBtns = document.querySelectorAll('#lmat-page-translation-modal-open-warning-wrapper .modal-content [data-value]');
         const metaFieldBtn = document.querySelector(props.translateWrpSelector);
 
         if (metaFieldBtn) {
             metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
             metaFieldBtn.addEventListener('click', handleMetaFieldBtnClick);
+
+        }
+
+        // Elementor: user already confirmed "Translate Now" on the edit screen,
+        // so open the provider modal directly (no second notice).
+        if (consumeElementorConfirmIntent()) {
+            (async () => {
+                if (validProviders.length < 1) {
+                    showNoCompatibleProviderModal();
+                    return;
+                }
+                await providerErrors();
+                setSettingVisibility(true);
+            })();
         }
 
         firstRenderBtns.forEach(ele => {
@@ -130,7 +154,9 @@ const SettingModal = (props) => {
             }
         })
         return () => {
-            metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
+            if (metaFieldBtn) {
+                metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
+            }
         }
     }, [serviceModalErrors])
 
@@ -219,7 +245,7 @@ const SettingModal = (props) => {
                 errors.google = {
 
 
-                    message: "<p style={{ fontSize: '1rem', color: '#ff4646' }}>" + sprintf(
+                    message: "<p style='color:#000000;font-size:1rem'>" + sprintf(
                         __("Google Translate does not support the target language: %s.", 'translate-words'),
                         "<strong>" + targetLangName + "</strong>"
                     ) + "</p>",
@@ -269,6 +295,23 @@ const SettingModal = (props) => {
     }, [settingVisibility]);
 
     /**
+     * A provider that cannot run right now (language not supported, built-in AI error or
+     * language pack pending, missing API key) must not stay selected.
+     */
+    useEffect(() => {
+        const unavailableProviders = {
+            google: !googleSupport,
+            localAiTranslator: chromeAiBtnDisabled || !!chromeAiDownload,
+            edgeLocalAiTranslator: edgeAiBtnDisabled || !!edgeAiDownload,
+            gemini: !lmatPageTranslationGlobal?.api_keys_status?.gemini,
+        };
+
+        if (selectedProvider && unavailableProviders[selectedProvider]) {
+            setSelectedProvider(null);
+        }
+    }, [selectedProvider, googleSupport, chromeAiBtnDisabled, edgeAiBtnDisabled, chromeAiDownload, edgeAiDownload]);
+
+    /**
      * useEffect hook to handle displaying the modal and rendering the PopStringModal component.
      */
     useEffect(() => {
@@ -309,19 +352,14 @@ const SettingModal = (props) => {
     }, [props.postDataFetchStatus, modalRender]);
 
     /**
-     * Function to handle fetching content based on the target button clicked.
-     * Sets the target button and updates the fetch status to true.
-     * @param {Event} e - The event object representing the button click.
+     * Starts the translation with the provider selected in the popup.
      */
-    const fetchContent = async (e) => {
-        let targetElement = !e.target.classList.contains('lmat-page-translation-service-btn') ? e.target.closest('.lmat-page-translation-service-btn') : e.target;
+    const fetchContent = async () => {
+        const dataService = selectedProvider;
 
-        if (!targetElement) {
+        if (!dataService) {
             return;
         }
-
-        const dataService = targetElement.dataset && targetElement.dataset.service;
-        const isEdge = dataService === 'edgeLocalAiTranslator';
 
         if (dataService === 'localAiTranslator') {
             const localAiTranslatorSupport = await ChromeLocalAiTranslator.languageSupportedStatus(sourceLang, targetLang, targetLangName, sourceLangName, false);
@@ -397,7 +435,6 @@ const SettingModal = (props) => {
                         <SettingModalBody
                             hasProviders={hasProviders}
                             googleDisabled={!googleSupport}
-                            fetchContent={fetchContent}
                             imgFolder={imgFolder}
                             targetLangName={targetLangName}
                             postType={props.postType}
@@ -405,16 +442,18 @@ const SettingModal = (props) => {
                             localAiTranslatorDisabled={chromeAiBtnDisabled}
                             edgeLocalAiTranslatorDisabled={edgeAiBtnDisabled}
                             openErrorModalHandler={openErrorModalHandler}
+                            serviceModalErrors={serviceModalErrors}
                             chromeAiDownload={chromeAiDownload}
                             setChromeAiDownload={setChromeAiDownload}
                             edgeAiDownload={edgeAiDownload}
                             setEdgeAiDownload={setEdgeAiDownload}
+                            activeProvider={selectedProvider}
+                            onSelectProvider={setSelectedProvider}
                         />
                         <SettingModalFooter
                             hasProviders={hasProviders}
-                            targetLangName={targetLangName}
-                            postType={props.postType}
-                            sourceLangName={sourceLangName}
+                            selectedProvider={selectedProvider}
+                            onStartTranslation={fetchContent}
                             setSettingVisibility={handleSettingVisibility}
                         />
                     </div>

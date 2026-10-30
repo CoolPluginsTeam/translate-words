@@ -84,7 +84,7 @@ const StringModalBodyNotice = () => {
         message: (
           <p>
             {__(
-              "No block rules were found. It appears that the block-rules.JSON file could not be fetched, possibly because it is blocked by your server settings. Please check your server configuration to resolve this issue.",
+              "No block rules were found. The block translation rules could not be loaded, possibly because the request was blocked by your server settings. Please check your server configuration to resolve this issue.",
               "translate-words"
             )}
           </p>
@@ -276,29 +276,41 @@ const createMessagePopup = () => {
   const targetLang = window.lmatPageTranslationGlobal.target_lang;
   const targetLangName =
     lmatPageTranslationGlobal.languageObject[targetLang]["name"];
+  const magicWandUrl =
+    window.lmatPageTranslationGlobal.lmat_url + "admin/assets/images/magic-wand.svg";
 
   const messagePopup = document.createElement("div");
   messagePopup.id = "lmat-page-translation-modal-open-warning-wrapper";
   messagePopup.innerHTML = `
     <div class="modal-container" style="display: flex">
       <div class="modal-content">
-        <p>${wp.i18n.sprintf(
-          wp.i18n.__(
-            "Would you like to duplicate your original %s content and have it automatically translated into %s?",
+        <div class="modal-header">
+          <div class="lmat-page-translation-modal-header-left">
+            <img src="${magicWandUrl}" style="width: 20px; height: 20px; margin-right: 5px;" alt="" aria-hidden="true">
+            <h3>${wp.i18n.__("AI Translation", "translate-words")}</h3>
+          </div>
+          <button type="button" class="lmat-page-translation-modal-close modal-close" data-value="no" title="${wp.i18n.__("Close", "translate-words")}" aria-label="${wp.i18n.__("Close", "translate-words")}">&times;</button>
+        </div>
+        <div class="lmat-page-translation-modal-body">
+          <p>${wp.i18n.sprintf(
+            wp.i18n.__(
+              "Would you like to duplicate your original %s content and have it automatically translated into %s?",
+              "translate-words"
+            ),
+            postType,
+            targetLangName
+          )}</p>
+          <button type="button" class="lmat-page-translation-translate-button button" data-value="yes" id="lmat-page-translation-translate-button">
+            <img src="${magicWandUrl}" style="width: 20px; height: 20px; margin-right: 5px; filter: brightness(0) invert(1);" alt="" aria-hidden="true">
+            ${wp.i18n.__("Translate Now", "translate-words")}
+          </button>
+        </div>
+        <div class="modal-footer-notice">
+          <span class="dashicons dashicons-warning"></span>
+          <p><em>${wp.i18n.__(
+            "Note: close this popup if you do not want AI translation.",
             "translate-words"
-          ),
-          postType,
-          targetLangName
-        )}</p>
-        <div>
-          <div data-value="yes">${wp.i18n.__(
-            "Yes",
-            "translate-words"
-          )}</div>
-          <div data-value="no">${wp.i18n.__(
-            "No",
-            "translate-words"
-          )}</div>
+          )}</em></p>
         </div>
       </div>
     </div>`;
@@ -317,6 +329,35 @@ const insertMessagePopup = () => {
 };
 
 /**
+ * Whether Elementor page data is ready for single-page translation.
+ */
+const hasElementorTranslateData = () => {
+  const data = window.lmatPageTranslationGlobal?.elementorData;
+  if (!data || "" === data || data.length < 1) {
+    return false;
+  }
+  return !!(window.elementor && elementor.elements && elementor.elements.length > 0);
+};
+
+/**
+ * Mount the page-translation React app once for Elementor.
+ */
+const mountElementorTranslateApp = () => {
+  if (window.lmatElementorTranslateAppMounted) {
+    return;
+  }
+  window.lmatElementorTranslateAppMounted = true;
+  init();
+
+  // The WP-admin confirm modal already asked "Translate Now"; SettingModal
+  // consumes the localStorage intent and opens the provider modal directly.
+  const root = ReactDOM.createRoot(
+    document.getElementById("lmat-page-translation-setting-modal")
+  );
+  root.render(<App />);
+};
+
+/**
  * Elementor translate button append
  */
 const appendElementorTranslateBtn = () => {
@@ -330,66 +371,40 @@ const appendElementorTranslateBtn = () => {
     const buttonHtml =
       '<button class="elementor-button lmat-page-translation-button" name="lmat_page_translation_meta_box_translate">Translate</button>';
     const buttonElement = jQuery(buttonHtml);
-    let confirmBox = false;
-    const postId = window.lmatPageTranslationGlobal.current_post_id;
-    const targetLang = window.lmatPageTranslationGlobal.target_lang;
-    const oldData = localStorage.getItem("lmatElementorConfirmBox");
-    if (oldData && "string" === typeof oldData && "" !== oldData) {
-      confirmBox = JSON.parse(oldData);
-    }
 
     translateButtonGroup.prepend(buttonElement);
-    $e.internal("document/save/set-is-modified", { status: true });
 
-    if (
-      !window.lmatPageTranslationGlobal.elementorData ||
-      "" === window.lmatPageTranslationGlobal.elementorData ||
-      window.lmatPageTranslationGlobal.elementorData.length < 1 ||
-      elementor.elements.length < 1
-    ) {
-      if (confirmBox && confirmBox[postId + "_" + targetLang]) {
-        delete confirmBox[postId + "_" + targetLang];
-        if (Object.keys(confirmBox).length === 0) {
-          localStorage.removeItem("lmatElementorConfirmBox");
-        } else {
-          localStorage.setItem(
-            "lmatElementorConfirmBox",
-            JSON.stringify(confirmBox)
-          );
-        }
-      }
+    const enableTranslateButton = () => {
+      buttonElement.removeAttr("disabled");
+      buttonElement.removeAttr("title");
+      mountElementorTranslateApp();
+    };
 
+    if (!hasElementorTranslateData()) {
+      // Keep lmatElementorConfirmBox intent; data may still be loading.
       buttonElement.attr("disabled", "disabled");
       buttonElement.attr(
         "title",
         "Translation is not available because there is no Elementor data."
       );
+
+      let tries = 0;
+      const maxTries = 40; // ~10s at 250ms
+      const retryId = setInterval(() => {
+        tries += 1;
+        if (hasElementorTranslateData()) {
+          clearInterval(retryId);
+          enableTranslateButton();
+          return;
+        }
+        if (tries >= maxTries) {
+          clearInterval(retryId);
+        }
+      }, 250);
       return;
     }
-    // Append app root wrapper in body
-    init();
 
-    const root = ReactDOM.createRoot(
-      document.getElementById("lmat-page-translation-setting-modal")
-    );
-    root.render(<App />);
-
-    if (confirmBox && confirmBox[postId + "_" + targetLang]) {
-      setTimeout(() => {
-        buttonElement.trigger("click");
-
-        delete confirmBox[postId + "_" + targetLang];
-
-        if (Object.keys(confirmBox).length === 0) {
-          localStorage.removeItem("lmatElementorConfirmBox");
-        } else {
-          localStorage.setItem(
-            "lmatElementorConfirmBox",
-            JSON.stringify(confirmBox)
-          );
-        }
-      }, 100);
-    }
+    enableTranslateButton();
   }
 };
 

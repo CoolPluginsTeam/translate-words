@@ -1,4 +1,6 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
+import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { isTechnicalAttribute, isUserRuleAttribute } from "../../component/technical-value/index.js";
 
 /**
  * Filters and translates attributes of a block based on provided rules.
@@ -11,9 +13,10 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
     
     const { select } = wp.data;
 
-    const filterAttrArr = Object.values(blockParseRules);
+    const filterAttrArr = getRuleAttributeGroups(blockParseRules);
     const blockAttr = block.attributes;
     const blockId = block.clientId;
+    const userRules = select('block-lmatPageTranslation/translate').getBlockRules()?.LmatUserBlockRules;
 
     // Function to update a nested attribute in the block
     const updateNestedAttribute = (obj, path, value) => {
@@ -67,6 +70,10 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
             }
 
             if (undefined !== blockAttrContent && typeof blockAttrContent === 'string' && blockAttrContent.trim() !== '') {
+                if (isTechnicalAttribute(newIdArr, blockAttrContent) && !isUserRuleAttribute(userRules, block.name, newIdArr)) {
+                    return;
+                }
+
                 let filterKey = uniqueId.replace(/[^\p{L}\p{N}]/gu, '');
                 let translateContent = '';
 
@@ -85,11 +92,31 @@ const filterTranslateAttr = (block, blockParseRules, service) => {
         FilterBlockNestedAttr(idArr, filterAttrObj, blockAttr, updateTranslatedAttr);
     }
 
+    // XPath rules: resolve the attributes holding the selected text from the source markup,
+    // before any attribute is replaced, skipping paths already handled by attribute rules.
+    let xpathPaths = [];
+
+    if (Array.isArray(blockParseRules?.xpaths) && blockParseRules.xpaths.length > 0) {
+        let blockMarkup = '';
+
+        try {
+            blockMarkup = wp.blocks.serialize({ ...block, innerBlocks: [] });
+        } catch (error) {
+            blockMarkup = '';
+        }
+
+        xpathPaths = getXpathRuleAttributePaths(blockMarkup, blockParseRules, blockAttr);
+    }
+
     filterAttrArr.forEach(data => {
         Object.keys(data).forEach(key => {
             const idArr = new Array(key);
             updateTranslatedAttr(idArr, data[key]);
         });
+    });
+
+    xpathPaths.forEach(path => {
+        updateTranslatedAttr(path, true);
     });
 
     return block;

@@ -1,5 +1,8 @@
 import FilterBlockNestedAttr from "../../component/filter-nested-attr/index.js";
 import { dispatch, select } from "@wordpress/data";
+import { serialize } from "@wordpress/blocks";
+import { getRuleAttributeGroups, getXpathRuleAttributePaths } from "../../component/xpath-attribute-paths/index.js";
+import { isTechnicalAttribute, isUserRuleAttribute } from "../../component/technical-value/index.js";
 
 /**
  * Filters and translates attributes of a block.
@@ -7,10 +10,12 @@ import { dispatch, select } from "@wordpress/data";
  * @param {string} blockId - The ID of the block.
  * @param {Object} blockAttr - The attributes of the block.
  * @param {Object} filterAttr - The attributes to filter.
+ * @param {Object} block - The full block, used to evaluate XPath rules against its markup.
  */
-const filterTranslateAttr = (blockId, blockAttr, filterAttr) => {
+const filterTranslateAttr = (blockId, blockAttr, filterAttr, block) => {
 
-    const filterAttrArr = Object.values(filterAttr);
+    const filterAttrArr = getRuleAttributeGroups(filterAttr);
+    const userRules = select('block-lmatPageTranslation/translate').getBlockRules()?.LmatUserBlockRules;
 
     /**
      * Saves translated attributes based on the provided ID array and filter attribute object.
@@ -44,7 +49,7 @@ const filterTranslateAttr = (blockId, blockAttr, filterAttr) => {
 
                 let filterKey = uniqueId.replace(/[^\p{L}\p{N}]/gu, '');
 
-                if (!/[\p{L}\p{N}]/gu.test(blockAttrContent)) {
+                if (!/[\p{L}\p{N}]/gu.test(blockAttrContent) || (isTechnicalAttribute(newIdArr, blockAttrContent) && !isUserRuleAttribute(userRules, block?.name, newIdArr))) {
                     return false;
                 }
 
@@ -63,6 +68,22 @@ const filterTranslateAttr = (blockId, blockAttr, filterAttr) => {
             saveTranslatedAttr(idArr, data[key]);
         });
     });
+
+    // XPath rules: also save the attributes holding the selected text, skipping paths
+    // already handled by attribute rules.
+    if (block && Array.isArray(filterAttr?.xpaths) && filterAttr.xpaths.length > 0) {
+        let blockMarkup = '';
+
+        try {
+            blockMarkup = serialize({ ...block, innerBlocks: [] });
+        } catch (error) {
+            blockMarkup = '';
+        }
+
+        getXpathRuleAttributePaths(blockMarkup, filterAttr, blockAttr).forEach(path => {
+            saveTranslatedAttr(path, true);
+        });
+    }
 }
 /**
  * Retrieves the translation string for a block based on block rules and applies translation.
@@ -77,7 +98,7 @@ const getTranslateString = (block, blockRules) => {
         return;
     }
 
-    filterTranslateAttr(block.clientId, block.attributes, blockRules['LmatBlockParseRules'][block.name]);
+    filterTranslateAttr(block.clientId, block.attributes, blockRules['LmatBlockParseRules'][block.name], block);
 }
 
 /**

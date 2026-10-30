@@ -99,7 +99,7 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 
 			foreach($existed_meta_fields as $key){
 				if(isset($post_meta_fields[$key]) && !empty($post_meta_fields[$key]) && isset($allowed_meta_fields[$key]['status']) && true === $allowed_meta_fields[$key]['status']){
-					$value=$allowed_meta_fields[$key]['type'] && is_array($post_meta_fields[$key]) ? maybe_unserialize($post_meta_fields[$key][0]) : maybe_unserialize($post_meta_fields[$key]);
+					$value=$allowed_meta_fields[$key]['type'] && is_array($post_meta_fields[$key]) ? linguator_maybe_unserialize($post_meta_fields[$key][0]) : linguator_maybe_unserialize($post_meta_fields[$key]);
 					$filtered_meta_fields[$key]=$value;
 				}
 			}

@@ -45,8 +45,21 @@ function esc_html( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-
 function wp_kses( $value, $allowed ) { return $value; }
 function __( $value, $domain ) { return $value; }
 
+require_once dirname( __DIR__ ) . '/includes/switcher/element/abstract-element.php';
 require_once dirname( __DIR__ ) . '/modules/blocks/language-switcher/abstract-language-switcher-block.php';
 require_once dirname( __DIR__ ) . '/modules/blocks/language-switcher/navigation-language-switcher-block.php';
+
+class Test_Switcher_Element extends \Linguator\Includes\Switcher\Element\Abstract_Element {
+	public function __construct() {}
+	public function get(): string { return ''; }
+	public function get_label(): string { return esc_html( $this->label ); }
+}
+
+$element               = new Test_Switcher_Element();
+$element->url          = 'https://example.com/fr';
+$element->locale       = 'fr-FR';
+$element->label        = 'French';
+$element->item_classes = array();
 
 $linguator = (object) array( 'model' => new stdClass(), 'links' => new stdClass() );
 $switcher  = new \Linguator\Modules\Blocks\Linguator_Navigation_Language_Switcher_Block( $linguator );
@@ -55,8 +68,8 @@ $create = new ReflectionMethod( $switcher, 'create_inner_block' );
 $created = $create->invoke(
 	$switcher,
 	'core/navigation-link',
-	array( 'show_flags' => false, 'show_names' => true ),
-	array( 'url' => 'https://example.com/fr', 'locale' => 'fr-FR', 'flag' => '', 'name' => 'French', 'classes' => array() ),
+	array( 'show_flags' => false, 'show_labels' => 'names', 'className' => '' ),
+	$element,
 	array()
 );
 

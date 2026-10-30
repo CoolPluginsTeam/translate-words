@@ -57,7 +57,7 @@
   
   .lmat-wrapper.horizontal .lmat-lang-item a,
   .lmat-wrapper.vertical .lmat-lang-item a{
-    background-color: var(--lmat-normal-bg-color);
+    background-color: transparent;
   }
   
   
@@ -81,9 +81,10 @@
       /* text-transform: capitalize; */
   }
   
-  /* Link reset */
+  /* Link / trigger reset */
   .lmat-lang-item a,
-  .lmat-active-language a {
+  .lmat-active-language a,
+  .lmat-active-language .lmat-dropdown-trigger {
       text-decoration: none;
       display: flex;
       align-items: center;
@@ -101,6 +102,48 @@
       border-radius: 4px;
       color: var(--lmat-normal-text-color);
   }
+
+  .lmat-active-language .lmat-dropdown-trigger {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .6rem;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      line-height: inherit;
+      cursor: pointer;
+      text-align: inherit;
+  }
+
+      .lmat-active-language .lmat-dropdown-trigger:focus,
+  .lmat-active-language .lmat-dropdown-trigger:focus-visible {
+      outline: none;
+      box-shadow: none;
+  }
+
+  .lmat-lang-item a:focus,
+  .lmat-lang-item a:focus-visible,
+  .lmat-lang-item a:active,
+  .lmat-wrapper.dropdown li a:focus,
+  .lmat-wrapper.dropdown li a:focus-visible,
+  .lmat-wrapper.dropdown li a:active,
+  .lmat-active-language a:focus,
+  .lmat-active-language a:focus-visible,
+  .lmat-active-language a:active {
+      outline: none;
+      box-shadow: none;
+  }
+
+  /* Keep list links looking like plain items, not buttons, unless Elementor sets a border. */
+  .lmat-wrapper.horizontal .lmat-lang-item a,
+  .lmat-wrapper.vertical .lmat-lang-item a {
+      background-color: transparent;
+      box-shadow: none;
+  }
   
   /* DROPDOWN STYLING */
   .lmat-wrapper.dropdown {
@@ -115,22 +158,18 @@
     align-items: center;
   }
   
-  .lmat-active-language .lmat-dropdown-icon {
+  .lmat-active-language .lmat-dropdown-icon,
+  .lmat-active-language .lmat-dropdown-icon:before {
     transition: transform 0.3s ease;
     display: inline-block;
   }
   
-  .lmat-wrapper.dropdown:hover .lmat-dropdown-icon {
+  /* Flip caret on focus or click (.active). Hover flip is under the hover media query. */
+  .lmat-wrapper.dropdown:focus-within .lmat-dropdown-icon,
+  .lmat-wrapper.dropdown:focus-within .lmat-dropdown-icon:before,
+  .lmat-wrapper.dropdown.active .lmat-dropdown-icon,
+  .lmat-wrapper.dropdown.active .lmat-dropdown-icon:before {
     transform: rotate(180deg);
-  }
-  
-  .lmat-wrapper.dropdown span a{
-    display: flex;
-    flex-wrap: wrap;
-    gap: .6rem;
-    -webkit-box-align: center;
-        -ms-flex-align: center;
-            align-items: center;
   }
   
   .lmat-wrapper.dropdown ul {
@@ -139,8 +178,8 @@
     left: 0px;
     right: 0px;
     
-    -webkit-transition: all 0.3s ease-out;
-    transition: all 0.3s ease-out;
+    -webkit-transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     list-style: none;
     opacity: 0;
     pointer-events: none;
@@ -149,6 +188,7 @@
     /* overflow-wrap: anywhere; */
     display: inline-table;
     width: 100%;
+    transform: translateY(-8px);
   }
   
   .lmat-wrapper.dropdown ul li{
@@ -164,19 +204,58 @@
     white-space: nowrap;
   }
   
+  /* Dropdown opens downward by default; upward when Elementor direction is Up. */
   .lmat-dropdown-direction-up .lmat-wrapper.dropdown ul {
     top: auto;
     bottom: 100%;
     justify-content: flex-start;
+    transform: translateY(8px);
   }
   
-  .lmat-wrapper.dropdown.active::after, .lmat-wrapper.dropdown:hover::after {
+  .lmat-wrapper.dropdown.active::after,
+  .lmat-wrapper.dropdown:focus-within::after {
     border-width: 0 6px 6px 6px;
   }
   
-  .lmat-wrapper.dropdown.active ul, .lmat-wrapper.dropdown:hover ul {
+  .lmat-wrapper.dropdown.active ul,
+  .lmat-wrapper.dropdown:focus-within ul {
     opacity: 1;
     pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  /* Hover-open only on devices that actually hover (not touch). */
+  @media (hover: hover) and (pointer: fine) {
+    .lmat-wrapper.dropdown:hover ul {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .lmat-wrapper.dropdown:hover .lmat-dropdown-icon,
+    .lmat-wrapper.dropdown:hover .lmat-dropdown-icon:before {
+      transform: rotate(180deg);
+    }
+
+    .lmat-wrapper.dropdown:hover::after {
+      border-width: 0 6px 6px 6px;
+    }
+  }
+
+  /* Click/Escape can force-close even while :hover would keep it open. */
+  .lmat-wrapper.dropdown.lmat-force-closed ul {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-8px) !important;
+  }
+
+  .lmat-dropdown-direction-up .lmat-wrapper.dropdown.lmat-force-closed ul {
+    transform: translateY(8px) !important;
+  }
+
+  .lmat-wrapper.dropdown.lmat-force-closed .lmat-dropdown-icon,
+  .lmat-wrapper.dropdown.lmat-force-closed .lmat-dropdown-icon:before {
+    transform: none !important;
   }
   
   

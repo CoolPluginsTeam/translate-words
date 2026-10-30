@@ -152,12 +152,13 @@ if ( ! class_exists( 'Linguator_Admin_View_Language_Links' ) ) :
 							$translated_post_count+=$pending_post_count;
 						}
 
-                        $flag_url=isset($lang->flag_url) ? $lang->flag_url : '';
+                        // The language name is displayed next to the flag, so the flag is hidden from assistive technology.
+                        $flag_html = '' !== $flag ? "<span class='lmat-view-flag' style='margin-right: 5px;'>" . (string) preg_replace( '/^<img\b/i', '<img aria-hidden="true"', $flag, 1 ) . '</span>' : '';
                         $is_default = !empty($lang->is_default);
                         $icon = $is_default ? " <span class='icon-default-lang' aria-hidden='true'></span>" : '';
 
                         $all_translated_post_count+=$translated_post_count;
-                        $list_html.="<li class='lmat_lang_".esc_attr($language_slug)."'><a href='".esc_url($url)."' class='".esc_attr($current_class)."'><img src='".esc_url($flag_url)."' alt='".esc_attr($lang->name)."' width='16' style='margin-right: 5px;'>".esc_html($lang->name).$icon." <span class='count'>(".esc_html($translated_post_count).")</span></a></li>";
+                        $list_html.="<li class='lmat_lang_".esc_attr($language_slug)."'><a href='".esc_url($url)."' class='".esc_attr($current_class)."'>".$flag_html.esc_html($lang->name).$icon." <span class='count'>(".esc_html($translated_post_count).")</span></a></li>";
 						$index++;
 					}
 
@@ -173,10 +174,10 @@ if ( ! class_exists( 'Linguator_Admin_View_Language_Links' ) ) :
 						'ol'   => [ 'class' => true ],
 						'li'   => [ 'class' => true ],
 						'a'    => [ 'href' => true, 'title' => true, 'target' => true, 'rel' => true, 'class' => true ],
-						'span' => [ 'class' => true, 'aria-hidden' => true ],
+						'span' => [ 'class' => true, 'aria-hidden' => true, 'style' => true ],
 						'strong' => [],
 						'em'     => [],
-						'img'    => [ 'src' => true, 'alt' => true, 'width' => true, 'height' => true, 'style' => true ],
+						'img'    => [ 'src' => true, 'alt' => true, 'width' => true, 'height' => true, 'style' => true, 'aria-hidden' => true ],
 					];
 					
 					echo wp_kses($list_html, $allowed);

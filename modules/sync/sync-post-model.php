@@ -473,7 +473,7 @@ class Linguator_Sync_Post_Model {
 			return;
 		}
 
-		$d    = maybe_unserialize( $term->description );
+		$d    = linguator_maybe_unserialize( $term->description );
 		$lang = $this->model->post->get_language( $post_id );
 
 		if ( ! is_array( $d ) || empty( $lang ) ) {
@@ -507,7 +507,7 @@ class Linguator_Sync_Post_Model {
 
 		if ( ! empty( $term ) ) {
 			$lang = $this->model->post->get_language( $post_id );
-			$d    = maybe_unserialize( $term->description );
+			$d    = linguator_maybe_unserialize( $term->description );
 
 			if ( ! is_array( $d ) || empty( $lang ) ) {
 				return array();

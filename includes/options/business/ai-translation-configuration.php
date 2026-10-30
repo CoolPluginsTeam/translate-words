@@ -46,6 +46,7 @@ class Ai_Translation_Configuration extends Abstract_Option {
                 'google' => true,
                 'gemini' => false,
             ),
+			'default_provider'             => 'google',
             'bulk_translation_post_status' => 'draft',
             'slug_translation_option' => 'title_translate',
         );
@@ -73,6 +74,10 @@ class Ai_Translation_Configuration extends Abstract_Option {
                         'gemini' => array('type' => 'boolean'),
                     )
                 ),
+				'default_provider'             => array(
+					'type' => 'string',
+					'enum' => array( '', 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini' ),
+				),
                 'bulk_translation_post_status' => array('type' => 'string', 'enum' => array('draft', 'publish')),
                 'slug_translation_option' => array('type' => 'string', 'enum' => array('title_translate', 'slug_translate', 'slug_keep')),
             ),
@@ -97,12 +102,12 @@ class Ai_Translation_Configuration extends Abstract_Option {
         $filtered_value = array();
         $data_structure=self::get_data_structure();
         $provider_data=array_keys($data_structure['properties']['provider']['properties']);
-        
+		$allowed_providers = function_exists( 'linguator_get_allowed_ai_providers' )
+			? linguator_get_allowed_ai_providers()
+			: array( 'chrome_local_ai', 'google' );
+
         if(isset($value['provider'])){
             $filtered_value['provider'] = array();
-            $allowed_providers = function_exists( 'linguator_get_allowed_ai_providers' )
-                ? linguator_get_allowed_ai_providers()
-                : array( 'chrome_local_ai', 'google' );
 
             foreach($value['provider'] as $key => $provider_value){
                 if ( ! in_array( $key, $provider_data, true ) || ! in_array( $key, $allowed_providers, true ) ) {
@@ -111,6 +116,23 @@ class Ai_Translation_Configuration extends Abstract_Option {
                 $filtered_value['provider'][$key] = filter_var($provider_value, FILTER_VALIDATE_BOOLEAN);
             }
         }
+
+		// Callers such as the setup wizard only send the provider switches, so keep the saved default instead of dropping it.
+		if ( isset( $value['default_provider'] ) ) {
+			$default_provider = (string) $value['default_provider'];
+
+			if ( '' === $default_provider || ( in_array( $default_provider, $provider_data, true ) && in_array( $default_provider, $allowed_providers, true ) ) ) {
+				$filtered_value['default_provider'] = $default_provider;
+			}
+		}
+
+		if ( ! isset( $filtered_value['default_provider'] ) ) {
+			$saved_value = $options->get( self::key() );
+
+			if ( is_array( $saved_value ) && isset( $saved_value['default_provider'] ) ) {
+				$filtered_value['default_provider'] = $saved_value['default_provider'];
+			}
+		}
 
         if(isset($value['bulk_translation_post_status']) && in_array($value['bulk_translation_post_status'], array('draft', 'publish'))){
             $filtered_value['bulk_translation_post_status'] = sanitize_text_field($value['bulk_translation_post_status']);

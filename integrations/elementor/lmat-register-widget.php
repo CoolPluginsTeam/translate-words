@@ -27,6 +27,24 @@ class Linguator_Register_Widget {
 	 */
 	public function __construct() {
 		add_action( 'elementor/widgets/register', array( $this, 'linguator_register_widgets' ) );
+		// Register early so frontend can enqueue before Elementor prints assets.
+		add_action( 'wp_enqueue_scripts', array( $this, 'linguator_register_dropdown_script' ), 5 );
+		add_action( 'elementor/editor/after_enqueue_scripts', array( $this, 'linguator_register_dropdown_script' ), 5 );
+	}
+
+	/**
+	 * Register the frontend dropdown script (real file URL).
+	 *
+	 * @return void
+	 */
+	public function linguator_register_dropdown_script() {
+		wp_register_script(
+			'lmat-elementor-dropdown',
+			plugins_url( 'integrations/elementor/js/dropdown.js', LINGUATOR_FILE ),
+			array(),
+			LINGUATOR_VERSION,
+			true
+		);
 	}
 
 	/**

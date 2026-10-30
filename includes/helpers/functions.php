@@ -160,6 +160,22 @@ function linguator_sanitize_ids( $ids ) {
 	
 }
 
+/**
+ * Unserializes a value only if it is serialized, without instantiating any object.
+ *
+ * Works like maybe_unserialize() but prevents object injection by disallowing classes.
+ *
+ * @param mixed $data Data that might be unserialized.
+ * @return mixed Unserialized data, or the original value if not serialized.
+ */
+function linguator_maybe_unserialize( $data ) {
+	if ( is_serialized( $data ) ) {
+		return @unserialize( trim( $data ), array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+	}
+
+	return $data;
+}
+
 
 if ( ! function_exists( 'linguator_extract_taxonomy_name' ) ) {
 	/**
@@ -371,6 +387,35 @@ function linguator_get_allowed_ai_providers() {
  */
 function linguator_is_ai_provider_allowed( $provider ) {
 	return in_array( (string) $provider, linguator_get_allowed_ai_providers(), true );
+}
+
+/**
+ * Provider the translation popups pre-select, as the service key the popup scripts use.
+ *
+ * Reads the default saved in the translation settings (Google when none was saved) and
+ * returns an empty string when that provider is not among the enabled ones.
+ *
+ * @param string[] $active_providers Service keys of the enabled providers (google, localAiTranslator, edgeLocalAiTranslator, gemini).
+ * @return string Service key, or an empty string when nothing can be pre-selected.
+ */
+function linguator_get_default_ai_provider_service( array $active_providers ) {
+	$services = array(
+		'google'          => 'google',
+		'chrome_local_ai' => 'localAiTranslator',
+		'edge_local_ai'   => 'edgeLocalAiTranslator',
+		'gemini'          => 'gemini',
+	);
+	$setting  = 'google';
+
+	if ( function_exists( 'LMAT' ) && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['default_provider'] ) ) {
+		$setting = (string) LMAT()->options['ai_translation_configuration']['default_provider'];
+	}
+
+	if ( isset( $services[ $setting ] ) && in_array( $services[ $setting ], $active_providers, true ) ) {
+		return $services[ $setting ];
+	}
+
+	return '';
 }
 
 /**

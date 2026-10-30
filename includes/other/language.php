@@ -362,19 +362,34 @@ class Linguator_Language {
 			'src' => '',
 		);
 
-		// Linguator builtin flags.
-		if ( ! empty( $code ) && is_readable( LINGUATOR_DIR . '/assets/flags/' . $code . '.svg' ) ) {
-			$default_flag['url'] = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE );
+		// Maps former flag file names to their ISO based replacements.
+		$legacy_codes = array(
+			'arab'      => 'ar.lang',
+			'basque'    => 'es-pv',
+			'catalonia' => 'es-ct',
+			'england'   => 'gb-eng',
+			'esperanto' => 'eo.lang',
+			'galicia'   => 'es-ga',
+			'kurdistan' => 'iq-kr',
+			'occitania' => 'oci.lang',
+			'quebec'    => 'ca-qc',
+			'scotland'  => 'gb-sct',
+			'tibet'     => 'bo.lang',
+			'veneto'    => 'it-34',
+			'wales'     => 'gb-wls',
+		);
+		if ( isset( $legacy_codes[ $code ] ) ) {
+			$code = $legacy_codes[ $code ];
+		}
 
-			// If base64 encoded flags are preferred.
+		// Linguator builtin flags, displayed at 18x12 pixels.
+		if ( ! empty( $code ) && is_readable( LINGUATOR_DIR . '/assets/flags/' . $code . '.svg' ) ) {
+			$default_flag['url']    = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE );
+			$default_flag['width']  = 18;
+			$default_flag['height'] = 12;
+
 			if ( linguator_get_constant( 'LINGUATOR_ENCODED_FLAGS', true ) ) {
-				$file_path = LINGUATOR_DIR . '/assets/flags/' . $code . '.svg';
-				$imagesize = getimagesize( $file_path );
-				if ( is_array( $imagesize ) ) {
-					list( $default_flag['width'], $default_flag['height'] ) = $imagesize;
-				}
-				$file_contents       = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-				$default_flag['src'] = plugins_url( 'assets/flags/' . $code . '.svg', LINGUATOR_FILE ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				$default_flag['src'] = $default_flag['url'];
 			}
 		}
 
@@ -418,7 +433,6 @@ class Linguator_Language {
 	 *  
 	 *
 	 * @param array  $flag  Flag properties: src, width and height.
-	 * @param string $title Optional title attribute.
 	 * @param string $alt   Optional alt attribute.
 	 * @return string
 	 *
@@ -428,7 +442,7 @@ class Linguator_Language {
 	 *     height?: int|numeric-string
 	 * } $flag
 	 */
-	public static function get_flag_html( $flag, $title = '', $alt = '' ) {
+	public static function get_flag_html( $flag, $alt = '' ) {
 		if ( empty( $flag['src'] ) ) {
 			return '';
 		}
@@ -438,28 +452,22 @@ class Linguator_Language {
 			return '';
 		}
 
+		// SVG flags have large viewBoxes and no intrinsic size; always constrain display size.
+		$width  = ! empty( $flag['width'] ) ? (int) $flag['width'] : 18;
+		$height = ! empty( $flag['height'] ) ? (int) $flag['height'] : 12;
+
 		$alt_attr    = empty( $alt ) ? '' : sprintf( ' alt="%s"', esc_attr( $alt ) );
-		$width_attr  = empty( $flag['width'] ) ? '' : sprintf( ' width="%s"', (int) $flag['width'] );
-		$height_attr = empty( $flag['height'] ) ? '' : sprintf( ' height="%s"', (int) $flag['height'] );
-
-		$style = '';
-		$sizes = array_intersect_key( $flag, array_flip( array( 'width', 'height' ) ) );
-
-		if ( ! empty( $sizes ) ) {
-			array_walk(
-				$sizes,
-				function ( &$value, $key ) {
-					$value = sprintf( '%s: %dpx;', esc_attr( $key ), (int) $value );
-				}
-			);
-			$style = sprintf( ' style="%s"', implode( ' ', $sizes ) );
-		}
+		$width_attr  = sprintf( ' width="%s"', $width );
+		$height_attr = sprintf( ' height="%s"', $height );
+		$class_attr  = ' class="lmat-flag"';
+		$style       = sprintf( ' style="width: %dpx; height: %dpx;"', $width, $height );
 
 		$html = sprintf(
 			// phpcs:ignore PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage -- Rendering plugin-specific SVG image via <img>, not applicable to attachment-based functions like wp_get_attachment_image().
-			'<img src="%s"%s%s%s%s />',
+			'<img src="%s"%s%s%s%s%s />',
 			$src,
 			$alt_attr,
+			$class_attr,
 			$width_attr,
 			$height_attr,
 			$style

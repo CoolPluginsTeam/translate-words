@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
-import { Button, Container, Input, Label } from '@bsf/force-ui'
+import { Button, Container, Input } from '@bsf/force-ui'
 import apiFetch from "@wordpress/api-fetch"
 import { toast } from 'sonner'
 import { __, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
 
 const providerKeyLinks = {
-  gemini: 'https://aistudio.google.com/app/api-keys',
+  gemini: 'https://linguator.com/docs/automatic-translation-via-googe-gemini/generate-google-gemini-ai-api-key/',
 }
 
 const providerKeyLabels = {
@@ -358,67 +358,69 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
             <Container.Item
               key={p.key}
             >
-              <h3 className={`m-0 text-base font-semibold mb-3 ${embedded ? 'pt-3' : ''}`}>
-                {p.heading}
-              </h3>
-              <div className="flex items-start gap-3">
-                <div className="flex-1" style={{ maxWidth: 400 }}>
-                  <Input
-                    aria-label={`${p.key}-api-key`}
-                    id={`${p.key}-api-key`}
-                    size="md"
-                    type="text"
-                    placeholder={p.placeholder}
-                    disabled={isConfigured}
-                    value={displayValue}
-                    onChange={(v) => {
-                      if (isConfigured) return
-                      setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))
-                    }}
-                  />
-                  {providerKeyLinks[p.key] ? (
-                    <div className="mt-2 text-sm text-gray-600">
-                      {sprintf(__('Get your %s API key from ', 'translate-words'), providerKeyLabels[p.key] || p.key)}{' '}
-                      <a href={providerKeyLinks[p.key]} target="_blank" rel="noopener noreferrer">
-                        {__('here', 'translate-words')}
-                      </a>
+              <div className={`lmat-api-key-row${embedded ? ' is-embedded' : ''}`}>
+                <div className="lmat-api-key-field">
+                  <h3 className={`m-0 text-base font-semibold mb-3 ${embedded ? 'pt-3' : ''}`}>
+                    {p.heading}
+                  </h3>
+                  <div className="lmat-api-key-input-row flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <Input
+                        aria-label={`${p.key}-api-key`}
+                        id={`${p.key}-api-key`}
+                        size="md"
+                        type="text"
+                        placeholder={p.placeholder}
+                        disabled={isConfigured}
+                        value={displayValue}
+                        onChange={(v) => {
+                          if (isConfigured) return
+                          setKeyDrafts((prev) => ({ ...prev, [p.key]: v }))
+                        }}
+                      />
+                      {providerKeyLinks[p.key] ? (
+                        <div className="mt-2 text-sm text-gray-600">
+                          {sprintf(__('Get your %s API key from ', 'translate-words'), providerKeyLabels[p.key] || p.key)}{' '}
+                          <a href={providerKeyLinks[p.key]} target="_blank" rel="noopener noreferrer">
+                            {__('here', 'translate-words')}
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
+
+                    <div className="flex-shrink-0">
+                      <Button
+                        size="md"
+                        tag="button"
+                        type="button"
+                        variant="primary"
+                        onClick={() => SaveSettings({ resetProvider: p.key })}
+                        disabled={!isConfigured}
+                      >
+                        {__('Reset', 'translate-words')}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
-                <div
-                  className="flex-shrink-0"
-                  style={embedded ? { paddingRight: '3em' } : undefined}
-                >
-                  <Button
-                    size="md"
-                    tag="button"
-                    type="button"
-                    variant="primary"
-                    onClick={() => SaveSettings({ resetProvider: p.key })}
-                    disabled={!isConfigured}
-                  >
-                    {__('Reset', 'translate-words')}
-                  </Button>
-                </div>
-              </div>
-
-              {isConfigured ? (
-                <div className="mt-8">
-                  <Label size="sm" className="font-medium mb-2 block">{p.modelHeading}</Label>
-                  <div className="mt-0" style={{ maxWidth: 320 }}>
+                {isConfigured ? (
+                  <div className={`lmat-api-key-model${embedded ? ' pt-3' : ''}`}>
+                    <h3 className="m-0 text-base font-semibold mb-3">
+                      {p.modelHeading}
+                    </h3>
                     <select
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      className="lmat-api-key-model-select w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
                       value={models[p.modelKey] || ''}
                       onChange={(e) => setModels((prev) => ({ ...prev, [p.modelKey]: e.target.value }))}
+                      aria-label={p.modelHeading}
                     >
                       {providerModelList.map((id) => (
                         <option key={id} value={id}>{getModelLabel(id)}</option>
                       ))}
                     </select>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </Container.Item>
           )
         })}

@@ -88,18 +88,20 @@ class Linguator_Table_Languages extends WP_List_Table {
 					(string) $item->$column_name,
 					array(
 						'img' => array(
-							'src'   => true,
-							'alt'   => true,
-							'class' => true,
-							'width' => true,
-							'height'=> true,
-							'title' => true,
+							'src'    => true,
+							'alt'    => true,
+							'class'  => true,
+							'width'  => true,
+							'height' => true,
+							'style'  => true,
+							'title'  => true,
 						),
 						'span' => array(
 							'class' => true,
 							'title' => true,
 						),
-					)
+					),
+					array_merge( wp_allowed_protocols(), array( 'data' ) )
 				);
 		}
 	}

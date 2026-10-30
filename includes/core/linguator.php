@@ -25,6 +25,7 @@ use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Supported_Blocks\Custom_Block_Post;
 use Linguator\Custom_Fields\Custom_Fields;
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
+use Linguator\Install\Linguator_Upgrade;
 
 // Define directory safely
 if ( ! defined( 'LMAT_LOCAL_DIR' ) ) {
@@ -272,8 +273,6 @@ class Linguator {
 		add_action( 'lmat_init_options_for_blog', array( Options_Registry::class, 'register' ) );
 		$options = new Options();
 
-		// Set current version
-		$options['version'] = LINGUATOR_VERSION;
 		/**
 		 * Filter the model class to use
 		 * /!\ this filter is fired *before* the $linguator object is available
@@ -293,6 +292,13 @@ class Linguator {
 		
 		/** @var Linguator_Model $model */
 		$model = new $class( $options );
+
+		/*
+		 * Run pending data upgrades once the language taxonomy is registered by the model,
+		 * then store the current version so they never run again.
+		 */
+		( new Linguator_Upgrade( $options ) )->maybe_upgrade();
+		$options['version'] = LINGUATOR_VERSION;
 
 		if ( ! $model->has_languages() ) {
 			/**
@@ -493,13 +499,16 @@ class Linguator {
 						'dismiss_link'  => __( 'No thanks', 'translate-words' ),
 						'later_link'    => __( 'Ask me later', 'translate-words' ),
 						'submit_button' => __( 'Submit review', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'like_question' => __( 'Do you like the %s plugin?', 'translate-words' ),
 						'yes_button'    => __( 'Yes, I like it', 'translate-words' ),
 						'close_label'   => __( 'Close', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'direct_line'   => __( 'Enjoying %s? A short review really helps.', 'translate-words' ),
 						'thanks_line'   => __( 'Great to hear! A quick review on WordPress.org would really help us.', 'translate-words' ),
 						'no_link'       => __( 'I do not like it, dismiss', 'translate-words' ),
 						'row_question'  => __( 'Do you like this plugin?', 'translate-words' ),
+						/* translators: %s: plugin name */
 						'inline_title'  => __( 'Enjoying %s?', 'translate-words' ),
 						'inline_text'   => __( 'A short review on WordPress.org helps other people find it.', 'translate-words' ),
 					),

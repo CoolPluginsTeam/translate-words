@@ -10,6 +10,8 @@ import React from 'react'
 import { MdDelete } from "react-icons/md";
 import { language } from '@wordpress/icons'
 import { FaStar } from "react-icons/fa";
+const setupFlagStyle = { width: '16px', height: '11px', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', flexShrink: 0 };
+
 const DropdownRenderLangauage = ({ flagUrl }) => {
   const { selectedLanguage, setSelectedLanguage } = React.useContext(setupContext) //get the context
   //condition accordingly if the url is send or the flag name
@@ -17,11 +19,11 @@ const DropdownRenderLangauage = ({ flagUrl }) => {
     {
       flagUrl ?
         <span>
-          <img src={selectedLanguage?.flag.split(`"`)[1]} alt="" />
+          <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={selectedLanguage?.flag.split(`"`)[1]} alt="" />
           {" " + selectedLanguage?.name}
         </span> :
         <span>
-          <img src={`${window.lmat_setup_flag_data.flagsUrl}${selectedLanguage?.flag}.svg`} alt="" />
+          <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${selectedLanguage?.flag}.svg`} alt="" />
           {" " + selectedLanguage?.name + " - " + selectedLanguage?.locale}</span>
     }
   </>)
@@ -37,11 +39,11 @@ export const RenderedLanguage = ({ languageName, languageFlag, flagUrl, language
       {
         flagUrl && languageFlag?.length > 12 ?
           <span>
-            <img src={languageFlag?.split(`"`)[1]} alt="" />
+            <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={languageFlag?.split(`"`)[1]} alt="" />
             {" " + languageName + " - " + languageLocale}
           </span> :
           <span>
-            <img src={`${window.lmat_setup_flag_data.flagsUrl}${languageFlag}.svg`} alt="" />
+            <img className="lmat-flag" width={16} height={11} style={setupFlagStyle} src={`${window.lmat_setup_flag_data.flagsUrl}${languageFlag}.svg`} alt="" />
             {" " + languageName + " - " + languageLocale}</span>
       }
     </>

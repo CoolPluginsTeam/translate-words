@@ -154,6 +154,7 @@ const configs = [
       'settings',
       'term',
       'widgets',
+      'language-switcher',
       'user',
       'blocks',
     ],

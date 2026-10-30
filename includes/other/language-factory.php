@@ -56,7 +56,20 @@ class Linguator_Language_Factory {
 	 * @phpstan-param LanguageData $language_data
 	 */
 	public function get( $language_data ) {
-		return new Linguator_Language( $this->sanitize_data( $language_data ) );
+		$data = $this->sanitize_data( $language_data );
+
+		// Rebuild flag markup on hydrate so SVG sizing/class changes are not stuck in the transient.
+		if ( ! empty( $data['flag_code'] ) ) {
+			$flag_props = $this->get_flag(
+				$data['flag_code'],
+				isset( $data['name'] ) ? $data['name'] : '',
+				isset( $data['slug'] ) ? $data['slug'] : '',
+				isset( $data['locale'] ) ? $data['locale'] : ''
+			);
+			$data = array_merge( $data, $flag_props );
+		}
+
+		return new Linguator_Language( $data );
 	}
 
 	/**
@@ -94,7 +107,7 @@ class Linguator_Language_Factory {
 		}
 
 		// The description fields can contain any property.
-		$description = maybe_unserialize( $terms['lmat_language']->description );
+		$description = linguator_maybe_unserialize( $terms['lmat_language']->description );
 
 		if ( is_array( $description ) ) {
 			$description = array_intersect_key(
@@ -279,21 +292,18 @@ class Linguator_Language_Factory {
 			}
 
 			$flags['custom_flag']['url'] = sanitize_url( $flags['custom_flag']['url'] );
+
+			// Custom SVGs need explicit dimensions (same default as builtin flags).
+			if ( empty( $flags['custom_flag']['width'] ) ) {
+				$flags['custom_flag']['width'] = 18;
+			}
+			if ( empty( $flags['custom_flag']['height'] ) ) {
+				$flags['custom_flag']['height'] = 12;
+			}
 		} else {
 			unset( $flags['custom_flag'] );
 		}
 
-		/**
-		 * Filters the flag title attribute.
-		 * Defaults to the language name.
-		 *
-		 *  
-		 *
-		 * @param string $title  The flag title attribute.
-		 * @param string $slug   The language code.
-		 * @param string $locale The language locale.
-		 */
-		$title  = apply_filters( 'lmat_flag_title', $name, $slug, $locale );
 		$return = array();
 
 		/**
@@ -325,7 +335,7 @@ class Linguator_Language_Factory {
 			 */
 			$return[ $key ] = apply_filters(
 				'lmat_get_flag',
-				Linguator_Language::get_flag_html( $flag, $title, $name ),
+				Linguator_Language::get_flag_html( $flag, $name ),
 				$slug
 			);
 		}

@@ -269,13 +269,13 @@ class Linguator_Translated_Term extends Linguator_Translated_Object implements L
 	 * @phpstan-param array<non-empty-string, positive-int> $translations
 	 */
 	protected function should_update_translation_group( $id, $translations ) {
-		// Don't do anything if no translations have been added to the group.
-		$old_translations = $this->get_translations( $id );
-		if ( count( $translations ) > 1 && ! empty( array_diff_assoc( $translations, $old_translations ) ) ) {
+		// Always sync the group when it holds more than one term, so orphan or stale groups get repaired.
+		if ( count( $translations ) > 1 ) {
 			return true;
 		}
 
-		// But we need a translation group for terms to allow relationships remap when importing from a WXR file
+		// A single term still needs a translation group to allow relationships remap when importing from a WXR file.
+		$old_translations = $this->get_translations( $id );
 		$term = $this->get_object_term( $id, $this->tax_translations );
 		return empty( $term ) || ! empty( array_diff_assoc( $translations, $old_translations ) );
 	}

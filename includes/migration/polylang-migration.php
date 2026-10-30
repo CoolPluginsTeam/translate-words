@@ -240,7 +240,7 @@ class Polylang_Migration {
 
 		foreach ( $polylang_languages as $pll_lang ) {
 			// Parse language metadata from description
-			$lang_data = maybe_unserialize( $pll_lang->description );
+			$lang_data = linguator_maybe_unserialize( $pll_lang->description );
 			if ( ! is_array( $lang_data ) ) {
 				$lang_data = array();
 			}
@@ -527,12 +527,12 @@ class Polylang_Migration {
 				continue;
 			}
 	
-			$data = maybe_unserialize( $row->description );
+			$data = linguator_maybe_unserialize( $row->description );
 			if ( ! is_array( $data ) ) {
 				continue;
 			}
 
-			$pll_term_desc=maybe_unserialize($row->description);
+			$pll_term_desc=linguator_maybe_unserialize($row->description);
 			$filter_description=array();
 
 			if(is_array($pll_term_desc)){
@@ -846,12 +846,12 @@ class Polylang_Migration {
 				continue;
 			}
 	
-			$data = maybe_unserialize( $row->description );
+			$data = linguator_maybe_unserialize( $row->description );
 			if ( ! is_array( $data ) ) {
 				continue;
 			}
 
-			$pll_term_desc=maybe_unserialize($row->description);
+			$pll_term_desc=linguator_maybe_unserialize($row->description);
 			$filter_description=array();
 
 			if(is_array($pll_term_desc)){

@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.2
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -197,6 +197,11 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 **Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
 == Changelog ==
+
+= Version 2.2.2 | 2 November 2026 =
+* Added: Support for translation rules defined in wpml-config.xml files.
+* Improved: Shared language switcher core with SVG/ISO flags.
+* Improved: UI for page translation and bulk translation.
 
 = Version 2.2.1 | 14 October 2026 =
 * Added: Media translation support for page and bulk translation.

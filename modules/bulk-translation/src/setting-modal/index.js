@@ -3,113 +3,82 @@ import SettingModalHeader from "./header.js";
 import SettingModalBody from "./body.js";
 import SettingModalFooter from "./footer.js";
 import ErrorModalBox from "../components/error-modal-box/index.js";
-import TranslateService from "../components/translate-provider/index.js";
-
-const AI_PROVIDERS = ['localAiTranslator', 'edgeLocalAiTranslator'];
+import { resolveDefaultService } from "../components/translate-provider/index.js";
 
 const SettingModal = (props) => {
     const prefix = props.prefix || 'lmat-bulk-translate';
-    const imgFolder = lmatBulkTranslationGlobal.lmat_url + 'admin/assets/images/';
     const [errorModal, setErrorModal] = useState(false);
-    const [isChecking, setIsChecking] = useState(true);
-
-    // Use the browser-filtered provider list so incompatible providers
-    // (e.g. Chrome AI shown in Edge) are excluded from auto-start logic.
-    const validProviders = Object.keys(TranslateService());
-    const singleProvider = validProviders.length === 1 ? validProviders[0] : null;
-    // Always show provider UI for AI so Translate is a real user gesture (packs may still be warming from Bulk Translate hover).
-    // Also show when no compatible providers exist so the empty-state message is visible.
-    const requireProviderClick = validProviders.length === 0 || !singleProvider || AI_PROVIDERS.includes(singleProvider);
-
+    // Starts on the default provider saved in the translation settings.
+    const [activeProvider, setActiveProvider] = useState(resolveDefaultService);
+    const { localAiModalError, edgeLocalAiModalError } = props;
 
     useEffect(() => {
-        setIsChecking(false);
-    }, [props.selectedLanguages]);
+        // A provider that cannot run right now (built-in AI error, missing API key) must not stay selected.
+        const disabledProviders = {
+            localAiTranslator: !!localAiModalError,
+            edgeLocalAiTranslator: !!edgeLocalAiModalError,
+            gemini: !lmatBulkTranslationGlobal?.api_keys_status?.gemini,
+        };
 
-    useEffect(() => {
-        if (isChecking) return;
-
-        // Auto-start only for a single non-AI provider (Google/Gemini).
-        if (singleProvider && !AI_PROVIDERS.includes(singleProvider)) {
-            const errorNameKey = () => {
-                switch (singleProvider) {
-                    case 'localAiTranslator':
-                        return 'localAiModalError';
-                    case 'edgeLocalAiTranslator':
-                        return 'edgeLocalAiModalError';
-                    default:
-                        return singleProvider + 'ModalError';
-                }
-            };
-
-            const errorName = errorNameKey();
-
-            if (props[errorName]) {
-                setErrorModal(props[errorName]);
-            } else {
-                props.updateProviderHandler(singleProvider);
-            }
+        if (activeProvider && disabledProviders[activeProvider]) {
+            setActiveProvider(null);
         }
-    }, [validProviders.join(','), isChecking, singleProvider]);
+    }, [activeProvider, localAiModalError, edgeLocalAiModalError]);
 
-    const startTranslationHandler = (e) => {
-        let targetElement = !e.target.classList.contains(`${prefix}-service-btn`) ? e.target.closest(`.${prefix}-service-btn`) : e.target;
-
-        if (!targetElement) {
-            return;
-        }
-
-        const dataService = targetElement.dataset && targetElement.dataset.service;
-        if (!dataService) {
-            return;
-        }
-
-        props.updateProviderHandler(dataService);
+    const startTranslationHandler = () => {
+        props.updateProviderHandler(activeProvider);
     };
 
     const errorModalHandler = (msg) => {
         setErrorModal(msg);
     };
 
-    const closeErrorModal = (e) => {
+    const closeErrorModal = () => {
         setErrorModal(false);
-        if (singleProvider) {
-            props.onDestory(e);
-        }
     };
 
+    if (errorModal) {
+        return (
+            <ErrorModalBox
+                message={errorModal}
+                onDestroy={props.onDestory}
+                onClose={closeErrorModal}
+                Title='Linguator Multilingual AI Translation'
+                prefix={prefix}
+            />
+        );
+    }
+
     return (
-        <>
-            {errorModal ? <ErrorModalBox message={errorModal} onDestroy={props.onDestory} onClose={closeErrorModal} Title='Linguator Multilingual AI Translation' prefix={prefix} /> :
-            (requireProviderClick && <div id={`${prefix}-setting-modal-container`}>
-                <div className={`${prefix}-setting-modal-content`}>
-                    <SettingModalHeader
-                        setSettingVisibility={props.onDestory}
-                        prefix={prefix}
-                        hasProviders={validProviders.length > 0}
-                    />
-                    <SettingModalBody
-                        startTranslationHandler={startTranslationHandler}
-                        imgFolder={imgFolder}
-                        prefix={prefix}
-                        localAiModalError={props.localAiModalError}
-                        edgeLocalAiModalError={props.edgeLocalAiModalError}
-                        errorModalHandler={errorModalHandler}
-                        chromeAiDownload={null}
-                        setChromeAiDownload={null}
-                        edgeAiDownload={null}
-                        setEdgeAiDownload={null}
-                        chromeAiDisabled={!!props.localAiModalError}
-                        edgeLocalAiTranslatorDisabled={!!props.edgeLocalAiModalError}
-                        checkAllProviderErrors={() => {}}
-                    />
-                    <SettingModalFooter
-                        setSettingVisibility={props.onCloseHandler}
-                        prefix={prefix}
-                    />
-                </div>
-            </div>)}
-        </>
+        <div id={`${prefix}-setting-modal-container`}>
+            <div className={`${prefix}-setting-modal-content`}>
+                <SettingModalHeader
+                    prefix={prefix}
+                    onClose={props.onDestory}
+                />
+                <SettingModalBody
+                    prefix={prefix}
+                    activeProvider={activeProvider}
+                    onSelectProvider={setActiveProvider}
+                    errorModalHandler={errorModalHandler}
+                    localAiModalError={localAiModalError}
+                    edgeLocalAiModalError={edgeLocalAiModalError}
+                    targetLanguages={props.targetLanguages}
+                    selectedLanguages={props.selectedLanguages}
+                    onLanguageChange={props.onLanguageChange}
+                    onSelectAllLanguages={props.onSelectAllLanguages}
+                    languageNotice={props.languageNotice}
+                    languagesDisabled={props.languagesDisabled}
+                    languagesDisabledReason={props.languagesDisabledReason}
+                />
+                <SettingModalFooter
+                    prefix={prefix}
+                    selectedProvider={activeProvider}
+                    selectedLanguages={props.selectedLanguages}
+                    onStartTranslation={startTranslationHandler}
+                />
+            </div>
+        </div>
     );
 };
 

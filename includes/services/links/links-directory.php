@@ -168,6 +168,49 @@ class Linguator_Links_Directory extends Linguator_Links_Permalinks {
 		foreach ( $this->get_rewrite_rules_filters_with_callbacks() as $rule => $callback ) {
 			add_filter( $rule, $callback );
 		}
+
+		$this->maybe_repair_rewrite_rules();
+	}
+
+	/**
+	 * Regenerates the stored rewrite rules when they contain no language rule.
+	 *
+	 * Language rules are only written when rewrite rules are flushed while the filters above
+	 * are active. If the rules were saved earlier (e.g. before languages were added, or from a
+	 * request where these filters were not loaded), a URL such as /es/?page_id=123 is parsed
+	 * as a post named "es" and returns a 404. That breaks every language-prefixed URL,
+	 * including the Elementor editor preview iframe of a new translation.
+	 *
+	 * Runs in admin only and performs a soft flush (no .htaccess write) only when needed.
+	 *
+	 * @return void
+	 */
+	protected function maybe_repair_rewrite_rules() {
+		if ( ! is_admin() || wp_doing_ajax() || ! get_option( 'permalink_structure' ) ) {
+			return;
+		}
+
+		$languages = $this->model->get_languages_list( array( 'fields' => 'slug' ) );
+		if ( $this->options['hide_default'] ) {
+			$languages = array_diff( $languages, array( $this->options['default_lang'] ) );
+		}
+
+		if ( empty( $languages ) ) {
+			return;
+		}
+
+		$rules = get_option( 'rewrite_rules' );
+		if ( empty( $rules ) || ! is_array( $rules ) ) {
+			return; // WordPress regenerates missing rules by itself.
+		}
+
+		foreach ( $rules as $query ) {
+			if ( is_string( $query ) && false !== strpos( $query, 'lmat_lang=' ) ) {
+				return; // Language rules are present.
+			}
+		}
+
+		flush_rewrite_rules( false );
 	}
 
 	/**

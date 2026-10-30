@@ -13,6 +13,19 @@ import { installLanguagePackFromStatus } from '../components/translate-provider/
 /** Default DOMPurify removes `target` from anchors, so “open in new tab” never works. */
 const PURIFY_ERROR_HTML = { ADD_ATTR: ['target', 'rel'] };
 
+const formatTimeTaken = (ms) => {
+    const totalSeconds = Math.max(0, Number(ms) || 0) / 1000;
+
+    if (totalSeconds < 60) {
+        return `${totalSeconds.toFixed(1)}s`;
+    }
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.round(totalSeconds % 60);
+
+    return `${minutes}m ${seconds}s`;
+};
+
 const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     const storeDispatch = useDispatch();
@@ -41,6 +54,10 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
     let progressStatus = useSelector(selectProgressStatus);
     progressStatus=progressStatus.toFixed(1);
     progressStatus=Math.min(progressStatus, 100);
+    const totalTimeTakenMs = Object.values(translatePostInfo || {}).reduce(
+        (total, info) => total + (Number(info?.duration) || 0),
+        0
+    );
 
     const destroyHandlersRef = useRef([]);
     const abortControllerRef = useRef(null);
@@ -369,8 +386,29 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             )}
         </ErrorModalBox> :
         <div id={`${prefix}-status-modal-container`}>
-            <h2 className={`${prefix}-bulk-status-heading ${bulkStatus}`}>{sprintf(__('Bulk Translation %s', 'translate-words'), getBulkStatus())}{bulkStatus === 'running' && <span className={`${prefix}-bulk-status-running`}></span>}</h2>
-            <div className={`${prefix}-status-modal-close`} onClick={onModalClose}>&times;</div>
+            <div className={`${prefix}-header`}>
+                <div className={`${prefix}-modal-header-inner`}>
+                    <span className={`${prefix}-step-label`}>
+                        {__('STEP 2 OF 2', 'translate-words')}
+                    </span>
+                    <h2 className={`${prefix}-bulk-status-heading ${bulkStatus}`}>
+                        {sprintf(__('AI Translation %s', 'translate-words'), getBulkStatus())}
+                        {bulkStatus === 'running' && <span className={`${prefix}-bulk-status-running`}></span>}
+                    </h2>
+                    {bulkStatus === 'running' && (
+                        <p className={`${prefix}-modal-desc`}>
+                            {__('Please keep this window open while your content is being translated.', 'translate-words')}
+                        </p>
+                    )}
+                    {bulkStatus === 'completed' &&
+                        countInfo.errorPosts < 1 &&
+                        !(translatePostInfo && Object.values(translatePostInfo).some((info) => info?.status === 'error')) &&
+                        countInfo.stringsTranslated > 0 && (
+                            <p className={`${prefix}-modal-desc`}>{__('Your content has been translated successfully.', 'translate-words')}</p>
+                        )}
+                </div>
+                <button type="button" aria-label={__('Close', 'translate-words')} className={`${prefix}-modal-close ${prefix}-status-modal-close`} onClick={onModalClose}>&times;</button>
+            </div>
             {(countInfo.totalPosts < 1 && countInfo.errorPosts < 1) && !isLoading ?
                     <p>{emptyPostMessage}</p> :
                     <>
@@ -392,135 +430,131 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                         </> : (countInfo.postsTranslated > 0 &&
                             <div className={`${prefix}-count-container`}>
                                 <div className={`${prefix}-post-count`}>
-                                    <span className={`${prefix}-count-text-heading`}>{__('Posts Translated:', 'translate-words')} </span>
-                                    <span className={`${prefix}-post-translated-post`}>{countInfo.postsTranslated}</span>
-                                    <span className={`${prefix}-post-text`}> {__('out of', 'translate-words')} </span>
-                                    <span className={`${prefix}-post-total`}>{countInfo.totalPosts}</span>
-                                    <span className={`${prefix}-post-total-text`}> {__('posts translated', 'translate-words')}</span>
+                                    <span className={`${prefix}-count-text-heading`}>{__('Posts', 'translate-words')} </span><br />
+                                    <span className={`${prefix}-post-translated-post`}>{countInfo.postsTranslated}/{countInfo.totalPosts}</span>
                                 </div>
                                 <div className={`${prefix}-string-count`}>
-                                    <span className={`${prefix}-count-text-heading`}>{__('Strings:', 'translate-words')} </span>
-                                    <span className={`${prefix}-string-number`}>{countInfo.stringsTranslated}</span>
+                                    <span className={`${prefix}-count-text-heading`}>{__('No. of characters', 'translate-words')} </span><br />
+                                    <span className={`${prefix}-string-number`}>{countInfo.charactersTranslated}</span>
                                 </div>
                                 <div className={`${prefix}-char-count`}>
-                                    <span className={`${prefix}-count-text-heading`}>{__('Characters:', 'translate-words')} </span>
-                                    <span className={`${prefix}-char-number`}>{countInfo.charactersTranslated}</span>
+                                    <span className={`${prefix}-count-text-heading`}>{__('Time taken', 'translate-words')} </span><br />
+                                    <span className={`${prefix}-char-number`}>{formatTimeTaken(totalTimeTakenMs)}</span>
                                 </div>
                             </div>
                         )
                         }
 
                         <div className={`${prefix}-status-table-container`}>
-                            <div>
-                                <table className={`${prefix}-status-table`}>
-                                    <thead>
-                                    <tr>
-                                        <th>{__('Language', 'translate-words')}</th>
-                                        <th>{__('Status', 'translate-words')}</th>
-                                        <th>{__('Title', 'translate-words')}</th>
-                                        <th>{__('Actions', 'translate-words')}</th>
-                                    </tr>
-                                    </thead>
+                            <div className={`${prefix}-status-inner`}>
+                                {isLoading &&
+                                    <>
+                                        <div className={`${prefix}-status-header-container`}>
+                                            <div className={`${prefix}-status-flag-th`}>
+                                                <div className={`${prefix}-progress-skeleton`} style={{ maxWidth: '80px', marginBottom: '0px' }}></div>
+                                            </div>
+                                            <div className={`${prefix}-status-status-th`}>
+                                                <div className={`${prefix}-progress-skeleton`} style={{ maxWidth: '80px', marginBottom: '0px' }}></div>
+                                            </div>
+                                            <div className={`${prefix}-status-title-th`}>
+                                                <div className={`${prefix}-progress-skeleton`} style={{ maxWidth: '80px', marginBottom: '0px' }}></div>
+                                            </div>
+                                            <div className={`${prefix}-status-actions-th`}>
+                                                <div className={`${prefix}-progress-skeleton`} style={{ maxWidth: '80px', marginBottom: '0px' }}></div>
+                                            </div>
+                                        </div>
+                                        {[0, 1].map((row) => (
+                                            <div className={`${prefix}-status-inner-item`} key={row}>
+                                                <div className={`${prefix}-status-target-post`}>
+                                                    <div className={`${prefix}-status-target-post-flag`}>
+                                                        <div className={`${prefix}-progress-skeleton`} style={{ width: '80px', marginBottom: '0px' }}></div>
+                                                    </div>
+                                                    <div className={`${prefix}-status-target-post-status`}>
+                                                        <div className={`${prefix}-progress-skeleton`} style={{ width: '80px', marginBottom: '0px' }}></div>
+                                                    </div>
+                                                    <div className={`${prefix}-status-target-post-title`} style={{ gridColumn: 'span 2' }}>
+                                                        <div className={`${prefix}-progress-skeleton`} style={{ width: '80px', marginInline: 'auto', marginBottom: '0px' }}></div>
+                                                    </div>
+                                                    <div className={`${prefix}-status-target-post-actions`}>
+                                                        <div className={`${prefix}-progress-skeleton`} style={{ width: '80px', marginBottom: '0px' }}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                }
+                                {
+                                    !isLoading && Object.keys(translatePostInfo).length > 0 &&
+                                    <div className={`${prefix}-status-header-container`}>
+                                        <div className={`${prefix}-status-flag-th`}>
+                                            <span className={`${prefix}-status-header-label`}>{__('Language', 'translate-words')}</span>
+                                        </div>
+                                        <div className={`${prefix}-status-status-th`}>
+                                            <span className={`${prefix}-status-header-label`}>{__('Status', 'translate-words')}</span>
+                                        </div>
+                                        <div className={`${prefix}-status-title-th`}>
+                                            <span className={`${prefix}-status-header-label`}>{__('Preview', 'translate-words')}</span>
+                                        </div>
+                                        <div className={`${prefix}-status-actions-th`}>
+                                            <span className={`${prefix}-status-header-label`}>{__('Actions', 'translate-words')}</span>
+                                        </div>
+                                    </div>
+                                }
+                                {!isLoading && Object.keys(errorPostsInfo).length > 0 &&
+                                    Object.keys(errorPostsInfo).map((key) => {
+                                        return (
+                                            <div className={`${prefix}-status-inner-item`} key={key}>
+                                                <div className={`${prefix}-group-title`}>
+                                                    {errorPostsInfo[key]?.title || __('Untitled', 'translate-words')}
+                                                </div>
+                                                <div className={`${prefix}-status-inner-item ${prefix}-error-message`}>
+                                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(errorPostsInfo[key].errorMessage, PURIFY_ERROR_HTML) }}></div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                }
 
-                                    <tbody>
-                                    {isLoading &&
-                                        <>
-                                            <tr>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                                <td>
-                                                    <div className={`${prefix}-progress-skeleton`}></div>
-                                                </td>
-                                            </tr>
-                                        </>
-                                    }
-                                    {!isLoading && Object.keys(errorPostsInfo).length > 0 &&
-                                        Object.keys(errorPostsInfo).map((key, index)=>{
-                                            return (
-                                                <React.Fragment key={key}>
-                                                <tr key={`group-title-${key}`} className={`${prefix}-group-title`}>
-                                                    <td colSpan="5">
-                                                        {errorPostsInfo[key]?.title || __('Untitled', 'translate-words')}
-                                                    </td>
-                                                </tr>
-                                                <tr key={key}>
-                                                    <td colSpan="4" style={{textAlign: 'center' , width: '100%'}} className={`${prefix}-error-message`} dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(errorPostsInfo[key].errorMessage, PURIFY_ERROR_HTML)}}></td>
-                                                </tr>
-                                                </React.Fragment>
-                                            );
-                                        })
-                                    }
-                                    {!isLoading && Object.keys(translatePostInfo).map((key, index)=>{
-                                        const info = translatePostInfo[key];
-                                        const rows = [];
-                                        const workingStatus=info.status === 'running' || info.status === 'in-progress' ? true : false;
-                                        const needsPack = info.status === 'needs-pack' || info.needsLanguagePack;
-                                        const packRowKey = `${info.parentPostId}_${info.targetLanguage}`;
-                                        const isInstallingPack = installingPackKey === packRowKey;
+                                {!isLoading && Object.keys(translatePostInfo).map((key) => {
+                                    const info = translatePostInfo[key];
+                                    const workingStatus = info.status === 'running' || info.status === 'in-progress' ? true : false;
+                                    const needsPack = info.status === 'needs-pack' || info.needsLanguagePack;
+                                    const packRowKey = `${info.parentPostId}_${info.targetLanguage}`;
+                                    const isInstallingPack = installingPackKey === packRowKey;
 
-                                        if (info.firstPostLanguage) {
-                                            rows.push(
-                                                <tr key={`group-title-${info.parentPostId || key}`} className={`${prefix}-group-title`}>
-                                                    <td colSpan="5">
-                                                        {info.parentPostTitle || __('Untitled', 'translate-words')}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        }
-
-                                        // Language row
-                                        rows.push(
-                                            <tr key={key} className={`${prefix}-td-${info.status}`}>
-                                                <td className={`${prefix}-status-flag`}>
-                                                    {info.flagUrl && <img src={info.flagUrl} width="20" alt={info.targetLanguage}/>}
+                                    return (
+                                        <div className={`${prefix}-status-inner-item ${prefix}-td-${info.status}`} key={`group-title-${info.parentPostId || key}-${key}`}>
+                                            {info.firstPostLanguage &&
+                                                <div className={`${prefix}-status-parent-post-title`}>{info.parentPostTitle || __('Untitled', 'translate-words')}</div>
+                                            }
+                                            <div className={`${prefix}-status-target-post`}>
+                                                <div className={`${prefix}-status-target-post-flag`}>
+                                                    {info.flagUrl && <img className="lmat-flag" src={info.flagUrl} width="20" height="14" alt={info.targetLanguage} />}
                                                     {info.languageName || info.targetLanguage}
-                                                </td>
+                                                </div>
                                                 {info.status === 'error' ?
-                                                <>
-                                                    {info.errorHtml ? (
-                                                        <td colSpan="3" className={`${prefix}-status-error-actions`}>
-                                                            <button
-                                                                type="button"
-                                                                className={`${prefix}-status-error-button`}
-                                                                onClick={() => { handleErrorModal(info); }}
-                                                            >
-                                                                {__('Error Details', 'translate-words')}
-                                                            </button>
-                                                        </td>
-                                                    ) : (
-                                                        <td colSpan="3">
-                                                            {info.errorAllowHtml ? (
-                                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(info.errorMessage, PURIFY_ERROR_HTML) }} />
-                                                            ) : (
-                                                                info.errorMessage
-                                                            )}
-                                                        </td>
-                                                    )}
-                                                </> :
-                                                needsPack ? (
-                                                <>
-                                                    <td colSpan="3" className={`${prefix}-status-pack-actions`}>
+                                                    <>
+                                                        {info.errorHtml ?
+                                                            <div className={`${prefix}-status-target-post-error-button`} style={{ gridColumn: 'span 4' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className={`${prefix}-status-error-button`}
+                                                                    onClick={() => { handleErrorModal(info); }}
+                                                                >
+                                                                    {__('Error Details', 'translate-words')}
+                                                                </button>
+                                                            </div> :
+                                                            <div className={`${prefix}-status-target-post-error ${prefix}-error-message`} style={{ gridColumn: 'span 4' }}>
+                                                                {info.errorAllowHtml ? (
+                                                                    <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(info.errorMessage, PURIFY_ERROR_HTML) }} />
+                                                                ) : (
+                                                                    info.errorMessage
+                                                                )}
+                                                            </div>
+                                                        }
+                                                    </> :
+                                                    needsPack ?
+                                                    <div className={`${prefix}-status-pack-actions`} style={{ gridColumn: 'span 4' }}>
                                                         <button
                                                             type="button"
                                                             className={`${prefix}-status-install-pack-button${isInstallingPack ? ` ${prefix}-status-install-pack-button-loading` : ''}`}
@@ -531,17 +565,16 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                 ? __('Loading…', 'translate-words')
                                                                 : __('Install language pack', 'translate-words')}
                                                         </button>
-                                                    </td>
-                                                </>
-                                                ) :
-                                                <>
-                                                    <td>
-                                                        <span className={`${prefix}-status ${info.messageClass} ${info.status}`}>
-                                                            {info.status === 'pending' && __('Pending', 'translate-words')}
-                                                            {info.status === 'completed' && __('Completed', 'translate-words')}
-                                                            {workingStatus && info.errorMessage && (
-                                                                <span className={`${prefix}-language-loading`}>{info.errorMessage}</span>
-                                                            )}
+                                                    </div> :
+                                                    <>
+                                                        <div className={`${prefix}-status-target-post-status`}>
+                                                            <span className={`${prefix}-status ${info.messageClass} ${info.status}`}>
+                                                                {info.status === 'pending' && __('Pending', 'translate-words')}
+                                                                {info.status === 'completed' && __('Completed', 'translate-words')}
+                                                                {workingStatus && info.errorMessage && (
+                                                                    <span className={`${prefix}-language-loading`}>{info.errorMessage}</span>
+                                                                )}
+                                                            </span>
                                                             {workingStatus && !info.errorMessage && <div className={`${prefix}-progress-bar-circular`} data-id={info.parentPostId + '_' + info.targetLanguage}>
                                                                 <svg className={`${prefix}-circle`} viewBox="0 0 36 36">
                                                                     <path className={`${prefix}-bg`} d="M18 2.0845
@@ -555,56 +588,49 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
                                                                 </svg>
                                                                 <div className={`${prefix}-percentage`}>0%</div>
                                                             </div>}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <>
-                                                        {info.status === 'completed' ?
-                                                            <a href={info.postLink} target="_blank" rel="noopener noreferrer">{info.targetPostTitle}</a> :
-                                                            (info.status === 'in-progress' ?
-                                                            <div className={`${prefix}-${info.messageClass}-text`}>{__('In Progress', 'translate-words')}<span></span></div> :
-                                                            <div className={`${prefix}-progress-skeleton short`}></div>)
-                                                        }
-                                                        </>
-                                                    </td>
-                                                    <td>
-                                                        {info.status === 'completed' && info.targetPostId ?
-                                                            <span className={`${prefix}-view-link`}>
-                                                                {allPostStatus(info.parentPostId) ? (
-                                                                    <a
-                                                                        href={info.elementorEditLink || info.postEditLink}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="button button-primary"
-                                                                        title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
-                                                                    >
-                                                                        {__('Review', 'translate-words')}
-                                                                    </a>
-                                                                ) : (
-                                                                    <button
-                                                                        className="button disabled"
-                                                                        disabled
-                                                                        title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
-                                                                    >
-                                                                        {__('Review', 'translate-words')}
-                                                                    </button>
-                                                                )}
-                                                            </span>
-                                                        : 
-                                                        (info.status === 'in-progress' ?
-                                                            <div className={`${prefix}-${info.messageClass}-text`}>{__('In Progress', 'translate-words')}<span></span></div> :
-                                                            <div className={`${prefix}-progress-skeleton short`}></div>)
-                                                        }
-                                                    </td>
-                                                </>
-                                                }
-                                            </tr>
-                                        );
-
-                                        return rows;
-                                    })}
-                                    </tbody>
-                                </table>
+                                                        </div>
+                                                        <div className={`${prefix}-status-target-post-title`} style={{ gridColumn: 'span 2' }}>
+                                                            {info.status === 'completed' ?
+                                                                <a href={info.postLink} target="_blank" rel="noopener noreferrer">{info.targetPostTitle}</a> :
+                                                                (info.status === 'in-progress' ?
+                                                                    <div className={`${prefix}-${info.messageClass}-text`}>{__('In Progress', 'translate-words')}<span></span></div> :
+                                                                    <div className={`${prefix}-progress-skeleton short`} style={{ marginInline: 'auto' }}></div>)
+                                                            }
+                                                        </div>
+                                                        <div className={`${prefix}-status-target-post-actions`}>
+                                                            {info.status === 'completed' && info.targetPostId ?
+                                                                <span className={`${prefix}-view-link`}>
+                                                                    {allPostStatus(info.parentPostId) ? (
+                                                                        <a
+                                                                            href={info.elementorEditLink || info.postEditLink}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className={`${prefix}-review-btn button button-primary`}
+                                                                            title={sprintf(__('Open the translated %s for review', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
+                                                                        >
+                                                                            {__('Review', 'translate-words')}
+                                                                        </a>
+                                                                    ) : (
+                                                                        <button
+                                                                            className={`${prefix}-review-btn button disabled`}
+                                                                            disabled
+                                                                            title={sprintf(__('Please wait until all translations for this %s are complete before reviewing.', 'translate-words'), lmatBulkTranslationGlobal.post_label_singular || lmatBulkTranslationGlobal.post_label)}
+                                                                        >
+                                                                            {__('Review', 'translate-words')}
+                                                                        </button>
+                                                                    )}
+                                                                </span>
+                                                                :
+                                                                (info.status === 'in-progress' ?
+                                                                    <div className={`${prefix}-${info.messageClass}-text`}>{__('In Progress', 'translate-words')}<span></span></div> :
+                                                                    <div className={`${prefix}-progress-skeleton short`}></div>)
+                                                            }
+                                                        </div>
+                                                    </>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         {(countInfo.postsTranslated > 0 && !pendingPosts.length && !progressBarVisibility) &&
