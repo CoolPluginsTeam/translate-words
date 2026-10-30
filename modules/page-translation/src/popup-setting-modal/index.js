@@ -133,9 +133,19 @@ const SettingModal = (props) => {
             metaFieldBtn.removeEventListener('click', handleMetaFieldBtnClick);
             metaFieldBtn.addEventListener('click', handleMetaFieldBtnClick);
 
-            // Clear the one-shot translate intent once listeners exist. The provider
-            // modal opens from the "Translate Now" popup click, not automatically.
-            consumeElementorConfirmIntent();
+        }
+
+        // Elementor: user already confirmed "Translate Now" on the edit screen,
+        // so open the provider modal directly (no second notice).
+        if (consumeElementorConfirmIntent()) {
+            (async () => {
+                if (validProviders.length < 1) {
+                    showNoCompatibleProviderModal();
+                    return;
+                }
+                await providerErrors();
+                setSettingVisibility(true);
+            })();
         }
 
         firstRenderBtns.forEach(ele => {

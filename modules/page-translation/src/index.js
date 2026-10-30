@@ -366,13 +366,8 @@ const mountElementorTranslateApp = () => {
   window.lmatElementorTranslateAppMounted = true;
   init();
 
-  // Show the "Translate Now" welcome popup first when the user arrived here
-  // intending to translate; the strings modal opens only after they click it.
-  const sourceLang = window.lmatPageTranslationGlobal.source_lang;
-  const providers = window.lmatPageTranslationGlobal.providers || [];
-  if (sourceLang && "" !== sourceLang && providers.length > 0 && hasElementorConfirmIntent()) {
-    insertMessagePopup();
-  }
+  // The WP-admin confirm modal already asked "Translate Now"; SettingModal
+  // consumes the localStorage intent and opens the provider modal directly.
   const root = ReactDOM.createRoot(
     document.getElementById("lmat-page-translation-setting-modal")
   );

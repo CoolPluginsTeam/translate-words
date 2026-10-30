@@ -570,6 +570,7 @@ class Linguator_Page_Translation {
 				'sourceLangName' => $source_lang_name->name,
 				'targetLangName' => $target_lang_name->name,
 				'editorType'     => $editor_type,
+				'magic_wand_url' => esc_url( plugins_url( 'admin/assets/images/magic-wand.svg', LINGUATOR_ROOT_FILE ) ),
 			)
 		);
 
