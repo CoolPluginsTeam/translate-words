@@ -340,23 +340,6 @@ const hasElementorTranslateData = () => {
 };
 
 /**
- * Whether a pending translate intent exists for this Elementor post/language.
- * Read-only: the setting modal clears the flag once its listeners are attached.
- */
-const hasElementorConfirmIntent = () => {
-  const postId = window.lmatPageTranslationGlobal?.current_post_id;
-  const targetLang = window.lmatPageTranslationGlobal?.target_lang;
-  if (!postId || !targetLang) {
-    return false;
-  }
-  try {
-    const confirmBox = JSON.parse(localStorage.getItem("lmatElementorConfirmBox") || "{}");
-    return !!(confirmBox && confirmBox[postId + "_" + targetLang]);
-  } catch (e) {
-    return false;
-  }
-};
-/**
  * Mount the page-translation React app once for Elementor.
  */
 const mountElementorTranslateApp = () => {
