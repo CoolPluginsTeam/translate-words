@@ -431,4 +431,87 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
 
 ApiKey.displayName = 'ApiKey'
 
+const CHATGPT_DEFAULT_MODEL = 'gpt-5.6-luna'
+
+/**
+ * ChatGPT connection card. ChatGPT signs in through the "AI Provider for ChatGPT"
+ * plugin (Settings > ChatGPT), so there is no API key here: only the connection
+ * status from `api_keys_configuration.connections.chatgpt` and a model picker that
+ * saves `models.chatgpt_model` through the parent "Save Settings" request.
+ */
+export const ChatGptConnection = forwardRef(function ChatGptConnection({ data, onPendingChange }, ref) {
+  const config = data?.api_keys_configuration || {}
+  const status = config?.connections?.chatgpt || {}
+  const connected = Boolean(status.connected)
+  const settingsUrl = status.settings_url || 'options-general.php?page=ai-provider-for-chatgpt'
+  const savedModel = (config?.models?.chatgpt_model || CHATGPT_DEFAULT_MODEL).toString()
+  const [model, setModel] = useState(savedModel)
+  const initialModelRef = useRef(savedModel)
+
+  useEffect(() => {
+    setModel(savedModel)
+    initialModelRef.current = savedModel
+  }, [savedModel])
+
+  const isDirty = model !== initialModelRef.current
+
+  useEffect(() => {
+    if (onPendingChange) onPendingChange(isDirty)
+  }, [isDirty, onPendingChange])
+
+  useImperativeHandle(ref, () => ({
+    isConnected: () => connected,
+    getPendingPayload: () => (isDirty ? { models: { chatgpt_model: model } } : null),
+    syncAfterParentSave: () => {
+      initialModelRef.current = model
+      if (onPendingChange) onPendingChange(false)
+    },
+  }), [connected, isDirty, model, onPendingChange])
+
+  const listRaw = config?.available_models?.chatgpt
+  const listFromApi = Array.isArray(listRaw) ? listRaw : (listRaw && typeof listRaw === 'object' ? Object.keys(listRaw) : [])
+  const modelList = [...listFromApi, ...(model && !listFromApi.includes(model) ? [model] : [])]
+
+  return (
+    <div className="lmat-api-key-row is-embedded">
+      <div className="lmat-api-key-field">
+        <h3 className="m-0 text-base font-semibold mb-3 pt-3">
+          {__('ChatGPT connection', 'translate-words')}
+        </h3>
+        {connected ? (
+          <p className="m-0 text-sm text-gray-700">
+            {__('Connected to your ChatGPT account.', 'translate-words')}{' '}
+            <a href={settingsUrl}>{__('Manage in Settings → ChatGPT', 'translate-words')}</a>
+          </p>
+        ) : (
+          <p className="m-0 text-sm text-gray-700">
+            {__('ChatGPT is not connected. Sign in with your ChatGPT account first:', 'translate-words')}{' '}
+            <a href={settingsUrl}>{__('Settings → ChatGPT', 'translate-words')}</a>
+          </p>
+        )}
+      </div>
+
+      {connected ? (
+        <div className="lmat-api-key-model pt-3">
+          <h3 className="m-0 text-base font-semibold mb-3">
+            {__('Select ChatGPT Model', 'translate-words')}
+          </h3>
+          <select
+            className="lmat-api-key-model-select w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            aria-label={__('Select ChatGPT Model', 'translate-words')}
+          >
+            {modelList.map((id) => (
+              <option key={id} value={id}>{id}</option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+    </div>
+  )
+})
+
+ChatGptConnection.displayName = 'ChatGptConnection'
+
 export default ApiKey

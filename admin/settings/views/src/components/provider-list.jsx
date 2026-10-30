@@ -4,6 +4,7 @@ import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
+import { Bot } from 'lucide-react';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
 
@@ -216,6 +217,10 @@ const ProviderRow = ({
  * @param {boolean} props.geminiConfigured Whether a Gemini API key is saved.
  * @param {Function} props.onDefaultChange Receives the provider key picked as default.
  * @param {*} props.geminiExtra            Content rendered under the Gemini row (API key form).
+ * @param {boolean} props.chatgptAvailable Whether the ChatGPT provider is registered with the WordPress AI client.
+ * @param {boolean} props.chatgptConnected Whether a ChatGPT account is signed in.
+ * @param {string} props.chatgptSettingsUrl Admin URL of Settings > ChatGPT.
+ * @param {*} props.chatgptExtra           Content rendered under the ChatGPT row (connection card).
  */
 const ProviderList = ({
     browserType,
@@ -225,6 +230,10 @@ const ProviderList = ({
     geminiConfigured,
     onDefaultChange,
     geminiExtra,
+    chatgptAvailable = false,
+    chatgptConnected = false,
+    chatgptSettingsUrl = '',
+    chatgptExtra = null,
 }) => {
     const chromeStatus = useBuiltInAiStatus('chrome', browserType);
     const edgeStatus = useBuiltInAiStatus('edge', browserType);
@@ -353,6 +362,28 @@ const ProviderList = ({
                             }
                         }}
                         extra={providers.gemini.enabled ? geminiExtra : null}
+                    />
+                )}
+
+                {chatgptAvailable && providers.chatgpt && (
+                    <ProviderRow
+                        icon={<Bot className="icon-size" />}
+                        name={__('ChatGPT', 'translate-words')}
+                        docsUrl={chatgptSettingsUrl || 'options-general.php?page=ai-provider-for-chatgpt'}
+                        enabled={Boolean(providers.chatgpt.enabled)}
+                        onToggle={toggle('chatgpt')}
+                        isDefault={'chatgpt' === defaultProvider}
+                        onDefault={() => onDefaultChange('chatgpt')}
+                        status={chatgptConnected ? 'ready' : 'missing-key'}
+                        statusLabel={chatgptConnected ? __('Connected', 'translate-words') : __('Not Connected', 'translate-words')}
+                        defaultDisabledReason={chatgptConnected ? '' : __('Connect your ChatGPT account before setting this provider as default.', 'translate-words')}
+                        actionLabel={chatgptConnected ? '' : __('Connect', 'translate-words')}
+                        onAction={() => {
+                            if (!providers.chatgpt.enabled) {
+                                providers.chatgpt.setEnabled(true);
+                            }
+                        }}
+                        extra={providers.chatgpt.enabled ? chatgptExtra : null}
                     />
                 )}
             </ul>

@@ -6,7 +6,7 @@ import { __, sprintf } from '@wordpress/i18n'
 import apiFetch from "@wordpress/api-fetch"
 import { getNonce } from '../utils'
 import { toast } from 'sonner'
-import ApiKey from './api-key';
+import ApiKey, { ChatGptConnection } from './api-key';
 import ProviderList from './provider-list.jsx';
 
 const TranslationConfig = ({ data, setData }) => {
@@ -38,23 +38,35 @@ const TranslationConfig = ({ data, setData }) => {
         ? window.lmat_settings.allowed_providers
         : ['chrome_local_ai', 'google'];
     const wpAiClientAvailable = allowedProviders.includes('gemini');
+    const chatgptAvailable = allowedProviders.includes('chatgpt');
+    const chatgptStatus = data?.api_keys_configuration?.connections?.chatgpt || {}
+    const chatgptConnected = Boolean(chatgptStatus.connected)
     const [googleMachineTranslation, setGoogleMachineTranslation] = useState(provider?.google)
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
     const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
+    const [chatgptTranslation, setChatgptTranslation] = useState(Boolean(provider?.chatgpt) && chatgptAvailable)
     // Provider the translation popups pre-select. Older installs have no saved value, which means Google.
     // A default that is switched off cannot be pre-selected, so it counts as no default.
     const savedDefaultSetting = aiTranslation?.default_provider ?? 'google'
     const savedDefaultProvider = (savedDefaultSetting && provider?.[savedDefaultSetting]) ? savedDefaultSetting : ''
     const [defaultProvider, setDefaultProvider] = useState(savedDefaultProvider)
     const geminiConfigured = Boolean(data?.api_keys_configuration?.keys?.gemini)
-    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, defaultProvider })
+    const [lastUpdatedValue, setLastUpdatedValue] = useState({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, chatgptTranslation, defaultProvider })
     const [bulkTranslationPostStatus, setBulkTranslationPostStatus] = useState(aiTranslation?.bulk_translation_post_status || 'draft')
     const [slugTranslationOption, setSlugTranslationOption] = useState(aiTranslation?.slug_translation_option || 'title_translate')
     const [handleButtonDisabled, setHandleButtonDisabled] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [apiKeyDirty, setApiKeyDirty] = useState(false)
     const geminiApiKeyRef = useRef(null)
+    const [chatgptDirty, setChatgptDirty] = useState(false)
+    const chatgptRef = useRef(null)
+
+    useEffect(() => {
+        if (!chatgptTranslation) {
+            setChatgptDirty(false)
+        }
+    }, [chatgptTranslation])
 
     useEffect(() => {
         if (!geminiTranslation) {
@@ -67,6 +79,7 @@ const TranslationConfig = ({ data, setData }) => {
             chromeLocalAITranslation !== provider?.chrome_local_ai ||
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            chatgptTranslation !== (Boolean(provider?.chatgpt) && chatgptAvailable) ||
             defaultProvider !== savedDefaultProvider ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
@@ -74,14 +87,16 @@ const TranslationConfig = ({ data, setData }) => {
 
     useEffect(() => {
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
-        setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+        const chatgptSectionOpen = chatgptAvailable && chatgptTranslation
+        setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty) && !(chatgptSectionOpen && chatgptDirty))
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, chatgptTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, chatgptAvailable, apiKeyDirty, chatgptDirty])
 
     const providerStates = {
         google: [googleMachineTranslation, setGoogleMachineTranslation],
         chrome_local_ai: [chromeLocalAITranslation, setChromeLocalAITranslation],
         edge_local_ai: [edgeLocalAITranslation, setEdgeLocalAITranslation],
         gemini: [geminiTranslation, setGeminiTranslation],
+        chatgpt: [chatgptTranslation, setChatgptTranslation],
     }
 
     // The default provider has to stay enabled, so picking one switches it on.
@@ -110,6 +125,15 @@ const TranslationConfig = ({ data, setData }) => {
                 }
             }
 
+            // ChatGPT has no key: it must be signed in under Settings > ChatGPT.
+            if (chatgptAvailable && chatgptTranslation && !chatgptConnected) {
+                throw new Error(__('Please connect your ChatGPT account under Settings > ChatGPT to continue.', 'translate-words'))
+            }
+            const chatgptPayload =
+                chatgptAvailable && chatgptTranslation && chatgptRef.current?.getPendingPayload
+                    ? chatgptRef.current.getPendingPayload()
+                    : null;
+
             apiBody = {
                 ai_translation_configuration: {
                     provider: {
@@ -118,6 +142,9 @@ const TranslationConfig = ({ data, setData }) => {
                         edge_local_ai: edgeLocalAITranslation,
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
+                        } : {}),
+                        ...(chatgptAvailable ? {
+                            chatgpt: chatgptTranslation,
                         } : {}),
                     },
                     default_provider: defaultProvider,
@@ -131,13 +158,17 @@ const TranslationConfig = ({ data, setData }) => {
             if (apiKeyPayload?.models) {
                 apiBody.models = apiKeyPayload.models
             }
+            if (chatgptPayload?.models) {
+                apiBody.models = { ...(apiBody.models || {}), ...chatgptPayload.models }
+            }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, chatgptTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
                 lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
                 (wpAiClientAvailable && lastUpdatedValue.geminiTranslation !== geminiTranslation) ||
+                (chatgptAvailable && lastUpdatedValue.chatgptTranslation !== chatgptTranslation) ||
                 lastUpdatedValue.defaultProvider !== defaultProvider ||
                 lastUpdatedValue.bulkTranslationPostStatus !== bulkTranslationPostStatus ||
                 lastUpdatedValue.slugTranslationOption !== slugTranslationOption
@@ -165,6 +196,10 @@ const TranslationConfig = ({ data, setData }) => {
                             models: apiBody.models,
                         }, settingsResponse)
                         setApiKeyDirty(false)
+                    }
+                    if (chatgptPayload && chatgptRef.current?.syncAfterParentSave) {
+                        chatgptRef.current.syncAfterParentSave()
+                        setChatgptDirty(false)
                     }
                     return settingsResponse
                 })
@@ -264,7 +299,20 @@ const TranslationConfig = ({ data, setData }) => {
                         chrome_local_ai: { enabled: chromeLocalAITranslation, setEnabled: setChromeLocalAITranslation },
                         edge_local_ai: { enabled: edgeLocalAITranslation, setEnabled: setEdgeLocalAITranslation },
                         gemini: { enabled: geminiTranslation, setEnabled: setGeminiTranslation },
+                        chatgpt: { enabled: chatgptTranslation, setEnabled: setChatgptTranslation },
                     }}
+                    chatgptAvailable={chatgptAvailable}
+                    chatgptConnected={chatgptConnected}
+                    chatgptSettingsUrl={chatgptStatus.settings_url || ''}
+                    chatgptExtra={(
+                        <div className="pt-0">
+                            <ChatGptConnection
+                                ref={chatgptRef}
+                                data={data}
+                                onPendingChange={setChatgptDirty}
+                            />
+                        </div>
+                    )}
                     geminiAvailable={wpAiClientAvailable}
                     geminiConfigured={geminiConfigured}
                     onDefaultChange={handleDefaultProviderChange}

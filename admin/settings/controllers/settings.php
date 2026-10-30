@@ -654,6 +654,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'edge_local_ai'        => 'Edge AI',
 					'google'               => 'Google',
 					'gemini'               => 'Gemini AI',
+					'chatgpt'              => 'ChatGPT',
 					'localAiTranslator'    => 'Chrome AI',
 					'edgeLocalAiTranslator' => 'Edge AI',
 				);
