@@ -4,6 +4,47 @@ import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import translatedMetaFields from '../meta-fields/index.js';
 import saveMediaTranslations from '../../helper/save-media-translations.js';
 
+// Main text prop per Elementor atomic widget. Elementor omits props that are still at
+// their schema default from saved settings, so these need the default as source.
+const atomicMainTextProps = { 'e-heading': 'title', 'e-paragraph': 'paragraph', 'e-button': 'text' };
+
+// Default shape: { $$type: 'escaped-html', value: 'This is a title' }
+const getAtomicPropDefault = (widgetType, prop) => {
+    const defaultValue = window.elementor?.widgetsCache?.[widgetType]?.atomic_props_schema?.[prop]?.default;
+    if(defaultValue && typeof defaultValue === 'object' && Object.hasOwn(defaultValue, '$$type') && typeof defaultValue.value === 'string'){
+        return defaultValue;
+    }
+    return null;
+}
+
+// Ensure an atomic widget's main text prop exists in raw _elementor_data before replacement.
+// Elementor saves settings as [] (or omits the prop) when it is still at schema default.
+const ensureAtomicDefaultProp = (elementorData, keyArray, sourceString) => {
+    const settingsIndex = keyArray.lastIndexOf('settings');
+    if(settingsIndex < 1 || keyArray.length !== settingsIndex + 3 || keyArray[settingsIndex + 2] !== 'value'){
+        return;
+    }
+
+    let widget = elementorData;
+    for(let i = 0; i < settingsIndex; i++){
+        widget = widget ? widget[keyArray[i]] : null;
+    }
+
+    const prop = keyArray[settingsIndex + 1];
+    if(!widget || atomicMainTextProps[widget.widgetType] !== prop){
+        return;
+    }
+
+    if(!widget.settings || typeof widget.settings !== 'object' || (Array.isArray(widget.settings) && widget.settings.length === 0)){
+        widget.settings = {};
+    }
+
+    if(!Array.isArray(widget.settings) && (widget.settings[prop] === undefined || widget.settings[prop] === null)){
+        const defaultValue = getAtomicPropDefault(widget.widgetType, prop);
+        widget.settings[prop] = { $$type: defaultValue?.$$type || 'escaped-html', value: sourceString };
+    }
+}
+
 // Update widget content with translations
 const lmatUpdateWidgetContent = (translations) => {
 
@@ -37,6 +78,12 @@ const lmatUpdateWidgetContent = (translations) => {
                             model?.renderRemoteServer();
                             return;
                         }
+                    } else if(settingKey.length === 2 && settingKey[1] === 'value' && atomicMainTextProps[model.get('widgetType')] === settingKey[0] && typeof translation.translatedContent === 'string'){
+                        // Main text prop still at schema default: not present on the model yet.
+                        const defaultValue = getAtomicPropDefault(model.get('widgetType'), settingKey[0]);
+                        settings.set(settingKey[0], { $$type: defaultValue?.$$type || 'escaped-html', value: translation.translatedContent });
+                        model?.renderRemoteServer();
+                        return;
                     }
                 }
             }
@@ -258,7 +305,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                     isAtomic: true
                 });
             }
-        } else if(element?.$$type === 'string'){
+        } else if((element?.$$type === 'string' || element?.$$type === 'escaped-html') && typeof element.value === 'string'){ // escaped-html: Elementor 4.3+ e-heading/e-paragraph
             if(element.value && '' !== element.value){
                 const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
                 const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
@@ -353,6 +400,15 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
             });
         }
 
+        // Atomic widget main text prop missing from settings (still at Elementor schema default).
+        const atomicProp = atomicMainTextProps[element.widgetType];
+        if(atomicProp && (!settings || typeof settings !== 'object' || Array.isArray(settings) || settings[atomicProp] === undefined || settings[atomicProp] === null)){
+            const defaultValue = getAtomicPropDefault(element.widgetType, atomicProp);
+            if(defaultValue){
+                storeAtomicWidgetStrings(defaultValue, [...ids, 'settings', atomicProp], widgetId);
+            }
+        }
+
         // If there are nested elements, process them recursively
         const isComponentDoc = window.lmatPageTranslationGlobal?.post_type === 'elementor_component';
         if ((isComponentDoc || element.widgetType !== 'e-component') && element.elements && Array.isArray(element.elements)) {
@@ -393,6 +449,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
             }
             
             const keyArray = ids.split('_lmat_page_translation_');
+            ensureAtomicDefaultProp(elementorData, keyArray, sourceString);
             
             const translateValue = translatedContent[service];
             let parentElement = null;

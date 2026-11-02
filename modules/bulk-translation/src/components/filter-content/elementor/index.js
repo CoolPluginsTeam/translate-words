@@ -6,6 +6,19 @@ import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
 import updateGlossaryString from '../update-glossary-string/index.js';
 import {store} from '../../../redux-store/store.js';
 
+// Main text prop per Elementor atomic widget. Elementor omits props that are still at
+// their schema default from saved settings, so these need the default as source.
+export const atomicMainTextProps = { 'e-heading': 'title', 'e-paragraph': 'paragraph', 'e-button': 'text' };
+
+// Default shape: { $$type: 'escaped-html', value: 'This is a title' }
+export const getAtomicPropDefault = (widgetType, prop) => {
+    const defaultValue = window.lmatBulkTranslationGlobal?.atomicWidgetDefaults?.[widgetType]?.[prop] || window.elementor?.widgetsCache?.[widgetType]?.atomic_props_schema?.[prop]?.default;
+    if(defaultValue && typeof defaultValue === 'object' && Object.hasOwn(defaultValue, '$$type') && typeof defaultValue.value === 'string'){
+        return defaultValue;
+    }
+    return null;
+}
+
 const FilterElementorContent = async({content, service, postId, storeDispatch, filterHtmlContent, sourceLanguage}) => {
     const translateContentObject={};
     const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
@@ -85,7 +98,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
             if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
                 await translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
             }
-        } else if(element?.$$type === 'string'){
+        } else if((element?.$$type === 'string' || element?.$$type === 'escaped-html') && typeof element.value === 'string'){ // escaped-html: Elementor 4.3+ e-heading/e-paragraph
             if(element.value && '' !== element.value){
                 await translateContent([...ids, 'value'], element.value);
             }
@@ -157,6 +170,15 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
             }
     
             await loopCallback(keysLoop, Object.keys(settings), 0);
+        }
+
+        // Atomic widget main text prop missing from settings (still at Elementor schema default).
+        const atomicProp = atomicMainTextProps[element.widgetType];
+        if(atomicProp && (!settings || typeof settings !== 'object' || Array.isArray(settings) || settings[atomicProp] === undefined || settings[atomicProp] === null)){
+            const defaultValue = getAtomicPropDefault(element.widgetType, atomicProp);
+            if(defaultValue){
+                await storeAtomicWidgetStrings(defaultValue, [...ids, 'settings', atomicProp]);
+            }
         }
 
         // If there are nested elements, process them recursively
