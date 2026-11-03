@@ -473,8 +473,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 *
 		 * @param string $provider       Provider slug (gemini|chatgpt).
 		 * @param string $model_override Optional model override.
-	 * @return string|\WP_Error Model id, or lmat_ai_invalid_model for a ChatGPT id off the allowlist.
-		 * @return string
+		 * @return string|\WP_Error Model id, or lmat_ai_invalid_model for a ChatGPT id off the allowlist.
 		 */
 		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ) {
 			$models = array();
@@ -720,6 +719,26 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
+		 * Whether a WP AI Client prompt builder supports a method, directly or via __call() proxy.
+		 *
+		 * @param object $builder Prompt builder.
+		 * @param string $snake   snake_case method name.
+		 * @param string $camel   camelCase PHP AI Client method name.
+		 * @return bool
+		 */
+		private function ai_builder_supports( $builder, string $snake, string $camel ): bool {
+			if ( ! is_object( $builder ) ) {
+				return false;
+			}
+			if ( method_exists( $builder, $snake ) || method_exists( $builder, $camel ) ) {
+				return true;
+			}
+			return method_exists( $builder, '__call' )
+				&& class_exists( '\WordPress\AiClient\Builders\PromptBuilder' )
+				&& method_exists( '\WordPress\AiClient\Builders\PromptBuilder', $camel );
+		}
+
+		/**
 		 * Call the WP AI Client provider to generate translation text.
 		 *
 		 * @param object $registry    AI client registry.
@@ -768,10 +787,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 				$builder = wp_ai_client_prompt();
 
-				$canUseProviderChain = method_exists( $builder, 'using_provider' )
-					&& method_exists( $builder, 'with_text' )
-					&& method_exists( $builder, 'generate_text' )
-					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
+				// Core WP_AI_Client_Prompt_Builder proxies snake_case calls via __call(), so method_exists()
+				// on the builder is false; check the underlying PHP AI Client PromptBuilder instead.
+				$canUseProviderChain = $this->ai_builder_supports( $builder, 'using_provider', 'usingProvider' )
+					&& $this->ai_builder_supports( $builder, 'with_text', 'withText' )
+					&& $this->ai_builder_supports( $builder, 'generate_text', 'generateText' )
+					&& ( '' === $model_id || $this->ai_builder_supports( $builder, 'using_model', 'usingModel' ) );
 
 				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
