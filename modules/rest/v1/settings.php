@@ -541,7 +541,7 @@ class Settings extends Abstract_Controller {
 		$this->ai_gemini_model_refresh_needed = false;
 
 		// ChatGPT signs in through the "AI Provider for ChatGPT" plugin: report its connection status instead of a key.
-		$chatgpt_status                = $this->get_chatgpt_connection_status();
+		$chatgpt_status                = linguator_get_chatgpt_connection_status();
 		$available_models['chatgpt']   = $chatgpt_status['connected'] ? $this->get_chatgpt_models() : array();
 		if ( ! isset( $models['chatgpt_model'] ) || '' === (string) $models['chatgpt_model'] ) {
 			$models['chatgpt_model'] = 'gpt-5.6-luna';
@@ -559,36 +559,6 @@ class Settings extends Abstract_Controller {
 		);
 		
 		return $response;
-	}
-
-	/**
-	 * ChatGPT provider status from the WP AI Client and the "AI Provider for ChatGPT" plugin.
-	 *
-	 * @return array{registered: bool, connected: bool, settings_url: string}
-	 */
-	private function get_chatgpt_connection_status(): array {
-		$registered = function_exists( 'linguator_is_chatgpt_provider_registered' ) && linguator_is_chatgpt_provider_registered();
-		$connected  = false;
-
-		if ( $registered ) {
-			$token_store = '\Halawa\ChatGptAiProvider\Authentication\TokenStore';
-			try {
-				if ( class_exists( $token_store ) && method_exists( $token_store, 'is_connected' ) ) {
-					$connected = (bool) ( new $token_store() )->is_connected();
-				} else {
-					$registry  = \WordPress\AiClient\AiClient::defaultRegistry();
-					$connected = $registry && method_exists( $registry, 'isProviderConfigured' ) && $registry->isProviderConfigured( 'chatgpt' );
-				}
-			} catch ( \Throwable $e ) {
-				$connected = false;
-			}
-		}
-
-		return array(
-			'registered'   => $registered,
-			'connected'    => $connected,
-			'settings_url' => admin_url( 'options-general.php?page=ai-provider-for-chatgpt' ),
-		);
 	}
 
 	/**

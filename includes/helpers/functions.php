@@ -602,3 +602,40 @@ function linguator_register_style( string $name, array $dependencies = array(), 
 
 	wp_register_style( $prefix . $name, $src, $dependencies, (string) $version );
 }
+
+/**
+ * Returns the ChatGPT provider connection status ("AI Provider for ChatGPT" plugin + WP AI Client).
+ *
+ * Prefers the provider plugin's TokenStore::is_connected(), falling back to
+ * the AI Client registry's isProviderConfigured( 'chatgpt' ).
+ *
+ * @param bool|null $registered Whether the provider is registered/enabled. Null to detect via
+ *                              linguator_is_chatgpt_provider_registered().
+ * @return array{registered: bool, connected: bool, settings_url: string}
+ */
+function linguator_get_chatgpt_connection_status( ?bool $registered = null ): array {
+	if ( null === $registered ) {
+		$registered = function_exists( 'linguator_is_chatgpt_provider_registered' ) && linguator_is_chatgpt_provider_registered();
+	}
+	$connected = false;
+
+	if ( $registered ) {
+		$token_store = '\Halawa\ChatGptAiProvider\Authentication\TokenStore';
+		try {
+			if ( class_exists( $token_store ) && method_exists( $token_store, 'is_connected' ) ) {
+				$connected = (bool) ( new $token_store() )->is_connected();
+			} elseif ( class_exists( '\WordPress\AiClient\AiClient' ) ) {
+				$registry  = \WordPress\AiClient\AiClient::defaultRegistry();
+				$connected = $registry && method_exists( $registry, 'isProviderConfigured' ) && (bool) $registry->isProviderConfigured( 'chatgpt' );
+			}
+		} catch ( \Throwable $e ) {
+			$connected = false;
+		}
+	}
+
+	return array(
+		'registered'   => (bool) $registered,
+		'connected'    => $connected,
+		'settings_url' => admin_url( 'options-general.php?page=ai-provider-for-chatgpt' ),
+	);
+}

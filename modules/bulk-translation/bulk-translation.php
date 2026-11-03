@@ -273,24 +273,9 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		);
 
 		// ChatGPT has no API key: report whether its account is signed in (AI Provider for ChatGPT plugin).
-		$chatgpt_status = array(
-			'registered'   => false,
-			'connected'    => false,
-			'settings_url' => admin_url( 'options-general.php?page=ai-provider-for-chatgpt' ),
-		);
-		if ( in_array( 'chatgpt', $active_providers, true ) ) {
-			$chatgpt_status['registered'] = true;
-			$token_store                  = '\Halawa\ChatGptAiProvider\Authentication\TokenStore';
-			try {
-				if ( class_exists( $token_store ) && method_exists( $token_store, 'is_connected' ) ) {
-					$chatgpt_status['connected'] = (bool) ( new $token_store() )->is_connected();
-				} elseif ( class_exists( '\WordPress\AiClient\AiClient' ) ) {
-					$registry                    = \WordPress\AiClient\AiClient::defaultRegistry();
-					$chatgpt_status['connected'] = $registry && method_exists( $registry, 'isProviderConfigured' ) && $registry->isProviderConfigured( 'chatgpt' );
-				}
-			} catch ( \Throwable $e ) {
-				$chatgpt_status['connected'] = false;
-			}
+		$chatgpt_status = linguator_get_chatgpt_connection_status( in_array( 'chatgpt', $active_providers, true ) );
+		if ( $chatgpt_status['registered'] ) {
+			// Same flag shape as Gemini so the UI can treat "ready" uniformly.
 			$api_keys_status['chatgpt'] = $chatgpt_status['connected'];
 		}
 
