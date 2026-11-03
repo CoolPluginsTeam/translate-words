@@ -481,12 +481,8 @@ class Linguator_Page_Translation {
 		}
 
 		if ( function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
-			foreach ( $api_keys_status as $key => $status ) {
-				$api_key = get_option( 'connectors_ai_google_api_key', '' );
-				if ( ! empty( $api_key ) ) {
-					$api_keys_status[ $key ] = true;
-				}
-			}
+			$api_key = get_option( 'connectors_ai_google_api_key', '' );
+			$api_keys_status['gemini'] = ! empty( $api_key );
 		}
 
 		// Provider the popup pre-selects; empty when the saved default is not enabled.
