@@ -322,24 +322,6 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
             }
         }
 
-		// Elementor atomic widget main text defaults (omitted from _elementor_data while unchanged).
-		$atomic_widget_defaults = array();
-		if ( class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::$instance->widgets_manager ) ) {
-			try {
-				foreach ( array( 'e-heading' => 'title', 'e-paragraph' => 'paragraph', 'e-button' => 'text' ) as $widget_type => $prop ) {
-					$widget = \Elementor\Plugin::$instance->widgets_manager->get_widget_types( $widget_type );
-					if ( $widget && method_exists( $widget, 'get_props_schema' ) ) {
-						$schema = $widget::get_props_schema();
-						if ( isset( $schema[ $prop ] ) && method_exists( $schema[ $prop ], 'get_default' ) && is_array( $schema[ $prop ]->get_default() ) ) {
-							$atomic_widget_defaults[ $widget_type ][ $prop ] = $schema[ $prop ]->get_default();
-						}
-					}
-				}
-			} catch ( \Throwable $e ) {
-				$atomic_widget_defaults = array();
-			}
-		}
-
         wp_localize_script(
             'lmat-bulk-translate',
             'lmatBulkTranslationGlobal',
@@ -366,7 +348,6 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
                 'AIRequestMaxTokens' => (int) get_option('lmat_ai_request_token_per_request', 500),
                 'AIRequestBatchSize' => (int) get_option('lmat_ai_request_batch_size', 5),
-				'atomicWidgetDefaults' => (object) $atomic_widget_defaults,
             ), $extra_data)
         );
 		}

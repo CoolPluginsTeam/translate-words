@@ -1,7 +1,6 @@
 import {selectTranslatedContent} from '../../../redux-store/features/selectors.js';
 import {store} from '../../../redux-store/store.js';
 import updateMetaFields from '../metaFields/update-meta-fields.js';
-import { atomicMainTextProps, getAtomicPropDefault } from './index.js';
 
 const updateElementorContent = async ({source, lang, translatedContent, serviceProvider, postId}) => {
 
@@ -19,38 +18,6 @@ const updateElementorContent = async ({source, lang, translatedContent, serviceP
         }
 
         return false;
-    }
-
-    /**
-     * Create an atomic widget's main text prop when it is missing (still at schema default).
-     * @param {Object} content
-     * @param {Array} keyArray
-     * @param {string} translateValue
-     */
-    const ensureAtomicDefaultProp = (content, keyArray, translateValue) => {
-        const settingsIndex = keyArray.lastIndexOf('settings');
-        if(settingsIndex < 1 || keyArray.length !== settingsIndex + 3 || keyArray[settingsIndex + 2] !== 'value' || typeof translateValue !== 'string' || translateValue.trim() === ''){
-            return;
-        }
-
-        let widget = content;
-        for(let i = 0; i < settingsIndex; i++){
-            widget = widget ? widget[keyArray[i]] : null;
-        }
-
-        const prop = keyArray[settingsIndex + 1];
-        if(!widget || atomicMainTextProps[widget.widgetType] !== prop){
-            return;
-        }
-
-        if(!widget.settings || typeof widget.settings !== 'object' || (Array.isArray(widget.settings) && widget.settings.length === 0)){
-            widget.settings = {};
-        }
-
-        if(!Array.isArray(widget.settings) && (widget.settings[prop] === undefined || widget.settings[prop] === null)){
-            const defaultValue = getAtomicPropDefault(widget.widgetType, prop);
-            widget.settings[prop] = { $$type: defaultValue?.$$type || 'escaped-html', value: translateValue };
-        }
     }
 
     const getTransaltedValue=(key)=>{
@@ -106,7 +73,6 @@ const updateElementorContent = async ({source, lang, translatedContent, serviceP
                 let parentKey = null;
 
                 keyArray=keyArray.slice(1);
-                ensureAtomicDefaultProp(source.content, keyArray, translateValue);
 
                 keyArray.forEach(key => {
                     parentElement = currentElement;

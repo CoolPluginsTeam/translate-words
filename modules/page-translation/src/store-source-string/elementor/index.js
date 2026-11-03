@@ -36,19 +36,6 @@ const ElementorSaveSource = (content) => {
         'opacity', 'width', 'height', 'display', 'position', 'z_index', 'visibility', 'align', 'max_width', 'content_typography_typography', 'flex_justify_content', 'title_color', 'description_color', 'email_content'
     ];
 
-    // Main text prop per Elementor atomic widget. Elementor omits props that are still at
-    // their schema default from saved settings, so these need the default as source.
-    const atomicMainTextProps = { 'e-heading': 'title', 'e-paragraph': 'paragraph', 'e-button': 'text' };
-
-    // Default shape: { $$type: 'escaped-html', value: 'This is a title' }
-    const getAtomicPropDefault = (widgetType, prop) => {
-        const defaultValue = window.elementor?.widgetsCache?.[widgetType]?.atomic_props_schema?.[prop]?.default;
-        if(defaultValue && typeof defaultValue === 'object' && Object.hasOwn(defaultValue, '$$type') && typeof defaultValue.value === 'string'){
-            return defaultValue;
-        }
-        return null;
-    }
-
     /**
      * Handles Elementor Atomic Widget settings.
      *
@@ -76,7 +63,7 @@ const ElementorSaveSource = (content) => {
             if(element.value && element.value.content && element.value.content?.$$type === 'string' && element.value.content.value && '' !== element.value.content.value){
                 translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
             }
-        } else if((element?.$$type === 'string' || element?.$$type === 'escaped-html') && typeof element.value === 'string'){ // escaped-html: Elementor 4.3+ e-heading/e-paragraph
+        } else if(element?.$$type === 'string'){
             if(element.value && '' !== element.value){
                 translateContent([...ids, 'value'], element.value);
             }
@@ -148,15 +135,6 @@ const ElementorSaveSource = (content) => {
             }
     
             loopCallback(keysLoop, Object.keys(settings), 0);
-        }
-
-        // Atomic widget main text prop missing from settings (still at Elementor schema default).
-        const atomicProp = atomicMainTextProps[element.widgetType];
-        if(atomicProp && (!settings || typeof settings !== 'object' || Array.isArray(settings) || settings[atomicProp] === undefined || settings[atomicProp] === null)){
-            const defaultValue = getAtomicPropDefault(element.widgetType, atomicProp);
-            if(defaultValue){
-                storeAtomicWidgetStrings(defaultValue, [...ids, 'settings', atomicProp]);
-            }
         }
 
         // If there are nested elements, process them recursively
