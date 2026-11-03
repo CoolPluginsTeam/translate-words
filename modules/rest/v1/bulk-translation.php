@@ -808,6 +808,22 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						}
 					}
 
+					// ChatGPT Plus/Pro/Go models are always reasoning models; send low effort
+					// from Linguator so translation stays fast regardless of the provider plugin's site default.
+					if ( 'chatgpt' === $provider_id && class_exists( '\WordPress\AiClient\Providers\Models\DTO\ModelConfig' ) ) {
+						$config = new \WordPress\AiClient\Providers\Models\DTO\ModelConfig();
+						$config->setCustomOptions(
+							array(
+								'reasoning' => array(
+									'effort' => 'low',
+								),
+							)
+						);
+						if ( $this->ai_builder_supports( $builder, 'using_model_config', 'usingModelConfig' ) ) {
+							$builder = $builder->using_model_config( $config );
+						}
+					}
+
 					try {
 						$text = $builder
 							->using_provider( $provider_id )
