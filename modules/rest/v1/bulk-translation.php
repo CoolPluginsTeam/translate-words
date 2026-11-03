@@ -434,6 +434,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
 			$model_id = $this->ai_translate_resolve_llm_model_id( $provider, $model_override );
+			if ( is_wp_error( $model_id ) ) {
+				return $model_id;
+			}
 
 			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
 			if ( is_wp_error( $provider_setup ) ) {
@@ -470,9 +473,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 *
 		 * @param string $provider       Provider slug (gemini|chatgpt).
 		 * @param string $model_override Optional model override.
+	 * @return string|\WP_Error Model id, or lmat_ai_invalid_model for a ChatGPT id off the allowlist.
 		 * @return string
 		 */
-		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ): string {
+		private function ai_translate_resolve_llm_model_id( string $provider, string $model_override = '' ) {
 			$models = array();
 			if ( property_exists( LMAT(), 'options' ) ) {
 				$m = LMAT()->model->options->get( 'api_keys' );
@@ -492,6 +496,22 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 			if ( '' === $model_id && isset( $model_defaults[ $model_key ] ) ) {
 				$model_id = $model_defaults[ $model_key ];
+			}
+
+			if ( 'chatgpt' === $provider && ! \Linguator\Includes\Options\Business\Api_Keys::is_allowed_chatgpt_model( $model_id ) ) {
+				// Override / saved value not allowed: fall back to saved default, then bundled default.
+				$saved = isset( $models['chatgpt_model'] ) ? trim( (string) $models['chatgpt_model'] ) : '';
+				if ( '' !== $saved && $saved !== $model_id && \Linguator\Includes\Options\Business\Api_Keys::is_allowed_chatgpt_model( $saved ) ) {
+					return $saved;
+				}
+				if ( \Linguator\Includes\Options\Business\Api_Keys::is_allowed_chatgpt_model( $model_defaults['chatgpt_model'] ) ) {
+					return $model_defaults['chatgpt_model'];
+				}
+				return new WP_Error(
+					'lmat_ai_invalid_model',
+					__( 'The selected ChatGPT model is not available.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
 			}
 
 			return $model_id;
@@ -776,25 +796,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
 					}
 				} else {
-					// Older WP AI Client: fall back to model preference + single-message prompt.
-					if ( method_exists( $builder, 'using_system_instruction' ) ) {
-						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
-					}
-					if ( method_exists( $builder, 'with_text' ) ) {
-						$builder = $builder->with_text( $instruction );
-					} else {
-						$builder = wp_ai_client_prompt( $instruction );
-					}
-
-					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
-						$builder = $builder->using_model_preference( $model_id );
-					}
-
-					try {
-						$text = $builder->generate_text();
-					} catch ( \Throwable $e ) {
-						return $this->ai_translate_map_generate_text_exception( $e, $provider_id );
-					}
+					// Older WP AI Client without provider-scoped calls: fail closed so the request is never
+					// routed to an arbitrary provider via model preference.
+					return new WP_Error(
+						'lmat_ai_client_unsupported',
+						__( 'Your WordPress AI Client is too old: provider-specific requests (using_provider) are required. Please update the AI Client.', 'translate-words' ),
+						array( 'status' => 500 )
+					);
 				}
 			} finally {
 				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );

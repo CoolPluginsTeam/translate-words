@@ -58,6 +58,70 @@ class Api_Keys extends Abstract_Option {
 	 *
 	 * @return string
 	 */
+	/**
+	 * Default ChatGPT model id.
+	 */
+	const DEFAULT_CHATGPT_MODEL = 'gpt-5.6-luna';
+
+	/**
+	 * Allowed ChatGPT model ids: registry-discovered text-generation models, else provider BUNDLED_MODELS.
+	 *
+	 * @return string[]
+	 */
+	public static function get_chatgpt_model_ids(): array {
+		$ids = array();
+		try {
+			if (
+				class_exists( '\WordPress\AiClient\AiClient' ) &&
+				class_exists( '\WordPress\AiClient\Providers\Models\DTO\ModelRequirements' ) &&
+				class_exists( '\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum' )
+			) {
+				$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+				if ( $registry && method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
+					$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+						array( \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration() ),
+						array()
+					);
+					$metadata = $registry->findProviderModelsMetadataForSupport( 'chatgpt', $requirements );
+					if ( is_array( $metadata ) ) {
+						foreach ( $metadata as $model ) {
+							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
+								$ids[] = (string) $model->getId();
+							}
+						}
+					}
+				}
+			}
+		} catch ( \Throwable $e ) {
+			$ids = array();
+		}
+
+		$bundled = '\Halawa\ChatGptAiProvider\Metadata\ChatGptModelMetadataDirectory::BUNDLED_MODELS';
+		if ( empty( $ids ) && defined( $bundled ) ) {
+			$ids = (array) constant( $bundled );
+		}
+
+		return array_values( array_unique( array_filter( array_map( 'strval', $ids ) ) ) );
+	}
+
+	/**
+	 * Whether a ChatGPT model id is on the allowlist. With no discoverable list, only the default is accepted.
+	 *
+	 * @param string $model_id Model id.
+	 * @return bool
+	 */
+	public static function is_allowed_chatgpt_model( string $model_id ): bool {
+		$model_id = trim( $model_id );
+		if ( '' === $model_id ) {
+			return false;
+		}
+		$allowed = self::get_chatgpt_model_ids();
+		if ( empty( $allowed ) ) {
+			return self::DEFAULT_CHATGPT_MODEL === $model_id;
+		}
+		return in_array( $model_id, $allowed, true );
+	}
+
 	public static function key(): string {
 		return 'api_keys';
 	}
@@ -127,7 +191,11 @@ class Api_Keys extends Abstract_Option {
 			if ( null === $v ) {
 				$chatgpt = '';
 			} elseif ( is_scalar( $v ) ) {
-				$chatgpt = sanitize_text_field( (string) $v );
+				$candidate = sanitize_text_field( (string) $v );
+				// Reject ids not on the allowlist; keep the current saved value.
+				if ( '' === $candidate || self::is_allowed_chatgpt_model( $candidate ) ) {
+					$chatgpt = $candidate;
+				}
 			} else {
 				$chatgpt = '';
 			}

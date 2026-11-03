@@ -569,40 +569,7 @@ class Settings extends Abstract_Controller {
 	 * @return string[]
 	 */
 	private function get_chatgpt_models(): array {
-		$ids = array();
-
-		try {
-			if (
-				class_exists( '\WordPress\AiClient\AiClient' ) &&
-				class_exists( '\WordPress\AiClient\Providers\Models\DTO\ModelRequirements' ) &&
-				class_exists( '\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum' )
-			) {
-				$registry = \WordPress\AiClient\AiClient::defaultRegistry();
-				if ( $registry && method_exists( $registry, 'findProviderModelsMetadataForSupport' ) ) {
-					$requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
-						array( \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration() ),
-						array()
-					);
-					$metadata = $registry->findProviderModelsMetadataForSupport( 'chatgpt', $requirements );
-					if ( is_array( $metadata ) ) {
-						foreach ( $metadata as $model ) {
-							if ( is_object( $model ) && method_exists( $model, 'getId' ) ) {
-								$ids[] = (string) $model->getId();
-							}
-						}
-					}
-				}
-			}
-		} catch ( \Throwable $e ) {
-			$ids = array();
-		}
-
-		$bundled = '\Halawa\ChatGptAiProvider\Metadata\ChatGptModelMetadataDirectory::BUNDLED_MODELS';
-		if ( empty( $ids ) && defined( $bundled ) ) {
-			$ids = (array) constant( $bundled );
-		}
-
-		return array_values( array_unique( array_filter( array_map( 'strval', $ids ) ) ) );
+		return Api_Keys_Option::get_chatgpt_model_ids();
 	}
 
 	/**
@@ -866,7 +833,15 @@ class Settings extends Abstract_Controller {
 			if ( ! isset( $options['api_keys'] ) || ! is_array( $options['api_keys'] ) ) {
 				$options['api_keys'] = array();
 			}
-			$options['api_keys']['chatgpt_model'] = sanitize_text_field( (string) $incoming_models['chatgpt_model'] );
+			$chatgpt_model = sanitize_text_field( (string) $incoming_models['chatgpt_model'] );
+			if ( '' !== $chatgpt_model && ! Api_Keys_Option::is_allowed_chatgpt_model( $chatgpt_model ) ) {
+				return new WP_Error(
+					'lmat_ai_invalid_model',
+					__( 'The selected ChatGPT model is not available.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+			$options['api_keys']['chatgpt_model'] = $chatgpt_model;
 		}
 
 		// Validate domains before saving if force_lang is set to 3 (domains)
