@@ -504,6 +504,11 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 						}
 					}
 
+					// Elementor 4.3+ rejects html-v3 for heading/paragraph text props on save.
+					if ( class_exists( '\Linguator\Integrations\elementor\Linguator_Elementor' ) && is_array( $elementor_data ) ) {
+						$elementor_data = \Linguator\Integrations\elementor\Linguator_Elementor::migrate_html_v3_to_escaped_html( $elementor_data );
+					}
+
 					$document->save(
 						array(
 							'elements' => $elementor_data,

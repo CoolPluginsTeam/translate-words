@@ -420,6 +420,11 @@ class Linguator_Sync_Post_Model {
 			return;
 		}
 
+		// Elementor 4.3+ rejects html-v3 for heading/paragraph text props on save.
+		if ( class_exists( '\Linguator\Integrations\elementor\Linguator_Elementor' ) ) {
+			$elements = \Linguator\Integrations\elementor\Linguator_Elementor::migrate_html_v3_to_escaped_html( $elements );
+		}
+
 		// Remap Elementor media IDs/URLs to translated attachments (media_support).
 		if ( $this->media_translation->is_enabled() ) {
 			$lang = $this->model->post->get_language( $tr_id );

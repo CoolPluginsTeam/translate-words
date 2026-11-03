@@ -224,5 +224,77 @@ class Linguator_Elementor {
 			}
 		}
 	}
-} 
 
+	/**
+	 * Migrate Elementor atomic html-v3 text props to escaped-html (Elementor 4.3+).
+	 *
+	 * Source documents may still store e-heading title / e-paragraph text as
+	 * html-v3. Elementor 4.3+ validates those props as escaped-html on
+	 * document->save(), which throws "Settings validation failed. title: invalid_value".
+	 * Mirrors Elementor's html-v3-to-escaped-html migration operation.
+	 *
+	 * @param array $elements Decoded _elementor_data elements tree.
+	 * @return array
+	 */
+	public static function migrate_html_v3_to_escaped_html( array $elements ): array {
+		foreach ( $elements as $index => $element ) {
+			if ( ! is_array( $element ) ) {
+				continue;
+			}
+
+			if ( isset( $element['settings'] ) && is_array( $element['settings'] ) ) {
+				$elements[ $index ]['settings'] = self::migrate_html_v3_prop_value( $element['settings'] );
+			}
+
+			if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
+				$elements[ $index ]['elements'] = self::migrate_html_v3_to_escaped_html( $element['elements'] );
+			}
+		}
+
+		return $elements;
+	}
+
+	/**
+	 * Recursively convert a single value (or settings tree) from html-v3 to escaped-html.
+	 *
+	 * @param mixed $value Prop value or nested array.
+	 * @return mixed
+	 */
+	private static function migrate_html_v3_prop_value( $value ) {
+		if ( ! is_array( $value ) ) {
+			return $value;
+		}
+
+		if ( isset( $value['$$type'] ) && 'html-v3' === $value['$$type'] ) {
+			$inner = $value['value'] ?? null;
+			$text  = null;
+
+			if ( is_array( $inner ) ) {
+				if ( isset( $inner['content']['value'] ) && is_string( $inner['content']['value'] ) ) {
+					$text = $inner['content']['value'];
+				} elseif ( isset( $inner['content'] ) && is_string( $inner['content'] ) ) {
+					$text = $inner['content'];
+				}
+			} elseif ( is_string( $inner ) ) {
+				$text = $inner;
+			}
+
+			$migrated = array(
+				'$$type' => 'escaped-html',
+				'value'  => $text,
+			);
+
+			if ( array_key_exists( 'disabled', $value ) ) {
+				$migrated['disabled'] = $value['disabled'];
+			}
+
+			return $migrated;
+		}
+
+		foreach ( $value as $key => $child ) {
+			$value[ $key ] = self::migrate_html_v3_prop_value( $child );
+		}
+
+		return $value;
+	}
+}
