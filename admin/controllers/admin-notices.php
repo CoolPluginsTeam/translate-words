@@ -289,6 +289,38 @@ class Linguator_Admin_Notices {
 			margin-right: 2rem;
 			width: auto;
 		}
+
+		.lmat-admin-notices {
+			margin: 32px 32px 0;
+		}
+		.lmat-admin-notices:empty {
+			display: none;
+		}
+		#wpbody .lmat-admin-notices > .lmat-moved-notice {
+			position: relative;
+			box-sizing: border-box;
+			width: auto;
+			min-height: 42px;
+			margin: 0 0 10px;
+			padding: 12px;
+		}
+		#wpbody .lmat-admin-notices > .is-dismissible {
+			padding-right: 46px;
+		}
+		#wpbody .lmat-admin-notices > .notice:last-child {
+			margin-bottom: 0;
+		}
+		.lmat-admin-notices > .notice p {
+			margin: 0;
+			padding: 0;
+		}
+		.lmat-admin-notices > .notice .notice-dismiss {
+			top: 4px;
+			right: 4px;
+			margin: 0;
+			padding: 9px;
+			transform: none;
+		}
 		";
 		wp_add_inline_style( 'linguator_admin', $css );
 
@@ -303,12 +335,19 @@ class Linguator_Admin_Notices {
 					// Find the header container
 					var headerContainer = $('#lmat-settings-header');
 					if (headerContainer.length > 0) {
-						// Move notices after the screen options if present, otherwise after header
-						var screenMetaLinks = $('#screen-meta-links');
-						if (screenMetaLinks.length > 0) {
-							notices.detach().insertAfter(screenMetaLinks);
+						var licenseNotices = $('.lmatp-license-notices');
+						// Keep notices belonging to forms and cards in their own context.
+						notices = notices.filter(function() {
+							return !$(this).closest('form, .lmatp-license-card, .lmatp-license-box').length;
+						});
+						if (licenseNotices.length > 0) {
+							notices.detach().appendTo(licenseNotices);
 						} else {
-							notices.detach().insertAfter(headerContainer);
+							var noticeSlot = $('.lmat-admin-notices');
+							if (!noticeSlot.length) {
+								noticeSlot = $('<div class=\"lmat-admin-notices\"></div>').insertAfter(headerContainer);
+							}
+							notices.detach().appendTo(noticeSlot);
 						}
 						// Add class to make notices visible
 						notices.addClass('lmat-moved-notice');
