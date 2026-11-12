@@ -22,7 +22,17 @@ const ElementorSaveSource = (content) => {
         }
     }
 
+    // Suffixes of Elementor style control keys; their values are settings, not text.
+    const ELEMENTOR_STYLE_KEY = /(_typography|_font_family|_font_size|_font_weight|_font_style|_text_transform|_text_decoration|_line_height|_letter_spacing|_word_spacing|_text_shadow|_text_shadow_type|_text_stroke|_css_filter|_box_shadow|_box_shadow_type|_border|_background|_tag|_size|_color|_align|_position|_spacing|_width)$/i;
+
     const subStringsToCheck=(strings)=>{
+        // Elementor style controls (typography, filters, shadows, colours, HTML tags...) hold setting values such as
+        // 'custom' or 'h2', even when their key contains a word like 'title' or 'description'
+        // (e.g. typography_title_typography, description_typography_typography, title_tag). Never translate them.
+        if (ELEMENTOR_STYLE_KEY.test(strings)) {
+            return false;
+        }
+
         const dynamicSubStrings=['title', 'description', 'editor', 'text', 'content', 'label'];
         const staticSubStrings=['caption','heading','sub_heading', 'testimonial_content', 'testimonial_job', 'testimonial_name', 'name'];
 
