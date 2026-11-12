@@ -305,6 +305,12 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 'bulkTranslatePrivateKey' => wp_create_nonce('lmat_bulk_translate_entries_nonce'),
 				'get_glossary_validate' => wp_create_nonce('lmat_get_glossary_private'),
                 'lmat_url'                => plugins_url( '', LINGUATOR_ROOT_FILE ) . '/',
+                // Without Linguator Pro, its providers are listed locked with a link to the Pro page.
+                'wp_ai_client_available'  => function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ),
+                'pro_active'              => defined( 'LINGUATOR_PRO_VERSION' ),
+                'pro_provider_icons'      => array(
+                    'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+                ),
                 'admin_url' => admin_url(),
                 'post_label'          => $post_label,
                 'post_label_singular' => $post_label_singular,

@@ -1,6 +1,7 @@
 import { __ } from "@wordpress/i18n";
 import Providers from "./providers.js";
 import TranslateService from "../component/translate-provider/index.js";
+import ProProviderCards from "../../../../admin/settings/views/src/components/pro-provider-cards.js";
 
 const SettingModalBody = (props) => {
     const { hasProviders = true } = props;
@@ -18,6 +19,7 @@ const SettingModalBody = (props) => {
                             Service={provider}
                         />
                     ))}
+                    <ProProviderCards prefix="lmat-page-translation" localized={window.lmatPageTranslationGlobal} screen="page" />
                 </div>
             ) : (
                 <div className="lmat-page-translation-no-provider-message">
