@@ -356,10 +356,116 @@ function linguator_content_path_to_url( $file ) {
 }
 
 /**
+ * Server-side AI translation providers added by other plugins (for example from an add-on).
+ *
+ * Each provider sends its prompts through the WordPress AI Client, from the same AI batch endpoint Gemini uses.
+ * The plugin that adds it handles its credentials and picks the registry provider and model through
+ * `lmat_ai_batch_prepare_provider`.
+ *
+ * @since 2.2.3
+ *
+ * @return array<string, array> Provider key => details:
+ *     - label        (string) Name shown in settings and the translation popups.
+ *     - configured   (bool)   Whether it is ready to translate (account connected, license active...).
+ *     - status_label (string) Status shown in the settings row.
+ *     - action_label (string) Optional button text in the settings row, when it needs setting up.
+ *     - icon_url     (string) Logo URL.
+ *     - docs_url     (string) Optional documentation URL.
+ *     - description  (string) Optional one-line description.
+ *     - settings_panel (bool) Whether the provider's plugin fills a panel under its settings row. Linguator only
+ *                             renders an empty mount point and fires `lmat:provider-panel-mount`; the other plugin
+ *                             enqueues its own script, styles and data for it.
+ */
+function linguator_get_external_ai_providers() {
+	global $wp_version;
+	static $cache = array();
+
+	// External providers use the WordPress AI Client, which ships with WordPress 7.0.
+	if ( version_compare( (string) $wp_version, '7.0-alpha', '<' ) ) {
+		return array();
+	}
+
+	// What a provider returns can depend on the user, for example its settings panel for administrators only.
+	$user_id = get_current_user_id();
+	if ( isset( $cache[ $user_id ] ) ) {
+		return $cache[ $user_id ];
+	}
+
+	// Providers build translated labels, which need translations loaded on init. Options read earlier keep the
+	// stored provider keys anyway, because the option schema does not drop unknown properties when loading.
+	if ( ! did_action( 'init' ) && ! doing_action( 'init' ) ) {
+		return array();
+	}
+
+	/**
+	 * Filters the server-side AI translation providers added by other plugins.
+	 *
+	 * Keys must be lower-case provider keys that do not clash with the built-in ones.
+	 *
+	 * @since 2.2.3
+	 *
+	 * @param array<string, array> $providers Provider key => details.
+	 */
+	$providers = apply_filters( 'lmat_external_ai_providers', array() );
+	$reserved  = array( 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini', 'localAiTranslator', 'edgeLocalAiTranslator' );
+	$clean     = array();
+
+	foreach ( (array) $providers as $key => $provider ) {
+		$key = sanitize_key( (string) $key );
+		if ( '' === $key || in_array( $key, $reserved, true ) || ! is_array( $provider ) || empty( $provider['label'] ) ) {
+			continue;
+		}
+		$clean[ $key ] = array_merge(
+			array(
+				'label'        => '',
+				'configured'   => false,
+				'status_label' => '',
+				'action_label' => '',
+				'icon_url'     => '',
+				'docs_url'     => '',
+				'description'  => '',
+			),
+			$provider
+		);
+		$clean[ $key ]['configured'] = (bool) $clean[ $key ]['configured'];
+	}
+
+	// Plugins add their providers while loading, so the list is only final once WordPress is initialised.
+	if ( did_action( 'init' ) ) {
+		$cache[ $user_id ] = $clean;
+	}
+
+	return $clean;
+}
+
+/**
+ * External AI providers as the translation popups need them: no connection details, only what the provider
+ * buttons show.
+ *
+ * @since 2.2.3
+ *
+ * @return array<string, array{label:string,configured:bool,icon_url:string,docs_url:string,status_label:string,settings_url:string}>
+ */
+function linguator_get_external_ai_providers_for_js() {
+	$out = array();
+	foreach ( linguator_get_external_ai_providers() as $key => $provider ) {
+		$out[ $key ] = array(
+			'label'        => (string) $provider['label'],
+			'configured'   => (bool) $provider['configured'],
+			'icon_url'     => esc_url_raw( (string) $provider['icon_url'] ),
+			'docs_url'     => esc_url_raw( (string) $provider['docs_url'] ),
+			'status_label' => (string) $provider['status_label'],
+			'settings_url' => admin_url( 'admin.php?page=lmat_settings&tab=translation' ),
+		);
+	}
+	return $out;
+}
+
+/**
  * Translation providers allowed in Linguator settings / workflows.
  *
  * WP &lt; 7.0: Google + Chrome only.
- * WP 7.0+: Google + Chrome + Gemini.
+ * WP 7.0+: Google + Chrome + Gemini, plus any external providers.
  *
  * @return string[]
  */
@@ -370,6 +476,8 @@ function linguator_get_allowed_ai_providers() {
 	if ( version_compare( (string) $wp_version, '7.0-alpha', '>=' ) ) {
 		$allowed[] = 'gemini';
 	}
+
+	$allowed = array_merge( $allowed, array_keys( linguator_get_external_ai_providers() ) );
 
 	/**
 	 * Filter which AI translation providers Linguator may expose.
@@ -405,6 +513,9 @@ function linguator_get_default_ai_provider_service( array $active_providers ) {
 		'edge_local_ai'   => 'edgeLocalAiTranslator',
 		'gemini'          => 'gemini',
 	);
+	foreach ( array_keys( linguator_get_external_ai_providers() ) as $external ) {
+		$services[ $external ] = $external;
+	}
 	$setting  = 'google';
 
 	if ( function_exists( 'LMAT' ) && property_exists( LMAT(), 'options' ) && isset( LMAT()->options['ai_translation_configuration']['default_provider'] ) ) {

@@ -62,21 +62,28 @@ class Ai_Translation_Configuration extends Abstract_Option {
      * @return array Partial schema.
      */
     protected function get_data_structure(): array {
+		$providers = array(
+			'chrome_local_ai' => array( 'type' => 'boolean' ),
+			'edge_local_ai'   => array( 'type' => 'boolean' ),
+			'google'          => array( 'type' => 'boolean' ),
+			'gemini'          => array( 'type' => 'boolean' ),
+		);
+		// Providers added by other plugins (see linguator_get_external_ai_providers()) are stored the same way.
+		$external = function_exists( 'linguator_get_external_ai_providers' ) ? array_keys( linguator_get_external_ai_providers() ) : array();
+		foreach ( $external as $key ) {
+			$providers[ $key ] = array( 'type' => 'boolean' );
+		}
+
         return array(
             'type' => 'object',
             'properties' => array(
                 'provider' => array(
                     'type' => 'object',
-                    'properties' => array(
-                        'chrome_local_ai' => array('type' => 'boolean'),
-                        'edge_local_ai' => array('type' => 'boolean'),
-                        'google' => array('type' => 'boolean'),
-                        'gemini' => array('type' => 'boolean'),
-                    )
+                    'properties' => $providers,
                 ),
 				'default_provider'             => array(
 					'type' => 'string',
-					'enum' => array( '', 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini' ),
+					'enum' => array_merge( array( '', 'google', 'chrome_local_ai', 'edge_local_ai', 'gemini' ), $external ),
 				),
                 'bulk_translation_post_status' => array('type' => 'string', 'enum' => array('draft', 'publish')),
                 'slug_translation_option' => array('type' => 'string', 'enum' => array('title_translate', 'slug_translate', 'slug_keep')),
