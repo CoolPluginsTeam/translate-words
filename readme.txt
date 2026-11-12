@@ -19,6 +19,18 @@ https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
 Automatically translate your **posts**, **pages**, **menus**, **categories**, **custom post types**, **media**, and **SEO data** using AI, and refine translations manually when needed, all from your WordPress dashboard.
 
+[Upgrade to Linguator Pro](https://coolplugins.net/product/linguator-pro-ai-translation-multilingual-wordpress/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=get_pro&utm_content=top_description)
+
+* **Multilingual Site Scan:** Scan your WordPress website to identify missing translations, outdated content, 404 errors, broken URLs, multilingual configuration, and more issues.
+
+* **Untranslated Content Inspector:** Find pages or posts content that still needs translation directly from the frontend.
+
+* **Issue Severity & Status:** Organize scan results into Critical, Warning, Passed, and Ignored categories to quickly prioritize issues and track resolved checks.
+
+* **Elementor Translation Checks:** Detect multilingual issues in Elementor headers, footers, templates, and display conditions that could cause incorrect templates to appear on translated pages.
+
+* **Privacy-Friendly Site Inspection:** Linguator Pro performs its core site checks within your WordPress installation without sending website content to external services for inspection.
+
 ### Compatible With Popular WordPress Plugins?
 
 Linguator is fully compatible with popular WordPress editors and plugins, including **Elementor**, **Gutenberg**, **WooCommerce**, **ACF**, **Rank Math**, and **Yoast SEO**, so you can generate high-quality translations without external API keys or subscriptions using **Chrome’s built-in AI** and **Google Translate**, directly from WordPress.
@@ -172,6 +184,15 @@ Yes. Linguator includes an option to automatically detect the visitor's browser 
 
 = How many languages can I add with Linguator? =
 There is no limit. You can add as many languages as you want to your website using Linguator.
+
+= What is the difference between Linguator Free and Pro? =
+Linguator Free helps you create multilingual WordPress websites using AI translation, bulk translation, language switchers, and multilingual SEO features. Linguator Pro adds advanced site scanning, translation inspection, and issue detection tools to help you maintain your multilingual website.
+
+= Can Linguator Pro find missing translations on my website? =
+Yes. Linguator Pro scans your website to identify posts, pages, and other supported content that haven't been translated into your selected languages, helping you find translation gaps without manually checking every page.
+
+= Can Linguator Pro detect multilingual SEO issues? =
+Yes. Linguator Pro checks supported language-specific URLs and multilingual configurations to help identify potential issues that could affect how search engines understand your translated website.
 
 = Transition Notice =
 Translate Words is now maintained by [Cool Plugins](https://profiles.wordpress.org/coolplugins/) and will gradually evolve into our modern AI multilingual plugin, Linguator AI.
