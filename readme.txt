@@ -19,7 +19,7 @@ https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
 Automatically translate your **posts**, **pages**, **menus**, **categories**, **custom post types**, **media**, and **SEO data** using AI, and refine translations manually when needed, all from your WordPress dashboard.
 
-[Upgrade to Linguator Pro](https://coolplugins.net/product/linguator-pro-ai-translation-multilingual-wordpress/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=get_pro&utm_content=top_description)
+[Upgrade to Linguator Pro](https://linguator.com/pricing/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=get_pro&utm_content=top_description)
 
 * **Multilingual Site Scan:** Scan your WordPress website to identify missing translations, outdated content, 404 errors, broken URLs, multilingual configuration, and more issues.
 
