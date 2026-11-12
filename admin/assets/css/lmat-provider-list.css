@@ -557,3 +557,8 @@
 .lmat-chrome-ai-setup {
 	margin-bottom: 16px;
 }
+
+/* Setup card of an external provider (its plugin fills it). */
+.lmat-external-setup-card {
+	margin-bottom: 16px;
+}

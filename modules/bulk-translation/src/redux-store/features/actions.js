@@ -86,7 +86,8 @@ const bulkTranslateStore = createSlice({
     },
 
     updateServiceProvider: (state, action) => {
-      if (['localAiTranslator', 'edgeLocalAiTranslator', 'google', 'gemini'].includes(action.payload)) {
+      const externalProviders = Object.keys(window.lmatBulkTranslationGlobal?.external_providers || {});
+      if (['localAiTranslator', 'edgeLocalAiTranslator', 'google', 'gemini', ...externalProviders].includes(action.payload)) {
         state.serviceProvider = action.payload;
       }
     },

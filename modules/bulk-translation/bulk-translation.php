@@ -245,6 +245,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		}
 
 		$active_providers=array();
+		$external_providers = function_exists( 'linguator_get_external_ai_providers_for_js' ) ? linguator_get_external_ai_providers_for_js() : array();
 
 		foreach ( $providers as $provider => $value ) {
 			if ( ! $value ) {
@@ -258,6 +259,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
+				$active_providers[] = $provider;
+			} elseif ( isset( $external_providers[ $provider ] ) ) {
 				$active_providers[] = $provider;
 			}
 		}
@@ -273,6 +276,10 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 					$api_keys_status[ $key ] = true;
 				}
 			}
+		}
+
+		foreach ( $external_providers as $key => $external ) {
+			$api_keys_status[ $key ] = $external['configured'];
 		}
 
 			// Provider the modal pre-selects; empty when the saved default is not enabled.
@@ -320,6 +327,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'providers'                => $active_providers,
 				'default_provider'        => $default_provider,
 				'api_keys_status'          => $api_keys_status,
+				'external_providers'       => $external_providers,
 				'default_language_slug' => $default_language_slug,
 				'mediaSupport'          => ! empty( LMAT()->options['media_support'] ),
 				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),

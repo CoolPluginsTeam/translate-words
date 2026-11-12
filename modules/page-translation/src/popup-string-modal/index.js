@@ -83,6 +83,8 @@ const popStringModal = (props) => {
             return 'Chrome AI Translator';
         } else if (serviceProvider === 'edgeLocalAiTranslator') {
             return 'Edge AI Translator';
+        } else if (window.lmatPageTranslationGlobal?.external_providers?.[serviceProvider]) {
+            return window.lmatPageTranslationGlobal.external_providers[serviceProvider].label || serviceProvider;
         } else {
             return serviceProvider.replace(/^\w/, c => c.toUpperCase()) + ' Translate';
         }
@@ -210,7 +212,7 @@ const popStringModal = (props) => {
 
     return (
         <> {popupVisibility &&
-            <div id={`lmat-page-translation-${props.service}-strings-modal`} className="modal-container" style={{ display: popupVisibility ? 'flex' : 'none' }} data-render-id={props.modalRender}>
+            <div id={`lmat-page-translation-${props.service}-strings-modal`} className={`modal-container${window.lmatPageTranslationGlobal?.external_providers?.[props.service] ? ' lmat-page-translation-external-strings-modal' : ''}`} style={{ display: popupVisibility ? 'flex' : 'none' }} data-render-id={props.modalRender}>
                 <div className="modal-content">
                     <StringPopUpHeader
                         modalRender={props.modalRender}

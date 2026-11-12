@@ -4,10 +4,10 @@ import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
+import ExternalProviderPanel from './external-provider-panel.jsx';
 import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
-
 const getChromeAiSetupData = () => window?.lmat_settings?.chrome_ai_setup || {};
 
 const getAvailableLanguages = () => Object.entries(getChromeAiSetupData().all_languages || {}).map(([code, language]) => ({
@@ -231,6 +231,9 @@ const ProviderRow = ({
  * @param {boolean} props.geminiConfigured Whether a Gemini API key is saved.
  * @param {Function} props.onDefaultChange Receives the provider key picked as default.
  * @param {*} props.geminiExtra            Content rendered under the Gemini row (API key form).
+ * @param {Object} props.externalProviders Providers added by other plugins, keyed by provider key (see lmat_external_ai_providers).
+ * @param {Object} props.externalConfigured Per external key: whether it is ready to translate.
+ * @param {Function} props.onExternalStatus Receives (key, configured) when an account connects or disconnects.
  */
 const ProviderList = ({
     browserType,
@@ -240,6 +243,9 @@ const ProviderList = ({
     geminiConfigured,
     onDefaultChange,
     geminiExtra,
+    externalProviders = {},
+    externalConfigured = {},
+    onExternalStatus = () => {},
 }) => {
     const chromeStatus = useBuiltInAiStatus('chrome', browserType);
     const edgeStatus = useBuiltInAiStatus('edge', browserType);
@@ -256,6 +262,14 @@ const ProviderList = ({
 
         if (card && card.scrollIntoView) {
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const scrollToExternalCard = (key) => {
+        const card = document.querySelector(`.lmat-external-setup-card[data-provider="${key}"]`);
+
+        if (card && card.scrollIntoView) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
@@ -288,6 +302,18 @@ const ProviderList = ({
             {showSetupCard && (
                 <ChromeAiSetupCard browserType={browserType} chromeEnabled={chromeEnabled} edgeEnabled={edgeEnabled} />
             )}
+
+            {/* Setup cards of external providers (such as an account connection), shown while the provider is on. */}
+            {Object.entries(externalProviders).map(([key, external]) => (
+                providers[key]?.enabled && external?.settings_panel ? (
+                    <div key={key} className="lmat-external-setup-card" data-provider={key}>
+                        <ExternalProviderPanel
+                            providerKey={key}
+                            onStatusChange={(isConfigured) => onExternalStatus(key, isConfigured)}
+                        />
+                    </div>
+                ) : null
+            ))}
 
             <div className="lmat-engine-note">
                 <span className="lmat-engine-note-icon" aria-hidden="true">
@@ -371,9 +397,41 @@ const ProviderList = ({
                     />
                 )}
 
+                {Object.entries(externalProviders).map(([key, external]) => {
+                    const state = providers[key]
+                    if (!state) {
+                        return null
+                    }
+                    const configured = Boolean(externalConfigured[key])
+                    const hasPanel = Boolean(external?.settings_panel)
+
+                    return (
+                        <ProviderRow
+                            key={key}
+                            icon={external.icon_url ? <img src={external.icon_url} alt="" className="icon-size" /> : null}
+                            name={external.label}
+                            docsUrl={external.docs_url || ''}
+                            enabled={Boolean(state.enabled)}
+                            onToggle={toggle(key)}
+                            isDefault={key === defaultProvider}
+                            onDefault={() => onDefaultChange(key)}
+                            status={configured ? 'ready' : 'setup'}
+                            statusLabel={configured
+                                ? __('Ready', 'translate-words')
+                                // The page-load label described a working provider; after a disconnect it is out of date.
+                                : (!external.configured && external.status_label ? external.status_label : __('Not connected', 'translate-words'))}
+                            defaultDisabledReason={configured ? '' : sprintf(__('Set up %s before making it the default provider.', 'translate-words'), external.label)}
+                            // Like Chrome AI: the setup button shows only while the provider is on and not set up yet.
+                            actionLabel={state.enabled && !configured && hasPanel ? (external.action_label || __('Configure', 'translate-words')) : ''}
+                            onAction={() => scrollToExternalCard(key)}
+                        />
+                    )
+                })}
+
                 {/* Linguator Pro providers, locked while Pro is not active. They need the WordPress AI Client, like Gemini. */}
-                {geminiAvailable && getLockedProProviders(window?.lmat_settings)
+                {geminiAvailable && getLockedProProviders(window?.lmat_settings, externalProviders)
                     .map((pro) => {
+                        const iconUrl = pro.iconUrl;
                         const lockedReason = sprintf(
                             /* translators: %s: translation provider name */
                             __('%s is available in Linguator Pro.', 'translate-words'),
@@ -384,7 +442,7 @@ const ProviderList = ({
                             <ProviderRow
                                 key={`pro-${pro.key}`}
                                 locked
-                                icon={pro.iconUrl ? <img src={pro.iconUrl} alt="" className="icon-size" /> : null}
+                                icon={iconUrl ? <img src={iconUrl} alt="" className="icon-size" /> : null}
                                 name={pro.label}
                                 enabled={false}
                                 onToggle={() => {}}

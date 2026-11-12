@@ -432,6 +432,8 @@ class Linguator_Wizard
 					'wpml_detection' => $wpml_detection,
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
+					// Providers added by other plugins; they are set up from Linguator → Settings → Translation.
+					'external_providers'    => function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array(),
 					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
 					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
 					'pro_provider_icons'    => array(

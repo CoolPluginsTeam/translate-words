@@ -19,6 +19,10 @@ const SettingModal = (props) => {
             edgeLocalAiTranslator: !!edgeLocalAiModalError,
             gemini: !lmatBulkTranslationGlobal?.api_keys_status?.gemini,
         };
+        // External providers cannot run until the plugin that added them reports them as configured.
+        Object.entries(lmatBulkTranslationGlobal?.external_providers || {}).forEach(([key, external]) => {
+            disabledProviders[key] = !external?.configured;
+        });
 
         if (activeProvider && disabledProviders[activeProvider]) {
             setActiveProvider(null);

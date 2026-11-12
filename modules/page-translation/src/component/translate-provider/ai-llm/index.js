@@ -50,8 +50,12 @@ export default function createAiLlmPageTranslator(providerId) {
             return;
         }
 
+        const externalProvider = window.lmatPageTranslationGlobal?.external_providers?.[providerId];
+        // Gemini and the external providers share the AI batch endpoint and its recovery flow.
+        const isLlmProvider = providerId === "gemini" || Boolean(externalProvider);
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            ...(externalProvider ? { [providerId]: sprintf(__("Translate with %s", "translate-words"), externalProvider.label || providerId) } : {}),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -204,7 +208,8 @@ export default function createAiLlmPageTranslator(providerId) {
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = "gemini_model";
+                // Each provider saves its model as "<provider>_model"; external providers pick theirs on the server.
+                const modelKey = `${providerId}_model`;
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])
@@ -379,7 +384,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
                             const totalStringKeys = Object.keys(strings).length;
                             const canOfferGeminiRecovery =
-                                providerId === "gemini" &&
+                                isLlmProvider &&
                                 totalStringKeys > 0 &&
                                 chunks.length > 0 &&
                                 (isQuota || chunkIndex < chunks.length);
@@ -440,7 +445,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 const totalStringKeys = Object.keys(strings).length;
 
                 logAiTranslationError(errorMessage);
-                if (providerId === "gemini" && isQuota && totalStringKeys > 0) {
+                if (isLlmProvider && isQuota && totalStringKeys > 0) {
                     showGeminiRecoverableError(true);
                 } else {
                     showErrorNotice(errorMessage);

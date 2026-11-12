@@ -277,7 +277,8 @@ class AiLlmBulkTranslator {
         try {
             const { maxTokens, concurrency } = this.getBatchConfig();
             const chunks = chunkStringMap(stringsToTranslate, { maxTokens });
-            const modelKey = "gemini_model";
+            // Each provider saves its model as "<provider>_model"; external providers pick theirs on the server.
+            const modelKey = `${this.serviceProvider}_model`;
             const selectedModel =
                 lmatBulkTranslationGlobal?.ai_models && lmatBulkTranslationGlobal.ai_models[modelKey]
                     ? String(lmatBulkTranslationGlobal.ai_models[modelKey])
@@ -336,7 +337,7 @@ class AiLlmBulkTranslator {
             const msg = err && err.message ? err.message : __("Translation failed.", "translate-words");
             const isQuotaError = err?.code === "LLM_QUOTA_EXCEEDED";
             const isGeminiQuotaByMessage =
-                this.serviceProvider === "gemini" &&
+                (this.serviceProvider === "gemini" || Boolean(window.lmatBulkTranslationGlobal?.external_providers?.[this.serviceProvider])) &&
                 /429|quota exceeded|rate limit|resource has been exhausted|too many requests/i.test(String(msg));
             const haltForQuota = isQuotaError || isGeminiQuotaByMessage;
 

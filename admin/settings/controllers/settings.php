@@ -657,6 +657,11 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'localAiTranslator'    => 'Chrome AI',
 					'edgeLocalAiTranslator' => 'Edge AI',
 				);
+				if ( function_exists( 'linguator_get_external_ai_providers' ) ) {
+					foreach ( linguator_get_external_ai_providers() as $external_key => $external ) {
+						$avilable_service_providers[ $external_key ] = $external['label'];
+					}
+				}
 				$cpt_dashboard_data=Linguator_Translation_Dashboard::get_translation_data('lmat');
 				$translation_providers=(isset($cpt_dashboard_data['service_providers']) && is_array($cpt_dashboard_data['service_providers'])) ? $cpt_dashboard_data['service_providers'] : array();
 				$translations_data['total_string']=isset($cpt_dashboard_data['total_string_count']) ? $this->linguator_format_number($cpt_dashboard_data['total_string_count']) : 0;
@@ -707,6 +712,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'translations_data' => $translations_data,
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
+					// Providers added by other plugins; a provider's own settings panel is enqueued by that plugin.
+					'external_providers'    => function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array(),
 					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
 					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
 					'pro_provider_icons'    => array(
