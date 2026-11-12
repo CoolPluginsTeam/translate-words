@@ -547,8 +547,16 @@ class Settings extends Abstract_Controller {
 			'models'           => $models,
 			'available_models' => $available_models,
 		);
-		
-		return $response;
+
+		/**
+		 * Filters the data returned by `GET lmat/v1/settings`, for example to add data an add-on's settings need.
+		 *
+		 * @since 2.2.3
+		 *
+		 * @param array           $response Settings and extra data sent to the settings screen.
+		 * @param WP_REST_Request $request  The request.
+		 */
+		return apply_filters( 'lmat_settings_rest_response', $response, $request );
 	}
 
 	/**
