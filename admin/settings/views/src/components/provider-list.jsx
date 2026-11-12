@@ -4,6 +4,7 @@ import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
+import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
 
@@ -124,8 +125,10 @@ const ProviderRow = ({
     unsupportedMessage,
     actionLabel,
     onAction,
+    actionHref,
     extra,
     defaultDisabledReason,
+    locked = false,
 }) => {
     const unsupported = 'unsupported' === status;
     const defaultDisabled = !unsupported && Boolean(defaultDisabledReason);
@@ -139,11 +142,16 @@ const ProviderRow = ({
         rowClasses.push('is-unsupported');
     }
 
+    if (locked) {
+        rowClasses.push('is-locked');
+    }
+
     const statusClass = {
         setup: 'is-setup',
         'missing-key': 'is-setup',
         checking: 'is-checking',
         unsupported: 'is-unsupported',
+        pro: 'is-pro',
     }[status] || '';
 
     return (
@@ -176,11 +184,18 @@ const ProviderRow = ({
             </label>
 
             <div className="lmat-engine-actions">
-                <a className="lmat-engine-docs" href={docsUrl} target="_blank" rel="noopener noreferrer">
-                    {__('Docs', 'translate-words')}
-                </a>
+                {docsUrl ? (
+                    <a className="lmat-engine-docs" href={docsUrl} target="_blank" rel="noopener noreferrer">
+                        {__('Docs', 'translate-words')}
+                    </a>
+                ) : null}
                 <span className="lmat-engine-action-slot">
-                    {actionLabel && (
+                    {actionLabel && actionHref && (
+                        <a className="lmat-engine-btn primary" href={actionHref} target="_blank" rel="noopener noreferrer">
+                            {actionLabel}
+                        </a>
+                    )}
+                    {actionLabel && !actionHref && (
                         <button type="button" className="lmat-engine-btn primary" onClick={onAction}>
                             {actionLabel}
                         </button>
@@ -191,7 +206,7 @@ const ProviderRow = ({
                         type="checkbox"
                         className="lmat-input-toggle"
                         checked={enabled}
-                        disabled={isDefault}
+                        disabled={isDefault || locked}
                         onChange={onToggle}
                         title={isDefault ? __('The default provider stays enabled. Pick another default to turn this off.', 'translate-words') : ''}
                     />
@@ -355,6 +370,35 @@ const ProviderList = ({
                         extra={providers.gemini.enabled ? geminiExtra : null}
                     />
                 )}
+
+                {/* Linguator Pro providers, locked while Pro is not active. They need the WordPress AI Client, like Gemini. */}
+                {geminiAvailable && getLockedProProviders(window?.lmat_settings)
+                    .map((pro) => {
+                        const lockedReason = sprintf(
+                            /* translators: %s: translation provider name */
+                            __('%s is available in Linguator Pro.', 'translate-words'),
+                            pro.label
+                        );
+
+                        return (
+                            <ProviderRow
+                                key={`pro-${pro.key}`}
+                                locked
+                                icon={pro.iconUrl ? <img src={pro.iconUrl} alt="" className="icon-size" /> : null}
+                                name={pro.label}
+                                enabled={false}
+                                onToggle={() => {}}
+                                isDefault={false}
+                                onDefault={() => {}}
+                                status="pro"
+                                statusLabel={__('Pro', 'translate-words')}
+                                defaultDisabledReason={lockedReason}
+                                actionLabel={__('Get Pro', 'translate-words')}
+                                actionHref={getProProviderUrl(pro.key, 'settings')}
+                                extra={<p className="lmat-engine-pro-msg">{pro.description}</p>}
+                            />
+                        );
+                    })}
             </ul>
         </div>
     );

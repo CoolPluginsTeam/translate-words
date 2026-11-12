@@ -1,6 +1,6 @@
 import apiFetch from '@wordpress/api-fetch';
-import { __ } from '@wordpress/i18n';
-import { Input, Switch } from '@bsf/force-ui';
+import { __, sprintf } from '@wordpress/i18n';
+import { Badge, Input, Switch } from '@bsf/force-ui';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,7 @@ import { EdgeIcon } from '../../../../assets/js/src/icons/edge';
 import { GeminiIcon } from '../../../../assets/js/src/icons/gemini';
 import { GoogleIcon } from '../../../../assets/js/src/icons/google';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
+import { getLockedProProviders, getProProviderUrl } from '../../../../admin/settings/views/src/components/pro-providers.js';
 
 const AiTranslation = () => {
 	const { setSetupProgress, data, setData } = useContext(setupContext);
@@ -42,6 +43,9 @@ const AiTranslation = () => {
 		}
 		return type;
 	})();
+
+	// Linguator Pro providers, shown locked while Pro is not active. They need the WordPress AI Client, like Gemini.
+	const lockedProProviders = wpAiClientAvailable ? getLockedProProviders(window?.lmat_setup) : [];
 
 	const showChromeRow = browserType !== 'Edge';
 	const showEdgeRow = browserType !== 'Chrome';
@@ -327,6 +331,41 @@ const AiTranslation = () => {
 						</div>
 					</>
 				)}
+
+				{lockedProProviders.map((pro) => {
+					const proUrl = getProProviderUrl(pro.key, 'wizard');
+
+					return (
+						<div key={`pro-${pro.key}`} className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+							<div className="flex justify-between items-center">
+								<div className="flex items-center gap-2">
+									{pro.iconUrl ? <img src={pro.iconUrl} alt="" className="w-4 h-4" /> : null}
+									<p className="text-sm/6">{pro.label}</p>
+									<a href={proUrl} target="_blank" rel="noreferrer noopener" className="no-underline">
+										<Badge label={__('Pro', 'translate-words')} size="xs" variant="blue" />
+									</a>
+								</div>
+								<Switch
+									aria-label={sprintf(
+										/* translators: %s: translation provider name */
+										__('%s (available in Linguator Pro)', 'translate-words'),
+										pro.label
+									)}
+									id={`${pro.key}-translation-locked`}
+									disabled
+									size="sm"
+									value={false}
+								/>
+							</div>
+							<p className="text-sm/6 text-gray-600 m-0 mt-3">
+								{pro.description}{' '}
+								<a className="underline" href={proUrl} target="_blank" rel="noreferrer noopener">
+									{__('Get Linguator Pro', 'translate-words')}
+								</a>
+							</p>
+						</div>
+					);
+				})}
 			</div>
 
 			<div className="flex justify-between" style={{ marginTop: '14px' }}>

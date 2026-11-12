@@ -432,6 +432,11 @@ class Linguator_Wizard
 					'wpml_detection' => $wpml_detection,
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
+					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
+					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
+					'pro_provider_icons'    => array(
+						'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+					),
 				)
 			);
 

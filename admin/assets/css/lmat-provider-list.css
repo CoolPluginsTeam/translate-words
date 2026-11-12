@@ -145,6 +145,24 @@
 	color: #6b7280;
 }
 
+/* Linguator Pro provider shown locked without Pro. */
+.lmat-engines .lmat-engine-status.is-pro {
+	background: #eff6ff;
+	color: #1d4ed8;
+}
+
+.lmat-engines li.lmat-engine-row.is-locked .lmat-provider-switch {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.lmat-engines .lmat-engine-pro-msg {
+	color: #6b7280;
+	font-size: 13px;
+	line-height: 1.45;
+	margin: 0;
+}
+
 .lmat-engines .lmat-engine-unsupported-msg {
 	color: #dc2626;
 	flex: 1 1 100%;
