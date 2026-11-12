@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 
-// Linguator Pro product page, linked from the locked Pro providers.
-const PRO_PRODUCT_URL = 'https://coolplugins.net/product/linguator-pro-ai-translation-multilingual-wordpress/';
+// Linguator Pro pricing page, linked from the locked Pro providers.
+const PRO_PRODUCT_URL = 'https://linguator.com/pricing/';
 
 /**
  * Link to the Pro product page for a locked provider.

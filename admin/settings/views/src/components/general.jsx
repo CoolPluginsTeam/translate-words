@@ -51,8 +51,8 @@ const getExtraValues = (fields, data) => fields.reduce((values, field) => {
 
 const sameExtraValue = (field, a, b) => JSON.stringify(normalizeExtraValue(field, a)) === JSON.stringify(normalizeExtraValue(field, b));
 
-// Linguator Pro product page, shown on the locked Pro settings when Pro is not active.
-const PRO_PRODUCT_URL = 'https://coolplugins.net/product/linguator-pro-ai-translation-multilingual-wordpress/';
+// Linguator Pro pricing page, shown on the locked Pro settings when Pro is not active.
+const PRO_PRODUCT_URL = 'https://linguator.com/pricing/';
 const getProUrl = (settingKey) => `${PRO_PRODUCT_URL}?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=get_pro&utm_content=settings_${settingKey}`;
 
 // Reads the current boolean value of each available Pro switch.
