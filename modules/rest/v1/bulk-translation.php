@@ -529,7 +529,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Build glossary-aware translation prompt for the LLM.
+		 * Build the translation prompt for the LLM.
 		 *
 		 * @param string               $source_lang Source language slug.
 		 * @param string               $target_lang Target language slug.
@@ -541,8 +541,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( false === $payload ) {
 				return new WP_Error( 'lmat_ai_encode_error', __( 'Could not prepare translation payload.', 'translate-words' ), array( 'status' => 500 ) );
 			}
-
-			$glossary_instructions = $this->ai_translate_build_glossary_instructions( $source_lang, $target_lang, $strings );
 
 			$instruction = sprintf(
 				'You are a professional translator.
@@ -570,105 +568,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$payload
 			);
 
-			if ( '' !== $glossary_instructions ) {
-				$instruction .= 'Instruction 9: ' . $glossary_instructions;
-			}
-
 			return $instruction;
-		}
-
-		/**
-		 * Build glossary instruction block when matched terms exist for the payload.
-		 *
-		 * @param string               $source_lang Source language slug.
-		 * @param string               $target_lang Target language slug.
-		 * @param array<string,string> $strings     Key => source text.
-		 * @return string
-		 */
-		private function ai_translate_build_glossary_instructions( string $source_lang, string $target_lang, array $strings ): string {
-			$glossary_data = get_option( 'lmat_glossary_data', array() );
-			if ( empty( $glossary_data ) || ! is_array( $glossary_data ) ) {
-				return '';
-			}
-
-			$has_glossary_terms = false;
-			foreach ( $strings as $string ) {
-				foreach ( $glossary_data as $entry ) {
-					if (
-						is_array( $entry ) &&
-						! empty( $entry['original_term'] ) &&
-						isset( $entry['original_language_code'] ) &&
-						$entry['original_language_code'] === $source_lang &&
-						stripos( (string) $string, (string) $entry['original_term'] ) !== false
-					) {
-						$has_glossary_terms = true;
-						break 2;
-					}
-				}
-			}
-
-			if ( ! $has_glossary_terms ) {
-				return '';
-			}
-
-			$matched_terms = array();
-			foreach ( $glossary_data as $entry ) {
-				if (
-					! is_array( $entry ) ||
-					empty( $entry['original_language_code'] ) ||
-					empty( $entry['original_term'] ) ||
-					empty( $entry['translations'] ) ||
-					$entry['original_language_code'] !== $source_lang
-				) {
-					continue;
-				}
-
-				$translations_by_code = array();
-				foreach ( $entry['translations'] as $translation ) {
-					if (
-						is_array( $translation ) &&
-						! empty( $translation['target_language_code'] ) &&
-						! empty( $translation['translated_term'] )
-					) {
-						$translations_by_code[ $translation['target_language_code'] ] = $translation['translated_term'];
-					}
-				}
-
-				$term_found = false;
-				foreach ( $strings as $string ) {
-					if ( stripos( (string) $string, (string) $entry['original_term'] ) !== false ) {
-						$term_found = true;
-						break;
-					}
-				}
-
-				if ( $term_found && isset( $translations_by_code[ $target_lang ] ) ) {
-					$matched_terms[] = array(
-						'term'        => $entry['original_term'],
-						'translation' => $translations_by_code[ $target_lang ],
-						'description' => $entry['description'] ?? '',
-					);
-				}
-			}
-
-			if ( empty( $matched_terms ) ) {
-				return '';
-			}
-
-			$glossary_instructions = "Please use the following glossary terms in your translation:\n";
-			foreach ( $matched_terms as $term ) {
-				$src_term    = isset( $term['term'] ) ? (string) $term['term'] : '';
-				$translation = isset( $term['translation'] ) ? (string) $term['translation'] : '';
-				$description = isset( $term['description'] ) ? (string) $term['description'] : '';
-
-				$glossary_instructions .= '- "' . $src_term . '" -> "' . $translation . '"';
-				if ( '' !== $description ) {
-					$glossary_instructions .= ' - Note: ' . $description;
-				}
-				$glossary_instructions .= "\n";
-			}
-
-			return $glossary_instructions;
 		}
 
 		/**
