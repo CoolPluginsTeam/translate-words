@@ -44,7 +44,7 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
 * **Multilingual SEO:** The plugin follows WordPress and Google best practices. Each language version of your content contains, **language-specific URLs** with **SEO-friendly permalink structures**. Metadata can be translated helping search engines properly index your site in multiple languages and improve your global visibility.
 
-* **Translation Quality & Accuracy:** Linguator allows you to generate fast, natural and accurate **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, translate **specific blocks** or **widgets inline**, and use **glossary support** to maintain consistent terminology across your site. 
+* **Translation Quality & Accuracy:** Linguator allows you to generate fast, natural and accurate **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, or translate **specific blocks** or **widgets inline**. 
 
 
 ### Multilingual & AI Translation Features
