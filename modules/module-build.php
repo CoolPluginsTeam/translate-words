@@ -7,7 +7,6 @@ return array(
 	'blocks',
 	'bulk-translation',
 	'editors',
-	'glossary',
 	'inline-translation',
 	'page-translation',
 	'rest',

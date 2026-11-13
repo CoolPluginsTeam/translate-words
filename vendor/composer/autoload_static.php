@@ -243,7 +243,6 @@ class ComposerStaticInitccc319e267efc807f0f35d0c7ed56335
         'Linguator\\Modules\\Editors\\Screens\\Site' => __DIR__ . '/../..' . '/modules/editors/screens/site.php',
         'Linguator\\Modules\\Editors\\Screens\\Widget' => __DIR__ . '/../..' . '/modules/editors/screens/widget.php',
         'Linguator\\Modules\\Full_Site_Editing\\Linguator_FSE_Tools' => __DIR__ . '/../..' . '/modules/full-site-editing/fse-tools.php',
-        'Linguator\\Modules\\Glossary\\Glossary' => __DIR__ . '/../..' . '/modules/glossary/glossary.php',
         'Linguator\\Modules\\Inline_Translation\\Linguator_Inline_Translation' => __DIR__ . '/../..' . '/modules/inline-translation/inline-translation.php',
         'Linguator\\Modules\\Page_Translation\\Linguator_Page_Translation' => __DIR__ . '/../..' . '/modules/page-translation/page-translation.php',
         'Linguator\\Modules\\Page_Translation\\Linguator_Page_Translation_Helper' => __DIR__ . '/../..' . '/modules/page-translation/page-translation-helper.php',

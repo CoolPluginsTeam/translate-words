@@ -91,7 +91,7 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 		public function tabs() {
 			$default_url = '';
 
-			if ( $this->active_tab && in_array($this->active_tab, ['strings', 'lang', 'supported-blocks','custom-fields','glossary']) ) {
+			if ( $this->active_tab && in_array($this->active_tab, ['strings', 'lang', 'supported-blocks','custom-fields']) ) {
 				$default_url = 'lmat_settings';
 			}
 
@@ -110,13 +110,6 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 			$tabs['advanced-settings'] = array( 'title' => __( 'Advanced Settings', 'translate-words' ) );
 		}
 
-        $languages = $this->model->get_languages_list();
-        
-        // Only show Glossary tab if languages exist
-        if(!empty($languages)){
-            $tabs['glossary'] = array( 'title' => __( 'Glossary', 'translate-words' ), 'redirect' => true, 'redirect_url' => 'lmat_settings&tab=glossary' );
-        }
-        
        
             $tabs['strings']     = array(
 				'title'        => __( 'Static Strings', 'translate-words' ),
