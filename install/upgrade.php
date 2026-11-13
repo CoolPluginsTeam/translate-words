@@ -190,8 +190,11 @@ class Linguator_Upgrade {
 	 * @return void
 	 */
 	protected function remove_glossary_data(): void {
-		// Flag first so the cleanup never runs again, even if the delete fails.
-		update_option( self::GLOSSARY_DATA_REMOVED_OPTION, 1 );
 		delete_option( 'lmat_glossary_data' );
+
+		// Mark done only once the option is really gone (also true when it never existed).
+		if ( null === get_option( 'lmat_glossary_data', null ) ) {
+			update_option( self::GLOSSARY_DATA_REMOVED_OPTION, 1 );
+		}
 	}
 }
