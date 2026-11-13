@@ -30,6 +30,13 @@ class Linguator_Upgrade {
 	const FLAG_CODES_MIGRATED_OPTION = 'lmat_flag_codes_migrated';
 
 	/**
+	 * Option set once the leftover glossary data has been deleted.
+	 *
+	 * @var string
+	 */
+	const GLOSSARY_DATA_REMOVED_OPTION = 'lmat_glossary_data_removed';
+
+	/**
 	 * Plugin options.
 	 *
 	 * @var Options
@@ -71,6 +78,12 @@ class Linguator_Upgrade {
 		// migration is also keyed on a one-shot option and runs exactly once per site.
 		if ( ! get_option( self::FLAG_CODES_MIGRATED_OPTION ) ) {
 			$this->upgrade_2_2_1();
+		}
+
+		// One-time cleanup for the removed glossary feature, keyed on a one-shot option
+		// (not on the plugin version) so it runs once per site without a version bump.
+		if ( ! get_option( self::GLOSSARY_DATA_REMOVED_OPTION ) ) {
+			$this->remove_glossary_data();
 		}
 	}
 
@@ -168,5 +181,17 @@ class Linguator_Upgrade {
 			// Make sure the cached languages list is rebuilt with the new flag codes.
 			delete_transient( 'lmat_languages_list' );
 		}
+	}
+
+	/**
+	 * One-time cleanup for the removed glossary feature.
+	 * Deletes the stored glossary terms, which nothing reads anymore.
+	 *
+	 * @return void
+	 */
+	protected function remove_glossary_data(): void {
+		// Flag first so the cleanup never runs again, even if the delete fails.
+		update_option( self::GLOSSARY_DATA_REMOVED_OPTION, 1 );
+		delete_option( 'lmat_glossary_data' );
 	}
 }
