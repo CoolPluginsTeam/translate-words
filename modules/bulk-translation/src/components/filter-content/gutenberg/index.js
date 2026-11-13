@@ -2,9 +2,6 @@ import React from 'react';
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import saveSourceString from '../../store-source-string/index.js';
-import updateGlossaryString from '../update-glossary-string/index.js';
-import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
-import {store} from '../../../redux-store/store.js';
 import { extractImageAlt } from './image-alt.js';
 import { getXpathRuleAttributePaths } from '../../../../../page-translation/src/component/xpath-attribute-paths/index.js';
 import { isTechnicalAttribute, isUserRuleAttribute } from '../../../../../page-translation/src/component/technical-value/index.js';
@@ -21,7 +18,6 @@ import { isTechnicalAttribute, isUserRuleAttribute } from '../../../../../page-t
  */
 const FilterGutenbergContent = async ({content, service, blockParseRules, postId, storeDispatch, filterHtmlContent, sourceLanguage}) => {
     const allowedBlocks=Object.keys(blockParseRules?.LmatBlockParseRules);
-    const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
 
     /**
      * Checks whether a collected attribute must be skipped as technical. Attributes set by
@@ -58,10 +54,6 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
             
             stringContent=await extractInnerContent(reactElement);
 
-            if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
-                stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
-            }
-            
             reactElement=null;
         }
 

@@ -2,13 +2,9 @@ import React from 'react';
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import storeSourceString from '../../store-source-string/index.js';
-import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
-import updateGlossaryString from '../update-glossary-string/index.js';
-import {store} from '../../../redux-store/store.js';
 
 const FilterElementorContent = async({content, service, postId, storeDispatch, filterHtmlContent, sourceLanguage}) => {
     const translateContentObject={};
-    const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
 
     const loopCallback=async (callback, loop, index)=>{
         await callback(loop[index], index);
@@ -28,10 +24,6 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
             if(filterHtmlContent){
                 let reactElement=filterContent({content: value, service, contentKey: uniqueKey, skipTags:['script', 'style']});
                 stringContent=await extractInnerContent(reactElement);
-
-                if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
-                    stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
-                }
 
                 reactElement=null;
             }

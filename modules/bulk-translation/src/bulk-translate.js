@@ -1,12 +1,11 @@
 import {filterContent, updateFilterContent} from './components/filter-content/index.js';
-import { updatePendingPosts, unsetPendingPost, updateCompletedPosts, updateTranslatePostInfo, updateCountInfo, updateSourceContent, updateParentPostsInfo, updateTargetContent, updateTargetLanguages, updateBlockParseRules, updateProgressStatus, updateAllowedMetaFields, updateErrorPostsInfo, updateGlossaryTerms } from './redux-store/features/actions.js';
+import { updatePendingPosts, unsetPendingPost, updateCompletedPosts, updateTranslatePostInfo, updateCountInfo, updateSourceContent, updateParentPostsInfo, updateTargetContent, updateTargetLanguages, updateBlockParseRules, updateProgressStatus, updateAllowedMetaFields, updateErrorPostsInfo } from './redux-store/features/actions.js';
 import { store } from './redux-store/store.js';
 import { __,sprintf } from '@wordpress/i18n';
 import Provider from './components/translate-provider/index.js';
 import { updateTranslateData } from './helper/index.js';
 import LoopCallback from './components/loop-callback/index.js';
-import updateGlossaryString from './components/filter-content/update-glossary-string/index.js';
-import { selectGlossaryTerms, selectTargetContent } from './redux-store/features/selectors.js';
+import { selectTargetContent } from './redux-store/features/selectors.js';
 import { buildQuotaRecoverableTranslateInfo, countMergedTranslatedStrings } from './gemini-quota-recoverable.js';
 import { buildMediaPayload, storeMediaStrings } from './components/media-translation/index.js';
 
@@ -415,68 +414,6 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
            }
         });
 
-        const fetchGlossaryTerms=async(allTargetLanguages)=>{
-
-            const fethcGlossary=async(sourceLanauges)=>{
-                if (signal && signal.aborted) {
-                    return;
-                }
-                const targetLanguages=allTargetLanguages[sourceLanauges];
-
-                if(!targetLanguages || typeof targetLanguages !== 'object' || Object.values(targetLanguages).length < 1){
-                    return;
-                }
-
-                try {
-                    const data={
-                        action: 'lmat_get_glossary',
-                        source_lang: sourceLanauges,
-                        target_lang: Object.values(targetLanguages).join(','),
-                        _wpnonce: lmatBulkTranslationGlobal.get_glossary_validate
-                    }
-
-                    // Add sourceLang and targetLang as query params
-                    const url = `${lmatBulkTranslationGlobal.ajax_url}`;
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'Accept': 'application/json',
-                        },
-                        credentials: 'same-origin',
-                        body: new URLSearchParams(data),
-                        ...(signal ? { signal } : {}),
-    
-                    });
-    
-                    const rawGlossary = await response.text();
-                    let responseData;
-                    try {
-                        responseData = rawGlossary ? JSON.parse( rawGlossary ) : {};
-                    } catch (e) {
-                        responseData = { success: false, code: response.status, message: rawGlossary };
-                    }
-
-                    if(responseData.success && responseData.data.terms){
-                        storeDispatch(updateGlossaryTerms({sourceLanguage: sourceLanauges, translations: Object.values(responseData.data.terms)}));
-                    }
-                } catch (err) {
-                    if (err && err.name === 'AbortError') {
-                        return;
-                    }
-                    console.log(err);
-                }
-            }
-
-            const sourceLanauges=Object.keys(allTargetLanguages);
-
-            if(sourceLanauges.length > 0){
-                await LoopCallback({callback: fethcGlossary, loop: sourceLanauges, index: 0});
-            }
-            
-
-        }
-
         const storeSourceContent=async(index, translatePostsCount)=>{
 
             if (signal && signal.aborted) {
@@ -576,33 +513,19 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
             
                 if(['classic', 'block', 'elementor', 'taxonomy'].includes(editor_type)){
 
-                    const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
-                    
                     if(title && title.trim() !== ''){
-                        let filteredTitle= title;
-                        if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(activeProvider)){
-                            filteredTitle= await updateGlossaryString({content: title, glossaryTerms});
-                        }
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'title', value: title}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'title', value: filteredTitle}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'title', value: title}));
                     }
 
                     if(post_name && post_name.trim() !== ''){
-                        let filteredPostName= post_name;
-                        if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(activeProvider)){
-                            filteredPostName= await updateGlossaryString({content: post_name, glossaryTerms});
-                        }
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'post_name', value: post_name}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'post_name', value: filteredPostName}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'post_name', value: post_name}));
                     }
 
                     if(excerpt && excerpt.trim() !== ''){
-                        let filteredExcerpt= excerpt;
-                        if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(activeProvider)){
-                            filteredExcerpt= await updateGlossaryString({content: excerpt, glossaryTerms});
-                        }
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'excerpt', value: excerpt}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'excerpt', value: filteredExcerpt}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'excerpt', value: excerpt}));
                     }
 
                     const previousParentPostsInfo=store.getState().parentPostsInfo[postId];
@@ -662,7 +585,6 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
 
         const translatePostsCount=store.getState().pendingPosts.length;
 
-        await fetchGlossaryTerms(allTargetLanguages);
         await storeSourceContent(0, translatePostsCount);
 
         if(untranslatedPostsData?.data?.allowedMetaFields){
