@@ -1,3 +1,4 @@
+import { getQuotaMessages } from "./quota-messages.js";
 import { updateProgressStatus, updateTranslatePostInfo, unsetPendingPost } from "../../../redux-store/features/actions.js";
 import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } from "../../../redux-store/features/selectors.js";
 import { store } from "../../../redux-store/store.js";
@@ -174,11 +175,8 @@ class AiLlmBulkTranslator {
                 `<p class="${this.prefix}-ai-pending-request-heading">` +
                 __("You’ve exceeded your current plan limit.", "translate-words") +
                 "</p> " +
-                __("To continue, please check your plan details and update your API key.", "translate-words");
-            translateBtnMessage = __(
-                'Click "Translate" after updating your API key to re-translate the remaining strings.',
-                "translate-words"
-            );
+                getQuotaMessages(this.serviceProvider).intro;
+            translateBtnMessage = getQuotaMessages(this.serviceProvider).retryRemaining;
         } else {
             errorMessage =
                 `<p class="${this.prefix}-ai-pending-request-heading">` + __("Oops! Something went wrong during translation", "translate-words") + "</p>";

@@ -1,3 +1,4 @@
+import { getQuotaMessages } from "../../../../../bulk-translation/src/components/translate-provider/ai-llm/quota-messages.js";
 import { select, dispatch } from "@wordpress/data";
 import SaveTranslation from "../../store-translated-string/index.js";
 import StoreTimeTaken from "../../store-time-taken/index.js";
@@ -80,10 +81,10 @@ export default function createAiLlmPageTranslator(providerId) {
         const buildRecoverableHtml = (done, total, limitExceeded = false) => {
             const totalSafe = Math.max(1, total);
             const translateAgainLabel = limitExceeded
-                ? __('Click "Translate" after updating your API key to try again.', "translate-words")
+                ? getQuotaMessages(providerId).retry
                 : __('Click "Translate" to try again.', "translate-words");
             const translateAgainPartialLabel = limitExceeded
-                ? __('Click "Translate" after updating your API key to re-translate the remaining strings.', "translate-words")
+                ? getQuotaMessages(providerId).retryRemaining
                 : __('Click "Translate" to re-translate the remaining strings.', "translate-words");
 
             if (done <= 0) {
@@ -91,7 +92,7 @@ export default function createAiLlmPageTranslator(providerId) {
                     ? __("You’ve exceeded your current plan limit.", "translate-words")
                     : __("Oops! Something went wrong during translation", "translate-words");
                 const intro = limitExceeded
-                    ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                    ? getQuotaMessages(providerId).intro
                     : __("No strings were saved yet. You can retry the same step or stop here.", "translate-words");
                 return `<div class="lmat_page_translation_ai_pending">
                 <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>
@@ -109,7 +110,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 ? __("You’ve exceeded your current plan limit.", "translate-words")
                 : __("Oops! Something went wrong during translation", "translate-words");
             const intro = limitExceeded
-                ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                ? getQuotaMessages(providerId).intro
                 : "";
             return `<div class="lmat_page_translation_ai_pending">
                 <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>

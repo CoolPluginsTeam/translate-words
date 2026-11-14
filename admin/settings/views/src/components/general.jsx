@@ -1009,12 +1009,10 @@ const General = ({ data, setData }) => {
                                     <h3 className='flex items-center gap-2'>
                                         <Link className="flex-shrink-0 size-5 text-icon-secondary" />
                                         {toggle.title}
-                                        {locked ? (
+                                        {locked && (
                                             <a href={proUrl} target='_blank' rel='noopener noreferrer' className='no-underline'>
                                                 <Badge label={__('Pro', 'translate-words')} size="xs" variant="blue" />
                                             </a>
-                                        ) : (
-                                            <Badge label={__('Pro', 'translate-words')} size="xs" variant="blue" />
                                         )}
                                     </h3>
                                     <p>{toggle.description}</p>

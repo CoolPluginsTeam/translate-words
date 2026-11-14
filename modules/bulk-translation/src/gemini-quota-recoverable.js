@@ -1,3 +1,4 @@
+import { getQuotaMessages } from "./components/translate-provider/ai-llm/quota-messages.js";
 /**
  * Shared quota-exceeded row + modal content for Gemini bulk translation.
  */
@@ -29,7 +30,7 @@ export function countMergedTranslatedStrings(postId, targetLang, serviceProvider
 /**
  * HTML for the Error Details modal when API quota is exceeded.
  */
-export function buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys) {
+export function buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys, serviceProvider = "gemini") {
     const total = Math.max(1, totalKeys);
     const completedPercent = Math.min(100, Math.round(((mergedDone / total) * 100) * 10) / 10).toFixed(1);
     const notCompletedPercent = Math.min(100, Math.round((100 - (mergedDone / total) * 100) * 10) / 10).toFixed(1);
@@ -39,9 +40,9 @@ export function buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys) {
         `<p class="${safePrefix}-ai-pending-request-heading">` +
         escapeHtml(__("You’ve exceeded your current plan limit.", "translate-words")) +
         "</p> " +
-        escapeHtml(__("To continue, please check your plan details and update your API key.", "translate-words"));
+        escapeHtml(getQuotaMessages(serviceProvider).intro);
     const translateBtnMessage = escapeHtml(
-        __('Click "Translate" after updating your API key to re-translate the remaining strings.', "translate-words")
+        getQuotaMessages(serviceProvider).retryRemaining
     );
     const translatedLine = escapeHtml(
         sprintf(__("You’ve translated %s of the strings.", "translate-words"), completedPercent + "%")
@@ -67,6 +68,7 @@ export function buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys) {
  */
 export function buildQuotaRecoverableTranslateInfo({
     existingInfo = {},
+    serviceProvider = "gemini",
     prefix,
     postId,
     targetLang,
@@ -82,7 +84,7 @@ export function buildQuotaRecoverableTranslateInfo({
         status: "error",
         messageClass: "error",
         errorMessage: "",
-        errorHtml: buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys),
+        errorHtml: buildQuotaRecoverableErrorHtml(prefix, mergedDone, totalKeys, serviceProvider),
         errorAllowHtml: false,
         aiError: true,
         quotaRecoverable: true,

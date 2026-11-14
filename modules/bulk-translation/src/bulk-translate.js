@@ -49,6 +49,7 @@ const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, update
                 updateTranslatePostInfo({
                     [pendingKey]: buildQuotaRecoverableTranslateInfo({
                         existingInfo,
+                        serviceProvider,
                         prefix,
                         postId,
                         targetLang,

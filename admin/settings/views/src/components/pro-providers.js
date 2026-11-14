@@ -16,13 +16,14 @@ export const getProProviderUrl = (providerKey, screen = 'settings') =>
 /**
  * Providers added by Linguator Pro. Without Pro they are listed locked, linking to the Pro page.
  *
- * @return {Array<{key: string, label: string, description: string}>}
+ * @return {Array<{key: string, label: string, description: string, docsUrl: string}>}
  */
 export const getProProviders = () => [
     {
         key: 'chatgpt',
         label: 'ChatGPT',
         description: __('Translate with your ChatGPT account. No API key needed: usage counts against your ChatGPT plan.', 'translate-words'),
+        docsUrl: 'https://linguator.com/docs/automatic-translation-via-chatgpt/',
     },
 ];
 
@@ -31,7 +32,7 @@ export const getProProviders = () => [
  *
  * @param {Object}  localized         Localized page data (lmat_settings or lmat_setup).
  * @param {Object}  externalProviders Providers registered by other plugins, keyed by provider key.
- * @return {Array<{key: string, label: string, description: string, iconUrl: string}>}
+ * @return {Array<{key: string, label: string, description: string, docsUrl: string, iconUrl: string}>}
  */
 export const getLockedProProviders = (localized, externalProviders = {}) => {
     if (!localized || localized.pro_active) {

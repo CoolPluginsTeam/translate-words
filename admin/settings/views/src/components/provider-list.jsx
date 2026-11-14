@@ -379,7 +379,7 @@ const ProviderList = ({
                     <ProviderRow
                         icon={<GeminiIcon className="icon-size" />}
                         name={__('Google Gemini', 'translate-words')}
-                        docsUrl={`https://linguator.com/docs/automatic-translation-via-googe-gemini/${DOCS_UTM}_gemini`}
+                        docsUrl={`https://linguator.com/docs/automatic-translation-via-google-gemini/${DOCS_UTM}_gemini`}
                         enabled={Boolean(providers.gemini.enabled)}
                         onToggle={toggle('gemini')}
                         isDefault={'gemini' === defaultProvider}
@@ -444,6 +444,7 @@ const ProviderList = ({
                                 locked
                                 icon={iconUrl ? <img src={iconUrl} alt="" className="icon-size" /> : null}
                                 name={pro.label}
+                                docsUrl={pro.docsUrl || ''}
                                 enabled={false}
                                 onToggle={() => {}}
                                 isDefault={false}
