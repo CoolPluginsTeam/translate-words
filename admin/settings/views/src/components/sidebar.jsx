@@ -1,9 +1,42 @@
+import { useState } from 'react'
 import { Container, Button } from "@bsf/force-ui"
 import { __ } from '@wordpress/i18n';
+import apiFetch from "@wordpress/api-fetch"
+import { getNonce } from '../utils'
 
 const Sidebar = () => {
-  // Get LocoAI plugin status from localized script data
-  const locoaiStatus = window.lmat_settings?.locoai_plugin_status || { status: 'not_installed' };
+  // LocoAI card state from localized script data: hidden | install | activate | activated
+  const [locoaiState, setLocoaiState] = useState(window.lmat_settings?.locoai_plugin_status?.state || 'hidden');
+  const [locoaiBusy, setLocoaiBusy] = useState(false);
+  const [locoaiError, setLocoaiError] = useState('');
+
+  const handleLocoai = async () => {
+    setLocoaiBusy(true);
+    setLocoaiError('');
+    try {
+      const response = await apiFetch({
+        path: 'lmat/v1/settings/locoai',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': getNonce()
+        }
+      });
+      if (response?.state === 'activated') {
+        setLocoaiState('activated');
+      } else {
+        setLocoaiError(__('LocoAI could not be activated. Please try again.', 'translate-words'));
+      }
+    } catch (error) {
+      setLocoaiError(error?.message || __('Something went wrong. Please try again.', 'translate-words'));
+    } finally {
+      setLocoaiBusy(false);
+    }
+  };
+
+  const locoaiButtonLabel = locoaiState === 'activate'
+    ? (locoaiBusy ? __('Activating...', 'translate-words') : __('Activate', 'translate-words'))
+    : (locoaiBusy ? __('Installing...', 'translate-words') : __('Install', 'translate-words'));
 
   return (
     <>
@@ -46,7 +79,7 @@ const Sidebar = () => {
             </Container.Item>
           </Container>
           {
-            locoaiStatus.status === 'not_installed' ? (
+            locoaiState !== 'hidden' ? (
 
               <div className=' p-6 bg-white border border-gray-200 rounded-lg shadow-sm'>
                 <h2>{__('Automatically Translate Plugins & Themes', 'translate-words')}</h2>
@@ -54,21 +87,30 @@ const Sidebar = () => {
                 <Container.Item className='flex'>
                   <div className='w-[70%]'>
                     <h4>{__('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
-                    <a target="_blank" href="plugin-install.php?s=locoai&tab=search&type=term">
-                    <Button
-                      className=""
-                      iconPosition="left"
-                      size="md"
-                      tag="button"
-                      type="button"
-                      variant="primary"
-                    >
-                      {__('Install', 'translate-words')}
-                    </Button>
-                    </a>
+                    {locoaiState === 'activated' ? (
+                      <span className='text-sm font-semibold text-green-700'>{__('Activated', 'translate-words')}</span>
+                    ) : (
+                      <>
+                        <Button
+                          className=""
+                          iconPosition="left"
+                          size="md"
+                          tag="button"
+                          type="button"
+                          variant="primary"
+                          onClick={handleLocoai}
+                          disabled={locoaiBusy}
+                        >
+                          {locoaiButtonLabel}
+                        </Button>
+                        {locoaiError && (
+                          <p className='text-sm text-red-600 mt-2 mb-0' role='alert'>{locoaiError}</p>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div className='w-[30%] flex items-center object-contain p-2'>
-                    <a href='plugin-install.php?s=locoai&tab=search&type=term' target="_blank"><img className="w-auto max-h-24  " src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" /></a>
+                    <img className="w-auto max-h-24  " src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" />
                   </div>
                   <div></div>
                 </Container.Item>
