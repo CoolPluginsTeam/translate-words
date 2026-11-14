@@ -22,7 +22,13 @@ const Sidebar = () => {
           'X-WP-Nonce': getNonce()
         }
       });
-      if (response?.state === 'activated' || response?.state === 'activate') {
+      if (response?.state === 'activated') {
+        // Reload so the LocoAI menu shows up in the admin sidebar right away.
+        setLocoaiState('activated');
+        window.location.reload();
+        return;
+      }
+      if (response?.state === 'activate') {
         setLocoaiState(response.state);
       } else {
         setLocoaiError(__('LocoAI could not be activated. Please try again.', 'translate-words'));
@@ -88,7 +94,7 @@ const Sidebar = () => {
                   <div className='w-[70%]'>
                     <h4>{__('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
                     {locoaiState === 'activated' ? (
-                      <span className='text-sm font-semibold text-green-700'>{__('Activated', 'translate-words')}</span>
+                      <span className='inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-900 bg-gray-200 border border-solid border-gray-300 rounded-md cursor-default'>{__('Activated', 'translate-words')}</span>
                     ) : (
                       <>
                         <Button
@@ -104,7 +110,7 @@ const Sidebar = () => {
                           {locoaiButtonLabel}
                         </Button>
                         {locoaiError && (
-                          <p className='text-sm text-red-600 mt-2 mb-0' role='alert'>{locoaiError}</p>
+                          <p className='text-sm text-black mt-2 mb-0' role='alert'>{locoaiError}</p>
                         )}
                       </>
                     )}

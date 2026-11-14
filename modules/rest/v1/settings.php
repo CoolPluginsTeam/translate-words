@@ -482,7 +482,7 @@ class Settings extends Abstract_Controller {
 	/**
 	 * Installs LocoAI (free) from WordPress.org, or activates an installed LocoAI.
 	 *
-	 * Each click does one step: Install only installs, Activate only activates.
+	 * Install also activates when Loco Translate is active; otherwise the user clicks Activate.
 	 * Pro is only activated when already installed; it is never downloaded.
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
@@ -499,7 +499,8 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
-		// Install only installs; the user then clicks Activate.
+		// Install, then activate right away when Loco Translate is active.
+		// If Loco Translate is inactive, stop after install and show the Activate button.
 		if ( 'install' === $status['state'] ) {
 			$installed = $this->download_locoai();
 			if ( is_wp_error( $installed ) ) {
@@ -516,13 +517,15 @@ class Settings extends Abstract_Controller {
 				);
 			}
 
-			return rest_ensure_response(
-				array(
-					'success' => true,
-					'state'   => 'activate',
-					'message' => __( 'LocoAI installed successfully.', 'translate-words' ),
-				)
-			);
+			if ( ! $status['loco_active'] ) {
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'state'   => 'activate',
+						'message' => __( 'LocoAI installed successfully.', 'translate-words' ),
+					)
+				);
+			}
 		}
 
 		if ( 'activate' === $status['state'] ) {
