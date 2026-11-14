@@ -52,15 +52,19 @@ export const applyTermAssignments = (data) => {
             const box = document.getElementById('tagsdiv-' + taxonomy);
             if (box && window.tagBox?.quickClicks) window.tagBox.quickClicks(box);
         }
-        Array.from(document.getElementsByName(`tax_input[${taxonomy}][]`))
-            .filter(input => input.tagName === 'SELECT').forEach(input => {
+        const selects = [
+            ...Array.from(document.getElementsByName(`tax_input[${taxonomy}][]`)).filter(input => input.tagName === 'SELECT'),
+            ...Array.from(document.querySelectorAll('select.attribute_values[data-taxonomy]')).filter(input => input.dataset.taxonomy === taxonomy),
+        ];
+        [...new Set(selects)].forEach(input => {
                 terms.forEach(term => {
-                    if (!Array.from(input.options).some(option => Number(option.value) === Number(term.id))) {
-                        input.add(new Option(term.name, term.id));
-                    }
+                    const existing = Array.from(input.options).find(option => Number(option.value) === Number(term.id));
+                    if (existing) existing.textContent = term.name;
+                    else input.add(new Option(term.name, term.id));
                 });
                 Array.from(input.options).forEach(option => { option.selected = ids.includes(Number(option.value)); });
-                input.dispatchEvent(new Event('change', { bubbles: true }));
+                if (window.jQuery) window.jQuery(input).trigger('change');
+                else input.dispatchEvent(new Event('change', { bubbles: true }));
             });
     });
 };

@@ -225,6 +225,7 @@ class Post_Term_Translation_Service {
 			}
 			$assigned[ $taxonomy ] = $ids;
 		}
+		do_action( 'lmat_post_terms_translated', $source_id, $target_id, $assigned );
 		return $assigned;
 	}
 }
