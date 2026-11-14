@@ -28,7 +28,7 @@
 	<a href="https://wordpress.org/plugins/translate-words/" target="_blank" rel="noopener noreferrer">
 	<?php
 	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
-	esc_html_e( 'Linguator AI – Auto Translate & Create Multilingual Sites', 'translate-words' );
+	esc_html_e( 'Linguator – AI Auto Translate & Create Multilingual Sites', 'translate-words' );
 	?>
 	</a>
 	</strong>
