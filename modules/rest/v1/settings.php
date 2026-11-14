@@ -258,6 +258,19 @@ class Settings extends Abstract_Controller {
 				),
 			)
 		);
+
+		// Install or activate LocoAI from the settings sidebar card.
+		register_rest_route(
+			$this->namespace,
+			"/{$this->rest_base}/locoai",
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'install_locoai' ),
+					'permission_callback' => array( $this, 'locoai_permissions_check' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -441,6 +454,169 @@ class Settings extends Abstract_Controller {
 				array( 'status' => 500 )
 			);
 		}
+	}
+
+	/**
+	 * Checks if the current user may install or activate LocoAI.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error
+	 */
+	public function locoai_permissions_check( $request ) {
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to activate plugins on this site.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		$nonce_check = $this->verify_nonce( $request );
+		if ( is_wp_error( $nonce_check ) ) {
+			return $nonce_check;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Installs (from WordPress.org) and/or activates LocoAI.
+	 *
+	 * Pro is only activated when already installed; it is never downloaded.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function install_locoai( $request ) {
+		$status = linguator_get_locoai_plugin_status();
+
+		if ( 'hidden' === $status['state'] ) {
+			return new WP_Error(
+				'lmat_locoai_parent_missing',
+				__( 'Please install Loco Translate first.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( 'install' === $status['state'] ) {
+			$installed = $this->download_locoai();
+			if ( is_wp_error( $installed ) ) {
+				return $installed;
+			}
+
+			$status = linguator_get_locoai_plugin_status();
+		}
+
+		if ( 'activate' === $status['state'] ) {
+			$activated = $this->activate_locoai( $status['plugin_file'] );
+			if ( is_wp_error( $activated ) ) {
+				return $activated;
+			}
+
+			$status = linguator_get_locoai_plugin_status();
+		}
+
+		if ( 'activated' !== $status['state'] ) {
+			return new WP_Error(
+				'lmat_locoai_failed',
+				__( 'LocoAI could not be activated. Please try again.', 'translate-words' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'state'   => 'activated',
+				'message' => __( 'LocoAI activated successfully.', 'translate-words' ),
+			)
+		);
+	}
+
+	/**
+	 * Downloads and installs LocoAI (free) from WordPress.org.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function download_locoai() {
+		if ( ! current_user_can( 'install_plugins' ) ) {
+			return new WP_Error(
+				'lmat_locoai_install_forbidden',
+				__( 'Sorry, you are not allowed to install plugins on this site.', 'translate-words' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+		$api = plugins_api(
+			'plugin_information',
+			array(
+				'slug'   => 'automatic-translator-addon-for-loco-translate',
+				'fields' => array( 'sections' => false ),
+			)
+		);
+
+		if ( is_wp_error( $api ) ) {
+			return new WP_Error( 'lmat_locoai_install_failed', $api->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		$skin     = new \WP_Ajax_Upgrader_Skin();
+		$upgrader = new \Plugin_Upgrader( $skin );
+		$result   = $upgrader->install( $api->download_link );
+
+		if ( is_wp_error( $result ) || is_wp_error( $skin->result ) ) {
+			$error = is_wp_error( $result ) ? $result : $skin->result;
+
+			// Folder already there means it is installed; the caller will activate it.
+			if ( 'folder_exists' !== $error->get_error_code() ) {
+				return new WP_Error( 'lmat_locoai_install_failed', $error->get_error_message(), array( 'status' => 500 ) );
+			}
+		} elseif ( $skin->get_errors()->has_errors() ) {
+			return new WP_Error( 'lmat_locoai_install_failed', $skin->get_error_messages(), array( 'status' => 500 ) );
+		} elseif ( null === $result ) {
+			global $wp_filesystem;
+
+			$message = __( 'Unable to connect to the filesystem. Please confirm your credentials.', 'translate-words' );
+			if ( $wp_filesystem instanceof \WP_Filesystem_Base && is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
+				$message = $wp_filesystem->errors->get_error_message();
+			}
+
+			return new WP_Error( 'lmat_locoai_filesystem', $message, array( 'status' => 500 ) );
+		}
+
+		wp_clean_plugins_cache();
+
+		return true;
+	}
+
+	/**
+	 * Activates an installed LocoAI plugin file.
+	 *
+	 * @param string $plugin_file Plugin file relative to the plugins folder.
+	 * @return true|WP_Error
+	 */
+	private function activate_locoai( $plugin_file ) {
+		if ( '' === $plugin_file || ! current_user_can( 'activate_plugin', $plugin_file ) ) {
+			return new WP_Error(
+				'lmat_locoai_activate_forbidden',
+				__( 'Sorry, you are not allowed to activate this plugin.', 'translate-words' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// Keep any output from the plugin's activation hook out of the JSON response.
+		ob_start();
+		$result = activate_plugin( $plugin_file );
+		ob_end_clean();
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'lmat_locoai_activate_failed', $result->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		return true;
 	}
 
 	/**

@@ -964,22 +964,9 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 * @return array Plugin status information
 	 */
 	private function linguator_get_locoai_plugin_status() {
-		// Ensure plugin functions are available
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-		
-		// Check if plugin is installed
-		$plugin_path = 'automatic-translator-addon-for-loco-translate/automatic-translator-addon-for-loco-translate.php';
-		$all_plugins = get_plugins();
-		$is_installed = isset( $all_plugins[ $plugin_path ] );
-		
-		// Check if plugin is active
-		$is_active = is_plugin_active( $plugin_path );
-		return array(
-			'installed' => $is_installed,
-			'active'    => $is_active,
-			'status'    => $is_active ? 'active' : ( $is_installed ? 'installed' : 'not_installed' )
-		);
+		$status = \linguator_get_locoai_plugin_status();
+		unset( $status['plugin_file'] );
+
+		return $status;
 	}
 }

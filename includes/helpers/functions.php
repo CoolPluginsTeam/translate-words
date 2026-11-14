@@ -550,3 +550,74 @@ function linguator_register_style( string $name, array $dependencies = array(), 
 
 	wp_register_style( $prefix . $name, $src, $dependencies, (string) $version );
 }
+
+/**
+ * Status of LocoAI (free or Pro) for the settings sidebar card.
+ *
+ * States:
+ * - hidden:    Loco Translate (the parent plugin) is not installed, so the card is not shown.
+ * - activated: LocoAI free or Pro is active.
+ * - activate:  LocoAI is installed but inactive (Pro is preferred over free).
+ * - install:   Neither LocoAI free nor Pro is installed.
+ *
+ * @return array{state:string,plugin_file:string,installed:bool,active:bool,status:string}
+ */
+function linguator_get_locoai_plugin_status() {
+	if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+
+	$plugins = get_plugins();
+
+	// Exact main file first, then any plugin file inside the same folder.
+	$find = static function ( $plugin_file ) use ( $plugins ) {
+		if ( isset( $plugins[ $plugin_file ] ) ) {
+			return $plugin_file;
+		}
+
+		$plugin_dir = trailingslashit( dirname( $plugin_file ) );
+		foreach ( array_keys( $plugins ) as $candidate ) {
+			if ( 0 === strpos( (string) $candidate, $plugin_dir ) ) {
+				return (string) $candidate;
+			}
+		}
+
+		return '';
+	};
+
+	$loco_file = $find( 'loco-translate/loco.php' );
+	$free_file = $find( 'automatic-translator-addon-for-loco-translate/automatic-translator-addon-for-loco-translate.php' );
+	$pro_file  = $find( 'loco-automatic-translate-addon-pro/loco-automatic-translate-addon-pro.php' );
+
+	$free_active = '' !== $free_file && is_plugin_active( $free_file );
+	$pro_active  = '' !== $pro_file && is_plugin_active( $pro_file );
+
+	$installed = '' !== $free_file || '' !== $pro_file;
+	$active    = $free_active || $pro_active;
+
+	if ( '' === $loco_file ) {
+		$state       = 'hidden';
+		$plugin_file = '';
+	} elseif ( $active ) {
+		$state       = 'activated';
+		$plugin_file = $pro_active ? $pro_file : $free_file;
+	} elseif ( '' !== $pro_file ) {
+		$state       = 'activate';
+		$plugin_file = $pro_file;
+	} elseif ( '' !== $free_file ) {
+		$state       = 'activate';
+		$plugin_file = $free_file;
+	} else {
+		$state       = 'install';
+		$plugin_file = '';
+	}
+
+	return array(
+		'state'       => $state,
+		'plugin_file' => $plugin_file,
+		'installed'   => $installed,
+		'active'      => $active,
+		// Legacy value kept for older sidebar builds.
+		'status'      => $active ? 'active' : ( $installed ? 'installed' : 'not_installed' ),
+	);
+}
