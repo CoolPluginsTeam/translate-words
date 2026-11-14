@@ -3,6 +3,7 @@ import YoastSeoFields from '../../component/translate-seo-fields/yoast-seo-field
 import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import translatedMetaFields from '../meta-fields/index.js';
 import saveMediaTranslations from '../../helper/save-media-translations.js';
+import saveTermTranslations from '../../helper/save-term-translations.js';
 
 // Update widget content with translations
 const lmatUpdateWidgetContent = (translations) => {
@@ -468,6 +469,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
             }
 
             // Save translated attachment metadata.
+            await saveTermTranslations( service );
             await saveMediaTranslations( service, postContent );
 
             modalClose();

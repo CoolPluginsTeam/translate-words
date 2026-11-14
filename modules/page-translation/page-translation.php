@@ -549,6 +549,8 @@ class Linguator_Page_Translation {
 				'AIRequestMaxTokens'       => (int) get_option( 'lmat_ai_request_token_per_request', 500 ),
 				'AIRequestBatchSize'       => (int) get_option( 'lmat_ai_request_batch_size', 5 ),
 				'mediaSupport'             => ! empty( LMAT()->options['media_support'] ),
+				'save_term_translations'   => 'lmat_save_term_translations',
+				'save_term_nonce'          => wp_create_nonce( 'lmat_save_term_translations' ),
 				'save_media_translations'  => 'lmat_save_media_translations',
 				'save_media_nonce'         => wp_create_nonce( 'lmat_save_media_translations' ),
 			),

@@ -70,6 +70,16 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
+require_once __DIR__ . '/includes/services/translation/post-term-translation-service.php';
+add_action(
+	'lmat_save_post',
+	static function ( $post_id ) {
+		$service = new \Linguator\Includes\Services\Translation\Post_Term_Translation_Service( LMAT() );
+		$service->reapply_pending( $post_id );
+	},
+	30
+);
+
 // Register Gemini (Google AI) provider only when Gemini is in the allowed list
 // (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).
 add_action(

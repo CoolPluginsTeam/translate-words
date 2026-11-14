@@ -4,6 +4,7 @@ import RankMathSeo from '../../component/translate-seo-fields/rank-math-seo.js';
 import SeoPressFields from '../../component/translate-seo-fields/seo-press.js';
 import translatedMetaFields from '../meta-fields/index.js';
 import saveMediaTranslations from '../../helper/save-media-translations.js';
+import saveTermTranslations from '../../helper/save-term-translations.js';
 
 /**
  * Updates WPBakery Page Builder content with translations.
@@ -437,6 +438,7 @@ const updateWPBakeryPage = ({ postContent, modalClose, service }) => {
             await saveTranslationStatus();
             
             // Save translated attachment metadata.
+            await saveTermTranslations( service );
             await saveMediaTranslations( service, postContent );
 
             // Close modal

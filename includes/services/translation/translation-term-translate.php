@@ -61,7 +61,13 @@ class Translation_Term_Model {
 			return new WP_Error( 'lmat_translate_term_no_source_term', sprintf( __( 'The term with ID %d could not be translated as it doesn\'t exist.', 'translate-words' ), (int) $entry['id'] ) );
 		}
 
+		if ( ! $this->model->is_translated_taxonomy( $source_term->taxonomy ) ) {
+			return new WP_Error( 'lmat_taxonomy_not_translatable', __( 'This taxonomy is not enabled for translation.', 'translate-words' ) );
+		}
 		$source_language = $this->model->term->get_language( $source_term->term_id );
+		if ( ! $source_language || $source_language->slug === $target_language->slug ) {
+			return new WP_Error( 'lmat_invalid_term_language', __( 'Invalid source or target term language.', 'translate-words' ) );
+		}
 		$tr_term_name        = $this->linguator_get_translated_term_name( $source_term, $entry['data'] );
 		$tr_term_description = $this->get_translated_term_description( $source_term, $entry['data'] );
 		$tr_term_id          = $this->model->term->get( $entry['id'], $target_language );

@@ -4,7 +4,7 @@ import {store} from '../../../redux-store/store.js';
 const updateMetaFields = (source, lang, serviceProvider, postId) => {
     const AllowedMetaFields=selectAllowedMetaFields(store.getState());
 
-    const metaFields = source;
+    const metaFields = { ...source };
     const translateObjectMetaFields = (keys, value) => {
         Object.keys(value).forEach(key => {
             const keyArr = [...keys, key];
@@ -42,10 +42,17 @@ const updateMetaFields = (source, lang, serviceProvider, postId) => {
             } else if(typeof source[key] === 'string'){
                 if (AllowedMetaFields && AllowedMetaFields[key] && AllowedMetaFields[key].status) {
                     const uniqueKey = 'metaFields_lmat_' + key;
+                    const providerValue = store.getState().translatedContent[postId]?.[uniqueKey]?.translation?.[serviceProvider]?.[lang];
+                    if (key.startsWith('_lmat_term_name_') && (typeof providerValue !== 'string' || !providerValue.trim())) {
+                        delete metaFields[key];
+                        return;
+                    }
                     const translatedValue=selectTranslatedContent(store.getState(), postId, uniqueKey, lang, serviceProvider);
 
                     if (translatedValue && '' !== translatedValue) {
                         metaFields[key] = translatedValue;
+                    } else if (key.startsWith('_lmat_term_name_')) {
+                        delete metaFields[key];
                     }
                 }
             }

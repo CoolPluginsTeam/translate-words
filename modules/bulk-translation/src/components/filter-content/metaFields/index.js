@@ -24,12 +24,12 @@ const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, al
         const dateTimeRegex = /^\d{1,2}\/\d{1,2}\/\d{4}(?:\s+\d{1,2}:\d{2}\s*(?:AM|PM)?)?$/i;
         const digitsWithSymbols = /^[0-9.\- _#!$%^&*()+~`]+$/;
 
-        if (dateTimeRegex.test(value)) {
+        if (!key.includes('_lmat_term_name_') && dateTimeRegex.test(value)) {
             // If value is a date or timestamp, skip saving as translatable string
             return;
         }
 
-        if (digitsWithSymbols.test(value)) {
+        if (!key.includes('_lmat_term_name_') && digitsWithSymbols.test(value)) {
             // If value is a number, skip saving as translatable string
             return;
         }

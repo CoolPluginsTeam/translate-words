@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Services\Translation\Translation_Term_Model;
 use Linguator\Includes\Services\Media\Media_Translation_Service;
+use Linguator\Includes\Services\Translation\Post_Term_Translation_Service;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
 use Translation_Entry;
@@ -1654,10 +1655,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$post_meta_sync = false;
 			}
 
+			$allowed_meta_fields = $post_meta_sync ? array() : Custom_Fields::get_allowed_custom_fields();
 			if ( count( $translate_lang ) > 0 && ! ( count( $post_ids ) < 1 ) ) {
 				$lmat_langs           = $linguator->model->get_languages_list();
 				$lmat_langs_slugs     = array_column( $lmat_langs, 'slug' );
-				$allowed_meta_fields = Custom_Fields::get_allowed_custom_fields();
 				
 				foreach ( $post_ids as $postId ) {
 
@@ -1753,6 +1754,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( $posts_translate[ $postId ]['editor_type'] === 'block' && ! $gutenberg_block ) {
 					$gutenberg_block = true;
 				}
+				$term_service = new Post_Term_Translation_Service( LMAT() );
+				foreach ( $term_service->get_pending_names( $postId, $translate_lang ) as $key => $name ) {
+					$posts_translate[ $postId ]['metaFields'][ $key ] = $name;
+					$allowed_meta_fields[ $key ] = array( 'type' => 'string', 'status' => true );
+				}
 
 					foreach ( $translate_lang as $lang ) {
 						if ( in_array( $lang, $lmat_langs_slugs ) ) {
@@ -1774,9 +1780,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				'posts'                    => $posts_translate,
 				'CreateTranslatePostNonce' => wp_create_nonce( 'lmat_create_translate_post_nonce' ),
 			);
-			if ( ! $post_meta_sync ) {
-				$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
-			}
+			$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
 
 			// Append media strings per post when media translation is enabled.
 			if ( function_exists( 'LMAT' ) ) {
@@ -1907,6 +1911,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					: $decoded_meta_fields;
 			}
 
+			$term_service = new Post_Term_Translation_Service( LMAT() );
+			$term_names = array();
+			if ( isset( $post_data['post_meta_fields'] ) && is_array( $post_data['post_meta_fields'] ) ) {
+				$term_names = $term_service->extract_names( $post_data['post_meta_fields'] );
+			}
+
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
 				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
@@ -2011,6 +2021,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 
+			if ( $term_names ) {
+				$term_result = $term_service->apply( $source_post_id, (int) $new_post_id, $term_names );
+				if ( is_wp_error( $term_result ) ) {
+					return $term_result;
+				}
+			}
+
 			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
 			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
@@ -2063,6 +2080,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$params                  = $params->get_params();
+			$taxonomy = sanitize_key( (string) ( $params['taxonomy'] ?? '' ) );
+			if ( ! LMAT()->model->is_translated_taxonomy( $taxonomy ) ) {
+				wp_send_json_error( __( 'This taxonomy is not enabled for translation.', 'translate-words' ), 400 );
+			}
+
 
 			// Verify the nonce
 			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
@@ -2168,6 +2190,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$params = $params->get_params();
+			$taxonomy = sanitize_key( (string) ( $params['taxonomy'] ?? '' ) );
+			if ( ! LMAT()->model->is_translated_taxonomy( $taxonomy ) ) {
+				wp_send_json_error( __( 'This taxonomy is not enabled for translation.', 'translate-words' ), 400 );
+			}
+
 
 			$term_id                 = intval( sanitize_text_field( $params['term_id'] ) );
 			$target_language         = isset( $params['target_language'] ) ? sanitize_text_field( $params['target_language'] ) : '';
@@ -2187,6 +2214,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$get_term = get_term( $term_id, $taxonomy );
+			if ( ! $get_term instanceof \WP_Term || ! LMAT()->model->get_language( $target_language ) ) {
+				wp_send_json_error( __( 'Invalid term or target language.', 'translate-words' ), 400 );
+			}
 
 			$translations = new Translations();
 
@@ -2226,6 +2256,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$target_language_object
 			);
 
+			if ( is_wp_error( $term_id ) ) {
+				wp_send_json_error( $term_id->get_error_message(), 400 );
+			}
 			if ( ! $term_id ) {
 				wp_send_json_error( 'Unable to create the translated post for parent post ID ' . $term_id . ' in ' . $target_language_object . '.' );
 				exit;

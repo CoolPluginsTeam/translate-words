@@ -3,7 +3,10 @@ import { select } from "@wordpress/data";
 const translatedMetaFields = (sourceMetaFields, service) => {
 
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
-    const metaFields = sourceMetaFields;
+    const metaFields = { ...sourceMetaFields };
+    Object.keys(metaFields).forEach(key => {
+        if (key.startsWith('_lmat_term_name_')) delete metaFields[key];
+    });
 
     const updateFieldOnPage=(key, value, sourceValue)=>{
         const selectors=[`[data-depend-id="${key}"]`, `[name="${key}"]`, `[id="${key}"]`];
@@ -74,6 +77,7 @@ const translatedMetaFields = (sourceMetaFields, service) => {
 
     if (sourceMetaFields && Object.keys(sourceMetaFields).length > 0) {
         Object.keys(sourceMetaFields).forEach(key => {
+            if (key.startsWith('_lmat_term_name_')) return;
             if (typeof sourceMetaFields[key] === 'object' && Object.keys(sourceMetaFields[key]).length > 0) {
                 translateObjectMetaFields([key], sourceMetaFields[key]);
             } else if(typeof sourceMetaFields[key] === 'string'){

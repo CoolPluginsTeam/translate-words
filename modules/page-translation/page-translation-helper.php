@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Includes\Other\Linguator_Translation_Dashboard;
 use Linguator\Custom_Fields\Custom_Fields;
 use Linguator\Includes\Services\Media\Media_Translation_Service;
+use Linguator\Includes\Services\Translation\Post_Term_Translation_Service;
 
 /**
  * Handle LMAT Page Translation ajax requests
@@ -60,6 +61,7 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 		public function __construct() {
 			if ( is_admin() ) {
 				add_action( 'wp_ajax_lmat_update_translate_data', array( $this, 'linguator_update_translate_data' ) );
+				add_action( 'wp_ajax_lmat_save_term_translations', array( $this, 'save_term_translations' ) );
 			}
 		}
 
@@ -87,12 +89,8 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
                 $post_meta_sync = false;
             }
 
-			if($post_meta_sync){
-				wp_send_json_success( __( 'Post meta sync is enabled. Please disable post meta sync in Linguator settings.', 'translate-words' ) );
-			}
-
-			$allowed_meta_fields=Custom_Fields::get_allowed_custom_fields();
-			$post_meta_fields=get_post_meta($post_id);
+			$allowed_meta_fields = $post_meta_sync ? array() : Custom_Fields::get_allowed_custom_fields();
+			$post_meta_fields = $post_meta_sync ? array() : get_post_meta( $post_id );
 
 			$existed_meta_fields=array_intersect(array_keys($post_meta_fields), array_keys($allowed_meta_fields));
 			$filtered_meta_fields=array();
@@ -104,6 +102,12 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 				}
 			}
 
+			$target_language = isset( $_POST['target_language'] ) ? sanitize_key( wp_unslash( $_POST['target_language'] ) ) : '';
+			$term_service = new Post_Term_Translation_Service( LMAT() );
+			foreach ( $term_service->get_pending_names( $post_id, array( $target_language ) ) as $key => $name ) {
+				$filtered_meta_fields[ $key ] = $name;
+				$allowed_meta_fields[ $key ] = array( 'type' => 'string', 'status' => true );
+			}
 			wp_send_json_success( array( 'metaFields' => $filtered_meta_fields, 'allowedMetaFields' => $allowed_meta_fields ) );
 			exit;
 		}
@@ -182,6 +186,58 @@ if ( ! class_exists( 'Linguator_Page_Translation_Helper' ) ) {
 			}
 
 			exit;
+		}
+
+		/** Save only translated names of the source post's own terms and ancestors. */
+		public function save_term_translations() {
+			if ( ! check_ajax_referer( 'lmat_save_term_translations', 'term_nonce', false ) ) {
+				wp_send_json_error( __( 'Invalid security token sent.', 'translate-words' ), 403 );
+			}
+			$source_id = isset( $_POST['source_post_id'] ) ? absint( $_POST['source_post_id'] ) : 0;
+			$target_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+			if ( ! $source_id || ! $target_id || ! current_user_can( 'edit_post', $source_id ) || ! current_user_can( 'edit_post', $target_id ) ) {
+				wp_send_json_error( __( 'Unauthorized', 'translate-words' ), 403 );
+			}
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON values are sanitized by extract_names and IDs are restricted to the source post.
+			$fields = isset( $_POST['term_names'] ) && is_string( $_POST['term_names'] ) ? json_decode( wp_unslash( $_POST['term_names'] ), true ) : null;
+			if ( ! is_array( $fields ) ) {
+				wp_send_json_error( __( 'Invalid term translations.', 'translate-words' ), 400 );
+			}
+			// A fresh Classic Editor translation is still an auto-draft. Its validated
+			// translation intent is stored before its language/link is finalized on save.
+			$is_auto_draft = 'auto-draft' === get_post_status( $target_id );
+			if ( $is_auto_draft && (int) get_post_meta( $target_id, '_lmat_from_post', true ) === $source_id ) {
+				$intended_language = LMAT()->model->get_language( get_post_meta( $target_id, '_lmat_new_lang', true ) );
+				if ( $intended_language && get_post_type( $source_id ) === get_post_type( $target_id ) ) {
+					LMAT()->model->post->set_language( $target_id, $intended_language );
+				}
+			}
+			$service = new Post_Term_Translation_Service( LMAT() );
+			$names = $service->extract_names( $fields );
+			$result = $service->apply( $source_id, $target_id, $names );
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( $result->get_error_message(), 400 );
+			}
+			if ( $is_auto_draft && $result ) {
+				update_post_meta( $target_id, '_lmat_pending_ai_term_source', $source_id );
+			}
+			$rest_terms = array();
+			$taxonomies = array();
+			foreach ( $result as $taxonomy => $ids ) {
+				$object = get_taxonomy( $taxonomy );
+				$terms = array();
+				foreach ( $ids as $id ) {
+					$term = get_term( $id, $taxonomy );
+					if ( $term instanceof \WP_Term ) {
+						$terms[] = array( 'id' => (int) $id, 'name' => $term->name );
+					}
+				}
+				$taxonomies[ $taxonomy ] = array( 'hierarchical' => (bool) $object->hierarchical, 'terms' => $terms );
+				if ( $object->show_in_rest ) {
+					$rest_terms[ $object->rest_base ? $object->rest_base : $taxonomy ] = $ids;
+				}
+			}
+			wp_send_json_success( array( 'rest_terms' => $rest_terms, 'taxonomies' => $taxonomies ) );
 		}
 
 		public function linguator_update_translate_data() {
