@@ -965,7 +965,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 */
 	private function linguator_get_locoai_plugin_status() {
 		$status = \linguator_get_locoai_plugin_status();
-		unset( $status['plugin_file'] );
+		unset( $status['plugin_file'], $status['loco_file'] );
 
 		return $status;
 	}

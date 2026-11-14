@@ -480,8 +480,9 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
-	 * Installs (from WordPress.org) and/or activates LocoAI.
+	 * Installs LocoAI (free) from WordPress.org, or activates an installed LocoAI.
 	 *
+	 * Each click does one step: Install only installs, Activate only activates.
 	 * Pro is only activated when already installed; it is never downloaded.
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
@@ -498,6 +499,7 @@ class Settings extends Abstract_Controller {
 			);
 		}
 
+		// Install only installs; the user then clicks Activate.
 		if ( 'install' === $status['state'] ) {
 			$installed = $this->download_locoai();
 			if ( is_wp_error( $installed ) ) {
@@ -505,9 +507,34 @@ class Settings extends Abstract_Controller {
 			}
 
 			$status = linguator_get_locoai_plugin_status();
+
+			if ( 'activate' !== $status['state'] ) {
+				return new WP_Error(
+					'lmat_locoai_failed',
+					__( 'LocoAI could not be installed. Please try again.', 'translate-words' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			return rest_ensure_response(
+				array(
+					'success' => true,
+					'state'   => 'activate',
+					'message' => __( 'LocoAI installed successfully.', 'translate-words' ),
+				)
+			);
 		}
 
 		if ( 'activate' === $status['state'] ) {
+			// LocoAI requires Loco Translate to be active (WordPress plugin dependencies).
+			if ( ! $status['loco_active'] ) {
+				return new WP_Error(
+					'lmat_locoai_parent_inactive',
+					__( 'Please activate Loco Translate first.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
 			$activated = $this->activate_locoai( $status['plugin_file'] );
 			if ( is_wp_error( $activated ) ) {
 				return $activated;
@@ -560,7 +587,7 @@ class Settings extends Abstract_Controller {
 		);
 
 		if ( is_wp_error( $api ) ) {
-			return new WP_Error( 'lmat_locoai_install_failed', $api->get_error_message(), array( 'status' => 500 ) );
+			return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $api->get_error_message() ), array( 'status' => 500 ) );
 		}
 
 		$skin     = new \WP_Ajax_Upgrader_Skin();
@@ -572,10 +599,10 @@ class Settings extends Abstract_Controller {
 
 			// Folder already there means it is installed; the caller will activate it.
 			if ( 'folder_exists' !== $error->get_error_code() ) {
-				return new WP_Error( 'lmat_locoai_install_failed', $error->get_error_message(), array( 'status' => 500 ) );
+				return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $error->get_error_message() ), array( 'status' => 500 ) );
 			}
 		} elseif ( $skin->get_errors()->has_errors() ) {
-			return new WP_Error( 'lmat_locoai_install_failed', $skin->get_error_messages(), array( 'status' => 500 ) );
+			return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $skin->get_error_messages() ), array( 'status' => 500 ) );
 		} elseif ( null === $result ) {
 			global $wp_filesystem;
 
@@ -584,7 +611,7 @@ class Settings extends Abstract_Controller {
 				$message = $wp_filesystem->errors->get_error_message();
 			}
 
-			return new WP_Error( 'lmat_locoai_filesystem', $message, array( 'status' => 500 ) );
+			return new WP_Error( 'lmat_locoai_filesystem', $this->plain_error_message( $message ), array( 'status' => 500 ) );
 		}
 
 		wp_clean_plugins_cache();
@@ -613,10 +640,20 @@ class Settings extends Abstract_Controller {
 		ob_end_clean();
 
 		if ( is_wp_error( $result ) ) {
-			return new WP_Error( 'lmat_locoai_activate_failed', $result->get_error_message(), array( 'status' => 500 ) );
+			return new WP_Error( 'lmat_locoai_activate_failed', $this->plain_error_message( $result->get_error_message() ), array( 'status' => 500 ) );
 		}
 
 		return true;
+	}
+
+	/**
+	 * Turns a WordPress error message (which may contain HTML) into plain text for the card.
+	 *
+	 * @param string $message Error message.
+	 * @return string
+	 */
+	private function plain_error_message( $message ) {
+		return trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( (string) $message ) ) );
 	}
 
 	/**

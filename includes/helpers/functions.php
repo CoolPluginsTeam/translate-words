@@ -560,7 +560,7 @@ function linguator_register_style( string $name, array $dependencies = array(), 
  * - activate:  LocoAI is installed but inactive (Pro is preferred over free).
  * - install:   Neither LocoAI free nor Pro is installed.
  *
- * @return array{state:string,plugin_file:string,installed:bool,active:bool,status:string}
+ * @return array{state:string,plugin_file:string,loco_file:string,loco_active:bool,installed:bool,active:bool,status:string}
  */
 function linguator_get_locoai_plugin_status() {
 	if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) ) {
@@ -615,6 +615,8 @@ function linguator_get_locoai_plugin_status() {
 	return array(
 		'state'       => $state,
 		'plugin_file' => $plugin_file,
+		'loco_file'   => $loco_file,
+		'loco_active' => '' !== $loco_file && is_plugin_active( $loco_file ),
 		'installed'   => $installed,
 		'active'      => $active,
 		// Legacy value kept for older sidebar builds.

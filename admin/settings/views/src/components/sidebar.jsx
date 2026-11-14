@@ -22,8 +22,8 @@ const Sidebar = () => {
           'X-WP-Nonce': getNonce()
         }
       });
-      if (response?.state === 'activated') {
-        setLocoaiState('activated');
+      if (response?.state === 'activated' || response?.state === 'activate') {
+        setLocoaiState(response.state);
       } else {
         setLocoaiError(__('LocoAI could not be activated. Please try again.', 'translate-words'));
       }
