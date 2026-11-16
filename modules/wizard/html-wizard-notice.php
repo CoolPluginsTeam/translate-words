@@ -1,4 +1,4 @@
-	<?php
+<?php
 	/**
 	 * Displays the wizard notice content
 	 *
