@@ -9,6 +9,8 @@ const Sidebar = () => {
   const [locoaiState, setLocoaiState] = useState(window.lmat_settings?.locoai_plugin_status?.state || 'hidden');
   const [locoaiBusy, setLocoaiBusy] = useState(false);
   const [locoaiError, setLocoaiError] = useState('');
+  // True when the installed/active LocoAI is the Pro version.
+  const locoaiIsPro = !!window.lmat_settings?.locoai_plugin_status?.is_pro;
 
   const handleLocoai = async () => {
     setLocoaiBusy(true);
@@ -97,7 +99,7 @@ const Sidebar = () => {
                 <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle my-1" />
                 <Container.Item className='flex'>
                   <div className='w-[70%]'>
-                    <h4>{__('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
+                    <h4>{locoaiIsPro ? __('LocoAI – Auto Translate for Loco Translate (Pro)', 'translate-words') : __('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
                     {locoaiState === 'activated' ? (
                       <span className='inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-900 bg-gray-200 border border-solid border-gray-300 rounded-md cursor-default'>{__('Activated', 'translate-words')}</span>
                     ) : (

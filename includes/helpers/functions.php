@@ -560,7 +560,9 @@ function linguator_register_style( string $name, array $dependencies = array(), 
  * - activate:  LocoAI is installed but inactive (Pro is preferred over free).
  * - install:   Neither LocoAI free nor Pro is installed.
  *
- * @return array{state:string,plugin_file:string,loco_file:string,loco_active:bool}
+ * is_pro is true when the LocoAI found (active or installed) is the Pro version.
+ *
+ * @return array{state:string,plugin_file:string,loco_file:string,loco_active:bool,is_pro:bool}
  */
 function linguator_get_locoai_plugin_status() {
 	if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) ) {
@@ -616,5 +618,6 @@ function linguator_get_locoai_plugin_status() {
 		'plugin_file' => $plugin_file,
 		'loco_file'   => $loco_file,
 		'loco_active' => '' !== $loco_file && is_plugin_active( $loco_file ),
+		'is_pro'      => '' !== $pro_file && $plugin_file === $pro_file,
 	);
 }
