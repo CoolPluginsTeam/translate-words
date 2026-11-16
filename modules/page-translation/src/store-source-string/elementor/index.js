@@ -45,6 +45,7 @@ const ElementorSaveSource = (content) => {
      *
      *  - `$$type === 'string'`   → plain text stored in `.value`
      *  - `$$type === 'html-v3'`  → rich text stored in `.value.content.value`
+     *  - `$$type === 'escaped-html'` → escaped HTML/text stored in `.value` (Elementor 4.3+)
      *
      * @param {Object} element - The atomic widget value object (has `$$type`).
      * @param {Array}  ids     - The current ID path used to build the unique key.
@@ -64,6 +65,11 @@ const ElementorSaveSource = (content) => {
                 translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
             }
         } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                translateContent([...ids, 'value'], element.value);
+            }
+        } else if(element?.$$type === 'escaped-html'){
+            // Elementor 4.3+ migrated many atomic text props from html-v3 to escaped-html.
             if(element.value && '' !== element.value){
                 translateContent([...ids, 'value'], element.value);
             }

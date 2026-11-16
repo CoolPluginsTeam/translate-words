@@ -225,7 +225,7 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
      * Handles Elementor Atomic Widget typed values within storeSourceStrings.
      *
      * Atomic widgets store translatable fields as objects with a `$$type` property
-     * (e.g. `{ $$type: 'string', value: 'Hello' }` or `{ $$type: 'html-v3', ... }`).
+     * (e.g. `{ $$type: 'string', value: 'Hello' }` or `{ $$type: 'html-v3', ... }`, or `{ $$type: 'escaped-html', value: '...' }`).
      * This helper extracts the inner string, looks up its translation, and pushes a
      * translation entry marked with `isAtomic: true` so the apply phase knows to
      * traverse the nested attribute path.
@@ -259,6 +259,18 @@ const updateElementorPage = ({ postContent, modalClose, service }) => {
                 });
             }
         } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
+                const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
+                translations.push({
+                    ID: widgetId,
+                    key: `${pathKey}_lmat_page_translation_value`,
+                    translatedContent: translatedData,
+                    isAtomic: true
+                });
+            }
+        } else if(element?.$$type === 'escaped-html'){
+            // Elementor 4.3+ migrated many atomic text props from html-v3 to escaped-html.
             if(element.value && '' !== element.value){
                 const uniqueKey = ids.join('_lmat_page_translation_') + '_lmat_page_translation_value';
                 const translatedData = select('block-lmatPageTranslation/translate').getTranslatedString('content', element.value, uniqueKey, service);
