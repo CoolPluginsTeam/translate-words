@@ -97,9 +97,10 @@ const Sidebar = () => {
               <div className=' p-6 bg-white border border-gray-200 rounded-lg shadow-sm'>
                 <h2>{__('Automatically Translate Plugins & Themes', 'translate-words')}</h2>
                 <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle my-1" />
-                <Container.Item className='flex'>
-                  <div className='w-[70%]'>
-                    <h4>{locoaiIsPro ? __('LocoAI – Auto Translate for Loco Translate (Pro)', 'translate-words') : __('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
+                <Container.Item className='flex items-center gap-2'>
+                  <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                    <h4 className='mt-2 mb-1' style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{locoaiIsPro ? __('LocoAI – Auto Translate for Loco Translate (Pro)', 'translate-words') : __('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
+                    <p className='text-sm mt-0 mb-3' style={{ color: '#6b7280' }}>{__('Loco addon to translate plugins and themes.', 'translate-words')}</p>
                     {locoaiState === 'activated' ? (
                       <span className='inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-900 bg-gray-200 border border-solid border-gray-300 rounded-md cursor-default'>{__('Activated', 'translate-words')}</span>
                     ) : (
@@ -122,8 +123,8 @@ const Sidebar = () => {
                       </>
                     )}
                   </div>
-                  <div className='w-[30%] flex items-center object-contain p-2'>
-                    <img className="w-auto max-h-24  " src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" />
+                  <div className='flex items-center' style={{ flex: '0 0 auto' }}>
+                    <img style={{ width: '64px', height: '64px', objectFit: 'contain' }} src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" />
                   </div>
                   <div></div>
                 </Container.Item>
