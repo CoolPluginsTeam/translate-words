@@ -22,6 +22,11 @@ const Sidebar = () => {
           'X-WP-Nonce': getNonce()
         }
       });
+      if (response?.success === false) {
+        // Expected failures (e.g. Loco Translate inactive) come back as 200 with a message.
+        setLocoaiError(response?.message || __('Something went wrong. Please try again.', 'translate-words'));
+        return;
+      }
       if (response?.state === 'activated') {
         // Reload so the LocoAI menu shows up in the admin sidebar right away.
         setLocoaiState('activated');

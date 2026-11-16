@@ -531,10 +531,14 @@ class Settings extends Abstract_Controller {
 		if ( 'activate' === $status['state'] ) {
 			// LocoAI requires Loco Translate to be active (WordPress plugin dependencies).
 			if ( ! $status['loco_active'] ) {
-				return new WP_Error(
-					'lmat_locoai_parent_inactive',
-					__( 'Please activate Loco Translate first.', 'translate-words' ),
-					array( 'status' => 400 )
+				// Expected case, not a server error: return 200 so the browser console stays clean.
+				return rest_ensure_response(
+					array(
+						'success' => false,
+						'state'   => 'activate',
+						'code'    => 'lmat_locoai_parent_inactive',
+						'message' => __( 'Please activate Loco Translate first.', 'translate-words' ),
+					)
 				);
 			}
 
