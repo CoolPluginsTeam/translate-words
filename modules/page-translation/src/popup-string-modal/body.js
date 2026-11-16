@@ -4,9 +4,6 @@ import { __ } from "@wordpress/i18n";
 import { select, dispatch } from "@wordpress/data";
 import { Fragment } from "@wordpress/element";
 import TranslateService from "../component/translate-provider/index.js";
-import ReactDOM from "react-dom";
-import { InfoPopup } from "../component/RightPopup/index.js";
-import SaveTranslation from '../component/store-translated-string/index.js';
 import DOMPurify from "dompurify";
 
 const StringPopUpBody = (props) => {
@@ -18,36 +15,8 @@ const StringPopUpBody = (props) => {
     const imgFolder = lmatPageTranslationGlobal.lmat_url + 'assets/images/';
 
 
-    // Add refs and state for popup
     const tableRef = useRef(null);
-    const [popupInfo, setPopupInfo] = useState(null);
-    const [editingCells, setEditingCells] = useState([]);
-    const [editingValues, setEditingValues] = useState({});
-    const textareaRefs = useRef({});
-    const [activePopupCell, setActivePopupCell] = useState(null);
-    const [savedValues, setSavedValues] = useState({});
     const [translationError, setTranslationError] = useState(null);
-
-    // Copy/Save popup lives inside the scrollable string list so it stays in the modal.
-    const POPUP_WIDTH = 56;
-    const POPUP_HEIGHT = 130;
-    const getPopupContainer = () =>
-        tableRef.current?.closest('.lmat_page_translation_string_container') ||
-        document.querySelector('.lmat_page_translation_string_container');
-
-    const getPopupPosition = (td) => {
-        const container = getPopupContainer();
-        if (!container || !td) return null;
-        const tdRect = td.getBoundingClientRect();
-        const cRect = container.getBoundingClientRect();
-        // Inside the cell's right edge, never past the container's visible width.
-        let left = tdRect.right - cRect.left + container.scrollLeft - POPUP_WIDTH - 8;
-        left = Math.max(0, Math.min(left, container.scrollLeft + container.clientWidth - POPUP_WIDTH - 8));
-        let top = tdRect.top - cRect.top + container.scrollTop;
-        const maxTop = container.scrollTop + container.clientHeight - POPUP_HEIGHT;
-        top = Math.max(container.scrollTop, Math.min(top, maxTop));
-        return { left, top };
-    };
 
     useEffect(() => {
         const onTranslationError = (e) => {
@@ -118,79 +87,6 @@ const StringPopUpBody = (props) => {
 
 
 
-    // Update handleTdClick to check for AI service
-    const handleTdClick = (event, colIndex, rowIndex, data) => {
-        const translationEntry = select("block-lmatPageTranslation/translate").getTranslationEntry({ id: data.id, type: data.type });
-
-        if (colIndex !== 2 || !translationEntry) return;
-
-        const cellKey = `${rowIndex}_${colIndex}`;
-
-        let translation = '';
-        if (translationEntry.translatedData && translationEntry.translatedData[service]) {
-            translation = translationEntry.translatedData[service];
-        } else if (translationEntry.translatedData && translationEntry.translatedData[props.service]) {
-            translation = translationEntry.translatedData[props.service];
-        } else if (translationEntry.filteredString) {
-            translation = translationEntry.filteredString;
-        } else {
-            translation = translationEntry.source || '';
-        }
-
-        // Only set editing state if not already editing this cell
-        const isAlreadyEditing = editingCells.some(
-            cell => cell.row === rowIndex && cell.col === colIndex
-        );
-
-        if (!isAlreadyEditing) {
-            setEditingCells([{ row: rowIndex, col: colIndex }]);
-            setEditingValues({
-                [cellKey]: translation
-            });
-        }
-        setActivePopupCell({ row: rowIndex, col: colIndex });
-
-        if (!tableRef.current) return;
-        const ths = tableRef.current.querySelectorAll("thead th");
-        const thText = ths[colIndex] ? ths[colIndex].textContent : '';
-        const position = getPopupPosition(event.currentTarget);
-        if (!position) return;
-
-        setPopupInfo({
-            ...position,
-            value: data,
-            header: thText,
-        });
-
-    };
-
-    // Update closePopup to clear all editing states
-    const closePopup = () => {
-        setEditingCells([]);
-        setEditingValues({});
-        setPopupInfo(null);
-        setActivePopupCell(null);
-    };
-
-    // Update handleTextareaInput to use dynamic positioning
-    const handleTextareaInput = (e, row, col) => {
-        e.target.style.height = 'auto';
-        e.target.style.height = e.target.scrollHeight + 'px';
-    };
-
-    useEffect(() => {
-        if (!popupInfo) {
-            setEditingCells([]);
-        }
-    }, [popupInfo]);
-
-    useEffect(() => {
-        if (!popupInfo) return;
-        const handleResize = () => setPopupInfo(null);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [popupInfo]);
-
     useEffect(() => {
 
         if (['yandex', 'google'].includes(props.service)) {
@@ -244,115 +140,6 @@ const StringPopUpBody = (props) => {
         return tempElement.innerHTML;
     }
 
-    // Add this helper function at the top level of your component
-    const getTranslationProviders = (service) => {
-        if (service) {
-            return [service];
-        }
-    };
-
-    // Save handler for InfoPopup
-    const handleSave = () => {
-        const cell = activePopupCell;
-        if (cell) {
-            const cellKey = `${cell.row}_${cell.col}`;
-            const newValue = textareaRefs?.current[cellKey]?.innerText || '';
-            const rowData = translateContent[cell.row];
-
-            if (newValue && newValue.trim() !== '') {
-                // Save non-empty values
-                setSavedValues(prev => ({ ...prev, [cellKey]: newValue }));
-
-                if (rowData?.id) {
-                    const providers = getTranslationProviders(service);
-
-                    // Save translation for each provider
-                    providers.forEach(provider => {
-                        SaveTranslation({
-                            type: rowData.type || 'content',
-                            key: rowData.id,
-                            translateContent: newValue,
-                            source: rowData.source,
-                            provider: provider,
-                            AllowedMetaFields: props.AllowedMetaFields || {}
-                        });
-                    });
-                }
-            } else {
-                // For empty values, clear both local state and call SaveTranslation with empty string
-                setSavedValues(prev => {
-                    const newSavedValues = { ...prev };
-                    delete newSavedValues[cellKey];
-                    return newSavedValues;
-                });
-
-                if (rowData?.id) {
-                    const providers = getTranslationProviders(service);
-
-                    // Save translation for each provider
-                    providers.forEach(provider => {
-                        SaveTranslation({
-                            type: rowData.type || 'content',
-                            key: rowData.id,
-                            translateContent: '', // Save empty string to clear the translation
-                            source: rowData.source,
-                            provider: provider,
-                            AllowedMetaFields: props.AllowedMetaFields || {}
-                        });
-                    });
-                }
-            }
-
-            // Remove the current cell from editingCells so it renders as a <td>
-            setEditingCells(prev => prev.filter(c => !(c.row === cell.row && c.col === cell.col)));
-
-            // Move to next row if exists
-            const nextRow = cell.row + 1;
-            if (nextRow < translateContent.length) {
-                const nextRowData = translateContent[nextRow];
-                if (nextRowData?.source?.trim()) {
-                    const nextCellKey = `${nextRow}_${cell.col}`;
-                    let initialNextTranslation;
-                    if (savedValues[nextCellKey] !== undefined) {
-                        initialNextTranslation = savedValues[nextCellKey];
-                    } else {
-                        let trans = '';
-                        if (nextRowData.translatedData) {
-                            if (service && nextRowData.translatedData[service]) {
-                                trans = nextRowData.translatedData[service];
-                            } else if (nextRowData.translatedData[props.service]) {
-                                trans = nextRowData.translatedData[props.service];
-                            }
-                        }
-                        initialNextTranslation = trans || nextRowData.source || '';
-                    }
-
-                    setEditingCells(prev => [...prev, { row: nextRow, col: cell.col }]);
-                    setEditingValues(prev => ({ ...prev, [nextCellKey]: initialNextTranslation }));
-                    setActivePopupCell({ row: nextRow, col: cell.col });
-
-                    // Update popup position for next row
-                    setTimeout(() => {
-                        const table = tableRef.current;
-                        const nextTd = table?.querySelector(`tbody tr:nth-child(${nextRow + 1}) td:nth-child(${cell.col + 1})`);
-                        if (nextTd) {
-                            const position = getPopupPosition(nextTd);
-                            if (!position) return;
-                            setPopupInfo({
-                                ...position,
-                                value: nextRowData,
-                                header: table.querySelectorAll("thead th")[cell.col]?.textContent || '',
-                            });
-                        }
-                    }, 0);
-                    return;
-                }
-            }
-
-            setPopupInfo(null);
-        }
-    };
-
     const getTranslation = (data) => {
         let originalTranslation = false;
 
@@ -369,12 +156,9 @@ const StringPopUpBody = (props) => {
 
     // Update the cell display logic in the render section
     const getCellContent = (index, data, cellKey) => {
-        const savedEdit = savedValues[cellKey];
         const translation = getTranslation(data);
 
-        if (savedEdit !== undefined) {
-            return savedEdit;
-        } else if (translation) {
+        if (translation) {
             return translation;
         } else {
             if (['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator', 'gemini'].includes(props.service)) {
@@ -518,7 +302,6 @@ const StringPopUpBody = (props) => {
                                                 }
                                             }
 
-                                            const isEditingThisCell = editingCells.some(cell => cell.row === index && cell.col === 2);
 
                                             return (
                                                 <Fragment key={index + props.translatePendingStatus}>
@@ -530,33 +313,11 @@ const StringPopUpBody = (props) => {
                                                                 <td
                                                                     data-key={data.id}
                                                                     data-string-type={data.type}
-                                                                    onClick={(e) => {
-                                                                        handleTdClick(e, 2, index, data);
-                                                                    }}
-                                                                    style={{ cursor: 'pointer' }}
-                                                                    translate={(savedValues[cellKey] && props.service === 'google' || savedValues[cellKey] && props.service === 'yandex') ? "no" : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? "yes" : 'yes'}
-                                                                    className={`${!isEditingThisCell && !savedValues[cellKey] && !originalTranslation ? 'lmat-page-translation-empty-translation-cell' : ''} ${savedValues[cellKey] && (props.service === 'localAiTranslator' || props.service === 'edgeLocalAiTranslator') || savedValues[cellKey] && props.service === 'google' ? 'notranslate' : (props.translatePendingStatus && props.service === 'gemini') ? 'notranslate' : (props.translatePendingStatus && ['google', 'yandex', 'localAiTranslator', 'edgeLocalAiTranslator'].includes(props.service) && !props.service.includes('_ai')) ? 'translate' : 'translate'} ${isEditingThisCell ? 'lmat-page-translation-editing-cell' : ''}`}
+                                                                    translate="yes"
+                                                                    className={`${!originalTranslation ? 'lmat-page-translation-empty-translation-cell' : ''} ${(props.translatePendingStatus && props.service === 'gemini') ? 'notranslate' : 'translate'}`}
                                                                     data-translate-status={props.translatePendingStatus ? 'pending' : 'translated'}
                                                                 >
-                                                                    {isEditingThisCell ? (
-                                                                        <div
-                                                                            contentEditable="true"
-                                                                            className="lmat-page-translation-content-editable"
-                                                                            ref={el => {
-                                                                                textareaRefs.current[cellKey] = el;
-                                                                                if (el) {
-                                                                                    el.style.height = 'auto';
-                                                                                    el.style.height = el.scrollHeight + 'px';
-                                                                                }
-                                                                            }}
-                                                                            onFocus={() => setActivePopupCell({ row: index, col: 2 })}
-                                                                            onInput={e => handleTextareaInput(e, index, 2)}
-                                                                            style={{ width: '100%', minHeight: 40, resize: 'vertical' }}
-                                                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(editingValues[cellKey] || '') }}
-                                                                        />
-                                                                    ) : (
-                                                                        getCellContent(index, data, cellKey)
-                                                                    )}
+                                                                    {getCellContent(index, data, cellKey)}
                                                                 </td>
                                                             </tr>
                                                         </>
@@ -600,32 +361,6 @@ const StringPopUpBody = (props) => {
                             </tbody>
                         </table>
                     </div>
-            }
-            {/* Popup rendered via portal for correct positioning */}
-            {popupInfo &&
-                ReactDOM.createPortal(
-                    <InfoPopup
-                        left={popupInfo.left}
-                        top={popupInfo.top}
-                        onClose={closePopup}
-                        onCopy={() => {
-                            const cell = activePopupCell;
-                            if (cell) {
-                                const sourceText = translateContent[cell.row]?.source || '';
-                                setEditingValues(prev => ({
-                                    ...prev,
-                                    [`${cell.row}_${cell.col}`]: sourceText
-                                }));
-                                setTimeout(() => {
-                                    const textarea = textareaRefs.current[`${cell.row}_${cell.col}`];
-                                    if (textarea) textarea.focus();
-                                }, 0);
-                            }
-                        }}
-                        onSave={handleSave}
-                    />,
-                    getPopupContainer() || document.body
-                )
             }
         </div>
     );
