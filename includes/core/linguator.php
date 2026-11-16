@@ -525,6 +525,7 @@ class Linguator {
 					'id'                     => 'lmat',
 					'slug'                   => 'translate-words',
 					'plugin_name'            => $name,
+					'display_name'           => 'Linguator – AI Auto Translate & Create Multilingual Sites',
 					'version'                => LINGUATOR_VERSION,
 					'api'                    => LINGUATOR_FEEDBACK_API,
 					'site_key'               => '153',
