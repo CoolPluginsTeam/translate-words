@@ -215,7 +215,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
         $rtl=function_exists('is_rtl') ? is_rtl() : false;
         $css_file=$rtl ? 'index-rtl.css' : 'index.css';
       
-		wp_enqueue_script( 'lmat-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
+		wp_enqueue_script( 'lmat-google-api', plugins_url( 'admin/assets/js/google-translate-loader.js', LINGUATOR_ROOT_FILE ), array(), (string) filemtime( LINGUATOR_DIR . '/admin/assets/js/google-translate-loader.js' ), true );
 		wp_enqueue_script( 'lmat-bulk-translate', plugins_url( 'admin/assets/bulk-translate/index.js', LINGUATOR_ROOT_FILE ), array_merge( $editor_script_asset['dependencies'], array( 'lmat-google-api' ) ), $editor_script_asset['version'], true );
    
 		// Set script translations for wp-i18n functions (required for WordPress 6.9+)

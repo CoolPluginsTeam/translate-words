@@ -130,7 +130,14 @@ class GoogleTranslater {
         }
     }
 
-    appendTranslateWidget = () => {
+    appendTranslateWidget = async () => {
+        try {
+            if (window.lmatLoadGoogleTranslate) await window.lmatLoadGoogleTranslate();
+        } catch (error) {
+            console.error('Google Translate initialization failed:', error);
+            return false;
+        }
+        if (this.stopTranslation) return false;
         const g = typeof window !== "undefined" ? window.google : undefined;
         const TranslateElementCtor = g?.translate?.TranslateElement;
         if (!TranslateElementCtor) {

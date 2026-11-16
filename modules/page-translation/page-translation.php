@@ -410,7 +410,7 @@ class Linguator_Page_Translation {
 	}
 
 	public function linguator_enqueue_automatic_translate_assets( $source_lang, $target_lang, $editor_type, $extra_data = array() ) {
-		wp_register_script( 'lmat-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
+		wp_register_script( 'lmat-google-api', plugins_url( 'admin/assets/js/google-translate-loader.js', LINGUATOR_ROOT_FILE ), array(), (string) filemtime( LINGUATOR_DIR . '/admin/assets/js/google-translate-loader.js' ), true );
 
 		$editor_script_asset = include LINGUATOR_DIR . '/admin/assets/page-translation/index.asset.php';
 		if ( ! is_array( $editor_script_asset ) ) {

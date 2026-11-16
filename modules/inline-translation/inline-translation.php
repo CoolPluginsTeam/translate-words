@@ -129,7 +129,7 @@ class Linguator_Inline_Translation {
 
 		wp_register_script( 'lmat-inline-translate-modal', plugins_url( '/admin/assets/inline-translate-modal/index.js', LINGUATOR_ROOT_FILE ), array_merge( $core_modal_script_asset['dependencies'] ), $core_modal_script_asset['version'], true );
 
-		wp_register_script( 'lmat-inline-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
+		wp_register_script( 'lmat-inline-google-api', plugins_url( 'admin/assets/js/google-translate-loader.js', LINGUATOR_ROOT_FILE ), array(), (string) filemtime( LINGUATOR_DIR . '/admin/assets/js/google-translate-loader.js' ), true );
 		
 		$extra_dependencies[] = 'lmat-inline-google-api';
 		$extra_dependencies[] = 'lmat-inline-translate-modal';

@@ -62,7 +62,12 @@ const TranslatorModal: React.FC<TranslateModalProps> = ({ value, onUpdate, pageL
 
     if (!isLoading || isTranslate) return;
 
-    HandlerTranslate(value, pageLanguage)
+    HandlerTranslate(value, pageLanguage).catch((error) => {
+      console.error('Google Translate initialization failed:', error);
+      setLangError(__('Google Translate could not be initialized. Reload the editor and try again.', 'translate-words'));
+      setIsLoading(false);
+      setIsTranslate(true);
+    });
   });
 
   const HandlerCloseModal = () => {
