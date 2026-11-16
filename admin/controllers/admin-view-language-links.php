@@ -16,7 +16,7 @@ if ( ! class_exists( 'Linguator_Admin_View_Language_Links' ) ) :
 
         public function linguator_admin_view_language_links_assets() {
 			global $linguator;
-			if(function_exists('get_current_screen') && property_exists(get_current_screen(), 'post_type') && $linguator && property_exists($linguator, 'model')){
+			if(function_exists('get_current_screen') && is_object(get_current_screen()) && property_exists(get_current_screen(), 'post_type') && $linguator && property_exists($linguator, 'model')){
 				$current_screen=get_current_screen();
 
 				$translated_post_types = $linguator->model->get_translated_post_types();
