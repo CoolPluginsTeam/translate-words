@@ -28,6 +28,27 @@ const StringPopUpBody = (props) => {
     const [savedValues, setSavedValues] = useState({});
     const [translationError, setTranslationError] = useState(null);
 
+    // Copy/Save popup lives inside the scrollable string list so it stays in the modal.
+    const POPUP_WIDTH = 56;
+    const POPUP_HEIGHT = 130;
+    const getPopupContainer = () =>
+        tableRef.current?.closest('.lmat_page_translation_string_container') ||
+        document.querySelector('.lmat_page_translation_string_container');
+
+    const getPopupPosition = (td) => {
+        const container = getPopupContainer();
+        if (!container || !td) return null;
+        const tdRect = td.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        // Inside the cell's right edge, never past the container's visible width.
+        let left = tdRect.right - cRect.left + container.scrollLeft - POPUP_WIDTH - 8;
+        left = Math.max(0, Math.min(left, container.scrollLeft + container.clientWidth - POPUP_WIDTH - 8));
+        let top = tdRect.top - cRect.top + container.scrollTop;
+        const maxTop = container.scrollTop + container.clientHeight - POPUP_HEIGHT;
+        top = Math.max(container.scrollTop, Math.min(top, maxTop));
+        return { left, top };
+    };
+
     useEffect(() => {
         const onTranslationError = (e) => {
             const d = e?.detail;
@@ -130,34 +151,16 @@ const StringPopUpBody = (props) => {
         setActivePopupCell({ row: rowIndex, col: colIndex });
 
         if (!tableRef.current) return;
-        const tdRect = event.currentTarget.getBoundingClientRect();
         const ths = tableRef.current.querySelectorAll("thead th");
         const thText = ths[colIndex] ? ths[colIndex].textContent : '';
-        const stringContainer = document.querySelector('.lmat_page_translation_string_container');
-        const stringContainerRect = stringContainer.getBoundingClientRect();
-        const difference = stringContainerRect.bottom - tdRect.bottom;
-        const differencetop = tdRect.top - stringContainerRect.top;
+        const position = getPopupPosition(event.currentTarget);
+        if (!position) return;
 
-        // Calculate popup position relative to the clicked cell
-        const newPopupInfo = {
-            left: tdRect.right + window.scrollX,
-            top: tdRect.top + window.scrollY - 35,
+        setPopupInfo({
+            ...position,
             value: data,
             header: thText,
-        };
-
-        // Adjust position if near bottom of container
-        if (difference < 50) {
-            newPopupInfo.top = tdRect.top + window.scrollY - 130;
-            newPopupInfo.bottom = 50;
-        }
-        // Adjust position if near top of container
-        if (differencetop < 35) {
-            newPopupInfo.top = stringContainerRect.top + window.scrollY;
-            newPopupInfo.bottom = 35;
-        }
-
-        setPopupInfo(newPopupInfo);
+        });
 
     };
 
@@ -179,6 +182,13 @@ const StringPopUpBody = (props) => {
         if (!popupInfo) {
             setEditingCells([]);
         }
+    }, [popupInfo]);
+
+    useEffect(() => {
+        if (!popupInfo) return;
+        const handleResize = () => setPopupInfo(null);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [popupInfo]);
 
     useEffect(() => {
@@ -326,10 +336,10 @@ const StringPopUpBody = (props) => {
                         const table = tableRef.current;
                         const nextTd = table?.querySelector(`tbody tr:nth-child(${nextRow + 1}) td:nth-child(${cell.col + 1})`);
                         if (nextTd) {
-                            const tdRect = nextTd.getBoundingClientRect();
+                            const position = getPopupPosition(nextTd);
+                            if (!position) return;
                             setPopupInfo({
-                                left: tdRect.right + window.scrollX,
-                                top: tdRect.top + window.scrollY,
+                                ...position,
                                 value: nextRowData,
                                 header: table.querySelectorAll("thead th")[cell.col]?.textContent || '',
                             });
@@ -614,7 +624,7 @@ const StringPopUpBody = (props) => {
                         }}
                         onSave={handleSave}
                     />,
-                    document.body
+                    getPopupContainer() || document.body
                 )
             }
         </div>
