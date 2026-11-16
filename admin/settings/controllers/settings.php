@@ -679,7 +679,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 
 			// Built-in AI (Chrome/Edge) setup card and provider list used by the AI Translation tab.
 			wp_enqueue_style( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/css/chrome-ai-setup-framework.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
-			wp_enqueue_style( 'lmat-provider-list', plugins_url( 'admin/assets/css/lmat-provider-list.css', LINGUATOR_ROOT_FILE ), array( 'lmat-chrome-ai-setup' ), LINGUATOR_VERSION );
+			wp_enqueue_style( 'lmat-provider-list', plugins_url( 'admin/assets/css/lmat-provider-list.css', LINGUATOR_ROOT_FILE ), array( 'lmat-chrome-ai-setup' ), (string) filemtime( dirname( LINGUATOR_ROOT_FILE ) . '/admin/assets/css/lmat-provider-list.css' ) );
 			wp_enqueue_script( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/js/chrome-ai-setup-framework.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
 
 			// Enqueue React-based settings script

@@ -5,6 +5,7 @@ import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ExternalProviderPanel from './external-provider-panel.jsx';
+import ConnectionTests, { openConnectionTest } from './connection-test.jsx';
 import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
@@ -127,6 +128,7 @@ const ProviderRow = ({
     onAction,
     actionHref,
     extra,
+    onTest,
     defaultDisabledReason,
     locked = false,
 }) => {
@@ -184,6 +186,7 @@ const ProviderRow = ({
             </label>
 
             <div className="lmat-engine-actions">
+                {onTest ? <button type="button" className="lmat-engine-btn" onClick={onTest}>{__('Test Connection', 'translate-words')}</button> : null}
                 {docsUrl ? (
                     <a className="lmat-engine-docs" href={docsUrl} target="_blank" rel="noopener noreferrer">
                         {__('Docs', 'translate-words')}
@@ -299,6 +302,7 @@ const ProviderList = ({
 
     return (
         <div className="lmat-engines">
+            <ConnectionTests />
             {showSetupCard && (
                 <ChromeAiSetupCard browserType={browserType} chromeEnabled={chromeEnabled} edgeEnabled={edgeEnabled} />
             )}
@@ -371,6 +375,7 @@ const ProviderList = ({
                         unsupportedMessage={unsupportedMessage(__('Edge Built-in AI', 'translate-words'), 'Edge')}
                         defaultDisabledReason={builtInDefaultReason(edgeStatus)}
                         actionLabel={'setup' === edgeStatus && edgeEnabled ? __('Configure', 'translate-words') : ''}
+						onTest={'ready' === edgeStatus && edgeEnabled ? () => openConnectionTest({ key: 'edge_local_ai', name: __('Edge Built-in AI', 'translate-words') }) : null}
                         onAction={scrollToSetupCard}
                     />
                 )}
@@ -424,6 +429,7 @@ const ProviderList = ({
                             // Like Chrome AI: the setup button shows only while the provider is on and not set up yet.
                             actionLabel={state.enabled && !configured && hasPanel ? (external.action_label || __('Configure', 'translate-words')) : ''}
                             onAction={() => scrollToExternalCard(key)}
+							onTest={configured && state.enabled && key !== 'chatgpt' ? () => openConnectionTest({ key, name: external.label }) : null}
                         />
                     )
                 })}

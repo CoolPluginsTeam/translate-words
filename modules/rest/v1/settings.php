@@ -105,6 +105,8 @@ class Settings extends Abstract_Controller {
 	 * @return void
 	 */
 	public function register_routes(): void {
+		require_once __DIR__ . '/translation-test.php';
+		Translation_Test::register_routes( array( $this, 'update_item_permissions_check' ) );
 		register_rest_route(
 			$this->namespace,
 			"/{$this->rest_base}",

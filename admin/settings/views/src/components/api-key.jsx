@@ -4,6 +4,7 @@ import apiFetch from "@wordpress/api-fetch"
 import { toast } from 'sonner'
 import { __, sprintf } from '@wordpress/i18n'
 import { getNonce } from '../utils'
+import { openConnectionTest } from './connection-test.jsx'
 
 const providerKeyLinks = {
   gemini: 'https://linguator.com/docs/automatic-translation-via-googe-gemini/generate-google-gemini-ai-api-key/',
@@ -408,6 +409,7 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
                     <h3 className="m-0 text-base font-semibold mb-3">
                       {p.modelHeading}
                     </h3>
+                    <div className="lmat-api-key-model-actions">
                     <select
                       className="lmat-api-key-model-select w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
                       value={models[p.modelKey] || ''}
@@ -418,6 +420,8 @@ const ApiKey = forwardRef(function ApiKey({ data, setData, embedded = false, onP
                         <option key={id} value={id}>{getModelLabel(id)}</option>
                       ))}
                     </select>
+                      {window.lmat_settings ? <button type="button" className="lmat-engine-btn" onClick={() => openConnectionTest({ key: p.key, name: 'Google Gemini', model: selectedModel, models: Object.fromEntries(providerModelList.map(id => [id, getModelLabel(id)])) })}>{__('Test Connection', 'translate-words')}</button> : null}
+                    </div>
                   </div>
                 ) : null}
               </div>
