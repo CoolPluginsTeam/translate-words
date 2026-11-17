@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.2
-Stable tag: 2.2.2
+Stable tag: 2.2.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -218,6 +218,14 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 **Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
 == Changelog ==
+
+= Version 2.2.3 | 17 November 2026 =
+* Added: Test Connection button for AI providers.
+* Improved: Elementor style settings are no longer sent for translation.
+* Improved: Other plugin recommendations.
+* Fixed: Google Translate provider issue.
+* Fixed: Term translation issue.
+
 
 = Version 2.2.2 | 2 November 2026 =
 * Added: Support for translation rules defined in wpml-config.xml files.
