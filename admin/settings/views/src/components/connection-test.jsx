@@ -36,8 +36,8 @@ const ConnectionTestDialog = ({ provider, onClose }) => {
     const run = async () => {
         if (busy) return;
         reset();
-        if (!languages.some((language) => language.slug === target)) { setError(__('Add another language in Linguator before running a translation test.', 'translate-words')); return; }
-        if (!text.trim()) { setError(__('Please enter sample text to test translation.', 'translate-words')); return; }
+        if (!languages.some((language) => language.slug === target)) { setError({ summary: __('Add another language in Linguator before running a translation test.', 'translate-words') }); return; }
+        if (!text.trim()) { setError({ summary: __('Please enter sample text to test translation.', 'translate-words') }); return; }
         setBusy(true);
         const controller = new AbortController();
         request.current = controller;
@@ -64,7 +64,14 @@ const ConnectionTestDialog = ({ provider, onClose }) => {
             }
             if (!controller.signal.aborted) setResult(next);
         } catch (e) {
-            if (!controller.signal.aborted) setError(e.message || __('The translation test failed. Please try again.', 'translate-words'));
+            if (!controller.signal.aborted) {
+                const data = e?.data || {};
+                setError({
+                    summary: data.summary || e.message || __('The translation test failed. Please try again.', 'translate-words'),
+                    hint: data.hint || '',
+                    detail: data.detail && data.detail !== data.summary ? data.detail : '',
+                });
+            }
         } finally {
             translator?.destroy?.();
             if (!controller.signal.aborted) setBusy(false);
@@ -101,11 +108,18 @@ const ConnectionTestDialog = ({ provider, onClose }) => {
                 {!languages.length ? <p role="status">{__('Add another language in Linguator before running a translation test.', 'translate-words')}</p> : null}
                 <div className="lmat-test-grid">
                     <label>{__('Sample text (English)', 'translate-words')}<textarea rows="3" maxLength={200} value={text} disabled={busy} onChange={(e) => { setText(e.target.value); reset(); }} /><span className="lmat-test-muted">{text.length}/200</span></label>
-                    <div><strong>{__('Translation', 'translate-words')}</strong><div className={`lmat-test-output${error ? ' is-error' : result ? ' is-success' : ''}`} role={error ? 'alert' : 'status'} aria-live="polite">{error || result?.translation || (busy ? __('Translating…', 'translate-words') : __('The translation will appear here.', 'translate-words'))}</div></div>
+                    <div><strong>{__('Translation', 'translate-words')}</strong><div className={`lmat-test-output${error ? ' is-error' : result ? ' is-success' : ''}`} role="status" aria-live="polite">{error ? __('The translation test failed.', 'translate-words') : result?.translation || (busy ? __('Translating…', 'translate-words') : __('The translation will appear here.', 'translate-words'))}</div></div>
                 </div>
                 <div className="lmat-test-actions"><button type="button" className="button button-primary" disabled={busy || !text.trim() || !target} onClick={run}>{busy ? __('Testing…', 'translate-words') : __('Run test', 'translate-words')}</button>
                     {result ? <span className="lmat-test-muted">{sprintf( /* translators: %d: request time in milliseconds */ __('Completed in %d ms.', 'translate-words'), result.ms)} {result.model || ''}</span> : null}
                 </div>
+                {error ? (
+                    <div className="lmat-test-error" role="alert">
+                        <p>{error.summary}</p>
+                        {error.hint ? <p className="lmat-test-error-hint">{error.hint}</p> : null}
+                        {error.detail ? <p className="lmat-test-error-detail">{error.detail}</p> : null}
+                    </div>
+                ) : null}
             </div>
         </dialog>, document.body
     );

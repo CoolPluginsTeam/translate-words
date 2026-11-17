@@ -104,18 +104,52 @@ final class Translation_Test {
 			}
 			$prompt = 'Translate the following English text into ' . $languages[ $request['target_language'] ] . ". Return only the translation.\n\n" . $text;
 			$reply = $builder->with_text( $prompt )->generate_text();
-			if ( is_wp_error( $reply ) ) { return $reply; }
+			if ( is_wp_error( $reply ) ) {
+				return self::test_error( $reply->get_error_message(), $key );
+			}
 			$reply = trim( (string) $reply );
 			if ( '' === $reply ) {
 				return new \WP_Error( 'lmat_test_empty_reply', __( 'The provider returned an empty translation. Try another model.', 'translate-words' ), array( 'status' => 502 ) );
 			}
 			return rest_ensure_response( array( 'translation' => $reply, 'source' => $text, 'model' => $model, 'ms' => (int) round( ( microtime( true ) - $started ) * 1000 ) ) );
 		} catch ( \Throwable $error ) {
-			$message = wp_strip_all_tags( $error->getMessage() );
-			if ( '' !== $key ) { $message = str_replace( $key, '[redacted]', $message ); }
-			return new \WP_Error( 'lmat_test_failed', mb_substr( $message, 0, 500 ), array( 'status' => 502 ) );
+			return self::test_error( $error->getMessage(), $key );
 		} finally {
 			remove_filter( 'wp_ai_client_default_request_timeout', $timeout );
 		}
+	}
+
+	/** Builds a REST error with a friendly summary, a hint and a short provider detail. */
+	private static function test_error( $message, $key ) {
+		$message = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( (string) $message ) ) );
+		if ( '' !== $key ) { $message = str_replace( $key, '[redacted]', $message ); }
+
+		// Keep only the first sentence; providers often append long detail lists.
+		$parts  = preg_split( '/(?<=[.!?])\s+|\s\*\s/', $message, 2 );
+		$detail = trim( $parts[0] );
+		if ( mb_strlen( $detail ) > 200 ) { $detail = mb_substr( $detail, 0, 200 ) . '…'; }
+
+		if ( preg_match( '/\b429\b|too many requests|quota|rate.?limit/i', $message ) ) {
+			$summary = __( 'Rate limit or quota reached. Your provider plan limits were hit - try a different model, or wait and retry.', 'translate-words' );
+			$hint    = __( 'Pick a different model in the select above and run the test again.', 'translate-words' );
+			if ( preg_match( '/retry in ((?:\d+h)?(?:\d+m)?\d+)(?:\.\d+)?s/i', $message, $retry ) ) {
+				/* translators: %s: wait time, e.g. 1h45m5s */
+				$hint .= ' ' . sprintf( __( 'Or retry in %s.', 'translate-words' ), $retry[1] . 's' );
+			}
+		} elseif ( preg_match( '/\b40[13]\b|unauthori[sz]ed|forbidden|api.?key|permission denied|invalid.*(key|credential)/i', $message ) ) {
+			$summary = __( 'The provider rejected the API key.', 'translate-words' );
+			$hint    = __( 'Check that the API key is correct, active and saved, then run the test again.', 'translate-words' );
+		} elseif ( preg_match( '/\b404\b|not found|not supported|does not exist/i', $message ) ) {
+			$summary = __( 'The selected model is not available for this API key.', 'translate-words' );
+			$hint    = __( 'Pick a different model in the select above and run the test again.', 'translate-words' );
+		} elseif ( preg_match( '/network|timed? ?out|could not resolve|curl|connection/i', $message ) ) {
+			$summary = __( 'Could not connect to the provider.', 'translate-words' );
+			$hint    = __( 'Check your server internet connection or firewall, then run the test again.', 'translate-words' );
+		} else {
+			$summary = __( 'The provider returned an error.', 'translate-words' );
+			$hint    = __( 'Try a different model or run the test again.', 'translate-words' );
+		}
+
+		return new \WP_Error( 'lmat_test_failed', $summary, array( 'status' => 502, 'summary' => $summary, 'hint' => $hint, 'detail' => $detail ) );
 	}
 }
