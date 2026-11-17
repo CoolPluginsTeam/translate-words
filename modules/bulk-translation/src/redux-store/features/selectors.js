@@ -10,7 +10,6 @@ export const selectCountInfo = (state) => state.countInfo;
 export const selectBlockParseRules = (state) => state.blockParseRules;
 export const selectAllowedMetaFields = (state) => state.allowedMetaFields;
 export const selectErrorPostsInfo = (state) => state.errorPostsInfo;
-export const selectGlossaryTerms = (state, sourceLanguage) => state.glossaryTerms[sourceLanguage]?.translations;
 
 export const selectTranslatedContent = (state, postId, uniqueKey, key, provider) => {
 	const fromTranslation = state.translatedContent[postId]?.[uniqueKey]?.translation?.[provider]?.[key];

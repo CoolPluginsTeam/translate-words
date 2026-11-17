@@ -52,7 +52,7 @@ if ( ! class_exists( 'Custom_Block_Post' ) ) {
 		 */
 		public function enqueue_scripts( $hook ) {
 			$current_screen = get_current_screen();
-			if ( 'lmat_add_blocks' === $current_screen->post_type && is_object( $current_screen ) && 'post.php' === $hook && $current_screen->is_block_editor ) {
+			if ( is_object( $current_screen ) && 'lmat_add_blocks' === $current_screen->post_type && 'post.php' === $hook && $current_screen->is_block_editor ) {
 				wp_enqueue_script( 'lmat-add-new-block', plugins_url('admin/assets/js/lmat-add-new-custom-block.min.js', LINGUATOR_ROOT_FILE), array( 'jquery','wp-data', 'wp-element' ), LINGUATOR_VERSION, true );
 				linguator_enqueue_datatable_assets();
 

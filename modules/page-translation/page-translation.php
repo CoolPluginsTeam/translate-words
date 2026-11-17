@@ -519,8 +519,6 @@ class Linguator_Page_Translation {
 				'ajax_nonce'               => wp_create_nonce( 'lmat_page_translation_admin' ),
 				'update_translation_check' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
 				'fetchBlockRulesNonce'     => wp_create_nonce( 'lmat_fetch_block_rules_nonce' ),
-				'get_glossary_validate'    => wp_create_nonce( 'lmat_get_glossary_private' ),
-				'add_glossary_validate'    => wp_create_nonce( 'lmat_add_glossary_nonce' ),
 				'lmat_url'                 => esc_url( plugins_url( '', LINGUATOR_ROOT_FILE ) ) . '/',
 				// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
 				'wp_ai_client_available'   => function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ),

@@ -1,9 +1,55 @@
+import { useState } from 'react'
 import { Container, Button } from "@bsf/force-ui"
 import { __ } from '@wordpress/i18n';
+import apiFetch from "@wordpress/api-fetch"
+import { getNonce } from '../utils'
 
 const Sidebar = () => {
-  // Get LocoAI plugin status from localized script data
-  const locoaiStatus = window.lmat_settings?.locoai_plugin_status || { status: 'not_installed' };
+  // LocoAI card state from localized script data: hidden | install | activate | activated
+  const [locoaiState, setLocoaiState] = useState(window.lmat_settings?.locoai_plugin_status?.state || 'hidden');
+  const [locoaiBusy, setLocoaiBusy] = useState(false);
+  const [locoaiError, setLocoaiError] = useState('');
+  // True when the installed/active LocoAI is the Pro version.
+  const locoaiIsPro = !!window.lmat_settings?.locoai_plugin_status?.is_pro;
+
+  const handleLocoai = async () => {
+    setLocoaiBusy(true);
+    setLocoaiError('');
+    try {
+      const response = await apiFetch({
+        path: 'lmat/v1/settings/locoai',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': getNonce()
+        }
+      });
+      if (response?.success === false) {
+        // Expected failures (e.g. Loco Translate inactive) come back as 200 with a message.
+        setLocoaiError(response?.message || __('Something went wrong. Please try again.', 'translate-words'));
+        return;
+      }
+      if (response?.state === 'activated') {
+        // Reload so the LocoAI menu shows up in the admin sidebar right away.
+        setLocoaiState('activated');
+        window.location.reload();
+        return;
+      }
+      if (response?.state === 'activate') {
+        setLocoaiState(response.state);
+      } else {
+        setLocoaiError(__('LocoAI could not be activated. Please try again.', 'translate-words'));
+      }
+    } catch (error) {
+      setLocoaiError(error?.message || __('Something went wrong. Please try again.', 'translate-words'));
+    } finally {
+      setLocoaiBusy(false);
+    }
+  };
+
+  const locoaiButtonLabel = locoaiState === 'activate'
+    ? (locoaiBusy ? __('Activating...', 'translate-words') : __('Activate', 'translate-words'))
+    : (locoaiBusy ? __('Installing...', 'translate-words') : __('Install', 'translate-words'));
 
   return (
     <>
@@ -46,29 +92,39 @@ const Sidebar = () => {
             </Container.Item>
           </Container>
           {
-            locoaiStatus.status === 'not_installed' ? (
+            locoaiState !== 'hidden' ? (
 
               <div className=' p-6 bg-white border border-gray-200 rounded-lg shadow-sm'>
                 <h2>{__('Automatically Translate Plugins & Themes', 'translate-words')}</h2>
                 <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle my-1" />
-                <Container.Item className='flex'>
-                  <div className='w-[70%]'>
-                    <h4>{__('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
-                    <a target="_blank" href="plugin-install.php?s=locoai&tab=search&type=term">
-                    <Button
-                      className=""
-                      iconPosition="left"
-                      size="md"
-                      tag="button"
-                      type="button"
-                      variant="primary"
-                    >
-                      {__('Install', 'translate-words')}
-                    </Button>
-                    </a>
+                <Container.Item className='flex items-center gap-2'>
+                  <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                    <h4 className='mt-2 mb-1' style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{locoaiIsPro ? __('LocoAI – Auto Translate for Loco Translate (Pro)', 'translate-words') : __('LocoAI - Auto Translation for Loco Translate', 'translate-words')}</h4>
+                    <p className='text-sm mt-0 mb-3' style={{ color: '#6b7280' }}>{__('Loco addon to translate plugins and themes.', 'translate-words')}</p>
+                    {locoaiState === 'activated' ? (
+                      <span className='inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-900 bg-gray-200 border border-solid border-gray-300 rounded-md cursor-default'>{__('Activated', 'translate-words')}</span>
+                    ) : (
+                      <>
+                        <Button
+                          className=""
+                          iconPosition="left"
+                          size="md"
+                          tag="button"
+                          type="button"
+                          variant="primary"
+                          onClick={handleLocoai}
+                          disabled={locoaiBusy}
+                        >
+                          {locoaiButtonLabel}
+                        </Button>
+                        {locoaiError && (
+                          <p className='text-sm text-black mt-2 mb-0' role='alert'>{locoaiError}</p>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <div className='w-[30%] flex items-center object-contain p-2'>
-                    <a href='plugin-install.php?s=locoai&tab=search&type=term' target="_blank"><img className="w-auto max-h-24  " src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" /></a>
+                  <div className='flex items-center' style={{ flex: '0 0 auto' }}>
+                    <img style={{ width: '64px', height: '64px', objectFit: 'contain' }} src={`${window.lmat_settings_logo_data.logoUrl}loco.png`} alt="Loco translate logo" />
                   </div>
                   <div></div>
                 </Container.Item>

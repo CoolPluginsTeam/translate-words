@@ -1,6 +1,6 @@
 import ChromeAiTranslator from "./local-ai-translate.js";
 import { updateProgressStatus, updateTranslatePostInfo, unsetPendingPost } from "../../../redux-store/features/actions.js";
-import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo, selectGlossaryTerms } from "../../../redux-store/features/selectors.js";
+import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } from "../../../redux-store/features/selectors.js";
 import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
 import { __ } from "@wordpress/i18n";
@@ -79,8 +79,6 @@ class LocalAiTranslate {
         this.targetLangs = targetLangs;
         this.localAiTranslator = null;
         this.textContentObjectKeys=Object.keys(this.textContentObject);
-        this.glossaryTerms = selectGlossaryTerms(store.getState(), sourceLang);
-        this.activeLanguageGlossaryTerms={};
         this.translateKeysLength=this.textContentObjectKeys.length;
         this.updateContent=updateContent;
         this.totalPosts=totalPosts;
@@ -141,7 +139,6 @@ class LocalAiTranslate {
     async createLocalAiTranslator(targetLang, index) {
         this.completedTranslateIndex=0;
         this.localAiTranslator = null;
-        this.activeLanguageGlossaryTerms={};
 
         if(this.stopTranslation) return;
 
@@ -165,7 +162,6 @@ class LocalAiTranslate {
             sourceLanguageLabel: languageObject?.[this.sourceLang]?.name || this.sourceLang,
             targetLanguageLabel: languageObject?.[targetLang]?.name || targetLang,
             onAfterTranslate: this.onAfterTranslate,
-            onBeforeTranslate: this.onBeforeTranslate,
             onComplete: this.onComplete,
             onLanguageError: this.onLanguageError,
             onLanguageLoading: this.onLanguageLoading,
@@ -174,15 +170,6 @@ class LocalAiTranslate {
         });
 
         if(this.localAiTranslator.hasOwnProperty('init')){
-            this.activeLanguageGlossaryTerms[targetLang]={};
-            if(this.glossaryTerms && Object.values(this.glossaryTerms).length > 0){
-                Object.values(this.glossaryTerms).forEach(term => {
-                    if(term.translations && term.translations[targetLang]){
-                        this.activeLanguageGlossaryTerms[targetLang][term.original_term]=term.translations[targetLang];
-                    }
-                })
-            }
-
             this.storeDispatch(updateTranslatePostInfo({[this.postId+'_'+targetLang]: { status: 'running', messageClass: '', errorMessage: '', needsLanguagePack: false}}));
             await this.translateContent(0);
 
@@ -240,20 +227,6 @@ class LocalAiTranslate {
                 needsLanguagePack: false,
             }
         }));
-    }
-
-    onBeforeTranslate = (ele) => {
-        if(ele && this.activeLanguageGlossaryTerms && this.activeLanguageGlossaryTerms[this.activeTargetLangs] && Object.keys(this.activeLanguageGlossaryTerms[this.activeTargetLangs]).length > 0){
-            const glossaryTermsSpan=ele.querySelectorAll('span[data-glossary-term]');
-            glossaryTermsSpan.forEach(glossarySpan => {
-                const glossaryTermKey=glossarySpan.dataset?.glossaryTerm;
-                const glossaryTermValue=this.activeLanguageGlossaryTerms[this.activeTargetLangs]?.[glossaryTermKey];
-
-                if(glossaryTermValue && '' !== glossaryTermValue){
-                    glossarySpan.innerHTML=glossarySpan.innerText.replace(glossaryTermKey, glossaryTermValue);
-                }
-            });
-        }
     }
 
     onAfterTranslate = (key, value) => {
