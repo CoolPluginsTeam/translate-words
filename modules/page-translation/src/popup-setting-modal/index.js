@@ -305,6 +305,10 @@ const SettingModal = (props) => {
             edgeLocalAiTranslator: edgeAiBtnDisabled || !!edgeAiDownload,
             gemini: !lmatPageTranslationGlobal?.api_keys_status?.gemini,
         };
+        // External providers cannot run until the plugin that added them reports them as configured.
+        Object.entries(lmatPageTranslationGlobal?.external_providers || {}).forEach(([key, external]) => {
+            unavailableProviders[key] = !external?.configured;
+        });
 
         if (selectedProvider && unavailableProviders[selectedProvider]) {
             setSelectedProvider(null);

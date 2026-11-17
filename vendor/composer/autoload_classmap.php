@@ -192,7 +192,6 @@ return array(
     'Linguator\\Modules\\Editors\\Screens\\Site' => $baseDir . '/modules/editors/screens/site.php',
     'Linguator\\Modules\\Editors\\Screens\\Widget' => $baseDir . '/modules/editors/screens/widget.php',
     'Linguator\\Modules\\Full_Site_Editing\\Linguator_FSE_Tools' => $baseDir . '/modules/full-site-editing/fse-tools.php',
-    'Linguator\\Modules\\Glossary\\Glossary' => $baseDir . '/modules/glossary/glossary.php',
     'Linguator\\Modules\\Inline_Translation\\Linguator_Inline_Translation' => $baseDir . '/modules/inline-translation/inline-translation.php',
     'Linguator\\Modules\\Page_Translation\\Linguator_Page_Translation' => $baseDir . '/modules/page-translation/page-translation.php',
     'Linguator\\Modules\\Page_Translation\\Linguator_Page_Translation_Helper' => $baseDir . '/modules/page-translation/page-translation-helper.php',

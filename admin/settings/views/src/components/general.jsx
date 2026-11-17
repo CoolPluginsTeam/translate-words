@@ -8,6 +8,64 @@ import { synchronizations } from '../utils'
 import { getNonce } from '../utils'
 import { Link, Globe, Focus, Milestone, RefreshCcw, Share2, Settings2, Menu } from 'lucide-react';
 import { __, sprintf } from '@wordpress/i18n';
+import { applyFilters } from '@wordpress/hooks';
+
+// Boolean settings added by Linguator Pro. Each one is shown only when its key is in the settings response.
+// `requiresUrlLanguage`: the setting cannot work when the language is set from the content (force_lang 0).
+const PRO_TOGGLES = [
+    {
+        key: 'share_slugs',
+        title: __('Same Slug in Every Language', 'translate-words'),
+        description: __('Let translations use the same URL slug in every language, for example /about/ and /fr/about/, instead of adding -2 or a language code. Each URL opens the version in its own language.', 'translate-words'),
+        requiresUrlLanguage: true,
+    },
+    {
+        key: 'translate_url_bases',
+        title: __('Translate URL Bases', 'translate-words'),
+        description: __('Translate the base of post type, category and tag URLs in each language, for example /fr/categorie/news/ instead of /fr/category/news/. Leave a field empty to keep the original base.', 'translate-words'),
+    },
+];
+
+/**
+ * Extra settings fields added by add-ons (such as Linguator Pro), shown under a switch of this tab while it is on.
+ *
+ * Filter `lmat.settings.general.extraFields` returns an array of fields:
+ * - key:          option key, also its key in the settings response. The field is skipped when the key is absent.
+ * - parentToggle: key of the switch the field is shown under.
+ * - normalize:    optional, ( value ) => the value to compare and save.
+ * - render:       ( { value, onChange, data, languages } ) => the field's element.
+ */
+const getExtraFields = (data) => {
+    const fields = applyFilters('lmat.settings.general.extraFields', []);
+    return (Array.isArray(fields) ? fields : []).filter(
+        (field) => field && field.key && 'function' === typeof field.render && data[field.key] !== undefined
+    );
+};
+
+const normalizeExtraValue = (field, value) => ('function' === typeof field.normalize ? field.normalize(value) : value);
+
+const getExtraValues = (fields, data) => fields.reduce((values, field) => {
+    values[field.key] = normalizeExtraValue(field, data[field.key]);
+    return values;
+}, {});
+
+const sameExtraValue = (field, a, b) => JSON.stringify(normalizeExtraValue(field, a)) === JSON.stringify(normalizeExtraValue(field, b));
+
+// Linguator Pro pricing page, shown on the locked Pro settings when Pro is not active.
+const PRO_PRODUCT_URL = 'https://linguator.com/pricing/';
+const getProUrl = (settingKey) => `${PRO_PRODUCT_URL}?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=get_pro&utm_content=settings_${settingKey}`;
+
+// Reads the current boolean value of each available Pro switch.
+const getProToggleValues = (toggles, data) => toggles.reduce((values, toggle) => {
+    values[toggle.key] = !!data[toggle.key];
+    return values;
+}, {});
+
+// Pro switch values to save; a switch that needs the language in the URL is saved as off otherwise.
+const getProTogglesToSave = (toggles, values, forceLang) => toggles.reduce((body, toggle) => {
+    body[toggle.key] = toggle.requiresUrlLanguage && 0 === forceLang ? false : !!values[toggle.key];
+    return body;
+}, {});
 
 const General = ({ data, setData }) => {
 
@@ -36,6 +94,18 @@ const General = ({ data, setData }) => {
     const [selectedLanguageSwitchers, setSelectedLanguageSwitchers] = useState(data.lmat_language_switcher_options || ['default']); // Selected Language Switcher options
     const [showTerms, setShowTerms] = useState(false); // For showing/hiding terms box
     const [menuSyncVisibility, setMenuSyncVisibility] = useState(data.menu_sync_visibility !== undefined ? data.menu_sync_visibility : false); // For Menu Sync feature visibility
+    // Pro switches: only the keys Linguator Pro registered are present in the settings response.
+    const availableProToggles = PRO_TOGGLES.filter((toggle) => data[toggle.key] !== undefined);
+    const [proToggles, setProToggles] = useState(() => getProToggleValues(availableProToggles, data));
+    // Add-on fields shown under a Pro switch (see getExtraFields).
+    const extraFields = getExtraFields(data);
+    const [extraValues, setExtraValues] = useState(() => getExtraValues(extraFields, data));
+    const savedExtraValues = JSON.stringify(getExtraValues(extraFields, data));
+
+    // Show the saved values after each save: the server cleans them.
+    useEffect(() => {
+        setExtraValues(getExtraValues(extraFields, data));
+    }, [savedExtraValues]);
 
 
     //make the Domains in a suitable way to view
@@ -110,6 +180,18 @@ const General = ({ data, setData }) => {
         if (menuSyncVisibility !== menuSyncBackendValue) {
             sameChecker.menuSyncVisibility = false
         }
+        for (const toggle of availableProToggles) {
+            if (proToggles[toggle.key] !== !!data[toggle.key]) {
+                sameChecker.proToggles = false
+                break;
+            }
+        }
+        for (const field of extraFields) {
+            if (!sameExtraValue(field, extraValues[field.key], data[field.key])) {
+                sameChecker.extraFields = false
+                break;
+            }
+        }
         for (const value of previousDomains.current) {
             if (!domains.includes(value) || previousDomains.current.length != domains.length) {
                 sameChecker.domains = false
@@ -173,7 +255,7 @@ const General = ({ data, setData }) => {
         if (flag) {
             setHandleButtonDisabled(true)
         }
-    }, [browser, mediaSupport, hideDefault, forceLang, rewrite, redirectLang, domains, selectedSynchronization, selectedPostTypes, selectedTaxonomies, lmatFeedbackData, selectedLanguageSwitchers, menuSyncVisibility])
+    }, [browser, mediaSupport, hideDefault, forceLang, rewrite, redirectLang, domains, selectedSynchronization, selectedPostTypes, selectedTaxonomies, lmatFeedbackData, selectedLanguageSwitchers, menuSyncVisibility, proToggles, extraValues, savedExtraValues])
 
     //Make the post types and taxonomies from  posttype->posttype_name   to {value: postype ,label:posttype_name (posttype)}
     useEffect(() => {
@@ -396,10 +478,19 @@ const General = ({ data, setData }) => {
                     apiBody.lmat_feedback_data = lmatFeedbackData;
                 }
             }
+            // Pro switches (none without Linguator Pro).
+            const proBody = getProTogglesToSave(availableProToggles, proToggles, forceLang)
+            apiBody = { ...apiBody, ...proBody }
+            setProToggles(proBody)
             setData(prev => ({
                 ...prev,
                 ...apiBody
             }))
+            // Add-on fields are shown from the saved response only: the server cleans them and can reject them.
+            const requestBody = { ...apiBody }
+            extraFields.forEach((field) => {
+                requestBody[field.key] = normalizeExtraValue(field, extraValues[field.key])
+            })
             //API Call
             const response = apiFetch({
                 path: 'lmat/v1/settings',
@@ -408,7 +499,7 @@ const General = ({ data, setData }) => {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': getNonce()
                 },
-                body: JSON.stringify(apiBody)
+                body: JSON.stringify(requestBody)
             })
                 .then((response) => {
                     setData(prev => ({ ...prev, ...response }))
@@ -903,8 +994,79 @@ const General = ({ data, setData }) => {
                         />
                     </Container.Item>
                 </div>
-                
-                
+
+                {/* Linguator Pro sections */}
+                {PRO_TOGGLES.map((toggle) => {
+                    // Without Linguator Pro the setting is absent: show it locked, linking to the Pro page.
+                    const locked = data[toggle.key] === undefined;
+                    const unavailable = !locked && toggle.requiresUrlLanguage && 0 === forceLang;
+                    const proUrl = getProUrl(toggle.key);
+                    return (
+                        <React.Fragment key={toggle.key}>
+                            <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />
+                            <div className='switcher'>
+                                <Container.Item>
+                                    <h3 className='flex items-center gap-2'>
+                                        <Link className="flex-shrink-0 size-5 text-icon-secondary" />
+                                        {toggle.title}
+                                        {locked && (
+                                            <a href={proUrl} target='_blank' rel='noopener noreferrer' className='no-underline'>
+                                                <Badge label={__('Pro', 'translate-words')} size="xs" variant="blue" />
+                                            </a>
+                                        )}
+                                    </h3>
+                                    <p>{toggle.description}</p>
+                                    {unavailable && (
+                                        <p className='text-red-600'>
+                                            {__('Not available while the language is set from the content. Choose a URL format that includes the language to use it.', 'translate-words')}
+                                        </p>
+                                    )}
+                                </Container.Item>
+                                <Container.Item className='flex items-center justify-end' style={{paddingRight: '30%'}}>
+                                    {locked ? (
+                                        <Switch
+                                            aria-label={sprintf(
+                                                /* translators: %s: setting name */
+                                                __('%s (available in Linguator Pro)', 'translate-words'),
+                                                toggle.title
+                                            )}
+                                            id={`lmat-pro-${toggle.key}`}
+                                            disabled
+                                            size="sm"
+                                            value={false}
+                                        />
+                                    ) : (
+                                    <Switch
+                                        aria-label={toggle.title}
+                                        id={`lmat-pro-${toggle.key}`}
+                                        disabled={unavailable}
+                                        onChange={() => {
+                                            setProToggles(prev => ({ ...prev, [toggle.key]: !prev[toggle.key] }))
+                                        }}
+                                        size="sm"
+                                        value={unavailable ? false : !!proToggles[toggle.key]}
+                                    />
+                                    )}
+                                </Container.Item>
+                            </div>
+                            {/* Add-on fields of this switch, shown while it is on. */}
+                            {!locked && !unavailable && proToggles[toggle.key] && extraFields
+                                .filter((field) => field.parentToggle === toggle.key)
+                                .map((field) => (
+                                    <Container.Item key={field.key} className='mt-4' style={{ paddingRight: '30%' }}>
+                                        {field.render({
+                                            value: extraValues[field.key],
+                                            onChange: (value) => setExtraValues(prev => ({ ...prev, [field.key]: value })),
+                                            data,
+                                            languages: window.lmat_settings.languages || [],
+                                        })}
+                                    </Container.Item>
+                                ))}
+                        </React.Fragment>
+                    );
+                })}
+
+
                 {data.lmat_feedback_data !== undefined && (
                     <>
                         <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />

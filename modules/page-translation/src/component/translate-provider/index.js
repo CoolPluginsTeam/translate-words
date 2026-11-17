@@ -118,6 +118,29 @@ const TranslateService = (props) => {
         }
     };
 
+    // Server-side AI providers added by other plugins (for example from an add-on).
+    // They run through the same AI batch endpoint as Gemini.
+    const externalProviders = window.lmatPageTranslationGlobal.external_providers || {};
+    Object.keys(externalProviders).forEach((key) => {
+        if (Services[key]) {
+            return;
+        }
+        const external = externalProviders[key] || {};
+        const label = external.label || key;
+        Services[key] = {
+            Provider: createAiLlmPageTranslator(key),
+            title: label,
+            SettingBtnText: external.configured ? "Translate" : __("Set up", "translate-words"),
+            serviceLabel: label,
+            heading: sprintf(__("Translate Using %s", "translate-words"), label),
+            Docs: external.docs_url || "",
+            BetaEnabled: false,
+            ButtonDisabled: !external.configured,
+            ErrorMessage: !external.configured ? <a href={external.settings_url} target="_blank" rel="noopener noreferrer" className="lmat-page-translation-provider-error">{external.status_label || __('Set up', 'translate-words')}</a> : <></>,
+            Logo: external.icon_url ? <img src={external.icon_url} alt="" className="icon-size" /> : <></>
+        };
+    });
+
     const browserType = getBrowserType();
 
     const validServices={};

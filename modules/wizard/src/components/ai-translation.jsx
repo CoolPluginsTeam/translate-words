@@ -1,6 +1,6 @@
 import apiFetch from '@wordpress/api-fetch';
-import { __ } from '@wordpress/i18n';
-import { Input, Switch } from '@bsf/force-ui';
+import { __, sprintf } from '@wordpress/i18n';
+import { Badge, Input, Switch } from '@bsf/force-ui';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,17 @@ import { EdgeIcon } from '../../../../assets/js/src/icons/edge';
 import { GeminiIcon } from '../../../../assets/js/src/icons/gemini';
 import { GoogleIcon } from '../../../../assets/js/src/icons/google';
 import { ChromeLocalAINotice } from '../../../../admin/settings/views/src/components/chrome-local-ai-notice.jsx';
+import { getLockedProProviders, getProProviderUrl } from '../../../../admin/settings/views/src/components/pro-providers.js';
+import ExternalProviderPanel from '../../../../admin/settings/views/src/components/external-provider-panel.jsx';
+
+// Providers added by other plugins (see lmat_external_ai_providers), keyed by provider key.
+const getExternalProviders = () => {
+	const external = window?.lmat_setup?.external_providers;
+	return external && typeof external === 'object' && !Array.isArray(external) ? external : {};
+};
+
+// On/off state of each external provider from the saved settings.
+const getExternalEnabled = (keys, provider) => keys.reduce((acc, key) => ({ ...acc, [key]: Boolean(provider?.[key]) }), {});
 
 const AiTranslation = () => {
 	const { setSetupProgress, data, setData } = useContext(setupContext);
@@ -43,6 +54,11 @@ const AiTranslation = () => {
 		return type;
 	})();
 
+	const externalProviders = getExternalProviders();
+	const externalKeys = Object.keys(externalProviders);
+	const settingsUrl = `${window?.lmat_setup?.admin_url || ''}admin.php?page=lmat_settings&tab=translation`;
+	const lockedProProviders = wpAiClientAvailable ? getLockedProProviders(window?.lmat_setup, externalProviders) : [];
+
 	const showChromeRow = browserType !== 'Edge';
 	const showEdgeRow = browserType !== 'Chrome';
 
@@ -50,6 +66,7 @@ const AiTranslation = () => {
 	const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(Boolean(provider?.chrome_local_ai));
 	const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(Boolean(provider?.edge_local_ai));
 	const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable);
+	const [externalEnabled, setExternalEnabled] = useState(() => getExternalEnabled(externalKeys, provider));
 	const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState('');
 	const geminiMaskedKey = (data?.api_keys_configuration?.keys?.gemini || '').toString();
 	const hasGeminiSavedKey = geminiMaskedKey.trim() !== '';
@@ -62,6 +79,7 @@ const AiTranslation = () => {
 		edge_local_ai: Boolean(provider?.edge_local_ai),
 		google: Boolean(provider?.google),
 		gemini: Boolean(provider?.gemini),
+		...getExternalEnabled(externalKeys, provider),
 	});
 
 	useEffect(() => {
@@ -69,12 +87,14 @@ const AiTranslation = () => {
 		setChromeLocalAITranslation(Boolean(provider?.chrome_local_ai));
 		setEdgeLocalAITranslation(Boolean(provider?.edge_local_ai));
 		setGeminiTranslation(Boolean(provider?.gemini));
+		setExternalEnabled(getExternalEnabled(externalKeys, provider));
 
 		lastSavedRef.current = {
 			chrome_local_ai: Boolean(provider?.chrome_local_ai),
 			edge_local_ai: Boolean(provider?.edge_local_ai),
 			google: Boolean(provider?.google),
 			gemini: Boolean(provider?.gemini),
+			...getExternalEnabled(externalKeys, provider),
 		};
 	}, [provider]);
 
@@ -126,6 +146,7 @@ const AiTranslation = () => {
 						gemini: geminiTranslation,
 					}
 					: {}),
+				...externalEnabled,
 			};
 
 			const prevProvider = lastSavedRef.current ?? {};
@@ -133,7 +154,8 @@ const AiTranslation = () => {
 				prevProvider.google !== nextProvider.google ||
 				prevProvider.chrome_local_ai !== nextProvider.chrome_local_ai ||
 				prevProvider.edge_local_ai !== nextProvider.edge_local_ai ||
-				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini);
+				(wpAiClientAvailable && prevProvider.gemini !== nextProvider.gemini) ||
+				externalKeys.some((key) => Boolean(prevProvider[key]) !== Boolean(nextProvider[key]));
 
 			if (hasChanges) {
 				const response = await apiFetch({
@@ -327,6 +349,86 @@ const AiTranslation = () => {
 						</div>
 					</>
 				)}
+
+				{externalKeys.map((key) => {
+					const external = externalProviders[key] || {};
+					const enabled = Boolean(externalEnabled[key]);
+					// The provider's own plugin fills this panel (for example an account connection).
+					const hasPanel = Boolean(external.settings_panel);
+
+					return (
+						<div key={key} className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+							<div className="flex justify-between items-center">
+								<div className="flex items-center gap-2">
+									{external.icon_url ? <img src={external.icon_url} alt="" className="w-4 h-4" /> : null}
+									<p className="text-sm/6">{external.label}</p>
+								</div>
+								<Switch
+									aria-label={external.label}
+									id={`${key}-translation`}
+									onChange={() => setExternalEnabled((prev) => ({ ...prev, [key]: !prev[key] }))}
+									size="sm"
+									value={enabled}
+								/>
+							</div>
+
+							{enabled && hasPanel && (
+								<div className="mt-4">
+									<ExternalProviderPanel providerKey={key} />
+								</div>
+							)}
+
+							{enabled && !hasPanel && !external.configured && (
+								<p className="text-sm/6 m-0 mt-3" style={{ color: '#92400e' }}>
+									{sprintf(
+										/* translators: %s: translation provider name */
+										__('Set up %s later from the ', 'translate-words'),
+										external.label
+									)}
+									<a className="underline" href={settingsUrl} target="_blank" rel="noreferrer noopener">
+										{__('Settings panel.', 'translate-words')}
+									</a>
+								</p>
+							)}
+						</div>
+					);
+				})}
+
+				{/* Linguator Pro providers, locked while Pro is not active. */}
+				{lockedProProviders.map((pro) => {
+					const proUrl = getProProviderUrl(pro.key, 'wizard');
+
+					return (
+						<div key={`pro-${pro.key}`} className="p-6 rounded-lg" style={{ border: '1px solid #e5e7eb', marginTop: '10px' }}>
+							<div className="flex justify-between items-center">
+								<div className="flex items-center gap-2">
+									{pro.iconUrl ? <img src={pro.iconUrl} alt="" className="w-4 h-4" /> : null}
+									<p className="text-sm/6">{pro.label}</p>
+									<a href={proUrl} target="_blank" rel="noreferrer noopener" className="no-underline">
+										<Badge label={__('Pro', 'translate-words')} size="xs" variant="blue" />
+									</a>
+								</div>
+								<Switch
+									aria-label={sprintf(
+										/* translators: %s: translation provider name */
+										__('%s (available in Linguator Pro)', 'translate-words'),
+										pro.label
+									)}
+									id={`${pro.key}-translation-locked`}
+									disabled
+									size="sm"
+									value={false}
+								/>
+							</div>
+							<p className="text-sm/6 text-gray-600 m-0 mt-3">
+								{pro.description}{' '}
+								<a className="underline" href={proUrl} target="_blank" rel="noreferrer noopener">
+									{__('Get Linguator Pro', 'translate-words')}
+								</a>
+							</p>
+						</div>
+					);
+				})}
 			</div>
 
 			<div className="flex justify-between" style={{ marginTop: '14px' }}>

@@ -1,6 +1,7 @@
 import { __ } from "@wordpress/i18n";
 import Providers from "./providers.js";
 import TranslateService from "../components/translate-provider/index.js";
+import ProProviderCards from "../../../../admin/settings/views/src/components/pro-provider-cards.js";
 
 const SettingModalEngines = ({
     prefix,
@@ -25,7 +26,7 @@ const SettingModalEngines = ({
             </p>
 
             <div className={`${prefix}-provider-cards`}>
-                {providerKeys.length > 0 ? providerKeys.map((provider) => (
+                {providerKeys.length > 0 ? [...providerKeys.map((provider) => (
                     <Providers
                         key={provider}
                         Service={provider}
@@ -38,7 +39,7 @@ const SettingModalEngines = ({
                         edgeLocalAiTranslatorDisabled={edgeLocalAiModalError}
                         edgeLocalAiModalError={edgeLocalAiModalError}
                     />
-                )) : (
+                )), <ProProviderCards key="pro-providers" prefix={prefix} localized={window.lmatBulkTranslationGlobal} screen="bulk" />] : (
                     <div className={`${prefix}-bulk-translate-empty ${prefix}-provider-empty`}>
                         <strong>{__('No AI providers available', 'translate-words')}</strong>
                         <br />

@@ -489,11 +489,6 @@ if ( ! class_exists( 'Supported_Blocks' ) ) {
 				}
 			}
 
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debug-only notice when the cache is rebuilt.
-				error_log( sprintf( 'Linguator: rebuilt third-party block rules from %d wpml-config.xml file(s), %d block(s).', count( $config_files ), count( $wpml_rules ) ) );
-			}
-
 			set_transient(
 				'lmat_wpml_blocks_rules',
 				array(

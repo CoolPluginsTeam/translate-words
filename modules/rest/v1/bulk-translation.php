@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Linguator\Includes\Capabilities\Capabilities;
 use Linguator\Includes\Services\Translation\Translation_Term_Model;
 use Linguator\Includes\Services\Media\Media_Translation_Service;
+use Linguator\Includes\Services\Translation\Post_Term_Translation_Service;
 use Linguator\Supported_Blocks\Supported_Blocks;
 use Linguator\Custom_Fields\Custom_Fields;
 use Translation_Entry;
@@ -38,6 +39,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @var string
 		 */
 		private $rest_base;
+
+		/**
+		 * Provider key of the AI batch being translated, so errors can be explained per provider.
+		 *
+		 * @var string
+		 */
+		private $ai_provider = '';
 
 		/**
 		 * Constructor
@@ -319,7 +327,8 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			$object_type = isset( $params['object_type'] ) ? sanitize_key( (string) $params['object_type'] ) : 'post';
 			$model       = isset( $params['model'] ) ? sanitize_text_field( (string) $params['model'] ) : '';
 
-			if ( 'gemini' !== $provider ) {
+			$is_external = function_exists( 'linguator_get_external_ai_providers' ) && isset( linguator_get_external_ai_providers()[ $provider ] );
+			if ( 'gemini' !== $provider && ! $is_external ) {
 				return new WP_Error( 'lmat_ai_invalid_provider', __( 'Invalid translation provider.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
@@ -342,10 +351,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				return new WP_Error( 'lmat_ai_provider_disabled', __( 'This AI provider is not enabled in translation settings.', 'translate-words' ), array( 'status' => 400 ) );
 			}
 
-			$key_option = 'connectors_ai_google_api_key';
-			$api_key    = (string) get_option( $key_option, '' );
-			if ( '' === trim( $api_key ) ) {
-				return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
+			// External providers handle their own credentials in `lmat_ai_batch_prepare_provider`.
+			$api_key = '';
+			if ( 'gemini' === $provider ) {
+				$api_key = (string) get_option( 'connectors_ai_google_api_key', '' );
+				if ( '' === trim( $api_key ) ) {
+					return new WP_Error( 'lmat_ai_no_key', __( 'Please provide a valid API key for the selected provider.', 'translate-words' ), array( 'status' => 400 ) );
+				}
 			}
 
 			$sanitized_strings = array();
@@ -422,9 +434,15 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return array<string,string>|\WP_Error
 		 */
 		private function ai_translate_strings_with_llm( string $provider, string $source_lang, string $target_lang, array $strings, string $api_key, string $model_override = '', int $split_depth = 0 ) {
-			$model_id = $this->ai_translate_resolve_llm_model_id( $model_override );
+			$this->ai_provider = $provider;
 
-			$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
+			if ( 'gemini' === $provider ) {
+				$model_id       = $this->ai_translate_resolve_llm_model_id( $model_override );
+				$provider_setup = $this->ai_translate_prepare_llm_provider( $provider, $api_key );
+			} else {
+				$provider_setup = $this->ai_translate_prepare_external_provider( $provider, $model_override );
+				$model_id       = is_array( $provider_setup ) ? $provider_setup['model_id'] : '';
+			}
 			if ( is_wp_error( $provider_setup ) ) {
 				return $provider_setup;
 			}
@@ -529,7 +547,59 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		}
 
 		/**
-		 * Build glossary-aware translation prompt for the LLM.
+		 * Asks the plugin that added an external provider which AI Client provider and model to use.
+		 *
+		 * @since 2.2.3
+		 *
+		 * @param string $provider       External provider key.
+		 * @param string $model_override Model id sent by the popup, '' for the provider's default.
+		 * @return array{registry: object, provider_id: string, model_id: string}|\WP_Error
+		 */
+		private function ai_translate_prepare_external_provider( string $provider, string $model_override = '' ) {
+			if ( ! class_exists( '\WordPress\AiClient\AiClient' ) ) {
+				return new WP_Error(
+					'lmat_ai_client_missing',
+					__( 'AI client is not available.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			/**
+			 * Filters the AI Client provider and model used for an external provider's translation batch.
+			 *
+			 * The plugin that added the provider (see `lmat_external_ai_providers`) checks its own credentials here
+			 * and returns the registry provider id, or a WP_Error that explains to the user why it cannot be used.
+			 *
+			 * @since 2.2.3
+			 *
+			 * @param array|\WP_Error|null $setup          Null, or `provider_id` and optional `model_id`.
+			 * @param string               $provider       Provider key of the external provider.
+			 * @param string               $model_override Model id sent by the translation popup, '' for none.
+			 */
+			$setup = apply_filters( 'lmat_ai_batch_prepare_provider', null, $provider, $model_override );
+			if ( is_wp_error( $setup ) ) {
+				return $setup;
+			}
+
+			$provider_id = is_array( $setup ) && isset( $setup['provider_id'] ) ? (string) $setup['provider_id'] : '';
+			$registry    = \WordPress\AiClient\AiClient::defaultRegistry();
+			if ( '' === $provider_id || ! $registry || ! method_exists( $registry, 'hasProvider' ) || ! $registry->hasProvider( $provider_id ) ) {
+				return new WP_Error(
+					'lmat_ai_provider_invalid',
+					__( 'Invalid AI provider.', 'translate-words' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return array(
+				'registry'    => $registry,
+				'provider_id' => $provider_id,
+				'model_id'    => isset( $setup['model_id'] ) ? trim( (string) $setup['model_id'] ) : '',
+			);
+		}
+
+		/**
+		 * Build the translation prompt for the LLM.
 		 *
 		 * @param string               $source_lang Source language slug.
 		 * @param string               $target_lang Target language slug.
@@ -541,8 +611,6 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			if ( false === $payload ) {
 				return new WP_Error( 'lmat_ai_encode_error', __( 'Could not prepare translation payload.', 'translate-words' ), array( 'status' => 500 ) );
 			}
-
-			$glossary_instructions = $this->ai_translate_build_glossary_instructions( $source_lang, $target_lang, $strings );
 
 			$instruction = sprintf(
 				'You are a professional translator.
@@ -570,105 +638,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$payload
 			);
 
-			if ( '' !== $glossary_instructions ) {
-				$instruction .= 'Instruction 9: ' . $glossary_instructions;
-			}
-
 			return $instruction;
-		}
-
-		/**
-		 * Build glossary instruction block when matched terms exist for the payload.
-		 *
-		 * @param string               $source_lang Source language slug.
-		 * @param string               $target_lang Target language slug.
-		 * @param array<string,string> $strings     Key => source text.
-		 * @return string
-		 */
-		private function ai_translate_build_glossary_instructions( string $source_lang, string $target_lang, array $strings ): string {
-			$glossary_data = get_option( 'lmat_glossary_data', array() );
-			if ( empty( $glossary_data ) || ! is_array( $glossary_data ) ) {
-				return '';
-			}
-
-			$has_glossary_terms = false;
-			foreach ( $strings as $string ) {
-				foreach ( $glossary_data as $entry ) {
-					if (
-						is_array( $entry ) &&
-						! empty( $entry['original_term'] ) &&
-						isset( $entry['original_language_code'] ) &&
-						$entry['original_language_code'] === $source_lang &&
-						stripos( (string) $string, (string) $entry['original_term'] ) !== false
-					) {
-						$has_glossary_terms = true;
-						break 2;
-					}
-				}
-			}
-
-			if ( ! $has_glossary_terms ) {
-				return '';
-			}
-
-			$matched_terms = array();
-			foreach ( $glossary_data as $entry ) {
-				if (
-					! is_array( $entry ) ||
-					empty( $entry['original_language_code'] ) ||
-					empty( $entry['original_term'] ) ||
-					empty( $entry['translations'] ) ||
-					$entry['original_language_code'] !== $source_lang
-				) {
-					continue;
-				}
-
-				$translations_by_code = array();
-				foreach ( $entry['translations'] as $translation ) {
-					if (
-						is_array( $translation ) &&
-						! empty( $translation['target_language_code'] ) &&
-						! empty( $translation['translated_term'] )
-					) {
-						$translations_by_code[ $translation['target_language_code'] ] = $translation['translated_term'];
-					}
-				}
-
-				$term_found = false;
-				foreach ( $strings as $string ) {
-					if ( stripos( (string) $string, (string) $entry['original_term'] ) !== false ) {
-						$term_found = true;
-						break;
-					}
-				}
-
-				if ( $term_found && isset( $translations_by_code[ $target_lang ] ) ) {
-					$matched_terms[] = array(
-						'term'        => $entry['original_term'],
-						'translation' => $translations_by_code[ $target_lang ],
-						'description' => $entry['description'] ?? '',
-					);
-				}
-			}
-
-			if ( empty( $matched_terms ) ) {
-				return '';
-			}
-
-			$glossary_instructions = "Please use the following glossary terms in your translation:\n";
-			foreach ( $matched_terms as $term ) {
-				$src_term    = isset( $term['term'] ) ? (string) $term['term'] : '';
-				$translation = isset( $term['translation'] ) ? (string) $term['translation'] : '';
-				$description = isset( $term['description'] ) ? (string) $term['description'] : '';
-
-				$glossary_instructions .= '- "' . $src_term . '" -> "' . $translation . '"';
-				if ( '' !== $description ) {
-					$glossary_instructions .= ' - Note: ' . $description;
-				}
-				$glossary_instructions .= "\n";
-			}
-
-			return $glossary_instructions;
 		}
 
 		/**
@@ -954,6 +924,20 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 		 * @return \WP_Error
 		 */
 		private function ai_translate_map_generate_text_exception( \Throwable $e ): WP_Error {
+			/**
+			 * Filters the error shown when an AI provider request fails, so providers can explain their own errors.
+			 *
+			 * @since 2.2.3
+			 *
+			 * @param \WP_Error|null $error    Null to use the default message.
+			 * @param \Throwable     $e        What the AI Client threw.
+			 * @param string         $provider Provider key, for example `gemini`.
+			 */
+			$custom = apply_filters( 'lmat_ai_batch_error', null, $e, $this->ai_provider );
+			if ( is_wp_error( $custom ) ) {
+				return $custom;
+			}
+
 			$msg = (string) $e->getMessage();
 			if ( false !== stripos( $msg, 'No models found' ) ) {
 				return new WP_Error(
@@ -970,7 +954,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			) {
 				return new WP_Error(
 					'lmat_ai_rate_limited',
-					__( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' ),
+					'gemini' === $this->ai_provider || '' === $this->ai_provider
+						? __( 'Gemini API quota/rate limit exceeded. Please check billing/quotas, then retry with smaller batches.', 'translate-words' )
+						: __( 'The AI provider quota or rate limit was exceeded. Please wait a moment, then retry with smaller batches.', 'translate-words' ),
 					array( 'status' => 429 )
 				);
 			}
@@ -1569,10 +1555,10 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$post_meta_sync = false;
 			}
 
+			$allowed_meta_fields = $post_meta_sync ? array() : Custom_Fields::get_allowed_custom_fields();
 			if ( count( $translate_lang ) > 0 && ! ( count( $post_ids ) < 1 ) ) {
 				$lmat_langs           = $linguator->model->get_languages_list();
 				$lmat_langs_slugs     = array_column( $lmat_langs, 'slug' );
-				$allowed_meta_fields = Custom_Fields::get_allowed_custom_fields();
 				
 				foreach ( $post_ids as $postId ) {
 
@@ -1668,6 +1654,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				if ( $posts_translate[ $postId ]['editor_type'] === 'block' && ! $gutenberg_block ) {
 					$gutenberg_block = true;
 				}
+				$term_service = new Post_Term_Translation_Service( LMAT() );
+				foreach ( $term_service->get_pending_names( $postId, $translate_lang ) as $key => $name ) {
+					$posts_translate[ $postId ]['metaFields'][ $key ] = $name;
+					$allowed_meta_fields[ $key ] = array( 'type' => 'string', 'status' => true );
+				}
 
 					foreach ( $translate_lang as $lang ) {
 						if ( in_array( $lang, $lmat_langs_slugs ) ) {
@@ -1689,9 +1680,7 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				'posts'                    => $posts_translate,
 				'CreateTranslatePostNonce' => wp_create_nonce( 'lmat_create_translate_post_nonce' ),
 			);
-			if ( ! $post_meta_sync ) {
-				$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
-			}
+			$data['allowedMetaFields'] = wp_json_encode( $allowed_meta_fields );
 
 			// Append media strings per post when media translation is enabled.
 			if ( function_exists( 'LMAT' ) ) {
@@ -1822,6 +1811,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					: $decoded_meta_fields;
 			}
 
+			$term_service = new Post_Term_Translation_Service( LMAT() );
+			$term_names = array();
+			if ( isset( $post_data['post_meta_fields'] ) && is_array( $post_data['post_meta_fields'] ) ) {
+				$term_names = $term_service->extract_names( $post_data['post_meta_fields'] );
+			}
+
 			if ( 'elementor' === $editor_type ) {
 				$post_data['meta_fields'] = array();
 				$el_raw = is_string( $content ) ? $content : wp_json_encode( $content );
@@ -1926,6 +1921,13 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 
+			if ( $term_names ) {
+				$term_result = $term_service->apply( $source_post_id, (int) $new_post_id, $term_names );
+				if ( is_wp_error( $term_result ) ) {
+					return $term_result;
+				}
+			}
+
 			$post_link      = html_entity_decode( get_the_permalink( $new_post_id ) );
 			$post_title_out = html_entity_decode( get_the_title( $new_post_id ) );
 			$post_edit_link = html_entity_decode( get_edit_post_link( $new_post_id ) );
@@ -1978,6 +1980,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$params                  = $params->get_params();
+			$taxonomy = sanitize_key( (string) ( $params['taxonomy'] ?? '' ) );
+			if ( ! LMAT()->model->is_translated_taxonomy( $taxonomy ) ) {
+				wp_send_json_error( __( 'This taxonomy is not enabled for translation.', 'translate-words' ), 400 );
+			}
+
 
 			// Verify the nonce
 			$private_key = isset( $params['privateKey'] ) ? sanitize_text_field( wp_unslash( (string) $params['privateKey'] ) ) : '';
@@ -2083,6 +2090,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$params = $params->get_params();
+			$taxonomy = sanitize_key( (string) ( $params['taxonomy'] ?? '' ) );
+			if ( ! LMAT()->model->is_translated_taxonomy( $taxonomy ) ) {
+				wp_send_json_error( __( 'This taxonomy is not enabled for translation.', 'translate-words' ), 400 );
+			}
+
 
 			$term_id                 = intval( sanitize_text_field( $params['term_id'] ) );
 			$target_language         = isset( $params['target_language'] ) ? sanitize_text_field( $params['target_language'] ) : '';
@@ -2102,6 +2114,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 			}
 
 			$get_term = get_term( $term_id, $taxonomy );
+			if ( ! $get_term instanceof \WP_Term || ! LMAT()->model->get_language( $target_language ) ) {
+				wp_send_json_error( __( 'Invalid term or target language.', 'translate-words' ), 400 );
+			}
 
 			$translations = new Translations();
 
@@ -2141,6 +2156,9 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$target_language_object
 			);
 
+			if ( is_wp_error( $term_id ) ) {
+				wp_send_json_error( $term_id->get_error_message(), 400 );
+			}
 			if ( ! $term_id ) {
 				wp_send_json_error( 'Unable to create the translated post for parent post ID ' . $term_id . ' in ' . $target_language_object . '.' );
 				exit;

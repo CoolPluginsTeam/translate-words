@@ -1,3 +1,4 @@
+import { getQuotaMessages } from "../../../../../bulk-translation/src/components/translate-provider/ai-llm/quota-messages.js";
 import { select, dispatch } from "@wordpress/data";
 import SaveTranslation from "../../store-translated-string/index.js";
 import StoreTimeTaken from "../../store-time-taken/index.js";
@@ -50,8 +51,12 @@ export default function createAiLlmPageTranslator(providerId) {
             return;
         }
 
+        const externalProvider = window.lmatPageTranslationGlobal?.external_providers?.[providerId];
+        // Gemini and the external providers share the AI batch endpoint and its recovery flow.
+        const isLlmProvider = providerId === "gemini" || Boolean(externalProvider);
         const buttonTextMap = {
             gemini: __("Translate with Gemini", "translate-words"),
+            ...(externalProvider ? { [providerId]: sprintf(__("Translate with %s", "translate-words"), externalProvider.label || providerId) } : {}),
         };
 
         // Render button (and avoid duplicating on re-renders)
@@ -76,10 +81,10 @@ export default function createAiLlmPageTranslator(providerId) {
         const buildRecoverableHtml = (done, total, limitExceeded = false) => {
             const totalSafe = Math.max(1, total);
             const translateAgainLabel = limitExceeded
-                ? __('Click "Translate" after updating your API key to try again.', "translate-words")
+                ? getQuotaMessages(providerId).retry
                 : __('Click "Translate" to try again.', "translate-words");
             const translateAgainPartialLabel = limitExceeded
-                ? __('Click "Translate" after updating your API key to re-translate the remaining strings.', "translate-words")
+                ? getQuotaMessages(providerId).retryRemaining
                 : __('Click "Translate" to re-translate the remaining strings.', "translate-words");
 
             if (done <= 0) {
@@ -87,7 +92,7 @@ export default function createAiLlmPageTranslator(providerId) {
                     ? __("You’ve exceeded your current plan limit.", "translate-words")
                     : __("Oops! Something went wrong during translation", "translate-words");
                 const intro = limitExceeded
-                    ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                    ? getQuotaMessages(providerId).intro
                     : __("No strings were saved yet. You can retry the same step or stop here.", "translate-words");
                 return `<div class="lmat_page_translation_ai_pending">
                 <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>
@@ -105,7 +110,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 ? __("You’ve exceeded your current plan limit.", "translate-words")
                 : __("Oops! Something went wrong during translation", "translate-words");
             const intro = limitExceeded
-                ? __("To continue, please check your plan details and update your API key.", "translate-words")
+                ? getQuotaMessages(providerId).intro
                 : "";
             return `<div class="lmat_page_translation_ai_pending">
                 <p class="lmat_page_translation_ai_pending_heading">${escapeHtml(heading)}</p>
@@ -204,7 +209,8 @@ export default function createAiLlmPageTranslator(providerId) {
                 let totalChars = 0;
                 let totalStrings = 0;
 
-                const modelKey = "gemini_model";
+                // Each provider saves its model as "<provider>_model"; external providers pick theirs on the server.
+                const modelKey = `${providerId}_model`;
                 const selectedModel =
                     lmatPageTranslationGlobal?.ai_models && lmatPageTranslationGlobal.ai_models[modelKey]
                         ? String(lmatPageTranslationGlobal.ai_models[modelKey])
@@ -379,7 +385,7 @@ export default function createAiLlmPageTranslator(providerId) {
 
                             const totalStringKeys = Object.keys(strings).length;
                             const canOfferGeminiRecovery =
-                                providerId === "gemini" &&
+                                isLlmProvider &&
                                 totalStringKeys > 0 &&
                                 chunks.length > 0 &&
                                 (isQuota || chunkIndex < chunks.length);
@@ -440,7 +446,7 @@ export default function createAiLlmPageTranslator(providerId) {
                 const totalStringKeys = Object.keys(strings).length;
 
                 logAiTranslationError(errorMessage);
-                if (providerId === "gemini" && isQuota && totalStringKeys > 0) {
+                if (isLlmProvider && isQuota && totalStringKeys > 0) {
                     showGeminiRecoverableError(true);
                 } else {
                     showErrorNotice(errorMessage);

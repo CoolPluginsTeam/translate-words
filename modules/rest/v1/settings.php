@@ -105,6 +105,8 @@ class Settings extends Abstract_Controller {
 	 * @return void
 	 */
 	public function register_routes(): void {
+		require_once __DIR__ . '/translation-test.php';
+		Translation_Test::register_routes( array( $this, 'update_item_permissions_check' ) );
 		register_rest_route(
 			$this->namespace,
 			"/{$this->rest_base}",
@@ -255,6 +257,19 @@ class Settings extends Abstract_Controller {
 							'validate_callback' => array( $this, 'validate_boolean_param' ),
 						),
 					),
+				),
+			)
+		);
+
+		// Install or activate LocoAI from the settings sidebar card.
+		register_rest_route(
+			$this->namespace,
+			"/{$this->rest_base}/locoai",
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'install_locoai' ),
+					'permission_callback' => array( $this, 'locoai_permissions_check' ),
 				),
 			)
 		);
@@ -444,6 +459,213 @@ class Settings extends Abstract_Controller {
 	}
 
 	/**
+	 * Checks if the current user may install or activate LocoAI.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error
+	 */
+	public function locoai_permissions_check( $request ) {
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to activate plugins on this site.', 'translate-words' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		$nonce_check = $this->verify_nonce( $request );
+		if ( is_wp_error( $nonce_check ) ) {
+			return $nonce_check;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Installs LocoAI (free) from WordPress.org, or activates an installed LocoAI.
+	 *
+	 * Install also activates when Loco Translate is active; otherwise the user clicks Activate.
+	 * Pro is only activated when already installed; it is never downloaded.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function install_locoai( $request ) {
+		$status = linguator_get_locoai_plugin_status();
+
+		if ( 'hidden' === $status['state'] ) {
+			return new WP_Error(
+				'lmat_locoai_parent_missing',
+				__( 'Please install Loco Translate first.', 'translate-words' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Install, then activate right away when Loco Translate is active.
+		// If Loco Translate is inactive, stop after install and show the Activate button.
+		if ( 'install' === $status['state'] ) {
+			$installed = $this->download_locoai();
+			if ( is_wp_error( $installed ) ) {
+				return $installed;
+			}
+
+			$status = linguator_get_locoai_plugin_status();
+
+			if ( 'activate' !== $status['state'] ) {
+				return new WP_Error(
+					'lmat_locoai_failed',
+					__( 'LocoAI could not be installed. Please try again.', 'translate-words' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			if ( ! $status['loco_active'] ) {
+				return rest_ensure_response(
+					array(
+						'success' => true,
+						'state'   => 'activate',
+						'message' => __( 'LocoAI installed successfully.', 'translate-words' ),
+					)
+				);
+			}
+		}
+
+		if ( 'activate' === $status['state'] ) {
+			// LocoAI requires Loco Translate to be active (WordPress plugin dependencies).
+			if ( ! $status['loco_active'] ) {
+				// Expected case, not a server error: return 200 so the browser console stays clean.
+				return rest_ensure_response(
+					array(
+						'success' => false,
+						'state'   => 'activate',
+						'code'    => 'lmat_locoai_parent_inactive',
+						'message' => __( 'Please activate Loco Translate first.', 'translate-words' ),
+					)
+				);
+			}
+
+			$activated = $this->activate_locoai( $status['plugin_file'] );
+			if ( is_wp_error( $activated ) ) {
+				return $activated;
+			}
+
+			$status = linguator_get_locoai_plugin_status();
+		}
+
+		if ( 'activated' !== $status['state'] ) {
+			return new WP_Error(
+				'lmat_locoai_failed',
+				__( 'LocoAI could not be activated. Please try again.', 'translate-words' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'state'   => 'activated',
+				'message' => __( 'LocoAI activated successfully.', 'translate-words' ),
+			)
+		);
+	}
+
+	/**
+	 * Downloads and installs LocoAI (free) from WordPress.org.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function download_locoai() {
+		if ( ! current_user_can( 'install_plugins' ) ) {
+			return new WP_Error(
+				'lmat_locoai_install_forbidden',
+				__( 'Sorry, you are not allowed to install plugins on this site.', 'translate-words' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+		$api = plugins_api(
+			'plugin_information',
+			array(
+				'slug'   => 'automatic-translator-addon-for-loco-translate',
+				'fields' => array( 'sections' => false ),
+			)
+		);
+
+		if ( is_wp_error( $api ) ) {
+			return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $api->get_error_message() ), array( 'status' => 500 ) );
+		}
+
+		$skin     = new \WP_Ajax_Upgrader_Skin();
+		$upgrader = new \Plugin_Upgrader( $skin );
+		$result   = $upgrader->install( $api->download_link );
+
+		if ( is_wp_error( $result ) || is_wp_error( $skin->result ) ) {
+			$error = is_wp_error( $result ) ? $result : $skin->result;
+
+			// Folder already there means it is installed; the caller will activate it.
+			if ( 'folder_exists' !== $error->get_error_code() ) {
+				return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $error->get_error_message() ), array( 'status' => 500 ) );
+			}
+		} elseif ( $skin->get_errors()->has_errors() ) {
+			return new WP_Error( 'lmat_locoai_install_failed', $this->plain_error_message( $skin->get_error_messages() ), array( 'status' => 500 ) );
+		} elseif ( null === $result ) {
+			global $wp_filesystem;
+
+			$message = __( 'Unable to connect to the filesystem. Please confirm your credentials.', 'translate-words' );
+			if ( $wp_filesystem instanceof \WP_Filesystem_Base && is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
+				$message = $wp_filesystem->errors->get_error_message();
+			}
+
+			return new WP_Error( 'lmat_locoai_filesystem', $this->plain_error_message( $message ), array( 'status' => 500 ) );
+		}
+
+		wp_clean_plugins_cache();
+
+		return true;
+	}
+
+	/**
+	 * Activates an installed LocoAI plugin file.
+	 *
+	 * @param string $plugin_file Plugin file relative to the plugins folder.
+	 * @return true|WP_Error
+	 */
+	private function activate_locoai( $plugin_file ) {
+		if ( '' === $plugin_file || ! current_user_can( 'activate_plugin', $plugin_file ) ) {
+			return new WP_Error(
+				'lmat_locoai_activate_forbidden',
+				__( 'Sorry, you are not allowed to activate this plugin.', 'translate-words' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// Keep any output from the plugin's activation hook out of the JSON response.
+		ob_start();
+		$result = activate_plugin( $plugin_file );
+		ob_end_clean();
+
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'lmat_locoai_activate_failed', $this->plain_error_message( $result->get_error_message() ), array( 'status' => 500 ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Turns a WordPress error message (which may contain HTML) into plain text for the card.
+	 *
+	 * @param string $message Error message.
+	 * @return string
+	 */
+	private function plain_error_message( $message ) {
+		return trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( (string) $message ) ) );
+	}
+
+	/**
 	 * Retrieves all options.
 	 *
 	 *  
@@ -547,8 +769,16 @@ class Settings extends Abstract_Controller {
 			'models'           => $models,
 			'available_models' => $available_models,
 		);
-		
-		return $response;
+
+		/**
+		 * Filters the data returned by `GET lmat/v1/settings`, for example to add data an add-on's settings need.
+		 *
+		 * @since 2.2.3
+		 *
+		 * @param array           $response Settings and extra data sent to the settings screen.
+		 * @param WP_REST_Request $request  The request.
+		 */
+		return apply_filters( 'lmat_settings_rest_response', $response, $request );
 	}
 
 	/**

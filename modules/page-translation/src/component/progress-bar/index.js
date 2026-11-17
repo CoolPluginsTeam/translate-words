@@ -8,6 +8,9 @@ const AddProgressBar = (provider) => {
         gemini: "Google Gemini",
         google: "Google Translate",
     }
+    Object.entries(window.lmatPageTranslationGlobal?.external_providers || {}).forEach(([key, external]) => {
+        providerName[key] = external?.label || key;
+    });
 
     const progressBarSelector = "#lmat_page_translation_strings_model .lmat_page_translation_translate_progress";
 

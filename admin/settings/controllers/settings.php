@@ -657,6 +657,11 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'localAiTranslator'    => 'Chrome AI',
 					'edgeLocalAiTranslator' => 'Edge AI',
 				);
+				if ( function_exists( 'linguator_get_external_ai_providers' ) ) {
+					foreach ( linguator_get_external_ai_providers() as $external_key => $external ) {
+						$avilable_service_providers[ $external_key ] = $external['label'];
+					}
+				}
 				$cpt_dashboard_data=Linguator_Translation_Dashboard::get_translation_data('lmat');
 				$translation_providers=(isset($cpt_dashboard_data['service_providers']) && is_array($cpt_dashboard_data['service_providers'])) ? $cpt_dashboard_data['service_providers'] : array();
 				$translations_data['total_string']=isset($cpt_dashboard_data['total_string_count']) ? $this->linguator_format_number($cpt_dashboard_data['total_string_count']) : 0;
@@ -674,7 +679,7 @@ class Linguator_Settings extends Linguator_Admin_Base {
 
 			// Built-in AI (Chrome/Edge) setup card and provider list used by the AI Translation tab.
 			wp_enqueue_style( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/css/chrome-ai-setup-framework.css', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION );
-			wp_enqueue_style( 'lmat-provider-list', plugins_url( 'admin/assets/css/lmat-provider-list.css', LINGUATOR_ROOT_FILE ), array( 'lmat-chrome-ai-setup' ), LINGUATOR_VERSION );
+			wp_enqueue_style( 'lmat-provider-list', plugins_url( 'admin/assets/css/lmat-provider-list.css', LINGUATOR_ROOT_FILE ), array( 'lmat-chrome-ai-setup' ), (string) filemtime( dirname( LINGUATOR_ROOT_FILE ) . '/admin/assets/css/lmat-provider-list.css' ) );
 			wp_enqueue_script( 'lmat-chrome-ai-setup', plugins_url( 'admin/chrome-ai-setup/js/chrome-ai-setup-framework.js', LINGUATOR_ROOT_FILE ), array(), LINGUATOR_VERSION, true );
 
 			// Enqueue React-based settings script
@@ -707,6 +712,13 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'translations_data' => $translations_data,
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
+					// Providers added by other plugins; a provider's own settings panel is enqueued by that plugin.
+					'external_providers'    => function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array(),
+					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
+					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
+					'pro_provider_icons'    => array(
+						'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+					),
 					'chrome_ai_setup'           => $this->get_chrome_ai_setup_data(),
 				)
 			);
@@ -964,22 +976,9 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 * @return array Plugin status information
 	 */
 	private function linguator_get_locoai_plugin_status() {
-		// Ensure plugin functions are available
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-		
-		// Check if plugin is installed
-		$plugin_path = 'automatic-translator-addon-for-loco-translate/automatic-translator-addon-for-loco-translate.php';
-		$all_plugins = get_plugins();
-		$is_installed = isset( $all_plugins[ $plugin_path ] );
-		
-		// Check if plugin is active
-		$is_active = is_plugin_active( $plugin_path );
-		return array(
-			'installed' => $is_installed,
-			'active'    => $is_active,
-			'status'    => $is_active ? 'active' : ( $is_installed ? 'installed' : 'not_installed' )
-		);
+		$status = \linguator_get_locoai_plugin_status();
+		unset( $status['plugin_file'], $status['loco_file'] );
+
+		return $status;
 	}
 }

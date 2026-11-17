@@ -4,9 +4,11 @@ import { ChromeIcon } from '../../../../../assets/js/src/icons/chrome';
 import { EdgeIcon } from '../../../../../assets/js/src/icons/edge';
 import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
+import ExternalProviderPanel from './external-provider-panel.jsx';
+import ConnectionTests, { openConnectionTest } from './connection-test.jsx';
+import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
-
 const getChromeAiSetupData = () => window?.lmat_settings?.chrome_ai_setup || {};
 
 const getAvailableLanguages = () => Object.entries(getChromeAiSetupData().all_languages || {}).map(([code, language]) => ({
@@ -124,8 +126,11 @@ const ProviderRow = ({
     unsupportedMessage,
     actionLabel,
     onAction,
+    actionHref,
     extra,
+    onTest,
     defaultDisabledReason,
+    locked = false,
 }) => {
     const unsupported = 'unsupported' === status;
     const defaultDisabled = !unsupported && Boolean(defaultDisabledReason);
@@ -139,11 +144,16 @@ const ProviderRow = ({
         rowClasses.push('is-unsupported');
     }
 
+    if (locked) {
+        rowClasses.push('is-locked');
+    }
+
     const statusClass = {
         setup: 'is-setup',
         'missing-key': 'is-setup',
         checking: 'is-checking',
         unsupported: 'is-unsupported',
+        pro: 'is-pro',
     }[status] || '';
 
     return (
@@ -176,11 +186,19 @@ const ProviderRow = ({
             </label>
 
             <div className="lmat-engine-actions">
-                <a className="lmat-engine-docs" href={docsUrl} target="_blank" rel="noopener noreferrer">
-                    {__('Docs', 'translate-words')}
-                </a>
+                {onTest ? <button type="button" className="lmat-engine-btn" onClick={onTest}>{__('Test Connection', 'translate-words')}</button> : null}
+                {docsUrl ? (
+                    <a className="lmat-engine-docs" href={docsUrl} target="_blank" rel="noopener noreferrer">
+                        {__('Docs', 'translate-words')}
+                    </a>
+                ) : null}
                 <span className="lmat-engine-action-slot">
-                    {actionLabel && (
+                    {actionLabel && actionHref && (
+                        <a className="lmat-engine-btn primary" href={actionHref} target="_blank" rel="noopener noreferrer">
+                            {actionLabel}
+                        </a>
+                    )}
+                    {actionLabel && !actionHref && (
                         <button type="button" className="lmat-engine-btn primary" onClick={onAction}>
                             {actionLabel}
                         </button>
@@ -191,7 +209,7 @@ const ProviderRow = ({
                         type="checkbox"
                         className="lmat-input-toggle"
                         checked={enabled}
-                        disabled={isDefault}
+                        disabled={isDefault || locked}
                         onChange={onToggle}
                         title={isDefault ? __('The default provider stays enabled. Pick another default to turn this off.', 'translate-words') : ''}
                     />
@@ -216,6 +234,9 @@ const ProviderRow = ({
  * @param {boolean} props.geminiConfigured Whether a Gemini API key is saved.
  * @param {Function} props.onDefaultChange Receives the provider key picked as default.
  * @param {*} props.geminiExtra            Content rendered under the Gemini row (API key form).
+ * @param {Object} props.externalProviders Providers added by other plugins, keyed by provider key (see lmat_external_ai_providers).
+ * @param {Object} props.externalConfigured Per external key: whether it is ready to translate.
+ * @param {Function} props.onExternalStatus Receives (key, configured) when an account connects or disconnects.
  */
 const ProviderList = ({
     browserType,
@@ -225,6 +246,9 @@ const ProviderList = ({
     geminiConfigured,
     onDefaultChange,
     geminiExtra,
+    externalProviders = {},
+    externalConfigured = {},
+    onExternalStatus = () => {},
 }) => {
     const chromeStatus = useBuiltInAiStatus('chrome', browserType);
     const edgeStatus = useBuiltInAiStatus('edge', browserType);
@@ -241,6 +265,14 @@ const ProviderList = ({
 
         if (card && card.scrollIntoView) {
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const scrollToExternalCard = (key) => {
+        const card = document.querySelector(`.lmat-external-setup-card[data-provider="${key}"]`);
+
+        if (card && card.scrollIntoView) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
@@ -270,9 +302,22 @@ const ProviderList = ({
 
     return (
         <div className="lmat-engines">
+            <ConnectionTests />
             {showSetupCard && (
                 <ChromeAiSetupCard browserType={browserType} chromeEnabled={chromeEnabled} edgeEnabled={edgeEnabled} />
             )}
+
+            {/* Setup cards of external providers (such as an account connection), shown while the provider is on. */}
+            {Object.entries(externalProviders).map(([key, external]) => (
+                providers[key]?.enabled && external?.settings_panel ? (
+                    <div key={key} className="lmat-external-setup-card" data-provider={key}>
+                        <ExternalProviderPanel
+                            providerKey={key}
+                            onStatusChange={(isConfigured) => onExternalStatus(key, isConfigured)}
+                        />
+                    </div>
+                ) : null
+            ))}
 
             <div className="lmat-engine-note">
                 <span className="lmat-engine-note-icon" aria-hidden="true">
@@ -330,6 +375,7 @@ const ProviderList = ({
                         unsupportedMessage={unsupportedMessage(__('Edge Built-in AI', 'translate-words'), 'Edge')}
                         defaultDisabledReason={builtInDefaultReason(edgeStatus)}
                         actionLabel={'setup' === edgeStatus && edgeEnabled ? __('Configure', 'translate-words') : ''}
+						onTest={'ready' === edgeStatus && edgeEnabled ? () => openConnectionTest({ key: 'edge_local_ai', name: __('Edge Built-in AI', 'translate-words') }) : null}
                         onAction={scrollToSetupCard}
                     />
                 )}
@@ -338,7 +384,7 @@ const ProviderList = ({
                     <ProviderRow
                         icon={<GeminiIcon className="icon-size" />}
                         name={__('Google Gemini', 'translate-words')}
-                        docsUrl={`https://linguator.com/docs/automatic-translation-via-googe-gemini/${DOCS_UTM}_gemini`}
+                        docsUrl={`https://linguator.com/docs/automatic-translation-via-google-gemini/${DOCS_UTM}_gemini`}
                         enabled={Boolean(providers.gemini.enabled)}
                         onToggle={toggle('gemini')}
                         isDefault={'gemini' === defaultProvider}
@@ -355,6 +401,69 @@ const ProviderList = ({
                         extra={providers.gemini.enabled ? geminiExtra : null}
                     />
                 )}
+
+                {Object.entries(externalProviders).map(([key, external]) => {
+                    const state = providers[key]
+                    if (!state) {
+                        return null
+                    }
+                    const configured = Boolean(externalConfigured[key])
+                    const hasPanel = Boolean(external?.settings_panel)
+
+                    return (
+                        <ProviderRow
+                            key={key}
+                            icon={external.icon_url ? <img src={external.icon_url} alt="" className="icon-size" /> : null}
+                            name={external.label}
+                            docsUrl={external.docs_url || ''}
+                            enabled={Boolean(state.enabled)}
+                            onToggle={toggle(key)}
+                            isDefault={key === defaultProvider}
+                            onDefault={() => onDefaultChange(key)}
+                            status={configured ? 'ready' : 'setup'}
+                            statusLabel={configured
+                                ? __('Ready', 'translate-words')
+                                // The page-load label described a working provider; after a disconnect it is out of date.
+                                : (!external.configured && external.status_label ? external.status_label : __('Not connected', 'translate-words'))}
+                            defaultDisabledReason={configured ? '' : sprintf(__('Set up %s before making it the default provider.', 'translate-words'), external.label)}
+                            // Like Chrome AI: the setup button shows only while the provider is on and not set up yet.
+                            actionLabel={state.enabled && !configured && hasPanel ? (external.action_label || __('Configure', 'translate-words')) : ''}
+                            onAction={() => scrollToExternalCard(key)}
+							onTest={configured && state.enabled && key !== 'chatgpt' ? () => openConnectionTest({ key, name: external.label }) : null}
+                        />
+                    )
+                })}
+
+                {/* Linguator Pro providers, locked while Pro is not active. They need the WordPress AI Client, like Gemini. */}
+                {geminiAvailable && getLockedProProviders(window?.lmat_settings, externalProviders)
+                    .map((pro) => {
+                        const iconUrl = pro.iconUrl;
+                        const lockedReason = sprintf(
+                            /* translators: %s: translation provider name */
+                            __('%s is available in Linguator Pro.', 'translate-words'),
+                            pro.label
+                        );
+
+                        return (
+                            <ProviderRow
+                                key={`pro-${pro.key}`}
+                                locked
+                                icon={iconUrl ? <img src={iconUrl} alt="" className="icon-size" /> : null}
+                                name={pro.label}
+                                docsUrl={pro.docsUrl || ''}
+                                enabled={false}
+                                onToggle={() => {}}
+                                isDefault={false}
+                                onDefault={() => {}}
+                                status="pro"
+                                statusLabel={__('Pro', 'translate-words')}
+                                defaultDisabledReason={lockedReason}
+                                actionLabel={__('Get Pro', 'translate-words')}
+                                actionHref={getProProviderUrl(pro.key, 'settings')}
+                                extra={<p className="lmat-engine-pro-msg">{pro.description}</p>}
+                            />
+                        );
+                    })}
             </ul>
         </div>
     );

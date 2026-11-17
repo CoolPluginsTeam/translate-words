@@ -354,7 +354,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
             case 'gemini':
                 return 'Google Gemini';
             default:
-                return 'Google Translate';
+                return window.lmatBulkTranslationGlobal?.external_providers?.[serviceProvider]?.label || 'Google Translate';
         }
     }
 
@@ -378,7 +378,7 @@ const StatusModal = ({ postIds, selectedLanguages, prefix, onDestory }) => {
 
     return (
         errorModal && errorModalData ? <ErrorModalBox message={errorModalData.errorHtml || errorModalData.errorMessage || __('An unexpected error occurred.', 'translate-words')} onClose={closeErrorModal} Title={__('Bulk Translation Error', 'translate-words')} prefix={prefix} beforeClose={errorModalData.allowTranslate ? <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={retryFailedTranslation}>{__('Translate', 'translate-words')}</button> : null} >
-            {errorModalData.aiError && serviceProvider === 'gemini' && (
+            {errorModalData.aiError && (serviceProvider === 'gemini' || Boolean(window.lmatBulkTranslationGlobal?.external_providers?.[serviceProvider])) && (
                 <div className={`${prefix}-ai-error-buttons`}>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="translateAgain" onClick={AIErrorBtnHandler}>{__('Translate', 'translate-words')}</button>
                     <button type="button" className={`${prefix}-ai-error-button button`} data-status="continue" onClick={AIErrorBtnHandler}>{__('Continue', 'translate-words')}</button>

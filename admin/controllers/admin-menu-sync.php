@@ -968,36 +968,20 @@ class Linguator_Admin_Menu_Sync {
 	}
 
 	/**
-	 * Custom Link Title Translation
-	 *
-	 * @param string $title Original navigation label.
-	 * @param object $lang Target language object.
-	 * @return string Translated title or original if translation fails.
-	 */
-	/**
-	 * Translate custom link title using glossary or AI translation
+	 * Translate custom link title using AI translation
 	 *
 	 * @param string $title Original navigation label.
 	 * @param object $lang Target language object.
 	 * @return string Translated title or original if translation fails.
 	 */
 	private function linguator_translate_custom_link_title( $title, $lang ) {
-		// Get source language (default language)
+		// Get source language (default language); without one, keep the original title
 		$default_lang = $this->model->languages->get_default();
 		if ( ! $default_lang ) {
 			return $title;
 		}
 		
-		$source_lang_code = $default_lang->slug;
-		$target_lang_code = $lang->slug;
-		
-		// First, check glossary for existing translation
-		$glossary_translation = $this->linguator_get_glossary_translation( $title, $source_lang_code, $target_lang_code );
-		if ( $glossary_translation ) {
-			return $glossary_translation;
-		}
-		
-		// No glossary entry found, use AI translation
+		// Use AI translation
 		$ai_translation = $this->linguator_translate_with_ai( $title, $lang );
 		if ( $ai_translation && $ai_translation !== $title ) {
 			return $ai_translation;
@@ -1005,46 +989,6 @@ class Linguator_Admin_Menu_Sync {
 		
 		// No translation found, return original title
 		return $title;
-	}
-	
-	/**
-	 * Get translation from glossary
-	 *
-	 * @param string $title Original navigation label.
-	 * @param string $source_lang_code Source language code.
-	 * @param string $target_lang_code Target language code.
-	 * @return string|false Translated title or false if not found.
-	 */
-	private function linguator_get_glossary_translation( $title, $source_lang_code, $target_lang_code ) {
-		$glossary_data = get_option( 'lmat_glossary_data', array() );
-		
-		if ( empty( $glossary_data ) || ! is_array( $glossary_data ) ) {
-			return false;
-		}
-		
-		// Search for translation in glossary
-		foreach ( $glossary_data as $entry ) {
-			// Check if the original term matches (case-insensitive)
-			if ( isset( $entry['original_term'] ) && 
-			     strcasecmp( trim( $entry['original_term'] ), trim( $title ) ) === 0 &&
-			     isset( $entry['original_language_code'] ) &&
-			     $entry['original_language_code'] === $source_lang_code ) {
-				
-				// Look for translation in target language
-				if ( isset( $entry['translations'] ) && is_array( $entry['translations'] ) ) {
-					foreach ( $entry['translations'] as $translation ) {
-						if ( isset( $translation['target_language_code'] ) &&
-						     $translation['target_language_code'] === $target_lang_code &&
-						     ! empty( $translation['translated_term'] ) ) {
-							return trim( $translation['translated_term'] );
-						}
-					}
-				}
-				break;
-			}
-		}
-		
-		return false;
 	}
 	
 	/**

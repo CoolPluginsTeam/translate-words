@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Linguator – AI Auto Translate & Create Multilingual Sites
  * Plugin URI:        https://linguator.com/
- * Description:       Create a multilingual WordPress website in minutes with Linguator AI – Auto Translate & Create Multilingual Sites.
- * Version:           2.2.2
+ * Description:       Create a multilingual WordPress website in minutes with Linguator – AI Auto Translate & Create Multilingual Sites.
+ * Version:           2.2.3
  * Requires at least: 6.8
  * Requires PHP:      7.2
  * Author:            Cool Plugins
@@ -40,7 +40,7 @@ use Linguator\Install\Linguator_Usable;
 
 // Linguator constants - wrapped in checks to prevent redeclaration
 if ( ! defined( 'LINGUATOR_VERSION' ) ) {
-	define( 'LINGUATOR_VERSION', '2.2.2' );
+	define( 'LINGUATOR_VERSION', '2.2.3' );
 }
 if ( ! defined( 'LMAT_MIN_WP_VERSION' ) ) {
 	define( 'LMAT_MIN_WP_VERSION', '6.8' );
@@ -69,6 +69,16 @@ if ( ! defined( 'LINGUATOR_BASENAME' ) ) {
 	define( 'LINGUATOR_BASENAME', plugin_basename( __FILE__ ) ); // Plugin name as known by WP.
 	require __DIR__ . '/vendor/autoload.php';
 }
+
+require_once __DIR__ . '/includes/services/translation/post-term-translation-service.php';
+add_action(
+	'lmat_save_post',
+	static function ( $post_id ) {
+		$service = new \Linguator\Includes\Services\Translation\Post_Term_Translation_Service( LMAT() );
+		$service->reapply_pending( $post_id );
+	},
+	30
+);
 
 // Register Gemini (Google AI) provider only when Gemini is in the allowed list
 // (native WP AI Client on WordPress 7.0+ — not a LocoAI polyfill on 6.9.x).

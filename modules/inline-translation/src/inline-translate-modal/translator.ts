@@ -3,16 +3,18 @@ class Translator {
   private wrpId: string;
   private translateElementId: string;
   private bodyNoTranslateExist: boolean;
+  private ready: Promise<void> | null = null;
 
   constructor(pageLanguage: string, wrpId: string, translateElementId: string) {
     this.pageLanguage = this.filterLanguage(pageLanguage);
     this.wrpId = wrpId;
     this.translateElementId = translateElementId;
     this.bodyNoTranslateExist = document.body.classList.contains('notranslate');
-    this.createTranslator();
   }
 
   private createTranslator = async () => {
+    const loadGoogleTranslate = (window as Window & { lmatLoadGoogleTranslate?: () => Promise<unknown> }).lmatLoadGoogleTranslate;
+    if (loadGoogleTranslate) await loadGoogleTranslate();
     // @ts-ignore
     const googleTranslator = new google.translate.TranslateElement({
         includedLanguages: this.pageLanguage,
@@ -20,25 +22,20 @@ class Translator {
         autoDisplay: false,
     }, `${this.translateElementId}`);
 
-    const element=document.querySelector(`#${this.translateElementId}`);
-
-    if(element){
-        const translateElement=element.children;
-
-        if(translateElement.length <= 0){
-          // @ts-ignore
-            Object.values(google?.translate?.TranslateElement()).map(item=>{
-                if(item instanceof HTMLElement && item.id === `${this.translateElementId}`){
-                    element.replaceWith(item);
-                }
-            });
-        }
+    const started = Date.now();
+    while (Date.now() - started < 15000) {
+      const selector = document.querySelector<HTMLSelectElement>(`#${this.translateElementId} .goog-te-combo`);
+      if (selector && Array.from(selector.options).some(option => option.value === this.pageLanguage)) return;
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+    throw new Error('Google Translate language selector did not become ready.');
   }
 
   public startTranslation = async (
     texts: object,
   ): Promise<object> => {
+    if (!this.ready) this.ready = this.createTranslator();
+    await this.ready;
 
     document.body.classList.add('notranslate');
     document.body.classList.add('lmat-inline-translate-start');

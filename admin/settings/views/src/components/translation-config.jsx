@@ -42,6 +42,18 @@ const TranslationConfig = ({ data, setData }) => {
     const [chromeLocalAITranslation, setChromeLocalAITranslation] = useState(provider?.chrome_local_ai)
     const [edgeLocalAITranslation, setEdgeLocalAITranslation] = useState(provider?.edge_local_ai)
     const [geminiTranslation, setGeminiTranslation] = useState(Boolean(provider?.gemini) && wpAiClientAvailable)
+    // Providers added by other plugins (for example from an add-on).
+    const externalProviders = (window?.lmat_settings?.external_providers && typeof window.lmat_settings.external_providers === 'object')
+        ? window.lmat_settings.external_providers
+        : {}
+    const externalKeys = Object.keys(externalProviders)
+    const savedExternal = () => externalKeys.reduce((acc, key) => ({ ...acc, [key]: Boolean(provider?.[key]) }), {})
+    const [externalEnabled, setExternalEnabled] = useState(savedExternal)
+    const [externalConfigured, setExternalConfigured] = useState(
+        () => externalKeys.reduce((acc, key) => ({ ...acc, [key]: Boolean(externalProviders[key]?.configured) }), {})
+    )
+    const setExternal = (key) => (value) => setExternalEnabled((prev) => ({ ...prev, [key]: Boolean(value) }))
+    const externalChanged = () => externalKeys.some((key) => externalEnabled[key] !== Boolean(provider?.[key]))
     // Provider the translation popups pre-select. Older installs have no saved value, which means Google.
     // A default that is switched off cannot be pre-selected, so it counts as no default.
     const savedDefaultSetting = aiTranslation?.default_provider ?? 'google'
@@ -67,6 +79,7 @@ const TranslationConfig = ({ data, setData }) => {
             chromeLocalAITranslation !== provider?.chrome_local_ai ||
             edgeLocalAITranslation !== provider?.edge_local_ai ||
             geminiTranslation !== (Boolean(provider?.gemini) && wpAiClientAvailable) ||
+            externalChanged() ||
             defaultProvider !== savedDefaultProvider ||
             bulkTranslationPostStatus !== (aiTranslation?.bulk_translation_post_status || 'draft') ||
             slugTranslationOption !== (aiTranslation?.slug_translation_option || 'title_translate');
@@ -75,13 +88,14 @@ const TranslationConfig = ({ data, setData }) => {
     useEffect(() => {
         const geminiSectionOpen = wpAiClientAvailable && geminiTranslation
         setHandleButtonDisabled(!hasChanges() && !(geminiSectionOpen && apiKeyDirty))
-    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
+    }, [chromeLocalAITranslation, edgeLocalAITranslation, googleMachineTranslation, geminiTranslation, externalEnabled, defaultProvider, bulkTranslationPostStatus, slugTranslationOption, wpAiClientAvailable, apiKeyDirty])
 
     const providerStates = {
         google: [googleMachineTranslation, setGoogleMachineTranslation],
         chrome_local_ai: [chromeLocalAITranslation, setChromeLocalAITranslation],
         edge_local_ai: [edgeLocalAITranslation, setEdgeLocalAITranslation],
         gemini: [geminiTranslation, setGeminiTranslation],
+        ...externalKeys.reduce((acc, key) => ({ ...acc, [key]: [externalEnabled[key], setExternal(key)] }), {}),
     }
 
     // The default provider has to stay enabled, so picking one switches it on.
@@ -119,6 +133,7 @@ const TranslationConfig = ({ data, setData }) => {
                         ...(wpAiClientAvailable ? {
                             gemini: geminiTranslation,
                         } : {}),
+                        ...externalEnabled,
                     },
                     default_provider: defaultProvider,
                     bulk_translation_post_status: bulkTranslationPostStatus,
@@ -132,8 +147,9 @@ const TranslationConfig = ({ data, setData }) => {
                 apiBody.models = apiKeyPayload.models
             }
 
-            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, defaultProvider, bulkTranslationPostStatus, slugTranslationOption })
+            setLastUpdatedValue({ googleMachineTranslation, chromeLocalAITranslation, edgeLocalAITranslation, geminiTranslation, externalEnabled, defaultProvider, bulkTranslationPostStatus, slugTranslationOption })
             if (aiTranslation && (
+                JSON.stringify(lastUpdatedValue.externalEnabled || {}) !== JSON.stringify(externalEnabled) ||
                 lastUpdatedValue.googleMachineTranslation !== googleMachineTranslation ||
                 lastUpdatedValue.chromeLocalAITranslation !== chromeLocalAITranslation ||
                 lastUpdatedValue.edgeLocalAITranslation !== edgeLocalAITranslation ||
@@ -264,9 +280,13 @@ const TranslationConfig = ({ data, setData }) => {
                         chrome_local_ai: { enabled: chromeLocalAITranslation, setEnabled: setChromeLocalAITranslation },
                         edge_local_ai: { enabled: edgeLocalAITranslation, setEnabled: setEdgeLocalAITranslation },
                         gemini: { enabled: geminiTranslation, setEnabled: setGeminiTranslation },
+                        ...externalKeys.reduce((acc, key) => ({ ...acc, [key]: { enabled: externalEnabled[key], setEnabled: setExternal(key) } }), {}),
                     }}
                     geminiAvailable={wpAiClientAvailable}
                     geminiConfigured={geminiConfigured}
+                    externalProviders={externalProviders}
+                    externalConfigured={externalConfigured}
+                    onExternalStatus={(key, configured) => setExternalConfigured((prev) => (prev[key] === configured ? prev : { ...prev, [key]: configured }))}
                     onDefaultChange={handleDefaultProviderChange}
                     geminiExtra={(
                         <div className="pt-0">

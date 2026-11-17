@@ -2,13 +2,9 @@ import React from 'react';
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import storeSourceString from '../../store-source-string/index.js';
-import {selectGlossaryTerms} from '../../../redux-store/features/selectors.js';
-import updateGlossaryString from '../update-glossary-string/index.js';
-import {store} from '../../../redux-store/store.js';
 
 const FilterElementorContent = async({content, service, postId, storeDispatch, filterHtmlContent, sourceLanguage}) => {
     const translateContentObject={};
-    const glossaryTerms=selectGlossaryTerms(store.getState(), sourceLanguage);
 
     const loopCallback=async (callback, loop, index)=>{
         await callback(loop[index], index);
@@ -29,10 +25,6 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                 let reactElement=filterContent({content: value, service, contentKey: uniqueKey, skipTags:['script', 'style']});
                 stringContent=await extractInnerContent(reactElement);
 
-                if(['google','localAiTranslator','edgeLocalAiTranslator'].includes(service) && glossaryTerms && Object.values(glossaryTerms).length > 0){
-                    stringContent=await updateGlossaryString({content: stringContent, glossaryTerms});
-                }
-
                 reactElement=null;
             }
             
@@ -51,7 +43,17 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
         'opacity', 'width', 'height', 'display', 'position', 'z_index', 'visibility', 'align', 'max_width', 'content_typography_typography', 'flex_justify_content', 'title_color', 'description_color', 'email_content'
     ];
 
+    // Suffixes of Elementor style control keys; their values are settings, not text.
+    const ELEMENTOR_STYLE_KEY = /(_typography|_font_family|_font_size|_font_weight|_font_style|_text_transform|_text_decoration|_line_height|_letter_spacing|_word_spacing|_text_shadow|_text_shadow_type|_text_stroke|_css_filter|_box_shadow|_box_shadow_type|_border|_background|_tag|_size|_color|_align|_position|_spacing|_width)$/i;
+
     const subStringsToCheck=(strings)=>{
+        // Elementor style controls (typography, filters, shadows, colours, HTML tags...) hold setting values such as
+        // 'custom' or 'h2', even when their key contains a word like 'title' or 'description'
+        // (e.g. typography_title_typography, description_typography_typography, title_tag). Never translate them.
+        if (ELEMENTOR_STYLE_KEY.test(strings)) {
+            return false;
+        }
+
         const dynamicSubStrings=['title', 'description', 'editor', 'text', 'content', 'label'];
         const staticSubStrings=['caption','heading','sub_heading', 'testimonial_content', 'testimonial_job', 'testimonial_name', 'name'];
 
@@ -67,6 +69,7 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
      *
      *  - `$$type === 'string'`   → plain text stored in `.value`
      *  - `$$type === 'html-v3'`  → rich text stored in `.value.content.value`
+     *  - `$$type === 'escaped-html'` → escaped HTML/text stored in `.value` (Elementor 4.3+)
      *
      * @param {Object} element - The atomic widget value object (has `$$type`).
      * @param {Array}  ids     - The current ID path used to build the unique key.
@@ -86,6 +89,11 @@ const FilterElementorContent = async({content, service, postId, storeDispatch, f
                 await translateContent([...ids, 'value', 'content', 'value'], element.value.content.value);
             }
         } else if(element?.$$type === 'string'){
+            if(element.value && '' !== element.value){
+                await translateContent([...ids, 'value'], element.value);
+            }
+        } else if(element?.$$type === 'escaped-html'){
+            // Elementor 4.3+ migrated many atomic text props from html-v3 to escaped-html.
             if(element.value && '' !== element.value){
                 await translateContent([...ids, 'value'], element.value);
             }

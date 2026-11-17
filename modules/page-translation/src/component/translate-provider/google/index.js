@@ -6,7 +6,7 @@ import { mapToGoogleLanguageCode } from "./google-language.js";
  * Initializes Google Translate functionality on specific elements based on provided data.
  * @param {Object} data - The data containing source and target languages.
  */
-const GoogleTranslater = (data) => {
+const GoogleTranslater = async (data) => {
 
     const { sourceLang, targetLang, ID, translateStatusHandler, modalRenderId, destroyUpdateHandler } = data;
 
@@ -14,8 +14,18 @@ const GoogleTranslater = (data) => {
     const lang = mapToGoogleLanguageCode(targetLang, languageObject);
     const srcLang = mapToGoogleLanguageCode(sourceLang, languageObject);
 
-    const g = typeof window !== "undefined" ? window.google : undefined;
-    const TranslateElementCtor = g?.translate?.TranslateElement;
+    let cancelled = false;
+    let host;
+    const onChange = () => ModalStringScroll(translateStatusHandler, 'google', modalRenderId);
+    if (typeof destroyUpdateHandler === 'function') {
+        destroyUpdateHandler(() => {
+            cancelled = true;
+            if (host) {
+                host.removeEventListener('change', onChange);
+                host.innerHTML = '';
+            }
+        });
+    }
 
     const reportGoogleUnavailable = () => {
         document.dispatchEvent(
@@ -32,12 +42,14 @@ const GoogleTranslater = (data) => {
         translateStatusHandler(false);
     };
 
-    if (!TranslateElementCtor) {
-        reportGoogleUnavailable();
-        return;
-    }
-
     try {
+        if (window.lmatLoadGoogleTranslate) await window.lmatLoadGoogleTranslate();
+        if (cancelled) return;
+        const TranslateElementCtor = window.google?.translate?.TranslateElement;
+        if (typeof TranslateElementCtor !== 'function') throw new Error('Google Translate is not ready.');
+        host = document.getElementById(ID);
+        if (!host) return;
+        host.addEventListener('change', onChange);
         new TranslateElementCtor({
             pageLanguage: srcLang,
             includedLanguages: lang,
@@ -45,42 +57,12 @@ const GoogleTranslater = (data) => {
             multilanguagePage: true,
             autoDisplay: false,
         }, ID);
-    } catch {
-        reportGoogleUnavailable();
-        return;
-    }
-
-    const element=document.querySelector(`#${ID}`);
-
-    if(element){
-        const translateElement=element.children;
-        
-        if(translateElement.length <= 0){
-            Object.values(TranslateElementCtor()).map(item=>{
-                if(item instanceof HTMLElement && item.id === 'lmat_page_translation_google_translate_element'){
-                    element.replaceWith(item);
-                }
-            });
+    } catch (error) {
+        if (!cancelled) {
+            console.error('Google Translate initialization failed:', error);
+            reportGoogleUnavailable();
         }
-    }
-
-    const onChange = () => {
-        ModalStringScroll(translateStatusHandler,'google', modalRenderId);
-    };
-
-    const host = document.querySelector(`#${ID}`);
-    if (host) {
-        host.addEventListener('change', onChange);
-    }
-
-    if (typeof destroyUpdateHandler === 'function') {
-        destroyUpdateHandler(() => {
-            const node = document.querySelector(`#${ID}`);
-            if (node) {
-                node.removeEventListener('change', onChange);
-                node.innerHTML = '';
-            }
-        });
+        return;
     }
 
 }

@@ -215,7 +215,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
         $rtl=function_exists('is_rtl') ? is_rtl() : false;
         $css_file=$rtl ? 'index-rtl.css' : 'index.css';
       
-		wp_enqueue_script( 'lmat-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
+		wp_enqueue_script( 'lmat-google-api', plugins_url( 'admin/assets/js/google-translate-loader.js', LINGUATOR_ROOT_FILE ), array(), (string) filemtime( LINGUATOR_DIR . '/admin/assets/js/google-translate-loader.js' ), true );
 		wp_enqueue_script( 'lmat-bulk-translate', plugins_url( 'admin/assets/bulk-translate/index.js', LINGUATOR_ROOT_FILE ), array_merge( $editor_script_asset['dependencies'], array( 'lmat-google-api' ) ), $editor_script_asset['version'], true );
    
 		// Set script translations for wp-i18n functions (required for WordPress 6.9+)
@@ -245,6 +245,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 		}
 
 		$active_providers=array();
+		$external_providers = function_exists( 'linguator_get_external_ai_providers_for_js' ) ? linguator_get_external_ai_providers_for_js() : array();
 
 		foreach ( $providers as $provider => $value ) {
 			if ( ! $value ) {
@@ -258,6 +259,8 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
+				$active_providers[] = $provider;
+			} elseif ( isset( $external_providers[ $provider ] ) ) {
 				$active_providers[] = $provider;
 			}
 		}
@@ -273,6 +276,10 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 					$api_keys_status[ $key ] = true;
 				}
 			}
+		}
+
+		foreach ( $external_providers as $key => $external ) {
+			$api_keys_status[ $key ] = $external['configured'];
 		}
 
 			// Provider the modal pre-selects; empty when the saved default is not enabled.
@@ -303,8 +310,13 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
                 'nonce' => wp_create_nonce('wp_rest'),
                 'bulkTranslateRouteUrl' =>  get_rest_url( null, 'lmat/v1/bulk-translate' ),
                 'bulkTranslatePrivateKey' => wp_create_nonce('lmat_bulk_translate_entries_nonce'),
-				'get_glossary_validate' => wp_create_nonce('lmat_get_glossary_private'),
                 'lmat_url'                => plugins_url( '', LINGUATOR_ROOT_FILE ) . '/',
+                // Without Linguator Pro, its providers are listed locked with a link to the Pro page.
+                'wp_ai_client_available'  => function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ),
+                'pro_active'              => defined( 'LINGUATOR_PRO_VERSION' ),
+                'pro_provider_icons'      => array(
+                    'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+                ),
                 'admin_url' => admin_url(),
                 'post_label'          => $post_label,
                 'post_label_singular' => $post_label_singular,
@@ -314,6 +326,7 @@ if ( ! class_exists( 'Linguator_Bulk_Translation' ) ) :
 				'providers'                => $active_providers,
 				'default_provider'        => $default_provider,
 				'api_keys_status'          => $api_keys_status,
+				'external_providers'       => $external_providers,
 				'default_language_slug' => $default_language_slug,
 				'mediaSupport'          => ! empty( LMAT()->options['media_support'] ),
 				'ai_models'                => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),

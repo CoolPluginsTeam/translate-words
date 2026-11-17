@@ -60,6 +60,8 @@ if ( ! class_exists( 'CPFM_Deactivation_Feedback' ) ) {
 					'id'          => '',
 					'slug'        => '',
 					'plugin_name' => '',
+					// Optional name shown in the popup; plugin_name is still what gets sent.
+					'display_name' => '',
 					'version'     => '',
 					'api'         => '',
 					'site_key'    => '',
@@ -268,7 +270,7 @@ if ( ! class_exists( 'CPFM_Deactivation_Feedback' ) ) {
 								printf(
 									/* translators: %s: plugin name (bold). */
 									esc_html( $this->cpfm_text( $cfg, 'intro', 'What made you deactivate %s? Your answer helps us fix it.' ) ),
-									'<strong>' . esc_html( $cfg['plugin_name'] ) . '</strong>'
+									'<strong>' . esc_html( ! empty( $cfg['display_name'] ) ? $cfg['display_name'] : $cfg['plugin_name'] ) . '</strong>'
 								);
 								?>
 							</p>

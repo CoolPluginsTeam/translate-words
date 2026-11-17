@@ -469,8 +469,8 @@ class Linguator_Filters {
 			$defaults = array();
 		}
 
-		if ( ! isset( $defaults['lmat_lang'] ) ) {
-			$defaults['lmat_lang'] = '';
+		if ( ! isset( $defaults['lang'] ) ) {
+			$defaults['lang'] = '';
 		}
 
 		return $defaults;

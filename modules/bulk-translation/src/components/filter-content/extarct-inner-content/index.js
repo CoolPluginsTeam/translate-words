@@ -1,19 +1,16 @@
 import ReactDOM from 'react-dom';
 
 const extractInnerContent = async (element) => {
-    const tempDiv = document.createElement('div');
-    const root = ReactDOM.createRoot(tempDiv);
+    const container = document.createElement('div');
+    const root = ReactDOM.createRoot(container);
 
-  return new Promise((resolve) => {
-    root.render(element);
-    setTimeout(() => {
-      const html = tempDiv.innerHTML;
-      root.unmount();
-      tempDiv.remove();
-      resolve(html);
-    }, 0);
-  });
+    try {
+        // Read the markup only after React has committed the rendered text.
+        ReactDOM.flushSync(() => root.render(element));
+        return container.innerHTML;
+    } finally {
+        root.unmount();
+    }
 };
 
 export default extractInnerContent;
-

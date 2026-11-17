@@ -269,6 +269,7 @@ class Linguator_Model {
 			'taxonomy'   => $taxonomy,
 			'name'       => $term_name,
 			'hide_empty' => false,
+			'lang'       => $language->slug,
 			'fields'     => 'ids',
 		);
 
@@ -284,9 +285,9 @@ class Linguator_Model {
 
 		// Filter terms by language using WordPress functions
 		foreach ( $terms as $term_id ) {
-			$term_languages = wp_get_object_terms( $term_id, 'lmat_language', array( 'fields' => 'slugs' ) );
+			$term_language = $this->term->get_language( $term_id );
 			
-			if ( ! is_wp_error( $term_languages ) && in_array( $language->slug, $term_languages, true ) ) {
+			if ( $term_language && $term_language->slug === $language->slug ) {
 				return (int) $term_id;
 			}
 		}
@@ -317,6 +318,7 @@ class Linguator_Model {
 		$args = array(
 			'slug'       => $slug,
 			'hide_empty' => false,
+			'lang'       => $language->slug,
 			'fields'     => 'ids',
 		);
 
@@ -336,9 +338,9 @@ class Linguator_Model {
 
 		// Filter terms by language using WordPress functions
 		foreach ( $terms as $term_id ) {
-			$term_languages = wp_get_object_terms( $term_id, 'lmat_language', array( 'fields' => 'slugs' ) );
+			$term_language = $this->term->get_language( $term_id );
 			
-			if ( ! is_wp_error( $term_languages ) && in_array( $language->slug, $term_languages, true ) ) {
+			if ( $term_language && $term_language->slug === $language->slug ) {
 				return (int) $term_id;
 			}
 		}

@@ -5,7 +5,7 @@ Tags: automatic translation, google translate,elementor translation, multilingua
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.2
-Stable tag: 2.2.2
+Stable tag: 2.2.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -44,7 +44,7 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
 * **Multilingual SEO:** The plugin follows WordPress and Google best practices. Each language version of your content contains, **language-specific URLs** with **SEO-friendly permalink structures**. Metadata can be translated helping search engines properly index your site in multiple languages and improve your global visibility.
 
-* **Translation Quality & Accuracy:** Linguator allows you to generate fast, natural and accurate **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, translate **specific blocks** or **widgets inline**, and use **glossary support** to maintain consistent terminology across your site. 
+* **Translation Quality & Accuracy:** Linguator allows you to generate fast, natural and accurate **AI-powered translations** while still giving you full control. You can manually edit translations to improve accuracy or match your tone, or translate **specific blocks** or **widgets inline**. 
 
 
 ### Multilingual & AI Translation Features
@@ -122,7 +122,7 @@ This plugin is distributed under the terms of the GNU General Public License, ve
     *   Selecting your AI source (Google or Chrome AI).
 4.  **Win:** Your site is now ready for translation!
 
-That's it! Linguator AI – Auto Translate & Create Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
+That's it! Linguator – AI Auto Translate & Create Multilingual Sites is now installed and activated. You can start translating your website automatically using the power of AI.
 
 **Configuration steps in details**
 
@@ -218,6 +218,14 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 **Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
 == Changelog ==
+
+= Version 2.2.3 | 17 November 2026 =
+* Added: Test Connection button for AI providers.
+* Improved: Elementor style settings are no longer sent for translation.
+* Improved: Other plugin recommendations.
+* Fixed: Google Translate provider issue.
+* Fixed: Term translation issue.
+
 
 = Version 2.2.2 | 2 November 2026 =
 * Added: Support for translation rules defined in wpml-config.xml files.

@@ -410,7 +410,7 @@ class Linguator_Page_Translation {
 	}
 
 	public function linguator_enqueue_automatic_translate_assets( $source_lang, $target_lang, $editor_type, $extra_data = array() ) {
-		wp_register_script( 'lmat-google-api', 'https://translate.google.com/translate_a/element.js', '', LINGUATOR_VERSION, true );
+		wp_register_script( 'lmat-google-api', plugins_url( 'admin/assets/js/google-translate-loader.js', LINGUATOR_ROOT_FILE ), array(), (string) filemtime( LINGUATOR_DIR . '/admin/assets/js/google-translate-loader.js' ), true );
 
 		$editor_script_asset = include LINGUATOR_DIR . '/admin/assets/page-translation/index.asset.php';
 		if ( ! is_array( $editor_script_asset ) ) {
@@ -429,7 +429,8 @@ class Linguator_Page_Translation {
 			$providers = LMAT()->options['ai_translation_configuration']['provider'];
 		}
 
-		$active_providers = array();
+		$active_providers   = array();
+		$external_providers = function_exists( 'linguator_get_external_ai_providers_for_js' ) ? linguator_get_external_ai_providers_for_js() : array();
 
 		foreach ( $providers as $provider => $value ) {
 			if ( ! $value ) {
@@ -443,6 +444,8 @@ class Linguator_Page_Translation {
 			} elseif ( 'google' === $provider ) {
 				$active_providers[] = 'google';
 			} elseif ( 'gemini' === $provider && function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ) ) {
+				$active_providers[] = $provider;
+			} elseif ( isset( $external_providers[ $provider ] ) ) {
 				$active_providers[] = $provider;
 			}
 		}
@@ -458,6 +461,10 @@ class Linguator_Page_Translation {
 					$api_keys_status[ $key ] = true;
 				}
 			}
+		}
+
+		foreach ( $external_providers as $key => $external ) {
+			$api_keys_status[ $key ] = $external['configured'];
 		}
 
 		// Provider the popup pre-selects; empty when the saved default is not enabled.
@@ -512,9 +519,13 @@ class Linguator_Page_Translation {
 				'ajax_nonce'               => wp_create_nonce( 'lmat_page_translation_admin' ),
 				'update_translation_check' => wp_create_nonce( 'lmat_update_translate_data_nonce' ),
 				'fetchBlockRulesNonce'     => wp_create_nonce( 'lmat_fetch_block_rules_nonce' ),
-				'get_glossary_validate'    => wp_create_nonce( 'lmat_get_glossary_private' ),
-				'add_glossary_validate'    => wp_create_nonce( 'lmat_add_glossary_nonce' ),
 				'lmat_url'                 => esc_url( plugins_url( '', LINGUATOR_ROOT_FILE ) ) . '/',
+				// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
+				'wp_ai_client_available'   => function_exists( 'linguator_is_ai_provider_allowed' ) && linguator_is_ai_provider_allowed( 'gemini' ),
+				'pro_active'               => defined( 'LINGUATOR_PRO_VERSION' ),
+				'pro_provider_icons'       => array(
+					'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+				),
 				'admin_url'                => admin_url(),
 				'update_translate_data'    => 'lmat_update_translate_data',
 				'source_lang'              => $source_lang,
@@ -526,6 +537,7 @@ class Linguator_Page_Translation {
 				'providers'                => $active_providers,
 				'default_provider'         => $default_provider,
 				'api_keys_status'          => $api_keys_status,
+				'external_providers'       => $external_providers,
 				'ai_models'               => ( property_exists( LMAT(), 'model' ) && isset( LMAT()->model->options ) ) ? ( LMAT()->model->options->get( 'api_keys' ) ?: array() ) : array(),
 				'get_meta_fields'          => 'lmat_fetch_post_meta_fields',
 				'meta_fields_key'          => wp_create_nonce( 'lmat_fetch_post_meta_fields' ),
@@ -535,6 +547,8 @@ class Linguator_Page_Translation {
 				'AIRequestMaxTokens'       => (int) get_option( 'lmat_ai_request_token_per_request', 500 ),
 				'AIRequestBatchSize'       => (int) get_option( 'lmat_ai_request_batch_size', 5 ),
 				'mediaSupport'             => ! empty( LMAT()->options['media_support'] ),
+				'save_term_translations'   => 'lmat_save_term_translations',
+				'save_term_nonce'          => wp_create_nonce( 'lmat_save_term_translations' ),
 				'save_media_translations'  => 'lmat_save_media_translations',
 				'save_media_nonce'         => wp_create_nonce( 'lmat_save_media_translations' ),
 			),

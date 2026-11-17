@@ -66,7 +66,9 @@ export async function requestAiBatch({ provider, postId, objectType = 'post', so
     if (!res.ok) {
         if (isQuotaExceededResponse(data, res.status)) {
             throw createTranslationError(
-                'API quota exceeded (429). Please check your plan/billing and retry later.',
+                provider === 'chatgpt'
+                    ? 'ChatGPT usage limit exceeded (429). Please upgrade your ChatGPT plan or wait for your usage limit to reset, then retry.'
+                    : 'API quota exceeded (429). Please check your plan/billing and retry later.',
                 'LLM_QUOTA_EXCEEDED'
             );
         }
