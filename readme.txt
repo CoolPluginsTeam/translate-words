@@ -19,13 +19,13 @@ https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
 Automatically translate your **posts**, **pages**, **menus**, **categories**, **custom post types**, **media**, and **SEO data** using AI, and refine translations manually when needed, all from your WordPress dashboard.
 
+[Check Live Demo](https://wordpress.org/plugins/translate-words/?preview=1) | [Learn more](https://linguator.com/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) | [Buy Pro](https://linguator.com/pricing/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=get_pro&utm_content=buy_pro)
+
 ### Compatible With Popular WordPress Plugins?
 
 Linguator is fully compatible with popular WordPress editors and plugins, including **Elementor**, **Gutenberg**, **WooCommerce**, **ACF**, **Rank Math**, and **Yoast SEO**, so you can generate high-quality translations without external API keys or subscriptions using **Chrome’s built-in AI** and **Google Translate**, directly from WordPress.
 
 https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
-
-[Check Live Demo](https://wordpress.org/plugins/translate-words/?preview=1) | [Learn more](https://linguator.com/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=view_plugin&utm_content=learn_more) | [Buy Pro](https://linguator.com/pricing/?utm_source=twlmat_plugin&utm_medium=readme&utm_campaign=get_pro&utm_content=buy_pro)
 
 ### AI Translation Made Easy for WordPress 
 * **Easy to install and use:** Linguator is quick to install and beginner-friendly, allowing you to get started in minutes. Simply install the plugin, run the setup wizard, select your languages, and start translating. No coding required.
