@@ -3,6 +3,7 @@ import { __ } from "@wordpress/i18n";
 import { select, dispatch } from "@wordpress/data";
 import SaveTranslation from "../../store-translated-string/index.js";
 import StoreTimeTaken from "../../../component/store-time-taken/index.js";
+import { doAction } from "@wordpress/hooks";
 
 const localAiTranslator = async (props) => {
     const targetLangName = lmatPageTranslationGlobal.languageObject[props.targetLang]['name'];
@@ -38,6 +39,9 @@ const localAiTranslator = async (props) => {
             startTime = 0;
             return;
         }
+
+        // Lets add-ons change the cell markup before the browser AI translates it.
+        doAction('lmat.pageTranslation.beforeReadTranslation', ele, { provider: props.service || 'localAiTranslator', sourceLang: props.sourceLang, targetLang: props.targetLang });
 
         const scrollStringContainer = (position) => {
             stringContainer.scrollTop(position);
