@@ -318,7 +318,7 @@ class GoogleTranslater {
     }    
 
     startTranslate = async () => {
-        await ModalStringScroll({ provider: 'google', prefix: this.prefix, postId: this.postId, lang: this.activeTargetLang, storeDispatch: this.storeDispatch, totalPosts: this.totalPosts, completedPostStatus: this.completedPostStatus });
+        await ModalStringScroll({ provider: 'google', prefix: this.prefix, postId: this.postId, lang: this.activeTargetLang, storeDispatch: this.storeDispatch, totalPosts: this.totalPosts, completedPostStatus: this.completedPostStatus, sourceLang: this.sourceLang });
 
         const endTime = new Date();
         const duration = endTime - this.startTime;

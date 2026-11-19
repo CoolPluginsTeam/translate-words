@@ -638,7 +638,19 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				$payload
 			);
 
-			return $instruction;
+			/**
+			 * Filters the prompt sent to the AI provider for a batch of strings.
+			 *
+			 * @since 2.2.4
+			 *
+			 * @param string               $instruction Prompt text.
+			 * @param string               $source_lang Source language slug.
+			 * @param string               $target_lang Target language slug.
+			 * @param array<string,string> $strings     Key => source text.
+			 */
+			$filtered = apply_filters( 'lmat_ai_translate_prompt', $instruction, $source_lang, $target_lang, $strings );
+
+			return is_string( $filtered ) && '' !== $filtered ? $filtered : $instruction;
 		}
 
 		/**

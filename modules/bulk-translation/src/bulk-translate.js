@@ -8,6 +8,8 @@ import LoopCallback from './components/loop-callback/index.js';
 import { selectTargetContent } from './redux-store/features/selectors.js';
 import { buildQuotaRecoverableTranslateInfo, countMergedTranslatedStrings } from './gemini-quota-recoverable.js';
 import { buildMediaPayload, storeMediaStrings } from './components/media-translation/index.js';
+import filterSourceString from './components/filter-content/source-string-filter/index.js';
+import { applyFilters } from '@wordpress/hooks';
 
 const initBulkTranslate=async (postKeys=[], nonce, storeDispatch, prefix, updateDestoryHandler, signal)=>{
     window.lmatBulkTranslationQuotaExceeded = false;
@@ -516,17 +518,17 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
 
                     if(title && title.trim() !== ''){
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'title', value: title}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'title', value: title}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'title', value: filterSourceString(title, {service: activeProvider, sourceLanguage, postId, key: 'title'})}));
                     }
 
                     if(post_name && post_name.trim() !== ''){
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'post_name', value: post_name}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'post_name', value: post_name}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'post_name', value: filterSourceString(post_name, {service: activeProvider, sourceLanguage, postId, key: 'post_name'})}));
                     }
 
                     if(excerpt && excerpt.trim() !== ''){
                         storeDispatch(updateSourceContent({postId, uniqueKey: 'excerpt', value: excerpt}));
-                        storeDispatch(updateTargetContent({postId, uniqueKey: 'excerpt', value: excerpt}));
+                        storeDispatch(updateTargetContent({postId, uniqueKey: 'excerpt', value: filterSourceString(excerpt, {service: activeProvider, sourceLanguage, postId, key: 'excerpt'})}));
                     }
 
                     const previousParentPostsInfo=store.getState().parentPostsInfo[postId];
@@ -585,6 +587,10 @@ const bulkTranslateEntries = async ({ids, langs, storeDispatch, signal}) => {
         }
 
         const translatePostsCount=store.getState().pendingPosts.length;
+
+        // Lets add-ons load what they need before the source content is prepared. Callbacks add promises to the list.
+        const addonTasks=applyFilters('lmat.bulkTranslation.beforeStoreSourceContent', [], {allTargetLanguages, signal});
+        await Promise.allSettled(Array.isArray(addonTasks) ? addonTasks : []);
 
         await storeSourceContent(0, translatePostsCount);
 

@@ -4,6 +4,7 @@ import { selectProgressStatus, selectTargetContent, selectTranslatePostInfo } fr
 import { store } from "../../../redux-store/store.js";
 import storeTranslateString from "../../store-translate-strings/index.js";
 import { __ } from "@wordpress/i18n";
+import { doAction } from "@wordpress/hooks";
 
 /** postId_lang → { resolve, reject, sourceLanguage, targetLanguage, isEdge } */
 const packInstallWaiters = new Map();
@@ -162,6 +163,7 @@ class LocalAiTranslate {
             sourceLanguageLabel: languageObject?.[this.sourceLang]?.name || this.sourceLang,
             targetLanguageLabel: languageObject?.[targetLang]?.name || targetLang,
             onAfterTranslate: this.onAfterTranslate,
+            onBeforeTranslate: this.onBeforeTranslate,
             onComplete: this.onComplete,
             onLanguageError: this.onLanguageError,
             onLanguageLoading: this.onLanguageLoading,
@@ -227,6 +229,17 @@ class LocalAiTranslate {
                 needsLanguagePack: false,
             }
         }));
+    }
+
+    /**
+     * Called by the browser AI translator before each string is translated, so add-ons can change its markup.
+     *
+     * @param {HTMLElement} ele Element holding the string.
+     */
+    onBeforeTranslate = (ele) => {
+        if(!ele || this.stopTranslation) return;
+
+        doAction('lmat.bulkTranslation.beforeReadTranslation', ele, { provider: this.serviceProvider, postId: this.postId, sourceLang: this.sourceLang, targetLang: this.activeTargetLangs });
     }
 
     onAfterTranslate = (key, value) => {

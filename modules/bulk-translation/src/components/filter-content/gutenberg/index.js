@@ -2,6 +2,7 @@ import React from 'react';
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import saveSourceString from '../../store-source-string/index.js';
+import filterSourceString from '../source-string-filter/index.js';
 import { extractImageAlt } from './image-alt.js';
 import { getXpathRuleAttributePaths } from '../../../../../page-translation/src/component/xpath-attribute-paths/index.js';
 import { isTechnicalAttribute, isUserRuleAttribute } from '../../../../../page-translation/src/component/technical-value/index.js';
@@ -53,6 +54,7 @@ const FilterGutenbergContent = async ({content, service, blockParseRules, postId
             let reactElement=filterContent({content, service, contentKey, skipTags});
             
             stringContent=await extractInnerContent(reactElement);
+            stringContent=filterSourceString(stringContent, {service, sourceLanguage, postId, key: contentKey});
 
             reactElement=null;
         }

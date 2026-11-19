@@ -99,6 +99,15 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 */
 	private $selected_tab;
 
+	/**
+	 * Settings tabs rendered by Linguator Pro. The free plugin has no content for them.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @var string[]
+	 */
+	const ADDON_TABS = array( 'glossary', 'license' );
+
 
 	/**
 	 * Constructor
@@ -144,6 +153,10 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		}
 		
 		$this->header = Header::get_instance($this->selected_tab, $this->model);
+
+		if ( in_array( $this->selected_tab, self::ADDON_TABS, true ) ) {
+			add_action( 'load-' . Linguator_Admin_Base::get_screen_id( 'settings' ), array( $this, 'linguator_redirect_unavailable_addon_tab' ) );
+		}
 
 		Linguator_Admin_Strings::init();
 
@@ -281,6 +294,27 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Redirects a Pro tab to General Settings when Pro does not provide it.
+	 *
+	 * Without this, opening the Glossary or License tab while Pro is deactivated shows an empty page.
+	 * Pro adds these tabs to the settings header, so a tab missing from the header has nothing to render it.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @return void
+	 */
+	public function linguator_redirect_unavailable_addon_tab() {
+		$tabs = $this->header ? $this->header->tabs() : array();
+
+		if ( is_array( $tabs ) && isset( $tabs[ $this->selected_tab ] ) ) {
+			return;
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=lmat_settings&tab=general' ) );
+		exit;
+	}
+
 	public function linguator_loco_page_redirect() {
 		if(!function_exists('is_plugin_active')){
 			include_once(ABSPATH . 'wp-admin/includes/plugin.php');

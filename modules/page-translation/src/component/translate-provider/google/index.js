@@ -16,7 +16,7 @@ const GoogleTranslater = async (data) => {
 
     let cancelled = false;
     let host;
-    const onChange = () => ModalStringScroll(translateStatusHandler, 'google', modalRenderId);
+    const onChange = () => ModalStringScroll(translateStatusHandler, 'google', modalRenderId, { sourceLang, targetLang });
     if (typeof destroyUpdateHandler === 'function') {
         destroyUpdateHandler(() => {
             cancelled = true;

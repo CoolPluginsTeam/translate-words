@@ -3,6 +3,7 @@ import { select, dispatch } from "@wordpress/data";
 import StoreTimeTaken from "../store-time-taken/index.js";
 import AddProgressBar from "../progress-bar/index.js";
 import ShowStringCount from "../progress-bar/show-string-count.js";
+import { doAction } from "@wordpress/hooks";
 
 /**
  * Handles the scrolling animation of a specified element.
@@ -63,7 +64,7 @@ const ScrollAnimation = (props) => {
 /**
  * Updates the translated content in the string container based on the provided translation object.
  */
-const updateTranslatedContent = ({provider, startTime, endTime}) => {
+const updateTranslatedContent = ({provider, startTime, endTime, langs = {}}) => {
     const container = document.getElementById("lmat_page_translation_strings_model");
     const stringContainer = container.querySelector('.lmat_page_translation_string_container');
     const translatedData = stringContainer.querySelectorAll('td.translate[data-string-type]:not([data-translate-status="translated"]):not(.notranslate):not([translate="no"])');
@@ -71,6 +72,9 @@ const updateTranslatedContent = ({provider, startTime, endTime}) => {
     const AllowedMetaFields = select('block-lmatPageTranslation/translate').getAllowedMetaFields();
 
     translatedData.forEach((ele, index) => {
+        // Lets add-ons change the cell markup before its translated text is read.
+        doAction('lmat.pageTranslation.beforeReadTranslation', ele, { provider, sourceLang: langs.sourceLang, targetLang: langs.targetLang });
+
         const translatedText = ele.innerText;
         const key = ele.dataset.key;
         const type = ele.dataset.stringType;
@@ -105,7 +109,7 @@ const updateTranslatedContent = ({provider, startTime, endTime}) => {
  * @param {number} endTime - The end time of the translation.
  * @param {Function} translateStatus - The function to call when the translation is complete.
  */
-const onCompleteTranslation = ({container,provider, startTime, endTime, translateStatus, modalRenderId}) => {
+const onCompleteTranslation = ({container,provider, startTime, endTime, translateStatus, modalRenderId, langs = {}}) => {
     const conainer=document.querySelector(`#lmat-page-translation-${provider}-strings-modal.modal-container[data-render-id="${modalRenderId}"]`);
 
 
@@ -122,7 +126,7 @@ const onCompleteTranslation = ({container,provider, startTime, endTime, translat
     saveButton.classList.add('translated');
     saveButton.classList.remove('notranslate');
 
-    updateTranslatedContent({provider, startTime, endTime});
+    updateTranslatedContent({provider, startTime, endTime, langs});
 
     translateStatus(false);
 }
@@ -134,7 +138,7 @@ const onCompleteTranslation = ({container,provider, startTime, endTime, translat
  * @param {Function} translateStatus - Callback function to execute when translation is deemed complete.
  * @param {string} provider - The provider of the translation.
  */
-const ModalStringScroll = (translateStatus,provider,modalRenderId) => {
+const ModalStringScroll = (translateStatus,provider,modalRenderId, langs = {}) => {
     const startTime = new Date().getTime();
 
     let translateComplete = false;
@@ -160,7 +164,7 @@ const ModalStringScroll = (translateStatus,provider,modalRenderId) => {
             if (isScrolledToBottom && !translateComplete) {
                 const endTime = new Date().getTime();
                 setTimeout(() => {
-                    onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId});
+                    onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId, langs});
                 }, 4000);
                 translateComplete = true;
             }
@@ -173,7 +177,7 @@ const ModalStringScroll = (translateStatus,provider,modalRenderId) => {
             const endTime = new Date().getTime();
             
             setTimeout(() => {
-                onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId});
+                onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId, langs});
             }, 4000);
         }
     } else {
@@ -183,7 +187,7 @@ const ModalStringScroll = (translateStatus,provider,modalRenderId) => {
         const endTime = new Date().getTime();
    
         setTimeout(() => {
-            onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId});
+            onCompleteTranslation({container,provider, startTime, endTime, translateStatus, modalRenderId, langs});
         }, 4000);
     }
 }

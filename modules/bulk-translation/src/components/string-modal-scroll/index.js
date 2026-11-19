@@ -1,4 +1,5 @@
 import storeTranslateString from "../store-translate-strings/index.js";
+import { doAction } from "@wordpress/hooks";
 
 
 /**
@@ -59,7 +60,7 @@ const ScrollAnimation = (props) => {
 /**
  * Updates the translated content in the string container based on the provided translation object.
  */
-const updateTranslatedContent = ({provider, startTime, endTime, prefix, postId, lang, storeDispatch}) => {
+const updateTranslatedContent = ({provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang}) => {
     const stringContainer = document.querySelector(`#${prefix}-${provider}-table-container[data-render-id="${postId}"]`);
 
     if(!stringContainer){
@@ -68,6 +69,9 @@ const updateTranslatedContent = ({provider, startTime, endTime, prefix, postId, 
 
     const translatedData = stringContainer.querySelectorAll(`.${prefix}-${provider}-table-cell`);    
     translatedData.forEach((ele, index) => {
+        // Lets add-ons change the cell markup before its translated text is read.
+        doAction('lmat.bulkTranslation.beforeReadTranslation', ele, { provider, postId, sourceLang, targetLang: lang });
+
         const translatedText = ele.innerText;
         const key = ele.dataset.key;
 
@@ -84,14 +88,14 @@ const updateTranslatedContent = ({provider, startTime, endTime, prefix, postId, 
  * @param {number} endTime - The end time of the translation.
  * @param {Function} translateStatus - The function to call when the translation is complete.
  */
-const onCompleteTranslation = ({provider, startTime, endTime, prefix, postId, lang, storeDispatch}) => {
+const onCompleteTranslation = ({provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang}) => {
     const stringContainer = document.querySelector(`#${prefix}-${provider}-table-container[data-render-id="${postId}"]`);
 
     if(!stringContainer){
         return;
     }
 
-    updateTranslatedContent({provider, startTime, endTime, prefix, postId, lang, storeDispatch});
+    updateTranslatedContent({provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang});
 }
 
 const updateProgressBarStatus=(prefix, postId, lang, percentage, completedPostStatus, totalPosts)=>{
@@ -130,7 +134,7 @@ const updateProgressBarStatus=(prefix, postId, lang, percentage, completedPostSt
  * @param {number} totalPosts - The total number of posts.
  * @param {number} completedPostStatus - The completed post status.
  */
-const ModalStringScroll = async ({provider, prefix, postId, lang, storeDispatch, totalPosts, completedPostStatus}) => {
+const ModalStringScroll = async ({provider, prefix, postId, lang, storeDispatch, totalPosts, completedPostStatus, sourceLang}) => {
     const startTime = new Date().getTime();
     
     let translateComplete = false;
@@ -177,7 +181,7 @@ const ModalStringScroll = async ({provider, prefix, postId, lang, storeDispatch,
                     updateProgressBarStatus(prefix, postId, lang, 100, completedPostStatus, totalPosts);
                     document.removeEventListener('visibilitychange', visibilityChange);
                     setTimeout(() => {
-                        onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch });
+                        onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang });
                         resolve('Complete');
                     }, 1000);
                 }
@@ -190,7 +194,7 @@ const ModalStringScroll = async ({provider, prefix, postId, lang, storeDispatch,
                 setTimeout(() => {
                     const endTime = new Date().getTime();
                     document.removeEventListener('visibilitychange', visibilityChange);
-                    onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch });
+                    onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang });
                     resolve('Complete');
                 }, 1000);
             }
@@ -200,7 +204,7 @@ const ModalStringScroll = async ({provider, prefix, postId, lang, storeDispatch,
             // Not scrollable, just complete after delay
             setTimeout(() => {
                 const endTime = new Date().getTime();
-                onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch });
+                onCompleteTranslation({ provider, startTime, endTime, prefix, postId, lang, storeDispatch, sourceLang });
                 resolve('Complete');
             }, 1000);
         }

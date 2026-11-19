@@ -1,3 +1,5 @@
+import { applyFilters } from '@wordpress/hooks';
+
 const FilterTargetContent = (props, storeUpdateContent) => {
     const { item, saveFilteredString } = props;
     const skipTags = props.skipTags || [];
@@ -450,7 +452,10 @@ const FilterTargetContent = (props, storeUpdateContent) => {
                 }
             }).join('');
 
-            saveFilteredString(item.type, item.id, filteredStringContent);
+            // Lets add-ons change the filtered string before it is stored and shown to the translator.
+            const filtered = applyFilters('lmat.pageTranslation.filteredString', filteredStringContent, { service: props.service, sourceLang: props.sourceLang, targetLang: props.targetLang, item });
+
+            saveFilteredString(item.type, item.id, typeof filtered === 'string' && '' !== filtered ? filtered : filteredStringContent);
         }
     }
 

@@ -1,6 +1,7 @@
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import saveSourceString from '../../store-source-string/index.js';
+import filterSourceString from '../source-string-filter/index.js';
 
 const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, allowedMetaFields, filterHtmlContent, sourceLanguage }) => {
     const loopCallback = async (callback, loop, index) => {
@@ -42,6 +43,7 @@ const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, al
                 if (filterHtmlContent) {
                     let reactElement = filterContent({ content: value, service, contentKey: key, skipTags: [] });
                     value = await extractInnerContent(reactElement);
+                    value = filterSourceString(value, { service, sourceLanguage, postId, key });
 
                     reactElement = null;
                 }
@@ -64,6 +66,7 @@ const filterMetaFields = async ({ metaFields, service, postId, storeDispatch, al
                 if (filterHtmlContent) {
                     let reactElement = filterContent({ content: filterdValue, service, contentKey: key, skipTags: [] });
                     filterdValue = await extractInnerContent(reactElement);
+                    filterdValue = filterSourceString(filterdValue, { service, sourceLanguage, postId, key: uniqueKey });
 
                     reactElement = null;
                 }

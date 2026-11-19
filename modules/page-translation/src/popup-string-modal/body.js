@@ -4,7 +4,16 @@ import { __ } from "@wordpress/i18n";
 import { select, dispatch } from "@wordpress/data";
 import { Fragment } from "@wordpress/element";
 import TranslateService from "../component/translate-provider/index.js";
+import SaveTranslation from "../component/store-translated-string/index.js";
 import DOMPurify from "dompurify";
+import { applyFilters } from "@wordpress/hooks";
+
+/**
+ * Used when no add-on extends the string table.
+ *
+ * @returns {Object}
+ */
+const noStringTableExtension = () => ({});
 
 const StringPopUpBody = (props) => {
 
@@ -17,6 +26,19 @@ const StringPopUpBody = (props) => {
 
     const tableRef = useRef(null);
     const [translationError, setTranslationError] = useState(null);
+
+    /**
+     * Filter: `lmat.pageTranslation.useStringTable`
+     *
+     * An add-on can return a React hook that extends the string table. The hook gets the table context
+     * and can return getCellProps, renderCell, renderRowNumberExtra and renderAfterTable.
+     *
+     * Read once when the component mounts, so the same hook runs on every render.
+     */
+    const [useStringTableExtension] = useState(() => {
+        const extensionHook = applyFilters('lmat.pageTranslation.useStringTable', null);
+        return typeof extensionHook === 'function' ? extensionHook : noStringTableExtension;
+    });
 
     useEffect(() => {
         const onTranslationError = (e) => {
@@ -168,7 +190,7 @@ const StringPopUpBody = (props) => {
                         return <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.filteredString) }} style={{ whiteSpace: 'pre-wrap' }}></span>;
                     }
 
-                    return <FilterTargetContent service={props.service} content={data.source || ''} contentKey={data.id} item={data} saveFilteredString={saveFilteredString} />;
+                    return <FilterTargetContent service={props.service} sourceLang={props.sourceLang} targetLang={props.targetLang} content={data.source || ''} contentKey={data.id} item={data} saveFilteredString={saveFilteredString} />;
                 }
                 return data.source || '';
             } else {
@@ -182,6 +204,22 @@ const StringPopUpBody = (props) => {
             }
         }
     };
+
+    const tableExtension = useStringTableExtension({
+        tableRef,
+        translateContent,
+        service,
+        sourceLang: props.sourceLang,
+        targetLang: props.targetLang,
+        translatePendingStatus: props.translatePendingStatus,
+        modalRender: props.modalRender,
+        translationAbortSignal: props.translationAbortSignal,
+        allowedMetaFields: props.AllowedMetaFields || {},
+        getTranslation,
+        saveTranslation: SaveTranslation,
+        saveFilteredString,
+        cleanFilteredContent: udpateFilterdContent,
+    }) || {};
 
     return (
         <div className="modal-body">
@@ -302,22 +340,34 @@ const StringPopUpBody = (props) => {
                                                 }
                                             }
 
+                                            // Cell props from the string table extension, if any.
+                                            const {
+                                                className: extensionClassName = '',
+                                                translateClass: extensionTranslateClass,
+                                                filled: extensionFilled = false,
+                                                ...extensionCellProps
+                                            } = (typeof tableExtension.getCellProps === 'function' && tableExtension.getCellProps(index, data, cellKey)) || {};
+                                            // Cells waiting for a Gemini or external AI provider translation get `notranslate`.
+                                            const isServerAiProvider = props.service === 'gemini' || Boolean(window.lmatPageTranslationGlobal?.external_providers?.[props.service]);
+                                            const translateClass = extensionTranslateClass || ((props.translatePendingStatus && isServerAiProvider) ? 'notranslate' : 'translate');
+                                            const renderDefaultCell = () => getCellContent(index, data, cellKey);
 
                                             return (
                                                 <Fragment key={index + props.translatePendingStatus}>
                                                     {undefined !== data.source && data.source.trim() !== '' &&
                                                         <>
                                                             <tr key={index + 'tr' + props.translatePendingStatus + (data.filteredString ? 'filteredString' : '')}>
-                                                                <td>{index + 1}</td>
+                                                                <td>{index + 1}{typeof tableExtension.renderRowNumberExtra === 'function' ? tableExtension.renderRowNumberExtra(index, data, cellKey) : null}</td>
                                                                 <td data-source="source_text">{data.source}</td>
                                                                 <td
                                                                     data-key={data.id}
                                                                     data-string-type={data.type}
                                                                     translate="yes"
-                                                                    className={`${!originalTranslation ? 'lmat-page-translation-empty-translation-cell' : ''} ${(props.translatePendingStatus && (props.service === 'gemini' || Boolean(window.lmatPageTranslationGlobal?.external_providers?.[props.service]))) ? 'notranslate' : 'translate'}`}
+                                                                    {...extensionCellProps}
+                                                                    className={`${!originalTranslation && !extensionFilled ? 'lmat-page-translation-empty-translation-cell' : ''} ${translateClass} ${extensionClassName}`}
                                                                     data-translate-status={props.translatePendingStatus ? 'pending' : 'translated'}
                                                                 >
-                                                                    {getCellContent(index, data, cellKey)}
+                                                                    {typeof tableExtension.renderCell === 'function' ? tableExtension.renderCell(index, data, cellKey, renderDefaultCell) : renderDefaultCell()}
                                                                 </td>
                                                             </tr>
                                                         </>
@@ -362,6 +412,7 @@ const StringPopUpBody = (props) => {
                         </table>
                     </div>
             }
+            {typeof tableExtension.renderAfterTable === 'function' ? tableExtension.renderAfterTable() : null}
         </div>
     );
 }

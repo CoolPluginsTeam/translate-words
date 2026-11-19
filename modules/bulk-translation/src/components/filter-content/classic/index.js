@@ -2,6 +2,7 @@ import React from 'react';
 import filterContent from '../../../../../page-translation/src/component/filter-target-content/index.js';
 import extractInnerContent from '../extarct-inner-content/index.js';
 import storeSourceString from '../../store-source-string/index.js';
+import filterSourceString from '../source-string-filter/index.js';
 
 /**
  * @param {Object} content
@@ -66,6 +67,7 @@ const FilterClassicContent = async ({content, service, postId, storeDispatch, fi
                 if(filterHtmlContent){
                     let reactElement=filterContent({content: text, service, contentKey: 'content_classic_index_'+index, skipTags:[]});
                     stringContent=await extractInnerContent(reactElement);
+                    stringContent=filterSourceString(stringContent, {service, sourceLanguage, postId, key: 'content_classic_index_'+index});
 
                     reactElement=null;
                 }
