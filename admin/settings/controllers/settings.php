@@ -517,6 +517,9 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			$this->header->header();
 			echo '<div class="wrap lmat-styles">';
 			echo '<div id="lmat-settings"></div>';
+			if ( in_array( $this->selected_tab, linguator_get_settings_server_tabs(), true ) ) {
+				$this->render_server_tab( $this->selected_tab );
+			}
 			echo '</div>';
 			return;
 		}
@@ -744,6 +747,8 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'sync_options'   => $this->linguator_get_sync_options(),
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'translations_data' => $translations_data,
+					// Tabs whose main column is printed by PHP; React keeps the layout and sidebar around them.
+					'server_tabs'       => linguator_get_settings_server_tabs(),
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 					// Providers added by other plugins; a provider's own settings panel is enqueued by that plugin.
@@ -1002,6 +1007,33 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		}
 
 		return $languages;
+	}
+
+	/**
+	 * Prints a tab rendered by PHP (see linguator_get_settings_server_tabs()).
+	 *
+	 * Both slots start hidden; the React settings app moves them into its layout, notices
+	 * above both columns and content in the main column next to the shared sidebar.
+	 *
+	 * @param string $tab Tab slug.
+	 * @return void
+	 */
+	private function render_server_tab( $tab ) {
+		$tab = sanitize_key( $tab );
+
+		echo '<div id="lmat-settings-server-notices" hidden>';
+		/**
+		 * Fires above both columns of a PHP-rendered settings tab.
+		 */
+		do_action( "lmat_settings_tab_notices_{$tab}" );
+		echo '</div>';
+
+		echo '<div id="lmat-settings-server-content" hidden>';
+		/**
+		 * Fires in the main column of a PHP-rendered settings tab.
+		 */
+		do_action( "lmat_settings_tab_content_{$tab}" );
+		echo '</div>';
 	}
 
 	/**

@@ -10,6 +10,7 @@ import { sprintf,__ } from '@wordpress/i18n'
 import TranslationConfig from './translation-config'
 import Switcher from './switcher'
 import Migration from './migration'
+import ServerTabSlot from './server-tab-slot'
 //Component mapper for settings page
 const ComponentSelector = ({currentPage,data, setData})=>{
   if(currentPage === 'general') return <General data={data} setData={setData} />
@@ -42,10 +43,16 @@ const MainComponent = ({ currentPage }) => {
     serverCall()
   }, [])
 
+  // Tabs printed by PHP (e.g. Linguator Pro's License tab) skip the settings loader.
+  const isServerTab = (window.lmat_settings?.server_tabs || []).includes(currentPage)
+
   return (
+    <>
+    {isServerTab && <ServerTabSlot id='lmat-settings-server-notices' className='px-8' />}
     <div className='lg:flex gap-8 px-8 mt-8'>
       <div className='w-full lg:w-[75%]'>
         {
+          isServerTab ? <ServerTabSlot id='lmat-settings-server-content' /> :
           loading ?
             <div className='flex justify-center gap-4 items-center min-h-[100vh]'>
               <h1>
@@ -66,6 +73,7 @@ const MainComponent = ({ currentPage }) => {
         <Sidebar />
       </div>
     </div>
+    </>
   )
 }
 

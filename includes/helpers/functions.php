@@ -772,3 +772,31 @@ function linguator_get_locoai_plugin_status() {
 		'is_pro'      => '' !== $pro_file && $plugin_file === $pro_file,
 	);
 }
+
+/**
+ * Settings tabs whose main column is printed by PHP instead of the React settings app.
+ *
+ * The React app still draws the page layout and the shared sidebar around these tabs, so a
+ * tab added by another plugin (the Linguator Pro License tab, for one) gets the same sidebar
+ * as the built-in tabs without copying it. For each slug, the settings page fires:
+ * - "lmat_settings_tab_notices_{$tab}": printed above both columns.
+ * - "lmat_settings_tab_content_{$tab}": printed in the main column, next to the sidebar.
+ *
+ * Other plugins can test for this function to know the slot exists.
+ *
+ * @return string[] Tab slugs.
+ */
+function linguator_get_settings_server_tabs() {
+	/**
+	 * Filters the settings tabs rendered by PHP inside the React settings layout.
+	 *
+	 * @param string[] $tabs Tab slugs, e.g. array( 'license' ).
+	 */
+	$tabs = apply_filters( 'lmat_settings_server_tabs', array() );
+
+	if ( ! is_array( $tabs ) ) {
+		return array();
+	}
+
+	return array_values( array_unique( array_filter( array_map( 'sanitize_key', $tabs ) ) ) );
+}
