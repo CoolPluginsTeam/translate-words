@@ -55,6 +55,9 @@ const sameExtraValue = (field, a, b) => JSON.stringify(normalizeExtraValue(field
 const PRO_PRODUCT_URL = 'https://linguator.com/pricing/';
 const getProUrl = (settingKey) => `${PRO_PRODUCT_URL}?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=get_pro&utm_content=settings_${settingKey}`;
 
+// License tab while Linguator Pro is active but its license is not: its settings are then shown locked.
+const getProLicenseUrl = () => window?.lmat_settings?.pro_license_url || '';
+
 // Reads the current boolean value of each available Pro switch.
 const getProToggleValues = (toggles, data) => toggles.reduce((values, toggle) => {
     values[toggle.key] = !!data[toggle.key];
@@ -94,8 +97,10 @@ const General = ({ data, setData }) => {
     const [selectedLanguageSwitchers, setSelectedLanguageSwitchers] = useState(data.lmat_language_switcher_options || ['default']); // Selected Language Switcher options
     const [showTerms, setShowTerms] = useState(false); // For showing/hiding terms box
     const [menuSyncVisibility, setMenuSyncVisibility] = useState(data.menu_sync_visibility !== undefined ? data.menu_sync_visibility : false); // For Menu Sync feature visibility
-    // Pro switches: only the keys Linguator Pro registered are present in the settings response.
-    const availableProToggles = PRO_TOGGLES.filter((toggle) => data[toggle.key] !== undefined);
+    // Pro switches: only the keys Linguator Pro registered are present in the settings response,
+    // and they are locked (not saved) while the Pro license is not active.
+    const proLicenseUrl = getProLicenseUrl();
+    const availableProToggles = PRO_TOGGLES.filter((toggle) => data[toggle.key] !== undefined && !proLicenseUrl);
     const [proToggles, setProToggles] = useState(() => getProToggleValues(availableProToggles, data));
     // Add-on fields shown under a Pro switch (see getExtraFields).
     const extraFields = getExtraFields(data);
@@ -998,9 +1003,10 @@ const General = ({ data, setData }) => {
                 {/* Linguator Pro sections */}
                 {PRO_TOGGLES.map((toggle) => {
                     // Without Linguator Pro the setting is absent: show it locked, linking to the Pro page.
-                    const locked = data[toggle.key] === undefined;
+                    // With Pro but no active license: also locked, linking to the License tab.
+                    const locked = data[toggle.key] === undefined || '' !== proLicenseUrl;
                     const unavailable = !locked && toggle.requiresUrlLanguage && 0 === forceLang;
-                    const proUrl = getProUrl(toggle.key);
+                    const proUrl = proLicenseUrl || getProUrl(toggle.key);
                     return (
                         <React.Fragment key={toggle.key}>
                             <hr className="w-full border-b-0 border-x-0 border-t border-solid border-t-border-subtle" />

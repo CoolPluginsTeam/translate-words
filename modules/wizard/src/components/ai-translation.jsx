@@ -422,9 +422,6 @@ const AiTranslation = () => {
 							</div>
 							<p className="text-sm/6 text-gray-600 m-0 mt-3">
 								{pro.description}{' '}
-								<a className="underline" href={proUrl} target="_blank" rel="noreferrer noopener">
-									{__('Get Linguator Pro', 'translate-words')}
-								</a>
 							</p>
 						</div>
 					);

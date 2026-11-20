@@ -462,6 +462,46 @@ function linguator_get_external_ai_providers_for_js() {
 }
 
 /**
+ * Whether Linguator Pro's features run: Pro is active and has not switched them off.
+ *
+ * Pro switches its features off until its license is activated. Until then the free plugin lists the Pro
+ * providers locked, as it does without Pro.
+ *
+ * @since 2.2.4
+ *
+ * @return bool
+ */
+function linguator_pro_features_active() {
+	if ( ! defined( 'LINGUATOR_PRO_VERSION' ) ) {
+		return false;
+	}
+
+	/**
+	 * Filters whether Linguator Pro's features run.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @param bool $active True while Pro's features run.
+	 */
+	return (bool) apply_filters( 'lmat_pro_features_active', true );
+}
+
+/**
+ * License screen to link the locked Pro providers to, while Pro is active but its features are not.
+ *
+ * @since 2.2.4
+ *
+ * @return string License tab URL, or '' when Pro is not active or its features run.
+ */
+function linguator_pro_license_url() {
+	if ( ! defined( 'LINGUATOR_PRO_VERSION' ) || linguator_pro_features_active() ) {
+		return '';
+	}
+
+	return admin_url( 'admin.php?page=lmat_settings&tab=license' );
+}
+
+/**
  * Translation providers allowed in Linguator settings / workflows.
  *
  * WP &lt; 7.0: Google + Chrome only.

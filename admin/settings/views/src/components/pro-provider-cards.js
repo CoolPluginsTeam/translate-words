@@ -1,5 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
-import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
+import { getLockedProProviders, getProProviderUrl, getProActionLabel } from './pro-providers.js';
 
 const badgeStyle = {
     background: '#eff6ff',
@@ -65,7 +65,7 @@ const ProProviderCards = ({ prefix, localized, screen }) => {
                             pro.label
                         )}
                     >
-                        {__('Get Pro', 'translate-words')}
+                        {getProActionLabel()}
                     </a>
                 </div>
             </div>

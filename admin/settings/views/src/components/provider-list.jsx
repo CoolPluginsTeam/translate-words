@@ -6,7 +6,7 @@ import { GoogleIcon } from '../../../../../assets/js/src/icons/google';
 import { GeminiIcon } from '../../../../../assets/js/src/icons/gemini';
 import ExternalProviderPanel from './external-provider-panel.jsx';
 import ConnectionTests, { openConnectionTest } from './connection-test.jsx';
-import { getLockedProProviders, getProProviderUrl } from './pro-providers.js';
+import { getLockedProProviders, getProProviderUrl, getProActionLabel } from './pro-providers.js';
 
 const DOCS_UTM = '?utm_source=twlmat_plugin&utm_medium=inside&utm_campaign=docs&utm_content=settings_provider';
 const getChromeAiSetupData = () => window?.lmat_settings?.chrome_ai_setup || {};
@@ -307,9 +307,10 @@ const ProviderList = ({
                 <ChromeAiSetupCard browserType={browserType} chromeEnabled={chromeEnabled} edgeEnabled={edgeEnabled} />
             )}
 
-            {/* Setup cards of external providers (such as an account connection), shown while the provider is on. */}
+            {/* Setup cards of external providers (such as an account connection), shown while the provider is on.
+                A provider with `settings_panel_inline` shows its panel inside its row instead, like Gemini's key form. */}
             {Object.entries(externalProviders).map(([key, external]) => (
-                providers[key]?.enabled && external?.settings_panel ? (
+                providers[key]?.enabled && external?.settings_panel && !external?.settings_panel_inline ? (
                     <div key={key} className="lmat-external-setup-card" data-provider={key}>
                         <ExternalProviderPanel
                             providerKey={key}
@@ -410,6 +411,41 @@ const ProviderList = ({
                     const configured = Boolean(externalConfigured[key])
                     const hasPanel = Boolean(external?.settings_panel)
 
+                    // An inline panel (such as an API key form) opens under the row while the provider is on, like Gemini's.
+                    if (hasPanel && external?.settings_panel_inline) {
+                        return (
+                            <ProviderRow
+                                key={key}
+                                icon={external.icon_url ? <img src={external.icon_url} alt="" className="icon-size" /> : null}
+                                name={external.label}
+                                docsUrl={external.docs_url || ''}
+                                enabled={Boolean(state.enabled)}
+                                onToggle={toggle(key)}
+                                isDefault={key === defaultProvider}
+                                onDefault={() => onDefaultChange(key)}
+                                status={configured ? 'ready' : 'missing-key'}
+                                statusLabel={configured
+                                    ? __('Ready', 'translate-words')
+                                    : (!external.configured && external.status_label ? external.status_label : __('Not configured', 'translate-words'))}
+                                defaultDisabledReason={configured ? '' : sprintf(__('Set up %s before making it the default provider.', 'translate-words'), external.label)}
+                                actionLabel={configured ? '' : (external.action_label || __('Add API Key', 'translate-words'))}
+                                onAction={() => {
+                                    if (!state.enabled) {
+                                        state.setEnabled(true);
+                                    }
+                                }}
+                                extra={state.enabled ? (
+                                    <div className="pt-0">
+                                        <ExternalProviderPanel
+                                            providerKey={key}
+                                            onStatusChange={(isConfigured) => onExternalStatus(key, isConfigured)}
+                                        />
+                                    </div>
+                                ) : null}
+                            />
+                        )
+                    }
+
                     return (
                         <ProviderRow
                             key={key}
@@ -429,7 +465,8 @@ const ProviderList = ({
                             // Like Chrome AI: the setup button shows only while the provider is on and not set up yet.
                             actionLabel={state.enabled && !configured && hasPanel ? (external.action_label || __('Configure', 'translate-words')) : ''}
                             onAction={() => scrollToExternalCard(key)}
-							onTest={configured && state.enabled && key !== 'chatgpt' ? () => openConnectionTest({ key, name: external.label }) : null}
+							// A provider with its own settings panel (such as ChatGPT) shows Test Connection in the panel.
+							onTest={configured && state.enabled && !hasPanel ? () => openConnectionTest({ key, name: external.label }) : null}
                         />
                     )
                 })}
@@ -458,7 +495,7 @@ const ProviderList = ({
                                 status="pro"
                                 statusLabel={__('Pro', 'translate-words')}
                                 defaultDisabledReason={lockedReason}
-                                actionLabel={__('Get Pro', 'translate-words')}
+                                actionLabel={getProActionLabel()}
                                 actionHref={getProProviderUrl(pro.key, 'settings')}
                                 extra={<p className="lmat-engine-pro-msg">{pro.description}</p>}
                             />

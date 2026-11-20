@@ -434,10 +434,12 @@ class Linguator_Wizard
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 					// Providers added by other plugins; they are set up from Linguator → Settings → Translation.
 					'external_providers'    => function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array(),
-					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
-					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
+					// Without Linguator Pro, or until its license is activated, its providers are listed locked.
+					'pro_active'            => linguator_pro_features_active(),
+					'pro_license_url'       => linguator_pro_license_url(),
 					'pro_provider_icons'    => array(
 						'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+						'openai'  => esc_url( plugins_url( 'admin/assets/images/openai.png', LINGUATOR_ROOT_FILE ) ),
 					),
 				)
 			);
