@@ -9,11 +9,11 @@ Stable tag: 2.2.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-AI-powered translation for your WordPress site, fully compatible with Elementor, Gutenberg, WooCommerce, ACF, Rank Math, & Yoast SEO.
+AI-powered translation for your WordPress site, fully compatible with Elementor, Gutenberg, ACF, Rank Math, & Yoast SEO.
 
 == Description ==
 
-**Linguator – AI Auto Translate & Create Multilingual Sites** is an AI-powered translation plugin that works seamlessly with **Elementor**, **Gutenberg**, the **Classic Editor**, **WooCommerce**, **ACF**, **Rank Math**, **Yoast SEO**, helping you create multilingual websites in just a few clicks without any complex setup.
+**Linguator – AI Auto Translate & Create Multilingual Sites** is an AI-powered translation plugin that works seamlessly with **Elementor**, **Gutenberg**, the **Classic Editor**, **ACF**, **Rank Math**, **Yoast SEO**, helping you create multilingual websites in just a few clicks without any complex setup.
 
 https://youtu.be/TNSWCCmHQPg?si=LQXRkszBIFPMG9vg
 
@@ -23,7 +23,7 @@ Automatically translate your **posts**, **pages**, **menus**, **categories**, **
 
 ### Compatible With Popular WordPress Plugins?
 
-Linguator is fully compatible with popular WordPress editors and plugins, including **Elementor**, **Gutenberg**, **WooCommerce**, **ACF**, **Rank Math**, and **Yoast SEO**, so you can generate high-quality translations without external API keys or subscriptions using **Chrome’s built-in AI** and **Google Translate**, directly from WordPress.
+Linguator is fully compatible with popular WordPress editors and plugins, including **Elementor**, **Gutenberg**, **ACF**, **Rank Math**, and **Yoast SEO**, so you can generate high-quality translations using **Chrome’s built-in AI**, **Google Translate** and **Google Gemini**, directly from WordPress.
 
 https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 
@@ -50,8 +50,6 @@ https://youtu.be/20MbjUb6AnM?si=-1qipV1fFH89KtgT
 * **Media and Menu Translation Management:** Translate image titles, captions, alt text, and descriptions to match each language. Create separate navigation menus per language and let visitors switch between them.
 
 * **Language Switcher:** Add a language switcher to your site with multiple display options, including Classic, Block-based, and Elementor widget styles, to easily switch languages.
-
-* **WooCommerce Translation:** Translate WooCommerce product titles, descriptions, categories, and other customer-facing content. 
 
 * **ACF & Custom Fields Support:** Translate content stored in Advanced Custom Fields (ACF) and other WordPress custom fields while keeping the original field structure intact.
 
@@ -150,6 +148,17 @@ That's it! The setup configuration has been successfully completed. You can now 
 
 == Frequently Asked Questions ==
 
+= Why Use Linguator? =
+* **Simple and Familiar Interface** – Built with WordPress standards in mind, Linguator feels natural and easy to use, even for beginners.
+* **AI Power Without Extra Cost** – Leverage AI translation features for free — no need to pay for costly external AI credits.
+* **No Monthly Fees or SaaS Dependency** – Linguator runs fully inside WordPress — once installed, it’s yours! No external API or subscription required.
+* **Fully Compatible with Elementor & Gutenberg** – Translate visually designed pages effortlessly without breaking layouts.
+* **Save Time with AI-Powered Translation** – Instantly translate your posts, pages, and menus using advanced AI translation technology.
+* **Reach a Global Audience** – Translate your content into multiple languages and expand your website’s reach worldwide.
+* **Build Trust with Localized Content** – Speak to visitors in their own language to increase engagement and conversions.
+* **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
+* **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
+
 = How long does it take to translate my first page? =
 With our AI-powered engine, you can translate a standard page or post in under 10 seconds.
 
@@ -167,9 +176,6 @@ Linguator supports all languages that WordPress supports, including RTL language
 
 = Is it compatible with all WordPress themes? =
 Yes, Linguator is designed to work with any properly coded WordPress theme.
-
-= Does Linguator support WooCommerce? =
-Yes. Linguator can translate WooCommerce product titles, descriptions, categories, and other customer-facing content. Inventory information such as stock quantity is not translated.
 
 = Can I translate ACF custom fields with Linguator? =
 Yes. Linguator supports Advanced Custom Fields (ACF) and can translate supported content stored inside custom fields while keeping the field structure unchanged.
@@ -226,17 +232,6 @@ You are not required to take immediate action. Your website will continue workin
 
 = How can I report security bugs? =
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team help validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/a1445575-35c8-4414-a9f7-55ab64f28711 )
-
-= Why Use Linguator? =
-* **Simple and Familiar Interface** – Built with WordPress standards in mind, Linguator feels natural and easy to use, even for beginners.
-* **AI Power Without Extra Cost** – Leverage AI translation features for free — no need to pay for costly external AI credits.
-* **No Monthly Fees or SaaS Dependency** – Linguator runs fully inside WordPress — once installed, it’s yours! No external API or subscription required.
-* **Fully Compatible with Elementor & Gutenberg** – Translate visually designed pages effortlessly without breaking layouts.
-* **Save Time with AI-Powered Translation** – Instantly translate your posts, pages, and menus using advanced AI translation technology.
-* **Reach a Global Audience** – Translate your content into multiple languages and expand your website’s reach worldwide.
-* **Build Trust with Localized Content** – Speak to visitors in their own language to increase engagement and conversions.
-* **SEO-Optimized for Multilingual Sites** – Generate search-friendly URLs for every language to improve visibility in Google.
-* **Lightweight & Optimized for Speed** – Linguator is built with performance in mind and doesn’t slow down your pages or website loading time.
 
 **Legacy Version:** If you need the previous implementation of Translate Words, you can download the legacy code that was removed in version 2.1.10 from our [GitHub repository](https://github.com/CoolPluginsTeam/translate-words/tree/translate-words-legacy).
 
