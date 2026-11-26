@@ -31,6 +31,39 @@ function linguator_is_cache_active() {
 }
 
 /**
+ * Percent-encodes the square brackets of a URL.
+ *
+ * Language switcher URLs can carry the visitor's own query string. esc_url() keeps
+ * "[" and "]" when the query holds a second copy of the site origin, and do_shortcode()
+ * (the_content, priority 11, or block templates) would then run any shortcode found
+ * in the printed link. Percent-encoding the brackets stops that match and keeps the
+ * URL meaning unchanged.
+ *
+ * @since 2.2.4
+ *
+ * @param string $url URL to encode.
+ * @return string URL without raw square brackets.
+ */
+function linguator_encode_url_brackets( $url ) {
+	return str_replace( array( '[', ']' ), array( '%5B', '%5D' ), (string) $url );
+}
+
+/**
+ * Escapes a language URL for output in an HTML attribute.
+ *
+ * Same as esc_url() but also percent-encodes square brackets so that the
+ * printed URL can never be interpreted as shortcode syntax.
+ *
+ * @since 2.2.4
+ *
+ * @param string $url Language URL.
+ * @return string Escaped URL safe to print in an attribute.
+ */
+function linguator_esc_language_url( $url ) {
+	return linguator_encode_url_brackets( esc_url( (string) $url ) );
+}
+
+/**
  * Get the the current requested url
  *
  *  

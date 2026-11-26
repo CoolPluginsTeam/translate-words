@@ -216,6 +216,9 @@ class Linguator_Frontend_Links extends Linguator_Links {
 		$url = $this->links_model->switch_language_in_link( $url, $language );
 		$url = $this->links_model->remove_paged_from_link( $url );
 
+		// The query string comes from the visitor: never let it carry raw shortcode brackets.
+		$url = linguator_encode_url_brackets( $url );
+
 		/**
 		 * Filter the archive url
 		 *
