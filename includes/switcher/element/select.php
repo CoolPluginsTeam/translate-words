@@ -22,7 +22,7 @@ class Select extends Abstract_Element {
 		$item_atts = sprintf(
 			'lang="%1$s" value="%2$s"%3$s',
 			esc_attr( $this->locale ),
-			linguator_esc_language_url( $this->url ),
+			esc_url( $this->url ),
 			selected( $this->is_current, true, false )
 		);
 

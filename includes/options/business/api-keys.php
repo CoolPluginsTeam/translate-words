@@ -17,6 +17,30 @@ use Linguator\Includes\Options\Options;
  */
 class Api_Keys extends Abstract_Option {
 	/**
+	 * Gemini model used when none is saved, and after a plugin update when the saved one is no longer listed.
+	 *
+	 * @var string
+	 */
+	const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+
+	/**
+	 * Gemini models offered in the settings, with their labels.
+	 *
+	 * Also used by the admin notice that asks for a new model when the saved one is not in this list.
+	 *
+	 * @return array<string,string> Map of model_id => label.
+	 */
+	public static function preferred_gemini_models(): array {
+		return array(
+			'gemini-3.1-pro-preview' => __( 'gemini-3.1-pro-preview (Best Quality)', 'translate-words' ),
+			'gemini-3.8-flash'       => __( 'gemini-3.8-flash (Recommended)', 'translate-words' ),
+			'gemini-3.6-flash'       => __( 'gemini-3.6-flash (Balanced)', 'translate-words' ),
+			'gemini-3.5-flash-lite'  => __( 'gemini-3.5-flash-lite (Fast & Cheap)', 'translate-words' ),
+			'gemini-3.1-flash-lite'  => __( 'gemini-3.1-flash-lite (Cheapest)', 'translate-words' ),
+		);
+	}
+
+	/**
 	 * Filter and label preferred models for a provider.
 	 *
 	 * @param string $provider_id Provider id used by WP AI Client (e.g. google).
@@ -29,15 +53,7 @@ class Api_Keys extends Abstract_Option {
 		$preferred = array();
 		if ( 'google' === $provider_id ) {
 			// Gemini models (labels shown in UI). We only show these if the provider reports them.
-			$preferred = array(
-				'gemini-3.1-pro-preview'        => __( 'gemini-3.1-pro-preview (Best Quality)', 'translate-words' ),
-				'gemini-3.1-flash-lite-preview' => __( 'gemini-3.1-flash-lite-preview (Fast & Cheap)', 'translate-words' ),
-				'gemma-3n-e4b-it'               => __( 'gemma-3n-e4b-it (Cheapest)', 'translate-words' ),
-				'gemini-2.5-pro'                => __( 'gemini-2.5-pro (Best Overall)', 'translate-words' ),
-				'gemini-2.5-flash'              => __( 'gemini-2.5-flash (Balanced)', 'translate-words' ),
-				'gemini-3-flash-preview'        => __( 'gemini-3-flash-preview (Recommended)', 'translate-words' ),
-				'gemini-2.5-pro-preview-tts'    => __( 'gemini-2.5-pro-preview-tts (High Accuracy)', 'translate-words' ),
-			);
+			$preferred = self::preferred_gemini_models();
 		}
 
 		if ( empty( $preferred ) ) {
@@ -53,6 +69,33 @@ class Api_Keys extends Abstract_Option {
 
 		return $preferred;
 	}
+	/**
+	 * After a plugin update, switches a saved Gemini model that is no longer in the model list to the default.
+	 *
+	 * Runs once per plugin version.
+	 *
+	 * @return void
+	 */
+	public static function update_saved_gemini_model(): void {
+		if ( LINGUATOR_VERSION === get_option( 'lmat_gemini_model_checked_version' ) ) {
+			return;
+		}
+		update_option( 'lmat_gemini_model_checked_version', LINGUATOR_VERSION, false );
+
+		if ( ! function_exists( 'LMAT' ) || ! isset( LMAT()->model->options ) ) {
+			return;
+		}
+
+		$options = LMAT()->model->options;
+		$saved   = $options->get( self::key() );
+		$model   = is_array( $saved ) && isset( $saved['gemini_model'] ) ? (string) $saved['gemini_model'] : '';
+
+		if ( '' !== $model && ! isset( self::preferred_gemini_models()[ $model ] ) ) {
+			// Saved to the database by Options::save_all() on shutdown.
+			$options->set( self::key(), array( 'gemini_model' => self::DEFAULT_GEMINI_MODEL ) );
+		}
+	}
+
 	/**
 	 * Returns option key.
 	 *
@@ -70,7 +113,7 @@ class Api_Keys extends Abstract_Option {
 	 */
 	protected function get_default() {
 		return array(
-			'gemini_model' => 'gemini-2.5-flash',
+			'gemini_model' => self::DEFAULT_GEMINI_MODEL,
 		);
 	}
 

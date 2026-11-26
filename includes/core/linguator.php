@@ -438,6 +438,7 @@ class Linguator {
 
 		if ( is_admin() ) {
 			add_action( 'admin_init', array( $this, 'register_feedback_notices' ) );
+			add_action( 'admin_init', array( \Linguator\Includes\Options\Business\Api_Keys::class, 'update_saved_gemini_model' ), 10, 0 );
 			add_action( 'cpfm_after_opt_in_lmat', array( $this, 'after_opt_in' ) );
 			add_action( 'add_option_cpfm_opt_in_choice_cool_translations', array( $this, 'sync_lmat_feedback_data_on_add' ), 10, 2 );
 			add_action( 'update_option_cpfm_opt_in_choice_cool_translations', array( $this, 'sync_lmat_feedback_data_on_update' ), 10, 2 );

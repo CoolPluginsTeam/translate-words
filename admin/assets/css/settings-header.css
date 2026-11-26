@@ -192,3 +192,18 @@
         margin-top: 1rem;
     }
 }
+
+/* Short label after a tab title, for example "Pro" on a tab whose add-on needs a license. */
+.lmat-settings-header-tab-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.6;
+    text-transform: uppercase;
+    vertical-align: middle;
+}

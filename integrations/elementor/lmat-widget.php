@@ -720,7 +720,7 @@ class Linguator_Widget extends Widget_Base
                             'slug'           => esc_html($language['slug']),
                             'name'           => esc_html($language['name']),
                             'no_translation' => (bool) $language['no_translation'],
-                            'url'            => linguator_esc_language_url($language['url']),
+                            'url'            => esc_url($language['url']),
                             'flag'           => $flag_html, // Use our generated flag HTML
                         ];
                     },
@@ -850,7 +850,7 @@ class Linguator_Widget extends Widget_Base
             }
 
             $languages_html .= '<li class="lmat-lang-item">';
-            $languages_html .= '<a href="' . linguator_esc_language_url($lang['url']) . '">';
+            $languages_html .= '<a href="' . esc_url($lang['url']) . '">';
             if (! empty($settings['lmat_language_switcher_show_flags']) && $settings['lmat_language_switcher_show_flags'] === 'yes') {
                 $languages_html .= '<div class="lmat-lang-image">' . $lang['flag'] . '</div>';
             }
@@ -912,7 +912,7 @@ class Linguator_Widget extends Widget_Base
                 continue;
             }
 
-            $anchor_open  = '<a href="' . linguator_esc_language_url($lang['url']) . '">';
+            $anchor_open  = '<a href="' . esc_url($lang['url']) . '">';
             $anchor_close = '</a>';
 
             $html .= '<li class="lmat-lang-item">';

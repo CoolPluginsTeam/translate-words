@@ -99,6 +99,15 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 */
 	private $selected_tab;
 
+	/**
+	 * Settings tabs rendered by Linguator Pro. The free plugin has no content for them.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @var string[]
+	 */
+	const ADDON_TABS = array( 'glossary', 'license' );
+
 
 	/**
 	 * Constructor
@@ -144,6 +153,10 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		}
 		
 		$this->header = Header::get_instance($this->selected_tab, $this->model);
+
+		if ( in_array( $this->selected_tab, self::ADDON_TABS, true ) ) {
+			add_action( 'load-' . Linguator_Admin_Base::get_screen_id( 'settings' ), array( $this, 'linguator_redirect_unavailable_addon_tab' ) );
+		}
 
 		Linguator_Admin_Strings::init();
 
@@ -281,6 +294,27 @@ class Linguator_Settings extends Linguator_Admin_Base {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Redirects a Pro tab to General Settings when Pro does not provide it.
+	 *
+	 * Without this, opening the Glossary or License tab while Pro is deactivated shows an empty page.
+	 * Pro adds these tabs to the settings header, so a tab missing from the header has nothing to render it.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @return void
+	 */
+	public function linguator_redirect_unavailable_addon_tab() {
+		$tabs = $this->header ? $this->header->tabs() : array();
+
+		if ( is_array( $tabs ) && isset( $tabs[ $this->selected_tab ] ) ) {
+			return;
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=lmat_settings&tab=general' ) );
+		exit;
+	}
+
 	public function linguator_loco_page_redirect() {
 		if(!function_exists('is_plugin_active')){
 			include_once(ABSPATH . 'wp-admin/includes/plugin.php');
@@ -483,6 +517,9 @@ class Linguator_Settings extends Linguator_Admin_Base {
 			$this->header->header();
 			echo '<div class="wrap lmat-styles">';
 			echo '<div id="lmat-settings"></div>';
+			if ( in_array( $this->selected_tab, linguator_get_settings_server_tabs(), true ) ) {
+				$this->render_server_tab( $this->selected_tab );
+			}
 			echo '</div>';
 			return;
 		}
@@ -710,14 +747,18 @@ class Linguator_Settings extends Linguator_Admin_Base {
 					'sync_options'   => $this->linguator_get_sync_options(),
 					'language_switcher_options' => $this->get_language_switcher_options(),
 					'translations_data' => $translations_data,
+					// Tabs whose main column is printed by PHP; React keeps the layout and sidebar around them.
+					'server_tabs'       => linguator_get_settings_server_tabs(),
 					'wp_ai_client_available' => function_exists( 'linguator_is_ai_provider_allowed' ) ? linguator_is_ai_provider_allowed( 'gemini' ) : false,
 					'allowed_providers'     => function_exists( 'linguator_get_allowed_ai_providers' ) ? linguator_get_allowed_ai_providers() : array( 'chrome_local_ai', 'google' ),
 					// Providers added by other plugins; a provider's own settings panel is enqueued by that plugin.
 					'external_providers'    => function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array(),
-					// Without Linguator Pro, its providers are listed locked with a link to the Pro page.
-					'pro_active'            => defined( 'LINGUATOR_PRO_VERSION' ),
+					// Without Linguator Pro, or until its license is activated, its providers are listed locked.
+					'pro_active'            => linguator_pro_features_active(),
+					'pro_license_url'       => linguator_pro_license_url(),
 					'pro_provider_icons'    => array(
 						'chatgpt' => esc_url( plugins_url( 'admin/assets/images/chatgpt.png', LINGUATOR_ROOT_FILE ) ),
+						'openai'  => esc_url( plugins_url( 'admin/assets/images/openai.png', LINGUATOR_ROOT_FILE ) ),
 					),
 					'chrome_ai_setup'           => $this->get_chrome_ai_setup_data(),
 				)
@@ -966,6 +1007,33 @@ class Linguator_Settings extends Linguator_Admin_Base {
 		}
 
 		return $languages;
+	}
+
+	/**
+	 * Prints a tab rendered by PHP (see linguator_get_settings_server_tabs()).
+	 *
+	 * Both slots start hidden; the React settings app moves them into its layout, notices
+	 * above both columns and content in the main column next to the shared sidebar.
+	 *
+	 * @param string $tab Tab slug.
+	 * @return void
+	 */
+	private function render_server_tab( $tab ) {
+		$tab = sanitize_key( $tab );
+
+		echo '<div id="lmat-settings-server-notices" hidden>';
+		/**
+		 * Fires above both columns of a PHP-rendered settings tab.
+		 */
+		do_action( "lmat_settings_tab_notices_{$tab}" );
+		echo '</div>';
+
+		echo '<div id="lmat-settings-server-content" hidden>';
+		/**
+		 * Fires in the main column of a PHP-rendered settings tab.
+		 */
+		do_action( "lmat_settings_tab_content_{$tab}" );
+		echo '</div>';
 	}
 
 	/**

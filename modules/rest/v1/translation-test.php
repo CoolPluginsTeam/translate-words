@@ -69,7 +69,7 @@ final class Translation_Test {
 			$provider_id = 'google';
 			if ( '' === $model ) {
 				$saved = LMAT()->model->options->get( 'api_keys' );
-				$model = $saved['gemini_model'] ?? 'gemini-2.5-flash';
+				$model = $saved['gemini_model'] ?? \Linguator\Includes\Options\Business\Api_Keys::DEFAULT_GEMINI_MODEL;
 			}
 		} else {
 			$providers = function_exists( 'linguator_get_external_ai_providers' ) ? linguator_get_external_ai_providers() : array();

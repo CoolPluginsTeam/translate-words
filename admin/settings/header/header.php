@@ -153,10 +153,12 @@ if ( ! class_exists( 'Linguator\Settings\Header\Header' ) ) {
 				$title        = $value['title'];
 				$redirect     = isset( $value['redirect'] ) ? $value['redirect'] : false;
 				$redirect_url = $redirect && isset( $value['redirect_url'] ) ? $value['redirect_url'] : false;
+				// Optional short label after the title, for example "Pro" on a tab whose add-on needs a license.
+				$badge = ! empty( $value['badge'] ) ? '<span class="lmat-settings-header-tab-badge">' . esc_html( (string) $value['badge'] ) . '</span>' : '';
 				if ( $redirect && $redirect_url && $this->active_tab !== $key ) {
-					echo '<a href="' . esc_url( admin_url( 'admin.php?page=' . esc_attr( $redirect_url ) ) ) . '"><div class="lmat-settings-header-tab ' . esc_attr( $active_class ) . '" data-tab="' . esc_attr( $key ) . '" title="' . esc_attr( $title ) . '" data-link="true">' . esc_html(  $title  ) . '</div></a>';
+					echo '<a href="' . esc_url( admin_url( 'admin.php?page=' . esc_attr( $redirect_url ) ) ) . '"><div class="lmat-settings-header-tab ' . esc_attr( $active_class ) . '" data-tab="' . esc_attr( $key ) . '" title="' . esc_attr( $title ) . '" data-link="true">' . esc_html(  $title  ) . $badge . '</div></a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $badge is escaped above.
 				} else {
-					echo '<div class="lmat-settings-header-tab ' . esc_attr( $active_class ) . '" data-tab="' . esc_attr( $key ) . '" title="' . esc_attr( $title ) . '">' . esc_html(  $title  ) . '</div>';
+					echo '<div class="lmat-settings-header-tab ' . esc_attr( $active_class ) . '" data-tab="' . esc_attr( $key ) . '" title="' . esc_attr( $title ) . '">' . esc_html(  $title  ) . $badge . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $badge is escaped above.
 				}
 			}
 			echo '</div>';

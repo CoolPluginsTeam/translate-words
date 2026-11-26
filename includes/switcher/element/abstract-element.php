@@ -247,8 +247,7 @@ abstract class Abstract_Element {
 		if ( empty( $url ) || ! is_string( $url ) || $this->settings->force_home ) {
 			$this->url = $this->links->get_home_url( $this->language );
 		} else {
-			// Request-derived URLs may hold visitor input: neutralise shortcode brackets.
-			$this->url = linguator_encode_url_brackets( $url );
+			$this->url = $url;
 		}
 	}
 

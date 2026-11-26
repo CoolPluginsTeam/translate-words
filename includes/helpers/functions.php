@@ -31,39 +31,6 @@ function linguator_is_cache_active() {
 }
 
 /**
- * Percent-encodes the square brackets of a URL.
- *
- * Language switcher URLs can carry the visitor's own query string. esc_url() keeps
- * "[" and "]" when the query holds a second copy of the site origin, and do_shortcode()
- * (the_content, priority 11, or block templates) would then run any shortcode found
- * in the printed link. Percent-encoding the brackets stops that match and keeps the
- * URL meaning unchanged.
- *
- * @since 2.2.4
- *
- * @param string $url URL to encode.
- * @return string URL without raw square brackets.
- */
-function linguator_encode_url_brackets( $url ) {
-	return str_replace( array( '[', ']' ), array( '%5B', '%5D' ), (string) $url );
-}
-
-/**
- * Escapes a language URL for output in an HTML attribute.
- *
- * Same as esc_url() but also percent-encodes square brackets so that the
- * printed URL can never be interpreted as shortcode syntax.
- *
- * @since 2.2.4
- *
- * @param string $url Language URL.
- * @return string Escaped URL safe to print in an attribute.
- */
-function linguator_esc_language_url( $url ) {
-	return linguator_encode_url_brackets( esc_url( (string) $url ) );
-}
-
-/**
  * Get the the current requested url
  *
  *  
@@ -461,6 +428,11 @@ function linguator_get_external_ai_providers() {
 			$provider
 		);
 		$clean[ $key ]['configured'] = (bool) $clean[ $key ]['configured'];
+		// Optional: shown when Save Settings is pressed with the provider on but not set up (for example no API
+		// key), and the settings are not saved. Empty lets them save anyway.
+		$clean[ $key ]['setup_required_message'] = isset( $clean[ $key ]['setup_required_message'] )
+			? sanitize_text_field( (string) $clean[ $key ]['setup_required_message'] )
+			: '';
 	}
 
 	// Plugins add their providers while loading, so the list is only final once WordPress is initialised.
@@ -492,6 +464,46 @@ function linguator_get_external_ai_providers_for_js() {
 		);
 	}
 	return $out;
+}
+
+/**
+ * Whether Linguator Pro's features run: Pro is active and has not switched them off.
+ *
+ * Pro switches its features off until its license is activated. Until then the free plugin lists the Pro
+ * providers locked, as it does without Pro.
+ *
+ * @since 2.2.4
+ *
+ * @return bool
+ */
+function linguator_pro_features_active() {
+	if ( ! defined( 'LINGUATOR_PRO_VERSION' ) ) {
+		return false;
+	}
+
+	/**
+	 * Filters whether Linguator Pro's features run.
+	 *
+	 * @since 2.2.4
+	 *
+	 * @param bool $active True while Pro's features run.
+	 */
+	return (bool) apply_filters( 'lmat_pro_features_active', true );
+}
+
+/**
+ * License screen to link the locked Pro providers to, while Pro is active but its features are not.
+ *
+ * @since 2.2.4
+ *
+ * @return string License tab URL, or '' when Pro is not active or its features run.
+ */
+function linguator_pro_license_url() {
+	if ( ! defined( 'LINGUATOR_PRO_VERSION' ) || linguator_pro_features_active() ) {
+		return '';
+	}
+
+	return admin_url( 'admin.php?page=lmat_settings&tab=license' );
 }
 
 /**
@@ -764,4 +776,32 @@ function linguator_get_locoai_plugin_status() {
 		'loco_active' => '' !== $loco_file && is_plugin_active( $loco_file ),
 		'is_pro'      => '' !== $pro_file && $plugin_file === $pro_file,
 	);
+}
+
+/**
+ * Settings tabs whose main column is printed by PHP instead of the React settings app.
+ *
+ * The React app still draws the page layout and the shared sidebar around these tabs, so a
+ * tab added by another plugin (the Linguator Pro License tab, for one) gets the same sidebar
+ * as the built-in tabs without copying it. For each slug, the settings page fires:
+ * - "lmat_settings_tab_notices_{$tab}": printed above both columns.
+ * - "lmat_settings_tab_content_{$tab}": printed in the main column, next to the sidebar.
+ *
+ * Other plugins can test for this function to know the slot exists.
+ *
+ * @return string[] Tab slugs.
+ */
+function linguator_get_settings_server_tabs() {
+	/**
+	 * Filters the settings tabs rendered by PHP inside the React settings layout.
+	 *
+	 * @param string[] $tabs Tab slugs, e.g. array( 'license' ).
+	 */
+	$tabs = apply_filters( 'lmat_settings_server_tabs', array() );
+
+	if ( ! is_array( $tabs ) ) {
+		return array();
+	}
+
+	return array_values( array_unique( array_filter( array_map( 'sanitize_key', $tabs ) ) ) );
 }

@@ -980,7 +980,24 @@ class Linguator_Admin_Menu_Sync {
 		if ( ! $default_lang ) {
 			return $title;
 		}
-		
+
+		/**
+		 * Filters the translation of a custom menu link title before the AI translates it.
+		 *
+		 * Return a non-empty string to use it as the translation. The AI is then not called.
+		 *
+		 * @since 2.2.4
+		 *
+		 * @param string|null $translation      Translation to use, or null to let the AI translate the title.
+		 * @param string      $title            Original navigation label.
+		 * @param string      $source_lang_code Source language slug.
+		 * @param string      $target_lang_code Target language slug.
+		 */
+		$pre_translation = apply_filters( 'lmat_pre_translate_custom_link_title', null, $title, $default_lang->slug, $lang->slug );
+		if ( is_string( $pre_translation ) && '' !== trim( $pre_translation ) ) {
+			return $pre_translation;
+		}
+
 		// Use AI translation
 		$ai_translation = $this->linguator_translate_with_ai( $title, $lang );
 		if ( $ai_translation && $ai_translation !== $title ) {
