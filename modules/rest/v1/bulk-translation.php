@@ -695,10 +695,11 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 
 				$builder = wp_ai_client_prompt();
 
-				$canUseProviderChain = method_exists( $builder, 'using_provider' )
-					&& method_exists( $builder, 'with_text' )
-					&& method_exists( $builder, 'generate_text' )
-					&& ( '' === $model_id || method_exists( $builder, 'using_model' ) );
+				// is_callable(), not method_exists(): WP 7's builder exposes these through __call().
+				$canUseProviderChain = is_callable( array( $builder, 'using_provider' ) )
+					&& is_callable( array( $builder, 'with_text' ) )
+					&& is_callable( array( $builder, 'generate_text' ) )
+					&& ( '' === $model_id || is_callable( array( $builder, 'using_model' ) ) );
 
 				if ( $canUseProviderChain ) {
 					if ( '' !== $model_id ) {
@@ -724,16 +725,16 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 					}
 				} else {
 					// Older WP AI Client: fall back to model preference + single-message prompt.
-					if ( method_exists( $builder, 'using_system_instruction' ) ) {
+					if ( is_callable( array( $builder, 'using_system_instruction' ) ) ) {
 						$builder = $builder->using_system_instruction( __( 'You are a professional translator. Output only valid JSON objects.', 'translate-words' ) );
 					}
-					if ( method_exists( $builder, 'with_text' ) ) {
+					if ( is_callable( array( $builder, 'with_text' ) ) ) {
 						$builder = $builder->with_text( $instruction );
 					} else {
 						$builder = wp_ai_client_prompt( $instruction );
 					}
 
-					if ( '' !== $model_id && method_exists( $builder, 'using_model_preference' ) ) {
+					if ( '' !== $model_id && is_callable( array( $builder, 'using_model_preference' ) ) ) {
 						$builder = $builder->using_model_preference( $model_id );
 					}
 
@@ -745,6 +746,12 @@ if ( ! class_exists( 'Bulk_Translation' ) ) :
 				}
 			} finally {
 				remove_filter( 'wp_ai_client_default_request_timeout', $timeout_filter, 10, 1 );
+			}
+
+			// WP 7's builder returns failures as WP_Error instead of throwing. Map them to the same
+			// friendly messages, but keep timeouts intact so the split-and-retry logic still sees them.
+			if ( is_wp_error( $text ) && ! $this->ai_translate_is_timeout_error( $text ) ) {
+				return $this->ai_translate_map_generate_text_exception( new \RuntimeException( $text->get_error_message() ) );
 			}
 
 			return $text;
